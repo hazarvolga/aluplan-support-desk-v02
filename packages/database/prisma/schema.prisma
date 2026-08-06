@@ -62,7 +62,7 @@ model User {
 model Department {
   id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String      @db.VarChar(100)
-  slug        String      @db.VarChar(100)
+  slug        String      @unique(map: "departments_slug_key") @db.VarChar(100)
   description String?
   color       String?     @db.VarChar(7)
   icon        String?     @db.VarChar(50)
@@ -83,7 +83,7 @@ model Team {
   id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   departmentId          String             @map("department_id") @db.Uuid
   name                  String             @db.VarChar(100)
-  slug                  String             @db.VarChar(100)
+  slug                  String             @unique(map: "teams_slug_key") @db.VarChar(100)
   description           String?
   isArchived            Boolean            @default(false) @map("is_archived")
   autoAssignmentEnabled Boolean            @default(false) @map("auto_assignment_enabled")
@@ -279,6 +279,7 @@ model CrmAccount {
   updatedAt          DateTime          @updatedAt @map("updated_at")
   deletedAt          DateTime?         @map("deleted_at")
   account_number     String?           @db.VarChar(255)
+  legacyCustomerNo   String?           @map("customer_no") @db.VarChar(50)
   customers          CustomerProfile[]
 
   @@map("crm_accounts")
@@ -286,7 +287,7 @@ model CrmAccount {
 
 model CrmConnection {
   id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider      CrmProvider
+  provider      CrmProvider         @unique(map: "crm_connections_provider_key")
   tenantId      String?             @map("tenant_id") @db.VarChar(255)
   clientId      String?             @map("client_id") @db.VarChar(255)
   clientSecret  String?             @map("client_secret")
@@ -330,7 +331,7 @@ model CrmDeltaSyncState {
   lastSuccessfulSyncAt DateTime?     @map("last_successful_sync_at")
   lastError            String?       @map("last_error")
   createdAt            DateTime      @default(now()) @map("created_at")
-  updatedAt            DateTime      @updatedAt @map("updated_at")
+  updatedAt            DateTime      @default(now()) @updatedAt @map("updated_at")
   connection           CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
   @@unique([connectionId, entityType], map: "crm_delta_sync_states_connection_entity_key")
@@ -403,7 +404,7 @@ model KnowledgeArticle {
   id             String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   categoryId     String?                   @map("category_id") @db.Uuid
   title          String
-  slug           String                    @db.VarChar(255)
+  slug           String                    @unique(map: "knowledge_articles_slug_key") @db.VarChar(255)
   status         ArticleStatus             @default(DRAFT)
   approved       Boolean                   @default(false)
   approvedBy     String?                   @map("approved_by") @db.Uuid
@@ -488,7 +489,7 @@ model KnowledgeEmbedding {
   articleVersion       KnowledgeArticleVersion @relation(fields: [articleVersionId], references: [id], onDelete: Cascade)
 
   @@index([articleId], map: "idx_ke_article")
-  @@index([embedding], map: "knowledge_embeddings_vector_hnsw_idx")
+  @@index([embeddingVersion, embeddingDim], map: "idx_ke_embedding_version_dim")
   @@map("knowledge_embeddings")
 }
 
@@ -563,6 +564,7 @@ model AiResponseCache {
   @@index([queryHash], map: "idx_cache_hash")
   @@index([tenantId], map: "idx_cache_tenant")
   @@index([expiresAt], map: "idx_cache_expires")
+  @@index([embeddingVersion, embeddingDim], map: "idx_ai_response_cache_embedding_version_dim")
   @@map("ai_response_cache")
 }
 
@@ -728,6 +730,7 @@ model FaqEntry {
   deletedAt         DateTime?              @map("deleted_at")
 
   @@index([status], map: "idx_faq_status")
+  @@index([deletedAt], map: "idx_faq_entries_deleted_at")
   @@map("faq_entries")
 }
 
@@ -778,6 +781,7 @@ model Macro {
   deletedAt DateTime? @map("deleted_at")
   creator   User?     @relation(fields: [createdBy], references: [id])
 
+  @@index([deletedAt], map: "idx_macros_deleted_at")
   @@map("macros")
 }
 
@@ -850,7 +854,7 @@ model CrawlCandidate {
   importedAt       DateTime?            @map("imported_at")
   crawledAt        DateTime             @default(now()) @map("crawled_at")
   createdAt        DateTime             @default(now()) @map("created_at")
-  updatedAt        DateTime             @updatedAt @map("updated_at")
+  updatedAt        DateTime             @default(now()) @updatedAt @map("updated_at")
 
   @@index([source, status], map: "idx_crawl_candidates_source_status")
   @@index([format], map: "idx_crawl_candidates_format")
@@ -873,20 +877,23 @@ model KnowledgeSourceSyncLog {
 }
 
 model KnowledgePoolEmbedding {
-  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sourceId         String                @map("source_id") @db.Uuid
+  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId         String                   @map("source_id") @db.Uuid
   embedding        Unsupported("vector")
   content          String
   metadata         Json?
-  embeddingVersion String                @default("v1") @map("embedding_version") @db.VarChar(10)
-  embeddingDim     Int                   @default(1536) @map("embedding_dim")
-  migratedAt       DateTime?             @map("migrated_at")
-  createdAt        DateTime              @default(now()) @map("created_at")
-  parentId         String?               @map("parent_id") @db.Uuid
-  source           KnowledgeSource       @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  embeddingVersion String                   @default("v1") @map("embedding_version") @db.VarChar(10)
+  embeddingDim     Int                      @default(1536) @map("embedding_dim")
+  migratedAt       DateTime?                @map("migrated_at")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  parentId         String?                  @map("parent_id") @db.Uuid
+  source           KnowledgeSource          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  parent           KnowledgePoolEmbedding?  @relation("KnowledgePoolEmbeddingHierarchy", fields: [parentId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  children         KnowledgePoolEmbedding[] @relation("KnowledgePoolEmbeddingHierarchy")
 
   @@index([sourceId], map: "idx_kpe_source")
-  @@index([embedding], map: "knowledge_pool_embeddings_vector_hnsw_idx")
+  @@index([embeddingVersion, embeddingDim], map: "idx_kpe_embedding_version_dim")
+  @@index([parentId], map: "idx_kpe_parent")
   @@map("knowledge_pool_embeddings")
 }
 
@@ -930,6 +937,7 @@ model TicketEmbedding {
   ticket           Ticket                @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId], map: "idx_ticket_embeddings_ticket")
+  @@index([embeddingVersion, embeddingDim], map: "idx_ticket_embeddings_version_dim")
   @@map("ticket_embeddings")
 }
 
@@ -1040,7 +1048,7 @@ model AnnouncementLog {
   customerId     String          @map("customer_id") @db.Uuid
   status         String          @default("PENDING") @db.VarChar(50)
   sentAt         DateTime?       @map("sent_at")
-  readAt         DateTime?       @map("read_at")
+  readAt         DateTime?       @map("read_at") @db.Timestamptz(6)
   error          String?
   emailLogId     String?         @unique @map("email_log_id") @db.Uuid
   createdAt      DateTime        @default(now()) @map("created_at")
@@ -1070,6 +1078,7 @@ enum AgentStatus {
   ONLINE
   AWAY
   DND
+  OFFLINE
 }
 
 enum AssignmentStrategy {
@@ -1228,6 +1237,15 @@ enum AnnouncementType {
   LIFECYCLE
 }
 
+// Compatibility enum retained because it exists in the historical fresh-install chain.
+// Runtime announcement delivery uses the current channel fields, not this legacy type.
+enum AnnouncementChannel {
+  EMAIL
+  WHATSAPP
+  IN_APP
+  SMS
+}
+
 enum ProactiveChatStatus {
   PENDING
   ACTIVE
@@ -1283,7 +1301,7 @@ model ProactiveChatMessage {
 model EvalDataset {
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   query            String
-  relevantChunkIds String[] @map("relevant_chunk_ids")
+  relevantChunkIds String[] @default([]) @map("relevant_chunk_ids")
   tenantId         String   @map("tenant_id")
   createdBy        String   @map("created_by")
   notes            String?
@@ -1309,13 +1327,14 @@ model AiHealthEvent {
   eventType    AiHealthEventType @map("event_type")
   provider     String            @db.VarChar(50)
   model        String?           @db.VarChar(100)
-  task         String?
+  task         String?           @db.VarChar(255)
   errorMessage String?           @map("error_message")
   latencyMs    Int?              @map("latency_ms")
   metadata     Json?
-  createdAt    DateTime          @default(now()) @map("created_at")
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([createdAt(sort: Desc)], map: "idx_ai_health_events_created")
+  @@index([createdAt(sort: Desc), eventType], map: "idx_ai_health_events_created_type")
   @@index([eventType], map: "idx_ai_health_events_type")
   @@index([provider], map: "idx_ai_health_events_provider")
   @@map("ai_health_events")

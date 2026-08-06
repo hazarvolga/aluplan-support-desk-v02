@@ -83,6 +83,8 @@ jobs:
         run: pnpm exec prisma migrate status --config packages/database/prisma.config.js
       - name: Prisma Migration Integrity (blocking)
         run: pnpm db:verify:migrations
+      - name: Prisma Schema Parity (blocking)
+        run: pnpm db:verify:schema-parity
       - name: Build Backend
         run: cd apps/backend && pnpm run build
       - name: Build Frontend

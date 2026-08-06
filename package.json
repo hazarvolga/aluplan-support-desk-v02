@@ -15,6 +15,8 @@
         "db:migrate": "turbo db:migrate",
         "db:verify:migration-files": "node scripts/verify-migration-integrity.mjs --files-only",
         "db:verify:migrations": "node scripts/verify-migration-integrity.mjs",
+        "db:verify:schema-parity": "node scripts/verify-schema-parity.mjs",
+        "db:compare:data": "node scripts/compare-database-data.mjs",
         "rag:maintenance": "pnpm --filter @aluplan/backend rag:maintenance",
         "i18n:check": "pnpm --filter @aluplan/frontend i18n:check",
         "spec:verify": "node scripts/verify-specs.mjs"

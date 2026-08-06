@@ -81,6 +81,28 @@ function verifyCanonicalChecksums(fileChecksums, checksumManifest) {
     }
 }
 
+async function verifyParityMigrationSafety() {
+    const migrationName = '20260806000000_align_schema_parity';
+    const migrationSql = await readFile(
+        path.join(migrationsDirectory, migrationName, 'migration.sql'),
+        'utf8',
+    );
+    // This is a deliberately narrow, defense-in-depth lint for this additive
+    // parity migration. PostgreSQL remains the source of truth for SQL parsing.
+    const forbiddenMutation =
+        /(?:^|;)\s*(?:DROP\s+(?:INDEX|TABLE|TYPE|VIEW|MATERIALIZED\s+VIEW|SEQUENCE|SCHEMA|CONSTRAINT|COLUMN)\b|ALTER\s+TABLE\b[\s\S]*?\bDROP\s+(?:COLUMN|CONSTRAINT)\b|TRUNCATE\b|DELETE\s+FROM\b|UPDATE\s+"?[a-z_]\w*"?\s+SET\b|INSERT\s+INTO\b)/im;
+
+    if (!/^\s*(?:--[^\n]*\n)*\s*BEGIN;/i.test(migrationSql)) {
+        throw new Error(`${migrationName} must start with an explicit transaction`);
+    }
+    if (!/COMMIT;\s*$/i.test(migrationSql)) {
+        throw new Error(`${migrationName} must end with COMMIT`);
+    }
+    if (forbiddenMutation.test(migrationSql)) {
+        throw new Error(`${migrationName} contains a forbidden destructive or data mutation`);
+    }
+}
+
 async function loadLedger(client) {
     const result = await client.query(
         `SELECT migration_name, checksum, finished_at, rolled_back_at
@@ -155,6 +177,7 @@ async function main() {
     const fileChecksums = await loadMigrationChecksums();
     const checksumManifest = await loadChecksumManifest();
     verifyCanonicalChecksums(fileChecksums, checksumManifest);
+    await verifyParityMigrationSafety();
 
     if (process.argv.includes('--files-only')) {
         console.log(
