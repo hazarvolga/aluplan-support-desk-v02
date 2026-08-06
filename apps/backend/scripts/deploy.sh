@@ -98,10 +98,23 @@ ls -1 ./packages/database/prisma/migrations/ | grep -E '^[0-9]' | tail -10
 MIGRATION_COUNT=$(ls -1 ./packages/database/prisma/migrations/ | grep -E '^[0-9]' | wc -l | tr -d ' ')
 echo "[DEPLOY DIAGNOSTIC] Total migration folders: $MIGRATION_COUNT"
 
-# Attempt 1: Standard Prisma migrate deploy
-npx prisma migrate deploy \
+# Prisma's migration engine does not reliably inherit the shell PGOPTIONS
+# variable. Put the timeout settings into the connection URL itself so every
+# migration connection receives them. URL is never printed.
+MIGRATION_DATABASE_URL=$(node -e '
+  const url = new URL(process.env.DATABASE_URL);
+  url.searchParams.set("options", "-c lock_timeout=5s -c statement_timeout=300s");
+  process.stdout.write(url.toString());
+')
+
+# Standard Prisma migration is a hard startup gate. Never start the API after a
+# failed or lock-timed-out migration.
+if ! DATABASE_URL="$MIGRATION_DATABASE_URL" npx prisma migrate deploy \
   --schema ./packages/database/prisma/schema.prisma \
-  --config ./packages/database/prisma.config.js || echo "[DEPLOY WARNING] prisma migrate deploy exited non-zero, will try direct SQL fallback"
+  --config ./packages/database/prisma.config.js; then
+  echo "[DEPLOY ERROR] prisma migrate deploy failed; refusing to start the application"
+  exit 1
+fi
 
 # Verify critical column exists — if not, apply migrations directly via psql
 echo "[DEPLOY DIAGNOSTIC] Checking if is_vip column exists in customer_profiles..."

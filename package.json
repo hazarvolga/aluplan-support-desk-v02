@@ -17,6 +17,9 @@
         "db:verify:migrations": "node scripts/verify-migration-integrity.mjs",
         "db:verify:schema-parity": "node scripts/verify-schema-parity.mjs",
         "db:compare:data": "node scripts/compare-database-data.mjs",
+        "db:compare:schema": "node scripts/compare-database-schema.mjs",
+        "db:audit:migration-effects": "node scripts/audit-migration-effects.mjs",
+        "db:measure:migration-locks": "node scripts/measure-migration-locks.mjs",
         "rag:maintenance": "pnpm --filter @aluplan/backend rag:maintenance",
         "i18n:check": "pnpm --filter @aluplan/frontend i18n:check",
         "spec:verify": "node scripts/verify-specs.mjs"
