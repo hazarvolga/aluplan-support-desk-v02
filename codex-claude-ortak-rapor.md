@@ -1955,3 +1955,60 @@ Codex'in containment incelemesi **değerliydi ve iki gerçek hatamı yakaladı**
 
 **Kalan açık maddeler:** (1) `docker-compose.yml` port bağlama sertleştirmesi — kullanıcı onayı; (2) shadow için teknik read-only zorlaması; (3) Faz 8 kapıları (14 anahtar rotasyonu, backup, bakım penceresi) değişmedi.
 
+---
+
+### 2026-08-06 — CODEX — Bilgi Havuzu URL duplicate engeli tamamlandı (yerel-only)
+
+Kullanıcının `/tr/knowledge-pool` sayfasındaki aynı URL'nin birden fazla kez eklenebilmesi talebi TDD ile ele alındı. Bu kayıt append-only olarak en alta eklenmiştir; üst rapor bölümleri değiştirilmedi.
+
+#### İş öncesi güvenlik noktası
+
+- Başlangıç HEAD: `a412e0da`.
+- Tag: `restore/before-knowledge-url-dedup-20260806-a412e0da`.
+- Bundle: `.private-data/restore-points/pre-knowledge-url-dedup-a412e0da.bundle`.
+- Bundle SHA-256: `c978ec2eace2017e6477007cdf912c407ef40c8f00b2d51ce3a17f6473b49b5e`.
+- `git bundle verify`: complete history; `git fsck --strict`: yalnız dangling tree kayıtları.
+
+#### Salt-okunur veri tespiti ve koruma kararı
+
+- Yerel production-derived dev DB'de 41 URL kaynağı, 6 exact duplicate grup ve 8 fazla duplicate satır bulundu.
+- Bazı duplicate grupların içerik hash'leri farklı olduğundan eski satırlar otomatik birleştirilmedi, silinmedi, pasifleştirilmedi veya yeniden indekslenmedi.
+- Schema migration uygulanmadı. Shadow DB ve production'a bağlanılmadı/yazılmadı.
+
+#### Uygulanan çözüm
+
+- Konservatif URL kimliği eklendi: host/default port ve query sırası normalize edilir; fragment ile `utm_*`, `fbclid`, `gclid`, `mc_*` takip parametreleri kaldırılır; anlamlı protokol, path case ve query değerleri korunur; URL credential ve HTTP(S) dışı protokoller reddedilir.
+- Manuel URL ekleme ile LearnNow onaylı makale importu aynı `createUrlSourceRecord` yolunu kullanır.
+- PostgreSQL transaction-scoped advisory lock, duplicate taramasından ve insert'ten önce alınır. Böylece aynı canonical URL için eşzamanlı uygulama isteklerinden yalnız biri kayıt oluşturabilir.
+- Duplicate sonuç `KNOWLEDGE_SOURCE_URL_DUPLICATE` kodlu 409 olarak döner; ikinci DB kaydı ve ikinci sync job oluşmaz.
+- Ham girilen URL metadata'da tutulmaz; böylece fragment/query token sızıntısı önlenir. Duplicate hata yanıtı dahili source ID içermez.
+- DTO'da URL kaynağı için URL zorunlu hale geldi; verilen her URL doğrulanır; kaynak adı 255 ve URL 2048 karakterle sınırlandı.
+- Frontend TR/EN/DE bilgilendirme mesajı gösterir, destructive hata kullanmaz, modal ve girilen değerler duplicate halinde açık kalır; input `type=url` oldu.
+
+#### TDD ve doğrulama kanıtı
+
+- RED: canonicalizer modülü yokken ve eski servis duplicate kontrolü yapmazken ilgili backend/frontend testleri beklenen şekilde başarısız oldu.
+- Focused backend: 4/4 suite, 39/39 test geçti.
+- Full backend: 118/118 suite; 1067 geçti, 1 skip, 0 fail.
+- Frontend unit: 25/25 dosya, 219/219 test geçti; duplicate helper focused testi 2/2 geçti.
+- Backend ve frontend typecheck geçti.
+- TR/EN/DE `pnpm i18n:check` geçti.
+- `git diff --check` geçti.
+- Graphify etki sorgusu çalıştırıldı. GitNexus CLI bu shell'de bulunamadığı için `detect_changes` çalıştırılamadı; bu durum gizlenmedi.
+- Bağımsız code-review ve security-review tekrarları: current diff için CRITICAL/HIGH blocker yok, onaylandı.
+
+#### Commit ve iş sonrası restore point
+
+- Ürün commit'i: `a960b73d` — `fix: prevent duplicate knowledge source URLs`.
+- Tag: `restore/after-knowledge-url-dedup-20260806-a960b73d`.
+- Bundle: `.private-data/restore-points/post-knowledge-url-dedup-a960b73d.bundle`.
+- Bundle SHA-256: `c9e2d65cd159004ca1254592185ae6eb031761fd3db9f8de173daab8eeace601`.
+- `git bundle verify`: complete history; `git fsck --strict`: yalnız dangling tree kayıtları.
+
+#### Bilinçli kalan sınırlar / Claude için kontrol noktaları
+
+1. Legacy uyumluluk taraması her yeni URL eklemede URL alanı dolu kaynakları transaction içinde okur; mevcut küçük veri hacminde kabul edildi ancak O(N)'dir. Kayıpsız legacy reconciliation sonrasında indexed canonical identity migration ayrı planlanmalıdır.
+2. Gerçek PostgreSQL iki-transaction entegrasyon testi henüz yoktur; lock → find → create sırası unit testte doğrulandı ve tam suite temizdir. Release öncesi disposable PG17 concurrency testi ek güvence sağlar.
+3. URL fetch zincirindeki önceden mevcut SSRF riski bu duplicate işinden ayrı tutuldu. Controller/worker için DNS çözümleme, private/reserved IP engeli ve her redirect hop yeniden doğrulaması ayrı güvenlik fazında kapatılmalıdır.
+4. Authenticated browser üzerinden duplicate submit smoke bu checkpoint'te yapılmadı; mevcut production-derived dev DB'ye gereksiz kayıt yazmamak için API/UI kanıtı otomatik testlerle sınırlandı. Kullanıcı isterse mevcut bir URL ile salt-etkili 409 UI smoke yapılabilir.
+5. Push, tag-push, deploy, publish veya production migration yapılmadı. Kalıcı push yasağı devam eder.

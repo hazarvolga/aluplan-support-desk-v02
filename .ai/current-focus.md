@@ -267,3 +267,12 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
   Sistemi canliya aldiktan ve destek e-postalarinin duzgun calistigindan tamamen emin olduktan 2-3 hafta sonra, DNS barindiriciniza (Cloudflare, cPanel vs.) girip DMARC kaydinizdaki `p=none` ibaresini `p=quarantine` veya `p=reject` olarak degistirmelisiniz.
   *Yeni Kod Boyle Olmali:* `"v=DMARC1; p=reject; rua=mailto:destek@allplan.net.tr; adkim=s; aspf=s"`
   *Etkisi:* Bu degisikligi yaptiktan sonra hic kimse domain adinizi kullanarak sahte e-posta atamaz (Spoofing) ve IP/Domain itibarınız tamamen altin seviyeye (maksimum spam korumasina) ulasir.
+
+## Active Focus - 2026-08-06 Knowledge Pool URL Duplicate Prevention
+
+- New manual URL sources and approved LearnNow article imports now use the same canonical URL identity and transaction-scoped PostgreSQL advisory lock.
+- URL identity strips fragments and known tracking parameters, normalizes host/default ports/query order, and preserves meaningful protocol/path/query differences.
+- Duplicate submissions return the stable `KNOWLEDGE_SOURCE_URL_DUPLICATE` conflict and enqueue no second sync job; the TR/EN/DE UI keeps the modal input and shows an informational message.
+- Existing production-derived duplicate rows were not merged, deleted, re-indexed, or modified. Legacy comparison is intentionally read-only and O(N) until an approved canonical identity/index migration is designed.
+- Pre-existing SSRF hardening remains a separate high-priority security task: URL fetches need resolved-IP and redirect-chain validation before production release of further URL-ingestion changes.
+- Product commit: `a960b73d`. No push, deploy, production connection, schema migration, or shadow write occurred.

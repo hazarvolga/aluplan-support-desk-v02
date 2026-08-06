@@ -3737,3 +3737,29 @@ Maintenance rule:
 
 - No production DB/Redis connection or mutation, deploy, push, tag-push or publish occurred.
 - Production migration and live secret rotation remain user-controlled maintenance-window work.
+
+## Follow-up - 2026-08-06 Knowledge Pool URL Duplicate Prevention
+
+### What changed
+
+- Added a conservative, deterministic Knowledge Source URL canonicalizer.
+- Manual URL creation and LearnNow article import now share one transaction/advisory-lock writer, preventing equivalent concurrent submissions from creating two URL sources.
+- Duplicate attempts create no record and enqueue no second sync job.
+- URL DTO validation now requires URL values for URL sources, validates any supplied URL, and bounds name/URL length.
+- Removed raw submitted-URL retention and internal source IDs from duplicate error responses.
+- Added localized duplicate feedback and native URL input semantics to the Knowledge Pool modal.
+
+### Verification
+
+- TDD RED failures were observed before implementation.
+- Focused backend: 4/4 suites, 39/39 tests passed.
+- Full backend: 118/118 suites, 1067 passed, 1 skipped, 0 failed.
+- Frontend unit: 25/25 files, 219/219 tests passed; focused duplicate helper 2/2 passed.
+- Backend/frontend typecheck, TR/EN/DE i18n integrity, and `git diff --check` passed.
+- Independent code and security re-reviews approved with no current-diff Critical/High blocker.
+
+### Boundary
+
+- Existing duplicate data was preserved unchanged; no cleanup or migration was run.
+- No production/shadow mutation, push, tag-push, deploy, or publish occurred.
+- Pre-existing SSRF risk remains separately open; indexed canonical identity is a future scalability/migration task.
