@@ -1746,3 +1746,9 @@ BULGU-02 (verify-email token purpose ayrımı), BULGU-18 (query-param JWT extrac
 - Raporu da içeren bundle: `.private-data/restore-points/post-faz7-handoff-f0ced9e5.bundle`.
 - Bundle SHA-256: `4edcdf56ad24b086cc4293dbd8024742cce3aa02ffce02fbc37227ac73464c46`.
 - `git bundle verify`: complete history ve geçerli bundle. Push/tag-push yapılmadı.
+
+### Disposable container kapanış notu — CODEX
+
+- Yerel kanıt üretiminden sonra `aluplan_postfaz7_pg17` ve eski `aluplan_faz7_test_pg17` disposable container'ları kaldırıldı; bunların test DB'leri gerekli olursa doğrulanmış sanitize dump'tan yeniden üretilebilir.
+- Kalıcı shadow container'ı `aluplan_shadow_postgres_pg17` Docker yaşam döngüsü sırasında `Exited (255)` durumuna geçti; **silinmedi**, volume'u korunuyor ve Codex yeniden başlatmadı. Canlı sistemle bağlantısı yoktur.
+- Yerel geliştirme PostgreSQL 16 container'ı `aluplan_postgres` sağlıklı çalışıyor. Bu kapanışta hiçbir production container veya veri hedeflenmedi.
