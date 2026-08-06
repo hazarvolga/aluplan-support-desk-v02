@@ -143,6 +143,8 @@ export const mockConfigService = {
                 return 'test-refresh-secret';
             case 'JWT_REFRESH_EXPIRES_IN':
                 return '7d';
+            case 'AUTH_ACTION_JWT_SECRET':
+                return 'test-action-secret';
             default:
                 return 'test-value';
         }

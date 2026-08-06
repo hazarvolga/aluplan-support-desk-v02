@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
 
 /**
  * OMNI-CHANNEL / WHATSAPP INTEGRATION E2E TEST (v5)
@@ -24,7 +25,7 @@ test.describe('Omni-channel Integration', () => {
             data: { email: adminEmail, password: adminPassword }
         });
         expect(adminAuth.ok()).toBeTruthy();
-        const { access_token } = await adminAuth.json();
+        const access_token = extractAccessTokenFromSetCookie(adminAuth.headers()['set-cookie']);
 
         // 2. Fetch customer ID
         const customerRes = await request.get(`/api/v1/customers`, {

@@ -1,4 +1,5 @@
 import { Page, BrowserContext, expect } from '@playwright/test';
+import { extractAccessTokenFromSetCookie } from './auth-cookie';
 
 /**
  * Test credentials. Defaults match `apps/backend/seed-e2e.ts`. CI overrides
@@ -117,6 +118,5 @@ export async function getAuthToken(
     if (!response.ok()) {
         throw new Error(`getAuthToken failed: ${response.status()} ${await response.text()}`);
     }
-    const body = await response.json();
-    return body.access_token;
+    return extractAccessTokenFromSetCookie(response.headers()['set-cookie']);
 }

@@ -162,6 +162,9 @@
       "success_message": "Şifreniz başarıyla güncellendi."
     },
     "verify_email": {
+      "ready_title": "E-posta Doğrulama",
+      "ready_desc": "E-posta adresinizi etkinleştirmek için aşağıdaki düğmeye basın.",
+      "confirm_btn": "E-postamı Doğrula",
       "loading_title": "Doğrulanıyor",
       "default_loading": "E-posta adresiniz doğrulanıyor...",
       "success_header": "Tebrikler!",

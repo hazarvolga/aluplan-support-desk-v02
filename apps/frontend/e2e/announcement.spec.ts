@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
 
 /**
  * ANNOUNCEMENT SYSTEM E2E TESTS
@@ -22,7 +23,10 @@ async function apiPost(url: string, body: any, token?: string) {
         method: 'POST', headers, body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`POST ${url} failed (${res.status}): ${await res.text()}`);
-    return res.json();
+    const payload = await res.json();
+    return url === '/auth/login'
+        ? { ...payload, access_token: extractAccessTokenFromSetCookie(res.headers.get('set-cookie')) }
+        : payload;
 }
 
 async function apiGet(url: string, token: string) {

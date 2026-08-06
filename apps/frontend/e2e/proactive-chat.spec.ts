@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
 
 /**
  * PROACTIVE CHAT E2E TESTS
@@ -36,7 +37,10 @@ async function apiPost(url: string, body: any, token?: string) {
         const err = await res.text();
         throw new Error(`API POST ${url} failed (${res.status}): ${err}`);
     }
-    return res.json();
+    const payload = await res.json();
+    return url === '/auth/login'
+        ? { ...payload, access_token: extractAccessTokenFromSetCookie(res.headers.get('set-cookie')) }
+        : payload;
 }
 
 async function apiGet(url: string, token: string) {

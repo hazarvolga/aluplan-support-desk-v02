@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
 const optionalUrl = z.string().url().optional();
+const jwtSecret = (name: string) => z.string()
+    .min(32, `${name} should be at least 32 characters`)
+    .refine(
+        (value) => !/(CHANGE_ME|ROTATE_NOW|replace-with|changeme)/i.test(value),
+        `${name} must not be a placeholder`,
+    );
 
 export const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test', 'provision']).default('development'),
@@ -15,8 +21,9 @@ export const envSchema = z.object({
     REDIS_PORT: z.coerce.number().default(6379),
 
     // Auth
-    JWT_SECRET: z.string().min(32, "JWT_SECRET should be at least 32 characters"),
-    JWT_REFRESH_SECRET: z.string().min(32, "JWT_REFRESH_SECRET should be at least 32 characters"),
+    JWT_SECRET: jwtSecret('JWT_SECRET'),
+    JWT_REFRESH_SECRET: jwtSecret('JWT_REFRESH_SECRET'),
+    AUTH_ACTION_JWT_SECRET: jwtSecret('AUTH_ACTION_JWT_SECRET'),
     JWT_EXPIRES_IN: z.string().default('24h'),
     JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
 
@@ -135,6 +142,15 @@ export const envSchema = z.object({
     EMBEDDING_DIMENSIONS: z.coerce.number().int().positive().default(3072),
     SWAGGER_PASSWORD: z.string().min(8).optional(),
 }).superRefine((env, ctx) => {
+    const jwtSecrets = [env.JWT_SECRET, env.JWT_REFRESH_SECRET, env.AUTH_ACTION_JWT_SECRET];
+    if (new Set(jwtSecrets).size !== jwtSecrets.length) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['AUTH_ACTION_JWT_SECRET'],
+            message: 'JWT_SECRET, JWT_REFRESH_SECRET, and AUTH_ACTION_JWT_SECRET must be distinct',
+        });
+    }
+
     if (
         env.SIMILARITY_THRESHOLD !== undefined &&
         env.LOW_CONFIDENCE_THRESHOLD !== undefined &&

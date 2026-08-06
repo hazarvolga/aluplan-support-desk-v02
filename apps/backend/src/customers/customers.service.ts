@@ -16,6 +16,10 @@ import { UpdateCustomerProfileDto } from './dto/update-customer-profile.dto';
 import { CrmEmailValidatorService } from '../crm/crm-email-validator.service';
 import { isInternalPlaceholderEmail } from '../email/email-recipient-guard.util';
 import { normalizeEmailAddress } from '../common/utils/email-normalization.util';
+import * as crypto from 'crypto';
+
+const EMAIL_VERIFICATION_AUDIENCE = 'aluplan:email-verification';
+const AUTH_ACTION_ISSUER = 'aluplan-support';
 
 @Injectable()
 export class CustomersService {
@@ -120,6 +124,15 @@ export class CustomersService {
         if (existingEmail && !existingEmail.deletedAt && existingEmail.status === 'ACTIVE') {
             throw new ConflictException('Bu e-posta adresi sistemde zaten kayıtlı.');
         }
+        if (existingEmail?.status === 'SUSPENDED') {
+            throw new ConflictException('Askıya alınmış hesap yeniden kaydedilemez. Lütfen destek ekibiyle iletişime geçin.');
+        }
+
+        const verificationJti = crypto.randomUUID();
+        const verificationJtiHash = crypto
+            .createHash('sha256')
+            .update(verificationJti)
+            .digest('hex');
 
         // 2. CRM validation — only for non-admin users
         if (!this.crmEmailValidator.isAdminBypass(email)) {
@@ -186,40 +199,42 @@ export class CustomersService {
             });
 
             if (existingUser) {
-                return prisma.user.update({
-                    where: { id: existingUser.id },
+                const claimed = await prisma.user.updateMany({
+                    where: { id: existingUser.id, status: 'INACTIVE', deletedAt: null },
                     data: {
                         fullName,
                         passwordHash,
-                        status: 'INACTIVE',
-                        deletedAt: null,
+                        emailVerificationJtiHash: verificationJtiHash,
+                        emailVerificationSentAt: new Date(),
                         roleId: customerRole?.id,
-                        customerProfile: {
-                            upsert: {
-                                update: {
-                                    firstName: dto.firstName,
-                                    lastName: dto.lastName,
-                                    customerNo: finalCustomerNo as string,
-                                    companyName: dto.company,
-                                    phoneNumber: dto.phone,
-                                    crmVerified: !!dto.customerNo,
-                                    hotinfoData: hotinfoData,
-                                    deletedAt: null,
-                                },
-                                create: {
-                                    firstName: dto.firstName,
-                                    lastName: dto.lastName,
-                                    customerNo: finalCustomerNo as string,
-                                    companyName: dto.company,
-                                    phoneNumber: dto.phone,
-                                    crmVerified: !!dto.customerNo,
-                                    hotinfoData: hotinfoData,
-                                }
-                            }
-                        }
                     },
-                    include: { customerProfile: true }
                 });
+                if (claimed.count !== 1) {
+                    throw new ConflictException('Hesap durumu değişti. Lütfen sayfayı yenileyip tekrar deneyin.');
+                }
+
+                await prisma.customerProfile.upsert({
+                    where: { userId: existingUser.id },
+                    update: {
+                        firstName: dto.firstName, lastName: dto.lastName,
+                        customerNo: finalCustomerNo as string, companyName: dto.company,
+                        phoneNumber: dto.phone, crmVerified: !!dto.customerNo,
+                        hotinfoData, deletedAt: null,
+                    },
+                    create: {
+                        userId: existingUser.id, firstName: dto.firstName, lastName: dto.lastName,
+                        customerNo: finalCustomerNo as string, companyName: dto.company,
+                        phoneNumber: dto.phone, crmVerified: !!dto.customerNo, hotinfoData,
+                    },
+                });
+                const refreshedUser = await prisma.user.findUnique({
+                    where: { id: existingUser.id },
+                    include: { customerProfile: true },
+                });
+                if (!refreshedUser) {
+                    throw new ConflictException('Hesap güncelleme sonrasında bulunamadı.');
+                }
+                return refreshedUser;
             }
 
             // Create new User with nested CustomerProfile
@@ -229,6 +244,8 @@ export class CustomersService {
                     fullName,
                     passwordHash,
                     status: 'INACTIVE',
+                    emailVerificationJtiHash: verificationJtiHash,
+                    emailVerificationSentAt: new Date(),
                     roleId: customerRole?.id,
                     customerProfile: {
                         create: {
@@ -251,14 +268,26 @@ export class CustomersService {
         // 5. Send welcome email with login details and verification link
         try {
             const verifyToken = this.jwtService.sign(
-                { sub: resultUser.id, email: resultUser.email, type: 'email-verification' }
+                {
+                    sub: resultUser.id,
+                    email: resultUser.email,
+                    purpose: 'email_verify',
+                    jti: verificationJti,
+                },
+                {
+                    secret: this.config.get('AUTH_ACTION_JWT_SECRET'),
+                    audience: EMAIL_VERIFICATION_AUDIENCE,
+                    issuer: AUTH_ACTION_ISSUER,
+                    algorithm: 'HS256',
+                    expiresIn: '30m',
+                },
             );
 
             const frontendUrl = (await this.prisma.setting.findUnique({ where: { key: 'general.frontend_url' } }))?.value
                 || this.config.get('FRONTEND_URL')
                 || 'http://localhost:3000';
 
-            const verifyUrl = `${frontendUrl}/verify-email?token=${verifyToken}`;
+            const verifyUrl = `${frontendUrl}/verify-email#token=${verifyToken}`;
 
             await this.emailService.enqueueEmail({
                 template: 'welcome-customer',
@@ -268,7 +297,6 @@ export class CustomersService {
                 data: {
                     customerName: `${dto.firstName} ${dto.lastName}`,
                     email,
-                    password: dto.password,
                     loginUrl: `${this.config.get('FRONTEND_URL', 'http://localhost:3000')}/login`,
                     verifyUrl: verifyUrl,
                 }

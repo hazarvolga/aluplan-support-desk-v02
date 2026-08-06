@@ -162,6 +162,9 @@
       "success_message": "Your password was successfully updated."
     },
     "verify_email": {
+      "ready_title": "Email Verification",
+      "ready_desc": "Press the button below to activate your email address.",
+      "confirm_btn": "Verify My Email",
       "loading_title": "Verifying",
       "default_loading": "Verifying your email address...",
       "success_header": "Congratulations!",

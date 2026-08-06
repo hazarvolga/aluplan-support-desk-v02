@@ -7,6 +7,7 @@ const VALID_ENV = {
     REDIS_URL: 'redis://localhost:6379',
     JWT_SECRET: 'a'.repeat(32),
     JWT_REFRESH_SECRET: 'b'.repeat(32),
+    AUTH_ACTION_JWT_SECRET: 'd'.repeat(32),
     ENCRYPTION_KEY: 'c'.repeat(32),
     FRONTEND_URL: 'http://localhost:3000',
     ADMIN_BYPASS_EMAILS: 'admin@example.com',
@@ -27,7 +28,7 @@ describe('validateEnv', () => {
     function setEnv(env: Record<string, string | undefined>) {
         for (const k of [
             'NODE_ENV', 'PORT', 'DATABASE_URL', 'REDIS_URL',
-            'JWT_SECRET', 'JWT_REFRESH_SECRET', 'ENCRYPTION_KEY',
+            'JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'ENCRYPTION_KEY',
             'FRONTEND_URL', 'SWAGGER_PASSWORD', 'ADMIN_BYPASS_EMAILS',
             'ALLOWED_ORIGINS', 'API_URL', 'LLMAPI_BASE_URL', 'LLMAPI_CHAT_MODEL',
             'LLMAPI_EMBED_MODEL', 'GEMINI_CHAT_MODEL', 'GEMINI_EMBED_MODEL',
@@ -64,6 +65,24 @@ describe('validateEnv', () => {
         const result = validateEnv();
         expect(result).toBeUndefined();
         expect(exitSpy).not.toHaveBeenCalled();
+    });
+
+    it('rejects known JWT_SECRET placeholders even when they are long enough', () => {
+        setEnv({ ...VALID_ENV, JWT_SECRET: 'CHANGE_ME_ROTATE_NOW_20260517'.padEnd(32, '_') });
+        expect(validateEnv()).toBeUndefined();
+    });
+
+    it.each(['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET'] as const)(
+        'rejects known placeholders for %s',
+        (key) => {
+            setEnv({ ...VALID_ENV, [key]: 'replace-with-a-long-random-secret-value' });
+            expect(validateEnv()).toBeUndefined();
+        },
+    );
+
+    it('requires access, refresh, and action JWT secrets to be pairwise distinct', () => {
+        setEnv({ ...VALID_ENV, AUTH_ACTION_JWT_SECRET: VALID_ENV.JWT_SECRET });
+        expect(validateEnv()).toBeUndefined();
     });
 
     it('exits the process when DATABASE_URL is missing in production', () => {

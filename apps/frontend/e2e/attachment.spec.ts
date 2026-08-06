@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
 
 /**
  * ATTACHMENT / FILE UPLOAD E2E TEST (v8)
@@ -26,7 +27,10 @@ async function apiPost(url: string, body: any, token?: string) {
         body: JSON.stringify(body)
     });
     if (!res.ok) throw new Error(`API POST ${url} failed`);
-    return res.json();
+    const payload = await res.json();
+    return url === '/auth/login'
+        ? { ...payload, access_token: extractAccessTokenFromSetCookie(res.headers.get('set-cookie')) }
+        : payload;
 }
 
 test.describe('Attachment Upload Flow', () => {

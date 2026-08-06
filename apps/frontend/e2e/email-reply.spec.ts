@@ -1,4 +1,5 @@
 import { test, expect, request } from '@playwright/test';
+import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
 
 /**
  * EMAIL REPLY THREADING TESTS
@@ -17,7 +18,7 @@ test.describe('Email Threading Integration', () => {
         const loginRes = await apiContext.post('/api/v1/auth/login', {
             data: { email: 'admin@example.com', password: 'Vol1872017' }
         });
-        const { access_token } = await loginRes.json();
+        const access_token = extractAccessTokenFromSetCookie(loginRes.headers()['set-cookie']);
 
         const authHeader = { 'Authorization': `Bearer ${access_token}` };
 

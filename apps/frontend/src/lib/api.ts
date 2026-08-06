@@ -315,7 +315,7 @@ export const api = {
     },
     auth: {
         login: (email: string, password: string) =>
-            request<{ access_token: string; refresh_token: string }>('/auth/login', {
+            request<{ user: { id: string; email: string; fullName: string } }>('/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ email, password }),
             }),
@@ -329,9 +329,15 @@ export const api = {
                 method: 'POST',
                 body: JSON.stringify({ email }),
             }),
+        resendVerification: (email: string) =>
+            request<{ success: boolean }>('/auth/resend-verification', {
+                method: 'POST',
+                body: JSON.stringify({ email }),
+            }),
         verifyEmail: (token: string) =>
-            request<{ success: boolean; message: string }>(`/auth/verify-email?token=${token}`, {
-                method: 'GET',
+            request<{ success: boolean; message: string }>('/auth/verify-email', {
+                method: 'POST',
+                body: JSON.stringify({ token }),
             }),
         resetPassword: (token: string, newPassword: string) =>
             request<{ success: boolean; message?: string }>('/auth/reset-password', {

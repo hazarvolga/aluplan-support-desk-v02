@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { RedisService } from '../../redis/redis.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 const cookieExtractor = (req: Request): string | null => {
     let token = null;
@@ -21,16 +22,21 @@ export type JwtPayload = {
     permissions: string[];
     jti?: string;
     iat?: number;
+    sessionIssuedAt?: number;
+    sessionVersion?: number;
 };
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-    constructor(config: ConfigService, private readonly redisService: RedisService) {
+    constructor(
+        config: ConfigService,
+        private readonly redisService: RedisService,
+        private readonly prisma: PrismaService,
+    ) {
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([
                 cookieExtractor,
                 ExtractJwt.fromAuthHeaderAsBearerToken(),
-                ExtractJwt.fromUrlQueryParameter('token'),
             ]),
             ignoreExpiration: false,
             secretOrKey: config.get<string>('JWT_SECRET')!,
@@ -38,6 +44,19 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
 
     async validate(payload: JwtPayload) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: payload.sub },
+            select: { status: true, deletedAt: true, sessionVersion: true },
+        });
+        if (
+            !user
+            || user.status !== 'ACTIVE'
+            || user.deletedAt
+            || user.sessionVersion !== (payload.sessionVersion ?? 0)
+        ) {
+            throw new UnauthorizedException('Session is no longer valid');
+        }
+
         if (payload.jti) {
             const isBlacklisted = await this.redisService.get(`jwt:blacklist:${payload.jti}`);
             if (isBlacklisted) throw new UnauthorizedException('Token has been revoked');
@@ -45,7 +64,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
         // GAP-07: Admin force logout — invalidate all sessions issued before force_logout_at
         const forceLogoutAt = await this.redisService.get(`user:${payload.sub}:force_logout_at`);
-        if (forceLogoutAt && payload.iat && payload.iat * 1000 < Number(forceLogoutAt)) {
+        const issuedAtMs = payload.sessionIssuedAt ?? (payload.iat ? payload.iat * 1000 : undefined);
+        if (forceLogoutAt && issuedAtMs && issuedAtMs <= Number(forceLogoutAt)) {
             throw new UnauthorizedException('Session has been invalidated by administrator');
         }
 

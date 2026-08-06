@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,8 +12,8 @@ import { useTranslations } from 'next-intl';
 
 function ResetPasswordForm() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const token = searchParams.get('token');
+    const [token, setToken] = useState<string | null>(null);
+    const fragmentRead = useRef(false);
     const t = useTranslations('auth.reset_password');
 
     const [loading, setLoading] = useState(false);
@@ -23,11 +23,16 @@ function ResetPasswordForm() {
     const [showConfirm, setShowConfirm] = useState(false);
 
     useEffect(() => {
-        if (!token) {
+        if (fragmentRead.current) return;
+        fragmentRead.current = true;
+        const fragmentToken = new URLSearchParams(window.location.hash.slice(1)).get('token');
+        window.history.replaceState(null, '', window.location.pathname);
+        setToken(fragmentToken);
+        if (!fragmentToken) {
             toast.error(t('error_invalid_link'));
             router.push('/login');
         }
-    }, [token, router, t]);
+    }, [router, t]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

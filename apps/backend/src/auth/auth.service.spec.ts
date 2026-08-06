@@ -30,6 +30,7 @@ describe('AuthService', () => {
 
     const mockEmailService = {
         sendPasswordReset: jest.fn(),
+        sendEmailVerification: jest.fn(),
         healthCheck: jest.fn(),
     };
 
@@ -174,8 +175,9 @@ describe('AuthService', () => {
 
         it('should return new tokens on valid refresh', async () => {
             // Arrange
-            const mockUser = { id: '1', email: 'test@test.com', status: 'ACTIVE', refreshTokenHash: 'hash', roleId: null };
+            const mockUser = { id: '1', email: 'test@test.com', status: 'ACTIVE', deletedAt: null, sessionVersion: 0, refreshTokenHash: 'hash', roleId: null };
             prisma.user.findUnique.mockResolvedValue(mockUser);
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
             (bcrypt.compare as jest.Mock).mockResolvedValue(true);
             jwt.signAsync.mockResolvedValue('new-token');
 
@@ -188,11 +190,12 @@ describe('AuthService', () => {
         });
 
         it('should fall back to default role permissions when role has no mapped permissions', async () => {
-            const mockUser = { id: '1', email: 'test@test.com', fullName: 'Test User', status: 'ACTIVE', refreshTokenHash: 'hash', roleId: 'role-customer' };
+            const mockUser = { id: '1', email: 'test@test.com', fullName: 'Test User', status: 'ACTIVE', deletedAt: null, sessionVersion: 0, refreshTokenHash: 'hash', roleId: 'role-customer' };
             prisma.role = { findUnique: jest.fn() };
             prisma.user.findUnique.mockResolvedValue(mockUser);
             prisma.role.findUnique.mockResolvedValue({ name: 'CUSTOMER', permissions: [] });
             prisma.user.update.mockResolvedValue(mockUser);
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
             (bcrypt.compare as jest.Mock).mockResolvedValue(true);
             (bcrypt.hash as jest.Mock).mockResolvedValue('newHash');
             jwt.signAsync.mockResolvedValue('new-token');
@@ -207,12 +210,32 @@ describe('AuthService', () => {
                 expect.any(Object),
             );
         });
+
+        it('rejects refresh rotation when a concurrent reset changed the durable session', async () => {
+            prisma.user.findUnique.mockResolvedValue({
+                id: '1', email: 'test@test.com', fullName: 'Test User', status: 'ACTIVE',
+                deletedAt: null, sessionVersion: 0, refreshTokenHash: 'old-hash', roleId: null,
+            });
+            (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+            (bcrypt.hash as jest.Mock).mockResolvedValue('next-hash');
+            jwt.signAsync.mockResolvedValue('new-token');
+            // A password reset wins between the read and conditional refresh write.
+            prisma.user.updateMany.mockResolvedValue({ count: 0 });
+
+            await expect(service.refreshTokens('1', 'old-token', 0)).rejects.toThrow(ForbiddenException);
+            expect(prisma.user.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({
+                    id: '1', sessionVersion: 0, refreshTokenHash: 'old-hash',
+                }),
+            }));
+        });
     });
 
     describe('forgotPassword', () => {
         it('should send reset email when user exists', async () => {
             // Arrange
             prisma.user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com', fullName: 'Test' });
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
             settings.getValue.mockResolvedValue('http://frontend.local');
             jwt.sign.mockReturnValue('reset-token');
 
@@ -224,16 +247,122 @@ describe('AuthService', () => {
             expect(email.sendPasswordReset).toHaveBeenCalledWith({
                 recipientEmail: 'test@test.com',
                 recipientName: 'Test',
-                resetUrl: 'http://frontend.local/reset-password?token=reset-token'
+                resetUrl: 'http://frontend.local/reset-password#token=reset-token'
             });
+            expect(jwt.sign).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    sub: '1',
+                    purpose: 'password_reset',
+                    jti: expect.any(String),
+                }),
+                {
+                    secret: 'test-action-secret',
+                    audience: 'aluplan:password-reset',
+                    issuer: 'aluplan-support',
+                    algorithm: 'HS256',
+                    expiresIn: '30m',
+                },
+            );
+            expect(prisma.user.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({ id: '1', deletedAt: null }),
+                data: expect.objectContaining({
+                    passwordResetJtiHash: expect.any(String),
+                    passwordResetSentAt: expect.any(Date),
+                }),
+            }));
+        });
+
+        it('does not rotate a recently issued password-reset challenge', async () => {
+            prisma.user.findUnique.mockResolvedValue({
+                id: '1', email: 'test@test.com',
+                passwordResetSentAt: new Date(Date.now() - 30_000),
+            });
+
+            await expect(service.forgotPassword('test@test.com')).resolves.toEqual({ success: true });
+            expect(prisma.user.updateMany).not.toHaveBeenCalled();
+            expect(email.sendPasswordReset).not.toHaveBeenCalled();
+        });
+
+        it('restores the prior password-reset challenge and returns generic success on enqueue failure', async () => {
+            const previousSentAt = new Date('2026-08-05T10:00:00Z');
+            prisma.user.findUnique.mockResolvedValue({
+                id: '1', email: 'test@test.com', fullName: 'Test', deletedAt: null,
+                passwordResetJtiHash: 'prior-hash', passwordResetSentAt: previousSentAt,
+            });
+            prisma.user.updateMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce({ count: 1 });
+            settings.getValue.mockResolvedValue('http://frontend.local');
+            jwt.sign.mockReturnValue('reset-token');
+            email.sendPasswordReset.mockRejectedValue(new Error('queue unavailable'));
+            jest.spyOn(Date, 'now').mockReturnValue(new Date('2026-08-05T10:03:00Z').getTime());
+
+            await expect(service.forgotPassword('test@test.com')).resolves.toEqual({ success: true });
+            expect(prisma.user.updateMany).toHaveBeenLastCalledWith({
+                where: { id: '1', passwordResetJtiHash: expect.any(String) },
+                data: { passwordResetJtiHash: 'prior-hash', passwordResetSentAt: previousSentAt },
+            });
+        });
+    });
+
+    describe('resendVerification', () => {
+        it('reissues a verification token for an existing inactive account', async () => {
+            prisma.user.findUnique.mockResolvedValue({
+                id: 'user-1', email: 'user@example.com', fullName: 'User',
+                status: 'INACTIVE', deletedAt: null,
+            });
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
+            settings.getValue.mockResolvedValue('https://support.example.com');
+            jwt.sign.mockReturnValue('verification-token');
+
+            await expect(service.resendVerification('user@example.com')).resolves.toEqual({ success: true });
+            expect(email.sendEmailVerification).toHaveBeenCalledWith(expect.objectContaining({
+                recipientEmail: 'user@example.com',
+                verificationUrl: 'https://support.example.com/verify-email#token=verification-token',
+            }));
+        });
+
+        it('does not reveal whether an account is eligible for verification', async () => {
+            prisma.user.findUnique.mockResolvedValue(null);
+            await expect(service.resendVerification('missing@example.com')).resolves.toEqual({ success: true });
+            expect(email.sendEmailVerification).not.toHaveBeenCalled();
+        });
+
+        it('keeps the prior verification challenge when email enqueue fails', async () => {
+            const previousSentAt = new Date('2026-08-05T10:00:00Z');
+            prisma.user.findUnique.mockResolvedValue({
+                id: 'user-1', email: 'user@example.com', fullName: 'User',
+                status: 'INACTIVE', deletedAt: null,
+                emailVerificationJtiHash: 'prior-hash', emailVerificationSentAt: previousSentAt,
+            });
+            prisma.user.updateMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce({ count: 1 });
+            settings.getValue.mockResolvedValue('https://support.example.com');
+            jwt.sign.mockReturnValue('verification-token');
+            email.sendEmailVerification.mockRejectedValue(new Error('queue unavailable'));
+            jest.spyOn(Date, 'now').mockReturnValue(new Date('2026-08-05T10:03:00Z').getTime());
+
+            await expect(service.resendVerification('user@example.com')).resolves.toEqual({ success: true });
+            expect(prisma.user.updateMany).toHaveBeenLastCalledWith({
+                where: { id: 'user-1', emailVerificationJtiHash: expect.any(String) },
+                data: { emailVerificationJtiHash: 'prior-hash', emailVerificationSentAt: previousSentAt },
+            });
+        });
+
+        it('does not rotate a recently issued verification challenge', async () => {
+            prisma.user.findUnique.mockResolvedValue({
+                id: 'user-1', email: 'user@example.com', status: 'INACTIVE', deletedAt: null,
+                emailVerificationSentAt: new Date(Date.now() - 30_000),
+            });
+
+            await expect(service.resendVerification('user@example.com')).resolves.toEqual({ success: true });
+            expect(prisma.user.updateMany).not.toHaveBeenCalled();
+            expect(email.sendEmailVerification).not.toHaveBeenCalled();
         });
     });
 
     describe('resetPassword', () => {
         it('should update password and invalidate sessions for valid token', async () => {
             // Arrange
-            jwt.verify.mockReturnValue({ type: 'password-reset', sub: '1' });
-            prisma.user.findUnique.mockResolvedValue({ id: '1' });
+            jwt.verify.mockReturnValue({ purpose: 'password_reset', sub: '1', email: 'test@test.com', jti: 'reset-jti' });
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
             (bcrypt.genSalt as jest.Mock).mockResolvedValue('salt');
             (bcrypt.hash as jest.Mock).mockResolvedValue('new-password-hash');
 
@@ -242,10 +371,142 @@ describe('AuthService', () => {
 
             // Assert
             expect(result.success).toBe(true);
-            expect(prisma.user.update).toHaveBeenCalledWith({
-                where: { id: '1' },
-                data: { passwordHash: 'new-password-hash', refreshTokenHash: null }
+            expect(prisma.user.updateMany).toHaveBeenCalledWith({
+                where: {
+                    id: '1',
+                    email: 'test@test.com',
+                    deletedAt: null,
+                    passwordResetJtiHash: expect.any(String),
+                },
+                data: {
+                    passwordHash: 'new-password-hash',
+                    refreshTokenHash: null,
+                    passwordResetJtiHash: null,
+                    sessionVersion: { increment: 1 },
+                }
             });
+            expect(jwt.verify).toHaveBeenCalledWith('valid-token', expect.objectContaining({
+                algorithms: ['HS256'],
+                issuer: 'aluplan-support',
+            }));
+            expect(redis.set).toHaveBeenCalledWith(
+                'user:1:force_logout_at',
+                expect.any(String),
+                3600,
+            );
+        });
+
+        it('rejects password-reset tokens with the wrong purpose', async () => {
+            jwt.verify.mockReturnValue({ purpose: 'email_verify', sub: '1', jti: 'jti' });
+            await expect(service.resetPassword('wrong-purpose', 'new-password')).rejects.toThrow(UnauthorizedException);
+            expect(prisma.user.updateMany).not.toHaveBeenCalled();
+        });
+
+        it('atomically consumes a password-reset token only once', async () => {
+            jwt.verify.mockReturnValue({ purpose: 'password_reset', sub: '1', email: 'test@test.com', jti: 'reset-jti' });
+            prisma.user.updateMany
+                .mockResolvedValueOnce({ count: 1 })
+                .mockResolvedValueOnce({ count: 0 });
+            (bcrypt.hash as jest.Mock).mockResolvedValue('new-password-hash');
+
+            await expect(service.resetPassword('reset-token', 'new-password')).resolves.toMatchObject({ success: true });
+            await expect(service.resetPassword('reset-token', 'new-password')).rejects.toThrow(UnauthorizedException);
+        });
+
+        it('rejects a reset token whose email no longer matches the account', async () => {
+            jwt.verify.mockReturnValue({ purpose: 'password_reset', sub: '1', email: 'old@example.com', jti: 'reset-jti' });
+            prisma.user.updateMany.mockResolvedValue({ count: 0 });
+            (bcrypt.hash as jest.Mock).mockResolvedValue('new-password-hash');
+
+            await expect(service.resetPassword('reset-token', 'new-password')).rejects.toThrow(UnauthorizedException);
+            expect(prisma.user.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({ email: 'old@example.com' }),
+            }));
+        });
+
+        it('keeps password reset successful when Redis is unavailable after durable invalidation', async () => {
+            jwt.verify.mockReturnValue({ purpose: 'password_reset', sub: '1', email: 'test@test.com', jti: 'reset-jti' });
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
+            (bcrypt.hash as jest.Mock).mockResolvedValue('new-password-hash');
+            redis.set.mockRejectedValue(new Error('redis unavailable'));
+
+            await expect(service.resetPassword('reset-token', 'new-password')).resolves.toMatchObject({ success: true });
+        });
+    });
+
+    describe('verifyEmail security boundary', () => {
+        it('T3 rejects an access JWT that has no email-verification purpose', async () => {
+            jwt.verify.mockReturnValue({ sub: 'user-1', email: 'user@example.com' });
+
+            await expect(service.verifyEmail('access-jwt')).rejects.toThrow(UnauthorizedException);
+
+            expect(jwt.verify).toHaveBeenCalledWith('access-jwt', {
+                secret: 'test-action-secret',
+                audience: 'aluplan:email-verification',
+                algorithms: ['HS256'],
+                issuer: 'aluplan-support',
+            });
+            expect(prisma.user.update).not.toHaveBeenCalled();
+            expect(prisma.user.updateMany).not.toHaveBeenCalled();
+        });
+
+        it('T4 never activates a suspended user with a valid verification token', async () => {
+            jwt.verify.mockReturnValue({
+                sub: 'user-1',
+                email: 'user@example.com',
+                purpose: 'email_verify',
+                jti: 'verification-jti',
+            });
+            prisma.user.updateMany.mockResolvedValue({ count: 0 });
+            prisma.user.findUnique.mockResolvedValue({ id: 'user-1', status: 'SUSPENDED' });
+
+            await expect(service.verifyEmail('valid-verification-token')).rejects.toThrow(UnauthorizedException);
+
+            expect(prisma.user.updateMany).toHaveBeenCalledWith({
+                where: {
+                    id: 'user-1',
+                    status: 'INACTIVE',
+                    deletedAt: null,
+                    emailVerificationJtiHash: expect.any(String),
+                    email: 'user@example.com',
+                },
+                data: {
+                    status: 'ACTIVE',
+                    emailVerificationJtiHash: null,
+                },
+            });
+            expect(prisma.user.update).not.toHaveBeenCalled();
+        });
+
+        it('atomically consumes a verification token only once', async () => {
+            jwt.verify.mockReturnValue({
+                sub: 'user-1',
+                email: 'user@example.com',
+                purpose: 'email_verify',
+                jti: 'verification-jti',
+            });
+            prisma.user.updateMany
+                .mockResolvedValueOnce({ count: 1 })
+                .mockResolvedValueOnce({ count: 0 });
+            prisma.user.findUnique.mockResolvedValue({ id: 'user-1', status: 'ACTIVE' });
+
+            await expect(service.verifyEmail('verification-token')).resolves.toMatchObject({ success: true });
+            await expect(service.verifyEmail('verification-token')).rejects.toThrow(UnauthorizedException);
+        });
+
+        it('does not consume a verification token when its email no longer matches', async () => {
+            jwt.verify.mockReturnValue({
+                sub: 'user-1',
+                email: 'old@example.com',
+                purpose: 'email_verify',
+                jti: 'verification-jti',
+            });
+            prisma.user.updateMany.mockResolvedValue({ count: 0 });
+
+            await expect(service.verifyEmail('verification-token')).rejects.toThrow(UnauthorizedException);
+            expect(prisma.user.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({ email: 'old@example.com' }),
+            }));
         });
     });
 
@@ -295,13 +556,20 @@ describe('AuthService', () => {
             expect(result.userId).toBe('user-1');
             expect(prisma.user.updateMany).toHaveBeenCalledWith({
                 where: { id: 'user-1' },
-                data: { refreshTokenHash: null }
+                data: { refreshTokenHash: null, sessionVersion: { increment: 1 } }
             });
             expect(redis.set).toHaveBeenCalledWith(
                 expect.stringContaining('user:user-1:force_logout_at'),
                 expect.any(String),
-                15 * 60
+                60 * 60
             );
+        });
+
+        it('remains successful when Redis is unavailable after durable force logout', async () => {
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
+            redis.set.mockRejectedValue(new Error('redis unavailable'));
+
+            await expect(service.forceLogout('user-1')).resolves.toMatchObject({ success: true });
         });
     });
 

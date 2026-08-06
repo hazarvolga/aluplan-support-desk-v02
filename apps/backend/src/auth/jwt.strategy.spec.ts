@@ -3,6 +3,7 @@ import { JwtStrategy, JwtPayload } from './strategies/jwt.strategy';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../redis/redis.service';
 import { UnauthorizedException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 describe('JwtStrategy', () => {
     let strategy: JwtStrategy;
@@ -18,6 +19,9 @@ describe('JwtStrategy', () => {
     const mockRedisService = {
         get: jest.fn(),
     };
+    const mockPrismaService = {
+        user: { findUnique: jest.fn() },
+    };
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -25,6 +29,7 @@ describe('JwtStrategy', () => {
                 JwtStrategy,
                 { provide: ConfigService, useValue: mockConfigService },
                 { provide: RedisService, useValue: mockRedisService },
+                { provide: PrismaService, useValue: mockPrismaService },
             ],
         }).compile();
 
@@ -32,6 +37,20 @@ describe('JwtStrategy', () => {
         redis = module.get<RedisService>(RedisService);
 
         jest.clearAllMocks();
+        mockPrismaService.user.findUnique.mockResolvedValue({
+            status: 'ACTIVE', deletedAt: null, sessionVersion: 0,
+        });
+    });
+
+    it('T12 does not extract access JWTs from the URL query string', () => {
+        const extractor = (strategy as any)._jwtFromRequest;
+        const request = {
+            cookies: {},
+            headers: {},
+            query: { token: 'leaked-query-token' },
+        };
+
+        expect(extractor(request)).toBeNull();
     });
 
     describe('validate', () => {
@@ -114,6 +133,23 @@ describe('JwtStrategy', () => {
             expect(result.id).toBe('user-1');
         });
 
+        it('uses millisecond session issuance to reject pre-reset access tokens', async () => {
+            const forceLogoutAt = Date.now();
+            redis.get.mockImplementation((key: string) =>
+                key === 'user:user-1:force_logout_at' ? forceLogoutAt.toString() : null,
+            );
+
+            await expect(strategy.validate({
+                ...basePayload,
+                sessionIssuedAt: forceLogoutAt - 1,
+            })).rejects.toThrow('Session has been invalidated');
+
+            await expect(strategy.validate({
+                ...basePayload,
+                sessionIssuedAt: forceLogoutAt + 1,
+            })).resolves.toMatchObject({ id: 'user-1' });
+        });
+
         it('should allow token without jti (legacy compatibility)', async () => {
             // Arrange
             const payloadWithoutJti: JwtPayload = {
@@ -128,6 +164,16 @@ describe('JwtStrategy', () => {
             // Assert
             expect(result.id).toBe('user-1');
             expect(redis.get).not.toHaveBeenCalledWith(expect.stringContaining('jwt:blacklist'));
+        });
+
+        it('rejects an access token after the durable session version changes', async () => {
+            redis.get.mockResolvedValue(null);
+            mockPrismaService.user.findUnique.mockResolvedValue({
+                status: 'ACTIVE', deletedAt: null, sessionVersion: 1,
+            });
+
+            await expect(strategy.validate({ ...basePayload, sessionVersion: 0 }))
+                .rejects.toThrow('Session is no longer valid');
         });
     });
 });

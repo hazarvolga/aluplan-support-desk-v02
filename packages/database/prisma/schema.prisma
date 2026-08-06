@@ -11,50 +11,55 @@ datasource db {
 }
 
 model User {
-  id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email                   String                    @unique @db.VarChar(255)
-  fullName                String                    @db.VarChar(255)
-  passwordHash            String
-  refreshTokenHash        String?                   @map("refresh_token_hash")
-  avatarUrl               String?
-  status                  UserStatus                @default(ACTIVE)
-  deletedAt               DateTime?                 @map("deleted_at")
-  createdAt               DateTime                  @default(now()) @map("created_at")
-  updatedAt               DateTime                  @updatedAt @map("updated_at")
-  roleId                  String?                   @map("role_id") @db.Uuid
-  agentStatus             AgentStatus               @default(DND) @map("agent_status")
-  title                   String?                   @db.VarChar(100)
-  bio                     String?
-  timezone                String                    @default("UTC") @db.VarChar(50)
-  language                String                    @default("tr") @db.VarChar(10)
-  maxActiveTickets        Int                       @default(5) @map("max_active_tickets")
-  agentSkills             AgentSkill[]
-  aiInteractions          AiInteraction[]
-  announcementTemplates   AnnouncementTemplate[]    @relation("TemplateAuthor")
-  announcements           Announcement[]
-  articleFeedbacks        ArticleFeedback[]
-  auditLogs               AuditLog[]
-  availability            AvailabilityOverride[]
-  customerProfile         CustomerProfile?
-  emailPreferences        EmailPreference[]
-  feedbacks               InteractionFeedback[]
-  articleVersions         KnowledgeArticleVersion[]
-  articlesApproved        KnowledgeArticle[]        @relation("ArticleApprovedBy")
-  articlesCreated         KnowledgeArticle[]        @relation("ArticleCreatedBy")
-  macrosCreated           Macro[]
-  notifications           Notification[]
-  settings                Setting[]
-  shifts                  Shift[]
-  teamMembers             TeamMember[]
-  ticketEscalations       TicketEscalation[]
-  ticketMessages          TicketMessage[]
-  ticketsAssigned         Ticket[]                  @relation("TicketAssignedTo")
-  ticketsCreated          Ticket[]                  @relation("TicketCreatedBy")
-  trainingReviews         TrainingQueue[]
-  role                    Role?                     @relation(fields: [roleId], references: [id])
-  proactiveChatAsAgent    ProactiveChatSession[]    @relation("ProactiveChatAgent")
-  proactiveChatAsCustomer ProactiveChatSession[]    @relation("ProactiveChatCustomer")
-  proactiveChatMessages   ProactiveChatMessage[]    @relation("ProactiveChatMessageSender")
+  id                       String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                    String                    @unique @db.VarChar(255)
+  fullName                 String                    @db.VarChar(255)
+  passwordHash             String
+  refreshTokenHash         String?                   @map("refresh_token_hash")
+  emailVerificationJtiHash String?                   @map("email_verification_jti_hash") @db.VarChar(64)
+  emailVerificationSentAt  DateTime?                 @map("email_verification_sent_at")
+  passwordResetJtiHash     String?                   @map("password_reset_jti_hash") @db.VarChar(64)
+  passwordResetSentAt      DateTime?                 @map("password_reset_sent_at")
+  sessionVersion           Int                       @default(0) @map("session_version")
+  avatarUrl                String?
+  status                   UserStatus                @default(ACTIVE)
+  deletedAt                DateTime?                 @map("deleted_at")
+  createdAt                DateTime                  @default(now()) @map("created_at")
+  updatedAt                DateTime                  @updatedAt @map("updated_at")
+  roleId                   String?                   @map("role_id") @db.Uuid
+  agentStatus              AgentStatus               @default(DND) @map("agent_status")
+  title                    String?                   @db.VarChar(100)
+  bio                      String?
+  timezone                 String                    @default("UTC") @db.VarChar(50)
+  language                 String                    @default("tr") @db.VarChar(10)
+  maxActiveTickets         Int                       @default(5) @map("max_active_tickets")
+  agentSkills              AgentSkill[]
+  aiInteractions           AiInteraction[]
+  announcementTemplates    AnnouncementTemplate[]    @relation("TemplateAuthor")
+  announcements            Announcement[]
+  articleFeedbacks         ArticleFeedback[]
+  auditLogs                AuditLog[]
+  availability             AvailabilityOverride[]
+  customerProfile          CustomerProfile?
+  emailPreferences         EmailPreference[]
+  feedbacks                InteractionFeedback[]
+  articleVersions          KnowledgeArticleVersion[]
+  articlesApproved         KnowledgeArticle[]        @relation("ArticleApprovedBy")
+  articlesCreated          KnowledgeArticle[]        @relation("ArticleCreatedBy")
+  macrosCreated            Macro[]
+  notifications            Notification[]
+  settings                 Setting[]
+  shifts                   Shift[]
+  teamMembers              TeamMember[]
+  ticketEscalations        TicketEscalation[]
+  ticketMessages           TicketMessage[]
+  ticketsAssigned          Ticket[]                  @relation("TicketAssignedTo")
+  ticketsCreated           Ticket[]                  @relation("TicketCreatedBy")
+  trainingReviews          TrainingQueue[]
+  role                     Role?                     @relation(fields: [roleId], references: [id])
+  proactiveChatAsAgent     ProactiveChatSession[]    @relation("ProactiveChatAgent")
+  proactiveChatAsCustomer  ProactiveChatSession[]    @relation("ProactiveChatCustomer")
+  proactiveChatMessages    ProactiveChatMessage[]    @relation("ProactiveChatMessageSender")
 
   @@map("users")
 }

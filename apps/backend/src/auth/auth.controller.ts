@@ -25,7 +25,7 @@ export class AuthController {
     @Throttle({ default: { limit: 20, ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Login with email and password' })
-    @ApiResponse({ status: 200, description: 'Login successful. Returns tokens and sets HttpOnly cookies.' })
+    @ApiResponse({ status: 200, description: 'Login successful. Sets HttpOnly cookies and returns non-secret user data.' })
     @ApiResponse({ status: 401, description: 'Invalid credentials.' })
     async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
         const tokens = await this.authService.login(dto);
@@ -52,7 +52,7 @@ export class AuthController {
         });
 
 
-        return tokens;
+        return { user: tokens.user };
     }
 
     @Public()
@@ -60,10 +60,14 @@ export class AuthController {
     @Post('refresh')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Refresh access token' })
-    @ApiResponse({ status: 200, description: 'Tokens refreshed successfully.' })
+    @ApiResponse({ status: 200, description: 'HttpOnly authentication cookies refreshed successfully.' })
     @ApiResponse({ status: 401, description: 'Invalid or expired refresh token.' })
     async refresh(@Request() req: any, @Res({ passthrough: true }) res: Response) {
-        const tokens = await this.authService.refreshTokens(req.user.sub, req.user.refreshToken);
+        const tokens = await this.authService.refreshTokens(
+            req.user.sub,
+            req.user.refreshToken,
+            req.user.sessionVersion ?? 0,
+        );
 
         const isProd = this.config.get('NODE_ENV') === 'production';
         const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
@@ -87,7 +91,7 @@ export class AuthController {
         });
 
 
-        return tokens;
+        return { success: true };
     }
 
     @UseGuards(JwtAuthGuard)
@@ -138,6 +142,15 @@ export class AuthController {
     }
 
     @Public()
+    @Post('resend-verification')
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Resend an email verification link' })
+    resendVerification(@Body('email') email: string) {
+        return this.authService.resendVerification(email);
+    }
+
+    @Public()
     @Post('reset-password')
     @Throttle({ default: { limit: 10, ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
@@ -156,9 +169,11 @@ export class AuthController {
     }
 
     @Public()
-    @Get('verify-email')
+    @Post('verify-email')
+    @Throttle({ default: { limit: 10, ttl: 60000 } })
+    @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Verify email registration' })
-    verifyEmail(@Query('token') token: string) {
+    verifyEmail(@Body('token') token: string) {
         return this.authService.verifyEmail(token);
     }
 

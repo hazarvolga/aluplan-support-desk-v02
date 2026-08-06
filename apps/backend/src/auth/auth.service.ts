@@ -12,6 +12,24 @@ import { CrmEmailValidatorService } from '../crm/crm-email-validator.service';
 import * as crypto from 'crypto';
 import { normalizeEmailAddress } from '../common/utils/email-normalization.util';
 
+const AUTH_ACTION_SECRET = 'AUTH_ACTION_JWT_SECRET';
+const EMAIL_VERIFICATION_AUDIENCE = 'aluplan:email-verification';
+const PASSWORD_RESET_AUDIENCE = 'aluplan:password-reset';
+const AUTH_ACTION_ISSUER = 'aluplan-support';
+const AUTH_ACTION_ALGORITHM = 'HS256' as const;
+
+function hashActionTokenJti(jti: string): string {
+    return crypto.createHash('sha256').update(jti).digest('hex');
+}
+
+function durationToSeconds(value: string): number {
+    const match = /^(\d+)\s*(s|m|h|d)$/i.exec(value.trim());
+    if (!match) return 24 * 60 * 60;
+    const amount = Number(match[1]);
+    const multipliers = { s: 1, m: 60, h: 3600, d: 86400 } as const;
+    return amount * multipliers[match[2].toLowerCase() as keyof typeof multipliers];
+}
+
 @Injectable()
 export class AuthService {
     private readonly logger = new Logger(AuthService.name);
@@ -62,7 +80,9 @@ export class AuthService {
             const rolePermissions = roleWithPerms?.permissions.map(p => p.permission.name) || [];
             const permissions = rolePermissions.length > 0 ? rolePermissions : this.getPermissionsForRole(role);
 
-            const tokens = await this.generateTokens(user.id, user.email, user.fullName, role, permissions);
+            const tokens = await this.generateTokens(
+                user.id, user.email, user.fullName, role, permissions, user.sessionVersion ?? 0,
+            );
 
             await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
 
@@ -83,9 +103,15 @@ export class AuthService {
         }
     }
 
-    async refreshTokens(userId: string, refreshToken: string) {
+    async refreshTokens(userId: string, refreshToken: string, tokenSessionVersion = 0) {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
-        if (!user || user.status !== 'ACTIVE' || !user.refreshTokenHash) {
+        if (
+            !user
+            || user.status !== 'ACTIVE'
+            || user.deletedAt
+            || !user.refreshTokenHash
+            || (user.sessionVersion ?? 0) !== tokenSessionVersion
+        ) {
             throw new ForbiddenException('Access denied');
         }
 
@@ -103,8 +129,23 @@ export class AuthService {
         const rolePermissions = roleWithPerms?.permissions.map(p => p.permission.name) || [];
         const permissions = rolePermissions.length > 0 ? rolePermissions : this.getPermissionsForRole(role);
 
-        const tokens = await this.generateTokens(userId, user.email, user.fullName, role, permissions);
-        await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
+        const tokens = await this.generateTokens(
+            userId, user.email, user.fullName, role, permissions, user.sessionVersion ?? 0,
+        );
+        const nextRefreshTokenHash = await bcrypt.hash(tokens.refresh_token, BCRYPT_ROUNDS);
+        const rotated = await this.prisma.user.updateMany({
+            where: {
+                id: user.id,
+                status: 'ACTIVE',
+                deletedAt: null,
+                sessionVersion: user.sessionVersion ?? 0,
+                refreshTokenHash: user.refreshTokenHash,
+            },
+            data: { refreshTokenHash: nextRefreshTokenHash },
+        });
+        if (rotated.count !== 1) {
+            throw new ForbiddenException('Access denied');
+        }
 
         return tokens;
     }
@@ -124,23 +165,31 @@ export class AuthService {
     }
 
     async forceLogout(userId: string) {
-        // 1. Clear all refresh tokens — prevents token refresh
+        // Durable session version invalidates both access and refresh tokens.
         await this.prisma.user.updateMany({
             where: { id: userId },
-            data: { refreshTokenHash: null }
+            data: { refreshTokenHash: null, sessionVersion: { increment: 1 } }
         });
 
-        // 2. Mark all existing sessions as invalidated via Redis
-        // Any JWT issued before this timestamp will be rejected by JwtStrategy
-        await this.redisService.set(
-            `user:${userId}:force_logout_at`,
-            Date.now().toString(),
-            15 * 60 // 15 min TTL — matches max JWT lifetime
-        );
+        // Redis is an optimization/legacy compatibility marker, not the security boundary.
+        try {
+            await this.invalidateAccessSessions(userId);
+        } catch (error) {
+            this.logger.warn(`Redis force-logout marker failed after durable invalidation for user ${userId}`, error);
+        }
 
         this.logger.warn(`🔒 Admin force-logout executed for user ${userId}`);
 
         return { success: true, message: 'All sessions invalidated', userId };
+    }
+
+    private async invalidateAccessSessions(userId: string) {
+        const accessTtlSeconds = durationToSeconds(this.config.get('JWT_EXPIRES_IN', '24h'));
+        await this.redisService.set(
+            `user:${userId}:force_logout_at`,
+            Date.now().toString(),
+            accessTtlSeconds,
+        );
     }
 
     async lookupEmail(email: string) {
@@ -239,25 +288,122 @@ export class AuthService {
             return { success: true };
         }
 
-        // Generate a secure reset token (JWT)
+        const resetCooldownMs = 2 * 60 * 1000;
+        const cutoff = new Date(Date.now() - resetCooldownMs);
+        if (user.passwordResetSentAt && user.passwordResetSentAt > cutoff) {
+            return { success: true };
+        }
+
+        const previousJtiHash = user.passwordResetJtiHash;
+        const previousSentAt = user.passwordResetSentAt;
+        const jti = crypto.randomUUID();
+        const jtiHash = hashActionTokenJti(jti);
+        const sentAt = new Date();
+        const claimed = await this.prisma.user.updateMany({
+            where: {
+                id: user.id,
+                deletedAt: null,
+                OR: [
+                    { passwordResetSentAt: null },
+                    { passwordResetSentAt: { lte: cutoff } },
+                ],
+            },
+            data: { passwordResetJtiHash: jtiHash, passwordResetSentAt: sentAt },
+        });
+        if (claimed.count !== 1) return { success: true };
+
         const resetToken = this.jwtService.sign(
-            { sub: user.id, email: user.email, type: 'password-reset' },
+            { sub: user.id, email: user.email, purpose: 'password_reset', jti },
             {
-                secret: this.config.get('JWT_SECRET'),
-                expiresIn: '1h'
+                secret: this.config.get(AUTH_ACTION_SECRET),
+                audience: PASSWORD_RESET_AUDIENCE,
+                issuer: AUTH_ACTION_ISSUER,
+                algorithm: AUTH_ACTION_ALGORITHM,
+                expiresIn: '30m'
             }
         );
 
         const frontendUrl = (await this.settings.getValue('general.frontend_url')) || this.config.get('FRONTEND_URL') || 'http://localhost:3000';
-        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+        const resetUrl = `${frontendUrl}/reset-password#token=${resetToken}`;
 
-        // Send email with reset link
-        await this.emailService.sendPasswordReset({
-            recipientEmail: user.email,
-            recipientName: user.fullName || 'Değerli Müşterimiz',
-            resetUrl
+        try {
+            await this.emailService.sendPasswordReset({
+                recipientEmail: user.email,
+                recipientName: user.fullName || 'Değerli Müşterimiz',
+                resetUrl
+            });
+        } catch (error) {
+            await this.prisma.user.updateMany({
+                where: { id: user.id, passwordResetJtiHash: jtiHash },
+                data: { passwordResetJtiHash: previousJtiHash, passwordResetSentAt: previousSentAt },
+            });
+            this.logger.error('Password reset email enqueue failed; previous challenge restored', error);
+        }
+
+        return { success: true };
+    }
+
+    async resendVerification(email: string) {
+        const user = await this.findUserByEmail(email);
+        if (!user || user.deletedAt || user.status !== 'INACTIVE') {
+            return { success: true };
+        }
+
+        const resendCooldownMs = 2 * 60 * 1000;
+        const cutoff = new Date(Date.now() - resendCooldownMs);
+        if (user.emailVerificationSentAt && user.emailVerificationSentAt > cutoff) {
+            return { success: true };
+        }
+
+        const previousJtiHash = user.emailVerificationJtiHash;
+        const previousSentAt = user.emailVerificationSentAt;
+        const jti = crypto.randomUUID();
+        const jtiHash = hashActionTokenJti(jti);
+        const sentAt = new Date();
+        const updated = await this.prisma.user.updateMany({
+            where: {
+                id: user.id,
+                status: 'INACTIVE',
+                deletedAt: null,
+                OR: [
+                    { emailVerificationSentAt: null },
+                    { emailVerificationSentAt: { lte: cutoff } },
+                ],
+            },
+            data: { emailVerificationJtiHash: jtiHash, emailVerificationSentAt: sentAt },
         });
+        if (updated.count !== 1) return { success: true };
 
+        const token = this.jwtService.sign(
+            { sub: user.id, email: user.email, purpose: 'email_verify', jti },
+            {
+                secret: this.config.get(AUTH_ACTION_SECRET),
+                audience: EMAIL_VERIFICATION_AUDIENCE,
+                issuer: AUTH_ACTION_ISSUER,
+                algorithm: AUTH_ACTION_ALGORITHM,
+                expiresIn: '30m',
+            },
+        );
+        const frontendUrl = (await this.settings.getValue('general.frontend_url'))
+            || this.config.get('FRONTEND_URL')
+            || 'http://localhost:3000';
+
+        try {
+            await this.emailService.sendEmailVerification({
+                recipientEmail: user.email,
+                recipientName: user.fullName || 'Değerli Müşterimiz',
+                verificationUrl: `${frontendUrl}/verify-email#token=${token}`,
+            });
+        } catch (error) {
+            await this.prisma.user.updateMany({
+                where: { id: user.id, emailVerificationJtiHash: jtiHash },
+                data: {
+                    emailVerificationJtiHash: previousJtiHash,
+                    emailVerificationSentAt: previousSentAt,
+                },
+            });
+            this.logger.error('Verification email enqueue failed; previous challenge restored', error);
+        }
         return { success: true };
     }
 
@@ -267,27 +413,42 @@ export class AuthService {
         }
 
         try {
-            const decoded = this.jwtService.verify(token, { secret: this.config.get('JWT_SECRET') });
-            if (decoded.type !== 'password-reset') {
+            const decoded = this.jwtService.verify(token, {
+                secret: this.config.get(AUTH_ACTION_SECRET),
+                audience: PASSWORD_RESET_AUDIENCE,
+                issuer: AUTH_ACTION_ISSUER,
+                algorithms: [AUTH_ACTION_ALGORITHM],
+            });
+            if (decoded.purpose !== 'password_reset' || !decoded.sub || !decoded.jti || !decoded.email) {
                 throw new UnauthorizedException('Geçersiz token türü.');
             }
 
             const userId = decoded.sub;
-            const user = await this.prisma.user.findUnique({ where: { id: userId } });
-
-            if (!user) {
-                throw new UnauthorizedException('Kullanıcı bulunamadı.');
-            }
-
             const passwordHash = await bcrypt.hash(newPasswordStr, BCRYPT_ROUNDS);
 
-            await this.prisma.user.update({
-                where: { id: userId },
+            const updated = await this.prisma.user.updateMany({
+                where: {
+                    id: userId,
+                    email: normalizeEmailAddress(decoded.email),
+                    deletedAt: null,
+                    passwordResetJtiHash: hashActionTokenJti(decoded.jti),
+                },
                 data: {
                     passwordHash,
-                    refreshTokenHash: null // Invalidate existing sessions
+                    refreshTokenHash: null,
+                    passwordResetJtiHash: null,
+                    sessionVersion: { increment: 1 },
                 }
             });
+            if (updated.count !== 1) {
+                throw new UnauthorizedException('Token daha önce kullanılmış veya geçersiz.');
+            }
+
+            try {
+                await this.invalidateAccessSessions(userId);
+            } catch (error) {
+                this.logger.warn(`Redis session marker failed after durable reset for user ${userId}`, error);
+            }
 
             return { success: true, message: 'Şifreniz başarıyla güncellendi.' };
 
@@ -299,18 +460,33 @@ export class AuthService {
     async verifyEmail(token: string) {
         if (!token) throw new UnauthorizedException('Token gerekli');
         try {
-            const decoded = this.jwtService.verify(token, { secret: this.config.get('JWT_SECRET') });
-            const userId = decoded.sub;
-
-            const user = await this.prisma.user.findUnique({ where: { id: userId } });
-            if (!user) throw new UnauthorizedException('Kullanıcı bulunamadı');
-
-            if (user.status !== 'ACTIVE') {
-                await this.prisma.user.update({
-                    where: { id: userId },
-                    data: { status: 'ACTIVE' }
-                });
+            const decoded = this.jwtService.verify(token, {
+                secret: this.config.get(AUTH_ACTION_SECRET),
+                audience: EMAIL_VERIFICATION_AUDIENCE,
+                issuer: AUTH_ACTION_ISSUER,
+                algorithms: [AUTH_ACTION_ALGORITHM],
+            });
+            if (decoded.purpose !== 'email_verify' || !decoded.sub || !decoded.jti || !decoded.email) {
+                throw new UnauthorizedException('Geçersiz token amacı.');
             }
+
+            const updated = await this.prisma.user.updateMany({
+                where: {
+                    id: decoded.sub,
+                    email: normalizeEmailAddress(decoded.email),
+                    status: 'INACTIVE',
+                    deletedAt: null,
+                    emailVerificationJtiHash: hashActionTokenJti(decoded.jti),
+                },
+                data: {
+                    status: 'ACTIVE',
+                    emailVerificationJtiHash: null,
+                },
+            });
+            if (updated.count !== 1) {
+                throw new UnauthorizedException('Token daha önce kullanılmış veya hesap doğrulanamaz.');
+            }
+
             return { success: true, message: 'Hesabınız başarıyla doğrulandı. Artık giriş yapabilirsiniz.' };
         } catch (_err) {
             throw new UnauthorizedException('Geçersiz veya süresi dolmuş doğrulama bağlantısı.');
@@ -369,9 +545,13 @@ export class AuthService {
         fullName: string,
         role: string,
         permissions: string[],
+        sessionVersion: number,
     ) {
         const jti = crypto.randomUUID();
-        const payload = { sub: userId, email, fullName, role, permissions, jti };
+        const payload = {
+            sub: userId, email, fullName, role, permissions, jti,
+            sessionIssuedAt: Date.now(), sessionVersion,
+        };
 
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {

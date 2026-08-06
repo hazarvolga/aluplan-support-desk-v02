@@ -162,6 +162,9 @@
       "success_message": "Ihr Passwort wurde erfolgreich aktualisiert."
     },
     "verify_email": {
+      "ready_title": "E-Mail-Verifizierung",
+      "ready_desc": "Klicken Sie auf die Schaltfläche unten, um Ihre E-Mail-Adresse zu aktivieren.",
+      "confirm_btn": "E-Mail verifizieren",
       "loading_title": "Wird überprüft",
       "default_loading": "Ihre E-Mail-Adresse wird überprüft...",
       "success_header": "Herzlichen Glückwunsch!",
