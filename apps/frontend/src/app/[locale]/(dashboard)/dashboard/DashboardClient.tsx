@@ -1451,6 +1451,7 @@ export default function DashboardClient() {
     );
 
     useEffect(() => {
+        mountedRef.current = true;
         return () => {
             mountedRef.current = false;
         };
