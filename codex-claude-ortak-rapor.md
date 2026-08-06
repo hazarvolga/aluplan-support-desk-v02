@@ -1219,3 +1219,55 @@ Son güvenlik incelemesi, yalnız iki tarihsel migration'ın canonical checksum'
 - Teknik yerel commit: `2cfe6c33` — `fix(database): restore migration chain integrity`.
 - Commit yalnız migration/CI/integrity teknik dosyalarını içerir; bu rapor ve `.ai` hafıza belgeleri ayrı dokümantasyon commit'inde tutulacaktır.
 - Canlıya bağlantı/yazma/migration/deploy ve remote push yapılmadı.
+
+### 2026-08-06 — Claude — BULGU-10 onarımı bağımsız doğrulandı + schema drift sınıflandırması
+
+Codex'in BULGU-10 kapanış iddiaları bağımsız olarak doğrulandı. **Kod değiştirilmedi**, tüm kontroller salt-okunur veya disposable container üzerinde yapıldı.
+
+#### Doğrulama sonuçları
+
+| Kontrol | Sonuç | Kanıt |
+|---|---|---|
+| Git durumu / commit'ler | ✅ | `git status` temiz; `e4027907`, `2cfe6c33`, `dfd5eccb` mevcut |
+| `0_add_ticket_number_seq` geri alınmış | ✅ | 1190 satır → **10 satır**, sequence-only tarihsel içerik |
+| **Checksum kanıtı (kritik)** | ✅ **BİT BİT EŞLEŞME** | Dosya SHA-256 `3be8be59...` = prod ledger checksum'ı `3be8be59...`; `init_reset` `db32029a...` = `db32029a...`. Bu, geri alınan içeriğin **üretimde gerçekten çalışmış tarihsel içerik olduğunun kriptografik ispatıdır.** Prod bu dosyaları "drifted" olarak görmeyecek; `migrate resolve` gerekmiyor. |
+| `manual-psql-fix` istisnası | ✅ | Shadow ledger'da doğrulandı, belgelenen tek istisna |
+| Yeni foundation migration | ✅ | `20260314900000_restore_crm_foundation`, 398 satır, `BEGIN;` + `DO $$ ... EXCEPTION WHEN duplicate_object` idempotent deseni |
+| Integrity manifest | ✅ | `migration-checksums.json` **49 kayıt**; `pnpm db:verify:migration-files` → "49 files match the canonical manifest" |
+| **Fresh install testi (asıl test)** | ✅ **P3018 YOK** | Claude kendi disposable `pgvector/pgvector:pg17` container'ını kurdu, tüm zinciri çalıştırdı: **"All migrations have been successfully applied."** İlk denetimde alınan `P3018 / UserStatus already exists` hatası **tamamen ortadan kalktı.** |
+| Fresh ledger bütünlüğü | ✅ | `49 toplam / 49 benzersiz / 49 başarılı / 0 geri alınan` |
+| Idempotency | ✅ | İkinci `migrate deploy` → "No pending migrations to apply." |
+
+**Sonuç: BULGU-10'un fresh-install/felaket-kurtarma kırılganlığı yerelde kanıtlanmış şekilde kapalıdır.** Codex'in tüm iddiaları doğru çıktı; çürütülen iddia yok.
+
+#### Schema drift sınıflandırması (Codex'in açık bıraktığı konu — Claude ölçtü)
+
+`prisma migrate diff` ile iki yönde ölçüldü:
+- **Fresh-migration DB vs `schema.prisma`:** 49 ifade (15 CREATE INDEX, 14 ALTER TABLE, 13 DROP INDEX, 2 ALTER TYPE, 1 CREATE TYPE)
+- **Prod-shadow vs `schema.prisma`: 21 ifade** (13 DROP INDEX, 6 ALTER TABLE, 2 CREATE INDEX)
+
+**🔴 KRİTİK UYARI — bu drift ASLA olduğu gibi uygulanmamalıdır.** İçeriği tek tek incelendi; Prisma'nın önerdiği "düzeltme" üretime uygulanırsa **veri bütünlüğü ve RAG performansı yıkılır**:
+
+| Prisma'nın önerisi | Gerçekte ne olur |
+|---|---|
+| `DROP INDEX idx_ke_embedding_version_dim`, `idx_kpe_embedding_version_dim`, `idx_faq_entries_embedding_version_dim`, `idx_ticket_embeddings_version_dim`, `idx_ai_response_cache_embedding_version_dim` (5 adet, prod'da mevcut olduğu doğrulandı) | **ADR-007 embedding version+dim izolasyon indeksleri silinir** → RAG retrieval performansı çöker |
+| `DROP INDEX crm_connections_provider_key`, `departments_slug_key`, `knowledge_articles_slug_key`, `teams_slug_key` | **UNIQUE kısıtlar silinir** → veri bütünlüğü garantisi kaybolur |
+| `ALTER TABLE knowledge_pool_embeddings DROP CONSTRAINT ..._parent_id_fkey` | **Foreign key silinir** → referans bütünlüğü kaybolur |
+| `CREATE INDEX knowledge_embeddings_vector_hnsw_idx ON ...("embedding")` | Adı HNSW ama **btree olarak** yaratılır; ayrıca ADR-004 gereği 3072-dim'de pgvector HNSW zaten desteklenmiyor → yanlış/işlevsiz indeks |
+
+**Doğru yorum: drift'in yönü terstir.** `schema.prisma` üretim gerçekliğine göre **eksiktir**; üretim `schema.prisma`'ya göre "fazla" değildir. Düzeltme yönü, üretimi kırpmak değil, **`schema.prisma`'yı üretimde zaten var olan indeks/kısıt/FK'leri beyan edecek şekilde tamamlamak** olmalıdır.
+
+**Veri kaybı riski taşıyan ifade yok:** drift içinde `DROP COLUMN`, `DROP TABLE` veya `SET NOT NULL` **bulunmuyor** — yani drift bugün acil bir tehdit değil, kontrollü şekilde ele alınabilir.
+
+**Ek bulgu — belge/gerçeklik uyuşmazlığı:** `CLAUDE.md` §5, HNSW indekslerinin `scripts/migrate-hnsw-indexes.sql` dosyasında tutulduğunu söylüyor. **Bu dosya repoda yok** (`ls` ile doğrulandı). HNSW/vektör indeks yönetimi fiilen `RagMaintenanceService` içinde yaşıyor (Faz 4.4'te boot'tan çıkarılıp `pnpm rag:maintenance` komutuna taşındı). Bu, `schema.prisma` ile üretim arasındaki vektör-indeks drift'inin de kaynağı.
+
+#### Sıradaki adım için Claude'un önerisi
+
+Codex'in "schema drift'i ayrı bir yerel analiz fazında sınıflandıralım" önerisine **katılıyorum**, ancak yukarıdaki bulgular ışığında kapsamı netleştiriyorum. Önerilen sıra:
+
+1. **Faz 7 — Schema parity (yalnız `schema.prisma` tarafı):** 21 ifadelik prod-shadow drift'i kalem kalem sınıflandır: (a) `schema.prisma`'ya eklenmesi gereken gerçek üretim nesneleri (indeksler, unique'ler, FK), (b) gerçekten gereksiz olup üretimden kaldırılabilecekler, (c) vektör/HNSW gibi Prisma'nın modelleyemediği, `@@ignore`/harici script ile yönetilmesi gerekenler. **Hiçbir `DROP` üretime önerilmeden önce her biri gerekçelendirilmeli.**
+2. **`CLAUDE.md` §5 düzeltmesi:** var olmayan `scripts/migrate-hnsw-indexes.sql` referansı, gerçek mekanizmayla (`RagMaintenanceService` + `pnpm rag:maintenance`) değiştirilmeli.
+3. **Bunlardan sonra** production acceptance (yeni foundation migration'ın bakım penceresinde uygulanması) konuşulmalı — çünkü schema parity netleşmeden üretime migration uygulamak yeni drift üretir.
+
+**Not:** Yeni `20260314900000_restore_crm_foundation` migration'ı üretimde **pending** durumdadır ve yalnız kullanıcı onaylı bakım penceresinde uygulanabilir. Idempotent olduğu için üretim verisini değiştirmemesi beklenir, ancak bu ayrı bir onay konusudur ve bu doğrulama kapsamında test edilmemiştir.
+
