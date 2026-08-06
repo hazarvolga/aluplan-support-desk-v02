@@ -1159,3 +1159,63 @@ Kullanıcının onayıyla BULGU-10 için aşağıdaki kanıt kapılı çalışma
 7. Sonuçlar ortak raporun en altına append-only olarak, `.ai` handoff/ADR kayıtlarına ise yalnız gerçekten yeni ve kalıcı karar oluşursa yazılacak; kod ve doküman değişiklikleri ayrı yerel commitlerde tutulacak.
 
 **Başarı ölçütü:** Normal deploy güvenliği korunurken, boş DB/felaket kurtarma kurulumunda migration zinciri P3018 olmadan tamamlanmalı; mevcut shadow ledger ile dosya checksum bütünlüğü açıklanabilir ve tekrar üretilebilir olmalıdır.
+
+### 2026-08-06 — Codex — BULGU-10 yerel migration zinciri onarımı tamamlandı
+
+Bu kayıt önceki bölümleri değiştirmeden append-only olarak eklenmiştir. Canlı PostgreSQL/Redis'e bağlanılmadı, canlıya DDL/migration/restore uygulanmadı ve remote push/tag push/deploy yapılmadı.
+
+**Geri dönüş noktası:**
+- Plan kaydı `dfd5eccb` (`docs: record bulgu-10 investigation plan`) commit'iyle sabitlendi.
+- Yerel annotated tag: `restore/before-bulgu10-20260806-dfd5eccb`
+- Yerel bundle: `.private-data/restore-points/pre-bulgu10-dfd5eccb.bundle`
+- Bundle SHA-256: `46b5a7d440df8cb968ede8d2217465a5f4c4c8ad8277034755b1d68fedfc446c`
+- Tag ve bundle aynı `dfd5eccb1586352f19b312e26cdd47526382ece1` commit'ine çözülüyor; `git bundle verify` ve `git fsck --strict` kritik hata vermedi.
+
+**Kök neden ve tarihsel checksum kanıtı:**
+- Boş PG17 üzerinde eski 1190 satırlık `0_add_ticket_number_seq` içeriği beklendiği gibi `P3018 / UserStatus already exists` üretti (RED).
+- Shadow ledger checksum'ı `3be8be59...` Git geçmişindeki `bfb11c5c` sürümüyle birebir eşleşti; dosya bu 10 satırlık sequence-only tarihsel içeriğe döndürüldü.
+- `20260219151110_init_reset` için shadow ledger checksum'ı `db32029a...` yine Git'teki tarihsel içerikle eşleşti; sonradan eklenen üç satırlık sequence relocation kaldırıldı.
+- `20260426202926_add_proactive_chat` ledger checksum alanında kriptografik SHA yerine tarihsel `manual-psql-fix` işareti bulunuyor. Doğrulayıcı yalnız bu migration için yalnız bu açık istisnayı kabul ediyor.
+- `0_add_ticket_number_seq` içindeki "initial migration sonrasında" yorumu alfabetik sırayla çelişiyor; ancak dosyayı canlı ledger checksum'ından ayırmamak için yorum dahil tarihsel içerik değiştirilmedi. SQL tabloya bağımlı değildir.
+
+**Uygulanan yerel çözüm:**
+- `20260314900000_restore_crm_foundation` adlı backdated fakat henüz canlıya uygulanmamış, idempotent ve transaction içindeki migration eklendi. İlk CRM bağımlılığından önce sıralanır.
+- Eksik tarihsel temelleri güvenli biçimde kurar/doğrular: RBAC tabloları ve ilişkileri, CRM tabloları ve ilişkileri, `customer_profiles.account_id`, `ai_response_cache`, gerekli enum/index/FK yapıları.
+- Legacy `users.role` varsa mapping tamamlanmadan kolon silinmez; mapping ve kritik enum/FK yapıları fail-fast assertion'larla doğrulanır.
+- `scripts/verify-migration-integrity.mjs` eklendi. Dosya/ledger sayısını, başarılı checksum eşleşmelerini, orphan kayıtları, iki canonical checksum'ı, açık manuel işareti ve BULGU-10 için zorunlu relation'ları salt-okunur doğrular.
+- CI migration işi PG17'ye geçirildi; fresh `migrate deploy`, `migrate status` ve yeni integrity gate blocking hale getirildi. CI yalnız disposable GitHub service DB kullanır.
+
+**Yerel test kanıtı:**
+- Fresh disposable `pgvector/pgvector:pg17`: 49/49 migration başarıyla uygulandı; ikinci deploy'da pending migration yok; ledger `49 kayıt / 49 benzersiz / 49 başarılı`; sequence başlangıcı `1`.
+- Sanitize prod-shadow dump'ından oluşturulan ayrı klon: yeni migration uygulandı; ledger `55 kayıt / 49 benzersiz / 49 başarılı`.
+- Gölge-klon veri parmak izleri değişmedi: users `1282`, roles `2`, permissions `14`, role_permissions `14`, customer_profiles `1278`, crm_accounts `807`, crm_connections `1`, crm_sync_logs `53`, ai_response_cache `85`.
+- Gizlilik kontrolleri klonda sıfır kaldı: aktif CRM/webhook bağlantıları ve secret'ları, refresh-token hash'leri ve secret setting değerleri.
+- Migration integrity gate hem fresh DB'de hem prod-shadow klonunda geçti.
+- `prisma validate` geçti; monorepo `pnpm typecheck` 4/4 geçti; backend tam suite `116/116 suite`, `1020/1021 test geçti`, `1 skipped`, `0 failed`.
+- Son code review: P0-P2 yok, approve. Son security review sonucu bu kaydın devamındaki review notuyla tamamlanacaktır.
+
+**Kapanış sınıflandırması ve açık riskler:**
+- BULGU-10'un `P3018 / fresh-install zinciri` kısmı yerel kod ve test ile kapalıdır.
+- Production acceptance açık kalır: yeni foundation migration canlıda pending olacaktır ve yalnız kullanıcı onaylı bakım penceresinde uygulanabilir. Şu anda uygulanmamıştır.
+- Fresh migration zinciri çalışsa da tam `schema.prisma` parity diff'i sıfır değildir; önceden var olan daha geniş schema drift ayrı, kontrollü bir takip fazıdır. Bu çalışma içinde topluca düzeltilmemiştir.
+- `manual-psql-fix` kriptografik checksum değildir; tarihsel ledger gerçeği olarak açık istisna biçiminde izlenir.
+- CI'daki mutable `pgvector:pg17` image tag'i ve önceden var olan `trivy-action@master` supply-chain hardening backlog'udur; BULGU-10'un yeni P3018 düzeltmesinin doğruluğunu değiştirmez.
+- Geçici production SSH anahtarı sunucuda hâlâ bulunuyorsa kullanıcı tarafından ihtiyaç bitince kaldırılmalıdır; Codex production'a bağlanıp bunu değiştirmedi.
+
+### 2026-08-06 — Codex — BULGU-10 security review P2 ek kapısı
+
+Son güvenlik incelemesi, yalnız iki tarihsel migration'ın canonical checksum'ını sabitlemenin diğer dosyalarda self-referential bir CI kontrolü bırakacağını tespit etti. Commit öncesi şu ek düzeltme uygulandı:
+
+- `packages/database/prisma/migration-checksums.json`, mevcut 49 migration dosyasının tamamını SHA-256 ile sabitler; `20260426202926_add_proactive_chat` dosyası da `f8cc2a11...` ile sabittir.
+- `manual-psql-fix` yalnız production-shadow ledger eşleştirme istisnasıdır; dosya bütünlüğü istisnası değildir.
+- CI, veritabanına migration uygulamadan önce `pnpm db:verify:migration-files` çalıştırır. Manifest/dosya adı, sayı veya hash uyuşmazlığı deploy adımından önce build'i durdurur.
+- Ardından çalışan `pnpm db:verify:migrations`, aynı sabit dosyaları başarılı ledger kayıtları ve zorunlu relation'larla eşleştirir.
+- Yeni kapı 49/49 dosyada, fresh PG17'de ve sanitize prod-shadow klonunda yeniden geçti; typecheck 4/4 ve CI YAML parse kontrolü temizdir.
+
+### 2026-08-06 — Codex — BULGU-10 nihai review ve teknik commit
+
+- Nihai code review: **APPROVE**, actionable P0-P3 blocker yok.
+- Nihai security review: **APPROVE**, 49 dosya / 49 manifest kaydı / 0 mismatch / 0 extra; önceki P2 kapandı.
+- Teknik yerel commit: `2cfe6c33` — `fix(database): restore migration chain integrity`.
+- Commit yalnız migration/CI/integrity teknik dosyalarını içerir; bu rapor ve `.ai` hafıza belgeleri ayrı dokümantasyon commit'inde tutulacaktır.
+- Canlıya bağlantı/yazma/migration/deploy ve remote push yapılmadı.

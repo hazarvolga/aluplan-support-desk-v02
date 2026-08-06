@@ -234,6 +234,15 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 
 ## Operations & Infrastructure Backlog
 
+## Active Focus - 2026-08-06 BULGU-10 Migration Recovery
+
+- Historical migration checksums were restored from Git versions proven against the sanitized production-shadow ledger; all 49 migration files are now pinned in a versioned checksum manifest and checked before CI deploy.
+- A transaction-safe, idempotent `20260314900000_restore_crm_foundation` migration now restores the RBAC, CRM, and AI cache prerequisites missing from fresh installs.
+- Fresh PG17 and a separate sanitized production-shadow clone both pass the blocking migration-integrity verifier.
+- Production has not received this migration. Do not run `migrate deploy` against production without an explicit user-approved maintenance window.
+- Full Prisma schema parity still has pre-existing drift beyond BULGU-10. Treat it as a separate local analysis phase; do not broaden the current migration automatically.
+- Remote push, tag push, deploy, and publish remain forbidden until the user explicitly says `push et`.
+
 - **DMARC Enforcement Reminder (Post-Deploy + 2-3 weeks):**
   Sistemi canliya aldiktan ve destek e-postalarinin duzgun calistigindan tamamen emin olduktan 2-3 hafta sonra, DNS barindiriciniza (Cloudflare, cPanel vs.) girip DMARC kaydinizdaki `p=none` ibaresini `p=quarantine` veya `p=reject` olarak degistirmelisiniz.
   *Yeni Kod Boyle Olmali:* `"v=DMARC1; p=reject; rua=mailto:destek@allplan.net.tr; adkim=s; aspf=s"`

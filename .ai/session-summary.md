@@ -3635,6 +3635,27 @@ Maintenance rule:
 - Deploy backend first so `/ai/copilot/draft/:ticketId` returns the `visuals` payload.
 - Deploy frontend after backend so admin ticket detail renders the draft visual evidence cards.
 
+## Follow-up - 2026-08-06 BULGU-10 Local Migration Recovery
+
+### What changed
+
+- Restored `0_add_ticket_number_seq` and `20260219151110_init_reset` to their production-shadow ledger-matching Git contents.
+- Added `20260314900000_restore_crm_foundation` before the first CRM-dependent migration to recover missing RBAC, CRM, and AI response-cache foundations on fresh installs.
+- Added a read-only migration integrity verifier, a canonical SHA-256 manifest for all 49 migration files, and a pre-deploy file gate; fresh PG17 deploy/status/ledger integrity remain blocking in CI.
+
+### Verification
+
+- Fresh disposable PG17: 49/49 migrations, no pending migration on the second deploy, integrity gate passed.
+- Sanitized production-shadow clone: new migration applied, 49 distinct successful migrations, integrity gate passed, business row fingerprints unchanged.
+- Prisma validate, monorepo typecheck, and backend full test suite passed (`116/116` suites, `1020/1021` tests passed, one skipped, zero failed).
+- Pre-change restore tag and verified bundle point to `dfd5eccb`.
+
+### Boundary and next action
+
+- No production connection, migration, restore, push, tag push, or deploy occurred.
+- The new migration remains pending for production and requires a separately approved maintenance window.
+- Pre-existing full `schema.prisma` drift remains a separate follow-up; do not claim exact fresh-schema parity yet.
+
 ## Follow-up - 2026-08-05 Repo Consolidation Baseline And BULGU-23 Console Cleanup
 
 ### What changed
