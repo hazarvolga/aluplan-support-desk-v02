@@ -1659,3 +1659,82 @@ BULGU-02 (verify-email token purpose ayrımı), BULGU-18 (query-param JWT extrac
 
 **Not:** İŞ 5 diğerlerinden bağımsızdır. Codex isterse İŞ 1 ile İŞ 5'i sıralı yapmak yerine, İŞ 5'i önce alıp güvenlik açıklarını (BULGU-02 özellikle CRITICAL) daha erken kapatabilir. Bu tercih Codex'e bırakılmıştır — güvenlik önceliği ile felaket-kurtarma önceliği arasında makul bir denge sorusudur, gerekçesi yazıldığı sürece her iki sıra da kabul edilebilir.
 
+---
+
+## GÜNCELLEME KAYDI — 2026-08-06 — CODEX — Post-Faz-7 yerel kapanış ve Claude handoff
+
+> **Claude için:** Bu kayıt Codex tarafından yalnız dokümanın en altına eklendi. Üstteki donmuş bulgu/iş emri metni değiştirilmedi. Aşağıdaki commit ve kanıtları bağımsız doğrulaman; özellikle PRE/POST migration audit ayrımını, auth güvenlik sözleşmesini ve Faz 8 timeout/runbook kapısını kontrol etmen bekleniyor.
+
+### Sınır ve sonuç
+
+- Çalışmalar yalnız aktif yerel repoda ve disposable PostgreSQL 17 klonlarında yapıldı.
+- Canlı PostgreSQL/Redis'e bağlanılmadı; canlıda migration, DDL, restore, secret rotasyonu veya veri değişikliği yapılmadı.
+- Push, tag-push, deploy ve publish yapılmadı. Kullanıcının kalıcı push yasağı sürüyor.
+- Kalıcı `aluplan_shadow_postgres_pg17` yalnız PRE audit için salt-okunur kullanıldı; üzerine migration veya yazma uygulanmadı.
+- Kod, güvenlik ve veritabanı uzmanlarının final salt-okunur incelemeleri **APPROVE** verdi; açık P1/P2 kalmadı.
+
+### Tamamlanan işler
+
+1. **İŞ 1 — doğrudan felaket kurtarma eşdeğerliği:** sanitize production-derived klon ile sıfırdan 51 migration kurulmuş DB doğrudan karşılaştırıldı. Sonuç: `0 blocking`, `4` tam payload ile allowlist edilmiş fark, `93` yalnız kolon sırası bilgisi, `0` stale allowlist.
+2. **İŞ 2 — hayalet migration taraması:**
+   - PRE/orijinal salt-okunur shadow: `49` tarihsel migration, `1190` ayrıştırılmış etki, beklenen `7` ghost etki ve pending foundation ledger kaydı.
+   - POST/güncel migration uygulanmış disposable klon: `0 ghost`, `0 pending/failed`, `0 shadow-only`.
+   - `ALTER TABLE ... ADD COLUMN ... REFERENCES` biçimi parser kapsamına alındı; audit yalnız varlığı, ayrı comparator tam tanımı denetliyor.
+3. **İŞ 3 — Faz 8 runbook:** `FAZ-8-PRODUCTION-MIGRATION-RUNBOOK.md` oluşturuldu; backup hash/restore-check, ön-son kontroller, iptal kriterleri, migration-before-app sırası, additive rollback/forward-fix sınırı ve geçici env cleanup trap'i yazıldı.
+4. **İŞ 4 — dump izolasyonu:** ham secret içeren dump `RAW-DO-NOT-CLONE` altında tutuluyor; güvenli klon kaynağı sanitize PG17 dump'ıdır. Güvenli dump SHA-256: `544260dd42453b6510433e27de0ef19e03e3e08793923af8c699fb27a98f1ff7`. Canlı secret rotasyonu kullanıcıya aittir.
+5. **İŞ 5 — auth-token güvenliği:**
+   - ayrı `AUTH_ACTION_JWT_SECRET`, issuer/audience/purpose/algoritma/JTI sözleşmesi ve 30 dakika ömür;
+   - doğrulama/reset için atomik tek kullanımlık SHA-256 JTI kayıtları;
+   - email doğrulama ve forgot-password için kalıcı iki dakikalık cooldown, koşullu claim ve enqueue hatasında önceki challenge'ı geri yükleme;
+   - doğrulama/reset tokenlarının URL fragment üzerinden taşınması ve browser history temizliği;
+   - login/refresh tokenlarının yalnız HttpOnly cookie üzerinden verilmesi;
+   - access/refresh tokenlarını DB'deki `session_version` ile bağlayan kalıcı revocation; reset/force-logout sonrası eski oturumların reddi ve reset-refresh yarışının CAS ile kapatılması;
+   - inactive/suspended/deleted kullanıcı kontrolleri ve re-registration TOCTOU kapaması;
+   - welcome email'den plaintext parola kaldırılması.
+
+### Prisma timeout bulgusu ve düzeltme
+
+- İlk varsayım yanlıştı: shell `PGOPTIONS` Prisma migration motoruna taşınmadı; kilit kalkınca migration devam etti.
+- Güvenlik kontrolü PostgreSQL bağlantı URL'sinin `options` parametresine taşındı: `lock_timeout=5s`, `statement_timeout=300s`. URL türetiliyor ve loglanmıyor.
+- Disposable PG17 üzerinde `users` tablosunda doğrulanmış `AccessExclusiveLock` varken Prisma exit `1` ile **5.946 saniyede** durdu; uygulama başlatma denenmedi.
+- `deploy.sh` migration başarısızlığında fail-closed kalır. Bu yerel kanıt production çalıştırma yetkisi değildir.
+
+### Güncel ölçüm ve test kanıtı
+
+- Üç ayrı güncel sanitize klonda migration süreleri:
+  - foundation: `8.449–10.542 ms`;
+  - parity: `9.899–10.249 ms`;
+  - auth-state: `8.115–8.631 ms`.
+- Veri ölçeği: `crm_accounts=807`, `knowledge_pool_embeddings=7745`, `users=1282`.
+- Backend tam suite: `116/116` suite, `1051` geçti, `1` atlandı, `0` başarısız.
+- Frontend unit: `24/24` dosya, `217/217` test geçti.
+- Backend/frontend typecheck, i18n, Prisma validate/generate, 51-file migration manifest/integrity, shell syntax ve `git diff --check` geçti.
+- Playwright discovery: `21` dosyada `60` test listelendi; üretilen rapor değişikliği geri alındı ve product commit'e dahil edilmedi.
+- Ek odaklı uzman doğrulaması: `5/5` suite, `84/84` test geçti.
+
+### Yerel commitler ve restore point
+
+- `c076c63f` — `fix(auth): harden action tokens and session revocation`
+- `958d7336` — `chore(database): add migration recovery safety gates`
+- `212b6879` — `docs: record post-faz-7 local closure`
+- Restore tag: `restore/post-faz7-closure-20260806-212b6879` (**yalnız local**)
+- Bundle: `.private-data/restore-points/post-faz7-closure-212b6879.bundle`
+- Bundle SHA-256: `6f63154fb40c28299a77c333bac3bd958e4b9f94733899aaeef6b23350a272c6`
+- `git bundle verify`: complete history, bundle geçerli. `git fsck --strict`: yalnız erişilemeyen/dangling tree kayıtları bildirdi; bozuk obje yok.
+
+### Uzman kararları ve kalan sınırlar
+
+- **Kod incelemesi:** APPROVE; StrictMode çift-effect, forgot-password cooldown/rollback ve deploy timeout değişikliği doğrulandı.
+- **Güvenlik incelemesi:** APPROVE; açık P1/P2 yok. Düşük öncelikli fırsatlar: forgot-password gerçek/yok kullanıcı yollarındaki timing farkını azaltmak ve token-signing/config altyapı hatalarının rollback kapsamını ayrıca sertleştirmek.
+- **Veritabanı incelemesi:** APPROVE; açık P1/P2 yok. Düşük öncelikli teknik borç: `deploy.sh` içindeki eski doğrudan SQL/self-healing bloklarını ileride ayrı fazda sadeleştirmek.
+- Faz 8 production migration **başlatılmadı**. Güncel canlı backup + restore-check, kullanıcı onaylı bakım penceresi ve runbook kapıları olmadan başlatılamaz.
+- Canlı secret rotasyonu kullanıcı tarafından en sonda yapılacak; Codex bunu gerçekleştirmedi.
+- GitNexus index yönergeleri repoda mevcut olmakla birlikte CLI bu shell'de çağrılamadı (`npx`/`gitnexus` bulunamadı); yeni kurulum veya index mutasyonu yapılmadı. Graphify ile birlikte kullanım kararı daha önceki mimari notlar uyarınca ayrı tooling konusu olarak kalır.
+
+### Claude'dan istenen bağımsız doğrulama
+
+1. Yukarıdaki üç commit'i ve auth migration checksum'unu doğrula.
+2. PRE audit'in 7 beklenen ghost etkisini POST audit'in `0` sonucu ile karıştırmadan yeniden çalıştır.
+3. URL `options` timeout davranışını disposable kilit testiyle doğrula; shell `PGOPTIONS` kullanma.
+4. Runbook komutlarını production'a bağlanmadan incele; canlı bakım penceresi uygulaması yapma.
+5. Yeni P1/P2 bulursan bu dokümanın yalnız en altına ekle; üst kayıtları değiştirme.
