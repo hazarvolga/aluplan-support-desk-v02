@@ -3823,3 +3823,29 @@ Maintenance rule:
 - Product/ops commit: `6759b077`.
 - Docker image build remains unproven because registry networking failed before the source build stage; release-environment image smoke is still required.
 - No production/shadow connection, push, tag-push, deploy, publish, or live secret rotation occurred.
+
+## Runtime Hotfix - 2026-08-06 Dashboard Strict Mode Loading Loop
+
+### What changed
+
+- Fixed the local Next.js development Dashboard remaining indefinitely in its loading state after React Strict Mode replayed mount effects.
+- The Dashboard mount effect now restores `mountedRef.current = true` during setup before cleanup marks it false.
+- Added a Strict Mode regression that reproduces the original infinite-loading behavior and verifies that the admin Dashboard renders after asynchronous data loading.
+- Strengthened the existing loading assertion so a missing pulse element can no longer pass as a false positive.
+
+### Verification
+
+- TDD RED was observed before the product fix: 1/9 Dashboard tests failed with the loading pulse still mounted.
+- Focused Dashboard suite passed after the fix: 9/9.
+- Full frontend unit suite passed: 28/28 files, 228/228 tests.
+- Frontend typecheck, TR/EN/DE i18n integrity, and `git diff --check` passed.
+- Independent code and security reviews approved with no Critical/High/Medium blocker.
+
+### Boundary
+
+- Product commit: `8c802d29`.
+- Pre-fix restore tag: `restore/pre-dashboard-strictmode-fix-20260806-a29690aa`.
+- Verified complete-history bundle: `.private-data/restore-points/pre-dashboard-strictmode-fix-a29690aa.bundle`, SHA-256 `5f29afac3b96f33431c00448688c988c7349ade7d93c99cc8761757e3c0b0660`.
+- GitNexus CLI was unavailable in this checkout, so `detect_changes` could not run. The reviewed diff was limited to the Dashboard component and its co-located test.
+- Dashboard-specific timeout, abort, retry and stale-response generation control remain a separate resilience improvement; the global API helper was intentionally left unchanged to avoid affecting long-running uploads, crawler jobs and AI requests.
+- No backend, database, migration, production/shadow data, push, tag-push, deploy or publish operation occurred.
