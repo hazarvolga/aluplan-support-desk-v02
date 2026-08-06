@@ -2575,3 +2575,81 @@ Dahası, rol isimleri **üç ayrı yerde tutarsız**:
 
 **Kod değişikliği yapılmadı; bu kayıt yalnız değerlendirmedir.**
 
+
+### 2026-08-06 — Claude — Rol modeli gerçeği düzeltmesi + ölçeğe uygun RBAC önerisi
+
+Kullanıcı, rollerin daha önce oluşturulduğunu düşündüğünü belirtti. **Kullanıcı haklıydı — Claude'un önceki "roller hiç yok" tespiti eksikti ve burada düzeltiliyor.** Ayrıca `/tr/teams` yapısı incelendi ve iki ürün sorusu cevaplandı.
+
+#### 🔧 Önceki bulgunun düzeltmesi — roller VAR, ama yetkilendirmeye bağlı değil
+
+Roller **iki paralel sistemde** yaşıyor ve bunlar birbirine bağlı değil:
+
+| Katman | Nerede | İçerik |
+|---|---|---|
+| **Global rol** | `users.roleId → roles` | Yalnız `ADMIN` (5) ve `CUSTOMER` (1277) |
+| **Takım rolü** | `team_members.roleOverride` (`SystemRole` enum) | `DEPARTMENT_MANAGER`, `AGENT` — Meli ve Meriç'e atanmış |
+
+**Belirleyici bulgu:** `rbac.guard.ts:43` → `const userRole = this.getRoleName(user.role)` — guard **yalnız global rolü** okuyor. `team_members.roleOverride` yetkilendirmede **hiç kullanılmıyor**.
+
+Yani kullanıcının kurduğu takım yapısı gerçek ve zengin (6 departman, 9 takım, 18 üyelik) ancak **rol atamaları yetki üretmiyor**; muhtemelen yalnız atama/SLA yönlendirmesi için okunuyor. Kullanıcının "bu rolleri oluşturmuştum" hatırası doğru — yapı kuruldu, fakat authorization katmanı ona hiç bağlanmadı.
+
+#### 🔴 Bu durumun yarattığı iki gerçek sorun
+
+**1. Aşırı yetkilendirme (least-privilege ihlali).** Meli ve Meriç'in global rolü `ADMIN` ve ADMIN rolü `*` wildcard iznine sahip. Yani destek personeli şu an: kullanıcı silebilir (`users:manage`), sistem ayarlarını değiştirebilir (`settings:write`), AI maliyet verilerini görebilir. Takım seviyesinde `AGENT`/`DEPARTMENT_MANAGER` olmaları bunu **kısıtlamıyor**.
+
+**2. Üretimde placeholder admin hesabı aktif.** `adm***@example.com`, `status=ACTIVE`, oluşturma `2026-05-17`, **hiç ticket aktivitesi yok** — seed artığı olduğu açık. ADMIN rolüyle ve `*` yetkisiyle üretimde duruyor. **Güvenlik aksiyonu gerektirir.**
+
+#### Kullanıcının cevapladığı ürün soruları
+
+1. **Atanmamış ticket'lar görev sayılmalı mı?** → **Evet.** Kullanıcı gerekçesi: *"hiçbir ticket'ı kaçırmamalıyız, müşteri ilişkileri açısından sorun olur."* Dev DB'de şu an 1 atanmamış `NEW` ticket var. Görev Merkezi'ne dahil edilmeli.
+2. **Personel rolleri tanımlanacak mı?** → Uygulama şu an yalnız Aluplan için; personel: kullanıcı (geliştirici) + Meli + Meriç. Ancak uygulamanın **profesyonel** olması isteniyor.
+
+#### Claude'un önerisi — "profesyonel" = çok rol değil, doğru rol
+
+7 rollük matris 3 kişilik ekip için YAGNI'dir. Ancak mevcut durum da profesyonel değil (destek personeli tam admin). Doğru orta yol:
+
+**Adım 1 — Acil güvenlik (bağımsız, hemen yapılabilir)**
+`adm***@example.com` seed hesabı incelenip pasifleştirilmeli/silinmeli. Aktivitesi sıfır olduğu için risk düşük, iş kaybı yok.
+
+**Adım 2 — Tek yeni rol: `SUPPORT_AGENT`**
+Yeni izin sözlüğü **gerekmiyor** — 16 izin zaten tanımlı (`ticket:*`, `kb:*`, `faq:*`, `reports:read`, `ai-interactions:read`, `settings:*`, `users:manage`, `*`). Yapılacak tek şey bunların destek-alt-kümesini yeni bir role bağlamak:
+
+| İzin | ADMIN | SUPPORT_AGENT | Gerekçe |
+|---|---|---|---|
+| `ticket:read/create/update/assign/escalate` | ✅ | ✅ | Asıl işleri |
+| `kb:read`, `faq:read`, `faq:review` | ✅ | ✅ | Onay kuyruklarını işleyebilmeli |
+| `reports:read` | ✅ | ✅ | Kendi performanslarını görebilmeli |
+| `kb:write`, `faq:manage` | ✅ | ⚠️ karar | İçerik yazma yetkisi verilecek mi? |
+| `ai-interactions:read` | ✅ | ❌ | Hassas — müşteri sorusu + AI cevabı geçmişi |
+| `settings:write`, `users:manage`, `*` | ✅ | ❌ | Yönetimsel, ayrılmalı |
+
+Sonuç: **3 gerçek rol** (`ADMIN`, `SUPPORT_AGENT`, `CUSTOMER`) — ekip yapısıyla birebir örtüşüyor, least-privilege sağlanıyor, kod karmaşıklığı minimum.
+
+**Adım 3 — Takım rolü ile authorization ilişkisini netleştir**
+İki seçenek: (a) `team_members.roleOverride`'ı yetkilendirmeye bağlamak — karmaşık, 3 kişilik ekipte getirisi yok; (b) **açıkça "atama/yönlendirme metadata'sı, yetki kaynağı değil" olarak belgelemek** — önerim bu. Belirsizlik en büyük risk; hangisi olduğu yazılı olsun yeter.
+
+**Adım 4 — İsim tutarsızlığını temizle**
+`@Roles()` decorator'larında 9 farklı isim geçiyor (`SUPPORT_AGENT`, `SUPPORT_MANAGER`, `KB_EDITOR`, `SUPERUSER`, `SUPER_ADMIN`...) — çoğu ne `SystemRole` enum'unda ne `roles` tablosunda var. Var olmayan role referans veren decorator **sessizce kimseyi eşleştirmez**; bu bugün gizli bir yetkilendirme hatası kaynağıdır. 3 gerçek role indirgenmeli.
+
+**Neden bu yaklaşım profesyonel:** Profesyonellik ölçütü rol sayısı değil; (1) least-privilege, (2) tek doğruluk kaynağı, (3) genişletilebilirlik. Bu tasarım üçünü de sağlıyor — ileride `KB_EDITOR` gerekirse, izin sözlüğü zaten hazır olduğu için **yeni rol eklemek veri işlemi olur, kod değişikliği değil.**
+
+#### Görev ve Onay Merkezi önerisine etkisi
+
+1. **Rol matrisi 7 satırdan 3'e iner** — `ADMIN`, `SUPPORT_AGENT`, `CUSTOMER`. Görünürlük mantığı ciddi biçimde basitleşir.
+2. **Görünürlük role değil izne bakmalı.** `SUPPORT_AGENT` var olduğunda, merkez `faq:review` iznine göre kart göstermeli — böylece rol eklendiğinde merkez kodu değişmez. Codex'in "capability tabanlı" yaklaşımı **doğruydu**, yalnız dayandığı rol listesi gerçek değildi.
+3. **Yeni görev kartı: Atanmamış Ticket'lar** (kullanıcı onayladı) — `assignedTo IS NULL AND status NOT IN (RESOLVED, CLOSED)`. Bu, editoryal onaydan farklı bir tür: **operasyonel iş**. Merkezde ayrı grupta ("İşlem Bekleyen") gösterilmeli, "Kararınız Bekleniyor" grubuna karıştırılmamalı.
+4. **Canlı chat talebi** (`chatStatus = REQUESTED`) da aynı operasyonel gruba girmeli — müşteri aktif beklemede olduğu için en üstte.
+
+#### Önerilen nihai faz sırası
+
+| # | İş | Bağımlılık |
+|---|---|---|
+| 0 | `admin@example.com` seed hesabının kapatılması | Yok — hemen |
+| 1 | `SUPPORT_AGENT` rolü + izin ataması + Meli/Meriç'in bu role taşınması | Yok |
+| 2 | `@Roles()` isim temizliği (9 → 3) + takım rolünün "metadata" olarak belgelenmesi | 1 |
+| 3 | Sidebar rozet düzeltmesi (yanlış kuyruk sayıyor) | Yok — bağımsız, hemen değer üretir |
+| 4 | Görev ve Onay Merkezi (izin tabanlı, 5 kart: 3 onay + 2 operasyonel) | 1, 2 |
+| 5 | TrainingQueue iş akışı | 4 |
+
+**Not:** Adım 1 ve 2 üretim veritabanında rol/izin değişikliği gerektirir (migration + seed). Bu, canlı yetkilendirmeyi değiştirdiği için **kullanıcı onayı ve dikkatli sıralama** ister: önce `SUPPORT_AGENT` rolü oluşturulup izinleri atanmalı, **sonra** kullanıcılar taşınmalı — aksi halde Meli/Meriç geçici olarak yetkisiz kalır.
+
