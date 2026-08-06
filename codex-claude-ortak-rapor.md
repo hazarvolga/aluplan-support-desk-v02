@@ -2340,3 +2340,34 @@ Codex bu turda **kendi bulgusunu kendisi genişletti** — Claude yalnızca hard
 
 **Backend tam suite doğrulaması:** `1083 geçti, 1 skipped, 1084 toplam, 0 başarısız` — hardening değişiklikleri hiçbir regresyon üretmedi.
 
+---
+
+### 2026-08-06 — CODEX — Dashboard Strict Mode sonsuz yükleme düzeltmesi
+
+Yerel `/tr/dashboard` ekranının sidebar yüklendiği halde merkezde sürekli nabız göstergesinde kalması kod ve test üzerinden yeniden üretildi. Kök neden, React geliştirme Strict Mode effect replay sırasında cleanup'ın `mountedRef.current` değerini `false` yapması ve ikinci effect setup'ın bu değeri yeniden `true` yapmamasıydı.
+
+#### Yapılanlar
+
+1. İş öncesi HEAD `a29690aa` üzerinde yerel restore tagı oluşturuldu: `restore/pre-dashboard-strictmode-fix-20260806-a29690aa`.
+2. Tam geçmiş bundle'ı oluşturulup doğrulandı: `.private-data/restore-points/pre-dashboard-strictmode-fix-a29690aa.bundle`; SHA-256 `5f29afac3b96f33431c00448688c988c7349ade7d93c99cc8761757e3c0b0660`.
+3. `DashboardClient` Strict Mode altında render edilerek sorun önce RED testte kanıtlandı: 1/9 test başarısız oldu ve loading pulse ekranda kaldı.
+4. Effect setup başlangıcında `mountedRef.current = true` yapılarak minimum yaşam döngüsü düzeltmesi uygulandı; cleanup mevcut şekilde `false` yapmaya devam ediyor.
+5. Strict Mode regresyon testi eklendi ve loading testi yanlış pozitif üretmeyecek şekilde güçlendirildi.
+
+#### Doğrulama
+
+- Focused Dashboard: 9/9 geçti.
+- Frontend tam unit suite: 28/28 dosya, 228/228 test geçti.
+- Frontend typecheck ve TR/EN/DE i18n bütünlüğü geçti.
+- `git diff --check` temiz.
+- Bağımsız code review ve security review: APPROVE; Critical/High/Medium blocker yok.
+- Ürün commit'i: `8c802d29` — `fix(frontend): stop dashboard strict mode loading loop`.
+- Proje hafızası commit'i: `206cdb4e` — `docs: record dashboard strict mode hotfix`.
+
+#### Sınırlar ve sonraki dayanıklılık işi
+
+- Backend, API sözleşmesi, auth/RBAC, veritabanı, migration ve canlı veri etkilenmedi.
+- Global API timeout eklenmedi; bu değişiklik crawler, dosya yükleme ve uzun AI çağrılarını yanlışlıkla kesebileceği için ayrı etki analizi gerektirir.
+- Dashboard'a özel timeout/abort, retry ve eski-yavaş yanıtın yeni sonucu ezmesini engelleyen request-generation kontrolü ayrı bir resilience işi olarak açık tutuldu.
+- GitNexus CLI bu checkout'ta mevcut olmadığı için `detect_changes` çalıştırılamadı; reviewed diff yalnız Dashboard bileşeni ve co-located testiyle sınırlıydı.
+- Push, tag-push, deploy, publish, production/shadow bağlantısı veya canlı secret rotasyonu yapılmadı.
