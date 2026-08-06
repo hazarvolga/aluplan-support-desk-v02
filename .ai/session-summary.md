@@ -3713,3 +3713,27 @@ Maintenance rule:
 
 - Push remains forbidden unless the user explicitly requests it.
 - Next safe local technical target is stabilizing `ai-pipeline-optimization.pbt.spec.ts` with deterministic seed/failure-seed handling.
+
+## Follow-up - 2026-08-06 Post-Faz-7 DR, Migration And Auth Closure
+
+### What changed
+
+- Added direct structural comparison and migration-effect audit tooling, exact allowlist payloads, repeatable-read snapshots, and a root-level Faz 8 production runbook.
+- Restored the already-applied foundation migration to its immutable canonical checksum; no historical applied migration remains modified.
+- Added the new auth-state migration with action-token hashes, verification/password-reset cooldown timestamps, and durable session version.
+- Hardened login/refresh cookies, verification/reset token contracts, account-state binding, resend cooldown/rollback, password-reset/refresh race handling, and URL-fragment token transport.
+- Removed plaintext registration passwords from welcome-email payloads.
+
+### Verification
+
+- Fresh PG17 and sanitized production-derived clone: 51/51 migrations and migration-integrity gate passed.
+- Direct DB comparison: 0 blocking, 4 exact allowlisted, 93 informational column-order differences.
+- PRE read-only audit against the original shadow: 49 historical migrations, 1190 parsed effects, the expected 7 ghost effects and one pending foundation ledger entry. POST audit against its migrated disposable clone: 0 ghost, 0 pending/failed, 0 shadow-only. Exact definitions remain the separate comparator's responsibility.
+- Backend full suite: 116/116 suites, 1051 passed, 1 skipped, 0 failed. Frontend unit suite: 24/24 files and 217/217 tests passed.
+- Backend/frontend typecheck, i18n, Prisma validate/generation, migration manifest, shell syntax and `git diff --check` passed. Playwright discovery listed 60 tests in 21 files.
+- Three-run current migration measurements on the sanitized PG17 clone stayed below 11 ms per migration without lock contention. A verified `users` AccessExclusiveLock caused Prisma to exit non-zero in 5.946 seconds when timeout was delivered through the URL `options` parameter; no application start was attempted. Shell `PGOPTIONS` was rejected as an unreliable assumption after it failed to affect Prisma.
+
+### Boundary
+
+- No production DB/Redis connection or mutation, deploy, push, tag-push or publish occurred.
+- Production migration and live secret rotation remain user-controlled maintenance-window work.

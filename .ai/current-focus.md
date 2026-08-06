@@ -243,6 +243,17 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 
 ## Operations & Infrastructure Backlog
 
+## Active Focus - 2026-08-06 Post-Faz-7 Closure
+
+- Local-only Faz 7 follow-up is implemented and verified; production PostgreSQL/Redis, deploy and remote push remain untouched.
+- Auth action tokens use a dedicated secret, issuer/audience/purpose/JTI binding, 30-minute expiry and atomic one-time consumption.
+- Password reset and admin force logout now increment durable `users.session_version`; access and refresh JWTs are rejected when their session version no longer matches the database. Redis markers are compatibility/optimization only.
+- Email verification resend and forgot-password both have a two-minute durable cooldown and restore the prior challenge if email enqueue fails. Verification and reset links use URL fragments and remove the fragment from browser history after extraction.
+- Registration welcome emails no longer contain the plaintext password.
+- Canonical historical migration `20260314900000_restore_crm_foundation` remains immutable at SHA-256 `731839...`; timeout is supplied by the Faz 8 one-shot connection through the PostgreSQL URL `options` parameter. Shell `PGOPTIONS` is not relied upon because Prisma did not propagate it in the disposable lock test.
+- Current 51-migration chain was rebuilt on fresh PG17 and on a sanitized production-derived clone. Both pass checksum/ledger integrity; direct comparison has 0 blocking differences and the post-migration audit has 0 ghost/pending/shadow-only effects. The separate read-only PRE audit records the original shadow's expected 7 ghost effects and one pending foundation ledger entry.
+- Next action is Claude independent verification and, only after explicit user approval, a separately scheduled Faz 8 maintenance-window decision. Do not run production migrations now.
+
 ## Active Focus - 2026-08-06 BULGU-10 Migration Recovery
 
 - Historical migration checksums were restored from Git versions proven against the sanitized production-shadow ledger; all 49 migration files are now pinned in a versioned checksum manifest and checked before CI deploy.

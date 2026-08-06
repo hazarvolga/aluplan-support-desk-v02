@@ -98,3 +98,19 @@ and consequence. Use session summaries for implementation history.
 - Context: Fresh migration output, the production-derived shadow, and `schema.prisma` had different indexes, constraints, compatibility columns/enums, defaults, and vector-index declarations. Applying Prisma's raw drift output would have removed production integrity/performance objects and created misleading B-tree indexes named as HNSW.
 - Decision: Converge fresh and production-derived schemas through an additive compatibility union. Preserve production-proven unique/index/FK objects, retain harmless historical fresh-install compatibility types/columns, forbid DROP and data mutation in the parity migration, and allowlist only the partial FAQ embedding index that Prisma cannot model. HNSW lifecycle stays under `RagMaintenanceService`, not Prisma.
 - Consequence: Every future schema migration must pass canonical checksum, fresh PG17, migrated shadow-clone parity, and data-fingerprint gates. The comparator is local/clone-only. Production promotion remains a separate, explicitly approved maintenance-window operation with lock/time preflight.
+
+## ADR-013 - Session Revocation Is Database-Durable
+
+- Date: 2026-08-06
+- Status: Accepted
+- Context: Redis timestamp invalidation alone could fail after a password change, and refresh rotation could race with password reset and recreate a usable session.
+- Decision: Bind access and refresh JWTs to `users.session_version`. Password reset and admin force logout increment that version in the same durable database update that clears refresh state. Refresh rotation uses a conditional update over the prior hash and session version. Redis revocation markers remain best-effort compatibility and latency helpers, not the security boundary.
+- Consequence: Authenticated requests perform a lightweight user state/version lookup. Legacy tokens without the claim are treated as version `0`, so rollout is compatible until a user's version is incremented. Password reset remains successful if Redis is temporarily unavailable while all older tokens are still rejected by the database version check.
+
+## ADR-014 - Prisma Migration Timeouts Travel In The Connection URL
+
+- Date: 2026-08-06
+- Status: Accepted
+- Context: A disposable PostgreSQL 17 lock test showed that the Prisma migration engine did not inherit shell `PGOPTIONS`; it waited for the lock and then applied migrations. The same test with PostgreSQL `options` encoded in `DATABASE_URL` exited non-zero in 5.946 seconds under a confirmed `AccessExclusiveLock`.
+- Decision: One-shot and application-gated Prisma migration commands must derive a non-logged migration URL that sets `lock_timeout=5s` and `statement_timeout=300s` through its `options` query parameter. Migration failure must prevent application startup.
+- Consequence: Faz 8 must use the runbook's derived migration URL and must not treat shell `PGOPTIONS` as a safety control. This is local disposable-clone evidence only and does not authorize a production migration.
