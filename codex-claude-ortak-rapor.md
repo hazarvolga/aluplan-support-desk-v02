@@ -2157,3 +2157,67 @@ Başlangıç planındaki ayrım korundu: `/kb-approvals` editoryal FAQ yayın ku
 - `git bundle verify`: complete history ve HEAD `348411c5` doğrulandı.
 - `git fsck --strict`: yalnız önceden mevcut dangling tree kayıtları; repository bütünlük hatası yok.
 - Tag ve bundle yalnız yereldir; remote tag-push yapılmadı.
+
+### 2026-08-06 — Claude — Codex özellik çalışmalarının incelemesi: 1 CI-bloklayıcı defekt bulundu
+
+Kullanıcı raporun ve commit'lerin incelenmesini istedi. Codex'in son 15 commit'i (URL duplicate engeli + AI çözüm görünürlüğü) incelendi. **Çalışmanın büyük bölümü doğrulandı; bir CI-bloklayıcı defekt bulundu.**
+
+#### 🔴 BULGU — Migration manifest güncellenmemiş, CI kapısı kırık
+
+Codex'in **kendi kurduğu** integrity kapısı şu an başarısız:
+
+```
+$ pnpm db:verify:migration-files
+Migration manifest count mismatch: files=53, manifest=51
+ELIFECYCLE Command failed with exit code 1
+```
+
+Manifest'te eksik olan iki migration:
+- `20260806020000_add_faq_provenance_ai_history_permissions`
+- `20260806021000_grant_faq_review_to_existing_reviewers`
+
+**Etki:** `.github/workflows/ci.yml:79` bu komutu **bloklayıcı** olarak çalıştırıyor ve migration'lar DB'ye uygulanmadan **önce** geliyor. Yani bu haliyle **CI build'i bu adımda durur**; deploy adımına hiç ulaşılamaz.
+
+**Neden gözden kaçtı:** Codex'in AI görünürlük kapanış kaydında doğrulama listesi şöyle: *"Backend/frontend typecheck, TR/EN/DE i18n, Prisma validate/status, clean-dump migration testi ve `git diff --check` geçti."* — `db:verify:migration-files` **bu listede yok**. Faz 7'de kurulan kapı, sonraki özellik çalışmasının doğrulama rutinine dahil edilmemiş.
+
+**Düzeltme:** Manifest'in 53 kayda güncellenmesi (`scripts/verify-migration-integrity.mjs` ile üretilebilir). Claude bu düzeltmeyi **uygulamadı** — manifest, kanonik checksum kaydı olduğu için üretimi Codex'in kendi aracıyla ve kendi doğrulamasıyla yapması doğrudur.
+
+**Süreç önerisi:** Migration ekleyen her çalışmanın kapanış kontrol listesine `pnpm db:verify:migration-files` ve `pnpm db:verify:migrations` eklenmelidir. Faz 7'de kurulan kapılar yalnız CI'da değil, yerel kapanış rutininde de çalıştırılmalıdır.
+
+#### ✅ Doğrulanan iddialar
+
+| Kontrol | Sonuç | Kanıt |
+|---|---|---|
+| Dev DB veri bütünlüğü (migration sonrası) | ✅ | `1282 user, 162 ticket, 259 AI interaction, 29 FAQ, 807 CRM` — Codex'in bildirdiği sayılarla **birebir** |
+| `faq_entry_sources` tablosu | ✅ | Mevcut, `0` satır — uydurma backfill yapılmamış (doğru karar) |
+| Ledger | ✅ | Dev DB'de 59 kayıt, 53 migration dosyası |
+| **R-T1 uyumu** | ✅ | `faq.service.ts:266` — `pattern.sourceType === 'interaction' ? 'PENDING_REVIEW' : (...)`. Interaction kaynaklı adaylar güven skorundan **bağımsız olarak** onay kuyruğunda kalıyor. Ticket kaynaklı auto-publish ürün kararı değiştirilmemiş — doğru |
+| History endpoint koruması | ✅ | `ai-interaction-history.controller.ts:12` — `@UseGuards(JwtAuthGuard, RbacGuard, ThrottlerGuard)` + `@RequirePermissions('ai-interactions:read')` |
+| Yeni admin ekranı | ✅ | `apps/frontend/src/app/[locale]/(dashboard)/admin/ai-interactions/page.tsx` |
+| Restore point disiplini | ✅ | Her iş için öncesi/sonrası tag + bundle + SHA-256 kaydedilmiş |
+| Git durumu | ✅ | Çalışma ağacı temiz, HEAD `5a09cf98` |
+
+#### ⚠️ Codex'in bildirdiği güvenlik borcu — doğrulandı ve şiddeti yükseltilmeli
+
+Codex, `packages/database/scripts/production-sync.js` içindeki hardcoded admin parolasını "ayrı kritik teknik borç" olarak not etti. Doğrulandı:
+
+```
+packages/database/scripts/production-sync.js:84
+    const passwordHash = await bcrypt.hash('Vol1872017', 10);
+```
+
+**Bu dosya git'te takiplidir** (`git ls-files` ile doğrulandı) — yani parola repo geçmişine yazılmış durumda. Codex'in "production'da çalıştırılmamalıdır" notu yeterli değildir; parola **repoyu okuyan herkes tarafından görülebilir**.
+
+**Öneriler:**
+1. Bu parola kullanıcının gerçek admin parolasıysa (`Vol1872017` formatı kişisel görünüyor) **derhal değiştirilmelidir** — BULGU-03 rotasyon kapsamına eklenmeli.
+2. Script parolayı env'den almalı (`process.env.ADMIN_BOOTSTRAP_PASSWORD`), hardcoded olmamalı.
+3. Script ayrıca toplu kullanıcı reactivation yapıyor (`status: 'ACTIVE', deletedAt: null`) — bu, soft-delete edilmiş kullanıcıları geri açar. Production'da çalıştırılması veri bütünlüğü açısından tehlikelidir; dosyanın başına açık bir uyarı bloğu veya çalışma ortamı kontrolü (`if (NODE_ENV === 'production') throw`) eklenmelidir.
+
+#### Genel değerlendirme
+
+Codex'in özellik çalışması kaliteli: TDD (RED önce), veri koruma kanıtı (migration öncesi/sonrası sayımlar), clean-dump üzerinde ayrı migration testi, bağımsız code/security review turları, restore point disiplini, ve **kendi bilinçli sınırlarını dürüstçe listeleme** alışkanlığı sürüyor. R-T1 ihlali yapmadan interaction kaynaklı FAQ'ları onay kuyruğunda tutması özellikle doğru.
+
+Tek sistemik zayıflık: **kurulan kalite kapılarının sonraki çalışmaların rutininde kullanılmaması.** Manifest defekti tam olarak bundan doğdu.
+
+**Kapatılması gerekenler:** (1) manifest 53'e güncellenmeli — CI şu an kırık; (2) `production-sync.js` parolası rotasyon + env'e taşıma; (3) test suite sonucu bu kayıt yazılırken hâlâ çalışıyordu, tamamlandığında ayrıca doğrulanacak.
+
