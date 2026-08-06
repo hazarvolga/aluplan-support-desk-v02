@@ -1752,3 +1752,98 @@ BULGU-02 (verify-email token purpose ayrımı), BULGU-18 (query-param JWT extrac
 - Yerel kanıt üretiminden sonra `aluplan_postfaz7_pg17` ve eski `aluplan_faz7_test_pg17` disposable container'ları kaldırıldı; bunların test DB'leri gerekli olursa doğrulanmış sanitize dump'tan yeniden üretilebilir.
 - Kalıcı shadow container'ı `aluplan_shadow_postgres_pg17` Docker yaşam döngüsü sırasında `Exited (255)` durumuna geçti; **silinmedi**, volume'u korunuyor ve Codex yeniden başlatmadı. Canlı sistemle bağlantısı yoktur.
 - Yerel geliştirme PostgreSQL 16 container'ı `aluplan_postgres` sağlıklı çalışıyor. Bu kapanışta hiçbir production container veya veri hedeflenmedi.
+
+### 2026-08-06 — Claude — Post-Faz-7 doğrulaması + YEREL GELİŞTİRME VERİTABANI KURULDU
+
+Kullanıcı sordu: *"canlıdaki yapının bir kopyasını localde çalıştırabilecek miyiz, yeni geliştirmeler için ne zaman hazır olacağız?"* — Codex'in İŞ 1-5 kapanışı doğrulandı ve **eksik olan son adım tamamlandı.**
+
+#### A) Codex'in post-Faz-7 iddialarının doğrulaması
+
+| Kontrol | Sonuç | Kanıt |
+|---|---|---|
+| Commit'ler (`c076c63f`, `958d7336`, `212b6879`) | ✅ | `git log` ile mevcut |
+| Migration + manifest sayısı | ✅ | **51 / 51** eşleşiyor |
+| Yeni auth migration | ✅ | `20260806010000_harden_auth_action_tokens` |
+| **BULGU-02 kapandı** | ✅ | `auth.service.ts` — ayrı `AUTH_ACTION_JWT_SECRET`, `purpose: 'email_verify'` / `'password_reset'` claim'leri, JTI, `decoded.purpose !== ...` kontrolü. `jwt.strategy.ts:validate()` artık `status` + `deletedAt` + `sessionVersion` doğruluyor |
+| **BULGU-18 kapandı** | ✅ | `ExtractJwt.fromUrlQueryParameter('token')` extractor zincirinden **kaldırılmış**; yalnız cookie + Bearer kaldı |
+| Faz 8 runbook | ✅ | `FAZ-8-PRODUCTION-MIGRATION-RUNBOOK.md` (13.666 byte) |
+| İŞ 4 dump izolasyonu | ✅ | `RAW-DO-NOT-CLONE/` mode **700**, README safety map yazılmış, onaylı v2 dump checksum **birebir eşleşti** (`544260dd...`) |
+| Shadow sanitize | ✅ | 6/6 kontrol `0` |
+
+**Bulunan sorun (Codex'in raporladığı):** Kalıcı shadow container'ı `Exited (255)` durumundaydı. Volume sağlamdı; Claude container'ı yeniden başlattı ve veri bütünlüğünü doğruladı (`users=1282, tickets=162, crm_accounts=807, kpe=7745, _prisma_migrations=54`). Veri kaybı yok.
+
+#### B) Kritik tespit — geliştirmeye hazır veritabanı YOKTU
+
+`prisma migrate status` kalıcı shadow'a karşı çalıştırıldığında **3 migration pending** çıktı: `restore_crm_foundation`, `align_schema_parity`, `harden_auth_action_tokens`.
+
+Bu, kullanıcının sorusunun cevabıydı: **uygulama bu haliyle shadow'a bağlanamaz.** Yeni Prisma Client `crm_accounts.customer_no` ve `users.session_version` gibi kolonları bekliyor; shadow'da yoklar → sorgu anında `column does not exist` hatası.
+
+Codex kalıcı shadow'u bilinçli olarak **dokunulmamış referans** bıraktı — bu doğru bir karardır (prod'un bozulmamış fotoğrafı). Ancak bu yüzden geliştirmeye hazır bir veritabanı hiç oluşturulmamıştı. Eksik olan son adım buydu.
+
+#### C) Yapılan iş — kalıcı geliştirme veritabanı
+
+**Restore point (iş öncesi):**
+- Tag: `restore/before-dev-db-20260806-4d5db185`
+- Bundle: `.private-data/restore-points/pre-dev-db-4d5db185.bundle`
+- SHA-256: `d571198546a96f53e82712a10462cda5ae8723b91d9f90f18205720d2ca1c49c`
+- `git bundle verify`: complete history ✅ · tag ↔ HEAD aynı commit ✅
+
+**Yeni container:**
+
+| | |
+|---|---|
+| Ad | `aluplan_dev_pg17` |
+| Image | `pgvector/pgvector:pg17` |
+| Port | `localhost:55433` |
+| Volume | `aluplan_dev_pg17_data` (kalıcı) |
+| Restart policy | `unless-stopped` (Docker restart'ında shadow gibi düşmez) |
+| Extensions | `vector`, `uuid-ossp`, `pg_stat_statements` |
+| Env dosyası | `.private-data/dev/dev-postgres.env` (mode `600`, git-ignore doğrulandı) |
+| Şifre | Yeni üretildi (`openssl rand -hex 24`); prod veya shadow şifresiyle ilgisi yok |
+
+**Adımlar:**
+1. **Checksum kapısı:** Restore öncesi onaylı dump'ın SHA-256'sı README'deki değerle karşılaştırıldı; eşleşmeseydi işlem durdurulacaktı. Eşleşti.
+2. **Restore:** Yalnız onaylı `aluplan-support-shadow-sanitized-v2-20260806-pg17.dump` kullanıldı. **Ham dump'a hiç dokunulmadı.** Dump kopyası restore sonrası container içinden silindi.
+3. **Sanitize doğrulaması (restore sonrası, 6 kalem):** `secret_settings=0, crm_active=0, crm_secrets=0, webhooks_active=0, webhook_secrets=0, refresh_hashes=0` → **6/6 temiz**.
+4. **Migration:** 3 pending migration uygulandı → *"All migrations have been successfully applied"* → `migrate status` = **"Database schema is up to date!"**
+5. **Veri bütünlüğü (migration öncesi/sonrası):** `1282|162|807|7745|476` → **birebir aynı**. Migration'lar veriyi değiştirmedi — additive/idempotent tasarımın canlı kanıtı.
+6. **Eksik nesneler oluştu:** `crm_accounts.customer_no` ✅, `users.session_version` ✅, `AgentStatus.OFFLINE` ✅
+7. **Drift:** Tam olarak **1 ifade** — `DROP INDEX idx_faq_entries_embedding_version_dim` (bilinen, gerekçeli allowlist residual'ı). Beklenen sonuçla birebir.
+
+**Env yapılandırması:**
+- `.env`, `apps/backend/.env`, `packages/database/.env` içindeki `DATABASE_URL` dev DB'ye yönlendirildi. Öncekiler `.pre-devdb-backup` uzantısıyla yedeklendi (git-ignore doğrulandı).
+- **`AUTH_ACTION_JWT_SECRET` eklendi** — yeni auth kodu bunu zorunlu kılıyor ve `env-validation.schema.ts:145` üç JWT secret'ının **birbirinden farklı** olmasını şart koşuyor. Yeni rastgele değer üretildi; üçü de farklı olduğu doğrulandı. *(Bu olmadan backend boot edemezdi — Codex'in auth çalışmasının yeni bir env gereksinimi.)*
+- `pnpm db:generate` yeniden çalıştırıldı.
+
+**Uçtan uca doğrulama:**
+- `pnpm dev` → backend log: `✅ Database connected and verified`, `✅ Redis connected`, `Nest application successfully started`, `🚀 Backend running on http://localhost:4000/api/v1`
+- `/api/v1/health` → **tüm bileşenler `up`** (database, redis, bullmq, storage, memory)
+- Frontend `307` (locale redirect — beklenen); tarayıcıda Türkçe landing page doğru render edildi
+- Login endpoint gerçek veriye karşı yanıt veriyor (olmayan kullanıcı → `400`)
+- `git status` temiz; dev server'ın yeniden ürettiği `apps/backend/openapi.json` AGENTS.md kuralı gereği geri alındı
+
+#### D) Ortamın son hali
+
+| Container | Rol | Port | Durum |
+|---|---|---|---|
+| `aluplan_dev_pg17` | **Geliştirme DB'si** — prod verisi + tüm migration'lar | 55433 | ✅ Aktif, `.env` buraya bakıyor |
+| `aluplan_shadow_postgres_pg17` | **Dokunulmamış referans** — prod fotoğrafı, migration'sız | 55432 | ✅ Aktif (Claude yeniden başlattı), salt-okunur kalmalı |
+| `aluplan_postgres` | Eski boş local DB (PG16) | 5432 | Aktif, artık kullanılmıyor |
+| `aluplan_redis` | Local Redis (boş/ephemeral) | 6379 | Aktif |
+
+#### E) Codex için notlar
+
+1. **Geliştirme artık `aluplan_dev_pg17` (port 55433) üzerinden yapılmalı.** `.env` dosyaları buraya bakıyor. Bağlantı bilgisi `.private-data/dev/dev-postgres.env` içinde.
+2. **Kalıcı shadow'a (55432) yazma yapılmamalıdır** — prod'un migration'sız referans fotoğrafıdır. Karşılaştırma/audit için değerlidir, bozulursa yeniden üretmek dump restore gerektirir.
+3. **`AUTH_ACTION_JWT_SECRET` artık zorunlu bir env değişkenidir.** `.env.example` bu değişkeni **içermiyor** — güncellenmesi önerilir, aksi halde yeni kurulum yapan herkes boot hatası alır. *(Bunu Claude düzeltmedi; ürün kodu kararı olduğu için Codex'e bırakıldı.)*
+4. Dev DB gerçek prod verisi içerir ama **sanitize edilmiştir**: CRM/webhook secret'ları boş ve pasif, refresh-token hash'leri temizlenmiş, `is_secret` ayar değerleri boş. Local'den gerçek Dynamics/e-posta/AI çağrısı yapılamaz.
+5. Dev DB bozulursa yeniden üretilebilir: onaylı v2 dump → restore → `migrate deploy`. Veri kaybı riski yok.
+
+#### F) Kullanıcının sorusuna cevap
+
+**"Canlıdaki yapının kopyasını localde çalıştırabilecek miyiz?"** → **Evet, şu an çalışıyor.** 1282 kullanıcı, 162 ticket, 807 CRM hesabı, 7745 knowledge-pool embedding ile tam yığın ayakta.
+
+**"Yeni geliştirmeler için ne zaman hazır olacağız?"** → **Hazır.** Faz 8 (prod'a migration uygulama) beklenmeden geliştirmeye başlanabilir; ikisi birbirinden bağımsızdır.
+
+**Faz 8 için kalan kapılar (değişmedi):** (1) kullanıcının 14 canlı API anahtarını rotate etmesi, (2) güncel prod backup + restore-check, (3) kullanıcı onaylı bakım penceresi, (4) runbook'taki migration-before-app sırası.
+
