@@ -2708,3 +2708,74 @@ Nihai sayılar bu yüzden uygulamanın kendi ürettiği `openapi.json` ile doğr
 
 Harita `.ai/` altında tutuldu (proje hafızası konvansiyonu). Kod değişikliği yapılmadı.
 
+
+---
+
+## 📍 CODEX İÇİN — PROJE HARİTASI NEREDE VE NASIL KULLANILIR
+
+**Dosya yolu:** `.ai/PROJECT-MAP.md` (repo kökünden), commit `8f1852a9`
+
+Bu harita, kullanıcının şu eleştirisi üzerine üretildi: *"bana projenin tüm yapısına hakim olmadığın hissini verdi"* — Claude'un rol modeli konusunda önce "roller yok" deyip sonra takım yapısını görünce fikir değiştirmesi, parça bilgiyle konuşulduğunu gösterdi. Harita bunu bitirmek için var.
+
+### Haritada ne var — sayılarla
+
+| Ölçüt | Değer | Kaynak |
+|---|---|---|
+| Backend route | **230 operasyon / 189 path** | `openapi.json` (otoritatif) |
+| Controller | 33 | dosya sayımı |
+| Backend modül | 38 | dizin sayımı |
+| **Public route** | **17** | doğrulanmış liste, her biri koruma mekanizmasıyla |
+| Frontend sayfa | **44** | `page.tsx` taraması |
+| Frontend API route handler | **0** | tüm veri backend'den |
+| Prisma modeli | **62** | şema sayımı |
+| BullMQ kuyruğu | **8** | `@Processor` + `registerQueue` |
+| Cron işi | **9** | zaman + servis eşlemesiyle |
+| AI servisi | **30** | `ai/*.service.ts` |
+| Tanımlı izin | **16** | dev DB `permissions` tablosu |
+| İzin-tabanlı route | 8 | — |
+| Rol-tabanlı route | 40 | — |
+
+### 12 bölüm
+
+1. Ürün amacı ve değer zinciri (deflection → ticket → copilot → öğrenme döngüsü)
+2. Sistem mimarisi (katman diyagramı, global guard/interceptor zinciri)
+3. Backend — modül bazında sorumluluk tablosu + public route envanteri
+4. Frontend — tam route ağacı ve konvansiyonlar
+5. Veri modeli — 62 model, 11 domain grubunda
+6. Asenkron işleme — 8 kuyruk, 9 cron, WebSocket olayları
+7. AI/RAG katmanı — pipeline akışı, 30 servis, provider stratejisi
+8. **Yetkilendirme — mevcut gerçek durum** (üç paralel rol kaynağı, bilinen 4 sorun)
+9. Gözlemlenebilirlik ve operasyon
+10. Kalite durumu (tarih damgalı)
+11. Bilinen açık konular (8 madde)
+12. Haritayı kullanma kuralları
+
+### ⚠️ Codex'in bilmesi gereken metodolojik uyarı
+
+Route envanteri **önce regex ile çıkarıldı ve 3 yanlış pozitif üretti**: `/auth/me`, `/auth/test-email-config` ve `GET /customers` "public" göründü. Kaynak koddan doğrulandığında üçünün de korumalı olduğu görüldü — `@Public()` dekoratörü **komşu route'tan sızmıştı** (geriye-bakış heuristiği hatası).
+
+Yani neredeyse üç sahte güvenlik açığı raporlanacaktı.
+
+**Kural:** `@Roles` / `@Public` / `@RequirePermissions` taraması yapan hiçbir otomatik yöntem tek başına kanıt sayılmamalıdır. Yetkilendirme iddiaları **kaynak kodda dekoratör bloğu görülerek** veya `openapi.json` gibi uygulamanın kendi ürettiği çıktıyla doğrulanmalıdır.
+
+### Haritanın ortaya çıkardığı, daha önce raporlanmamış 5 gözlem
+
+1. **`/faq`, `/faq-learning`, `/kb-approvals`** — aynı FAQ kuyruğu üç ayrı ekranda. Görev ve Onay Merkezi önerisindeki kanonikleştirme kararını doğrudan destekler.
+2. **Frontend'de 0 API route handler** — tüm veri backend'den geliyor. Görev Merkezi'nin summary endpoint'inin backend'de olması gerektiğini teyit eder; frontend'de BFF katmanı kurma seçeneği mevcut mimariye aykırıdır.
+3. **8 kuyruk var** — önceki kayıtlarda "~6" deniyordu. Atlanmış olanlar: `document-parsing`, `embedding-migration`, `kb-summarizer`.
+4. **Yalnız 8 route izin-tabanlı, 40 route rol-tabanlı** — RBAC standardizasyonu fazının kapsamı artık bu oranla ölçülebilir.
+5. **Langfuse 52 kod referansıyla** en yoğun dış entegrasyon — AI gözlemlenebilirliği sanılandan derin; AI tarafında değişiklik yapan her iş bu izleme katmanını bozmamaya dikkat etmeli.
+
+### Codex ne zaman haritaya bakmalı
+
+- **Yeni özellik planlarken** — hangi modül/route/model etkilenecek, benzer akış zaten var mı?
+- **Yetkilendirme değişikliği yaparken** — §8'deki üç paralel rol kaynağı tuzağını hatırla.
+- **"Bu kuyruk/cron/servis var mı?" sorusunda** — §6 ve §7 tam envanter.
+- **Ölçek tahmini gerekirken** — §1'deki gerçek production rakamları (1282 kullanıcı, 162 ticket, 7745 embedding) tahmin yerine kullanılmalı.
+
+### Haritanın sınırları
+
+- **Sayılar tarih damgalıdır (2026-08-06).** Kod değiştikçe yeniden sayılmalı; harita kaynak değil **başlangıç noktası**dır.
+- Truth hierarchy değişmedi: kod > testler > şema/migration > git geçmişi > `.ai` belgeleri > kök Markdown. **Harita `.ai` katmanındadır** — kodla çeliştiğinde kod kazanır.
+- Harita, mevcut durumu tarif eder; **ne yapılması gerektiğini söylemez**. Öneriler ayrı kayıtlarda.
+
