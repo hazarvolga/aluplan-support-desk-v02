@@ -658,3 +658,41 @@ Karar durumu:
 | Commit/push/deploy | Yok |
 
 Bir sonraki adım, kullanıcı onay verirse yalnız **Aşama A** için plan kaydı, pre-work restore point ve TDD RED testleriyle başlamaktır. Aşama B otomatik olarak başlamaz ve ayrı onay gerektirir.
+
+## 16. Aşama A uygulama ve kapanış kaydı
+
+**Tarih:** 2026-08-07 · **Durum:** Tamamlandı · **Ürün commit'i:** `69655f1c`
+
+Kullanıcı onayıyla yalnız dar Aşama A uygulandı. Global `PrismaService`/Proxy/middleware katmanı, migration, schema ve seed değiştirilmedi.
+
+### 16.1 Kapatılan davranışlar
+
+- Review Center canlı sohbet, atanmamış bilet ve bekleyen SSS sayaçları açıkça `deletedAt: null` kullanıyor.
+- `FaqService.findAll()` liste ve sayımda aynı aktif kayıt/status predicate'ini kullanıyor.
+- FAQ tekil okuma, yayın listesi, approve, dismiss ve update yolları silinmiş kaydı okuyamıyor veya değiştiremiyor.
+- `PATCH /faq/:id` gerçek `UpdateFaqDto` ile yalnız `question`, `answer`, `tags` alanlarını kabul ediyor. Unknown lifecycle alanları reddediliyor; servis ayrıca immutable explicit allowlist uyguluyor.
+- DTO null, boş/whitespace içerik, uzunluk ve tag adet/uzunluk sınırlarını reddediyor. OpenAPI şeması runtime kontratıyla aynı `pattern`, `maxLength`, `maxItems` ve item `maxLength` bilgilerini yayımlıyor.
+- Ticket listesi API hatasını gerçek boş kuyruktan ayırıyor, lokalize retry sunuyor ve eski eşzamanlı yanıtların güncel filtre sonucunu ezmesini request-id ile engelliyor.
+
+### 16.2 TDD ve doğrulama kanıtı
+
+- RED kanıtları: eksik active filtreleri, hata/empty ayrımı, stale 503 yarışı, deleted FAQ mutation/exposure, mass-assignment, null/blank ve OpenAPI drift testleri uygulama öncesi beklendiği şekilde başarısız oldu.
+- Hedefli backend: **3 suite, 33/33**.
+- Backend tam suite: **125/125 suite, 1168 passed, 1 skipped, 0 failed**.
+- Frontend tam suite: **38/38 dosya, 262/262 test**.
+- Backend/frontend typecheck, TR/EN/DE i18n, operations safety **24/24**, API route contract `frontend=182 / openapi=233 / missing=0 / raw-network=0`, RBAC source contract `roles=12 / permissions=19`, migration manifest **56/56**, yerel migration integrity ve `git diff --check` geçti.
+- Bağımsız son code-review ve security-review: **GO**, Critical/High/Medium = **0/0/0**.
+- Graphify etki sorgusu `FaqService`, `TicketsClient`, FAQ controller/processor ve ilgili test akışlarını doğruladı. Yerel GitNexus executable bulunmadığı için yeni kurulum yapılmadı.
+
+### 16.3 Restore ve sınırlar
+
+- Pre-work: `restore/pre-review-center-phase-a-20260807-2fa872d0`.
+- Post-work: `restore/post-review-center-phase-a-20260807-69655f1c` → `69655f1c36e95cf16f843e9f2e3c59bb7f78ff39`.
+- Complete-history bundle: `.private-data/restore-points/post-review-center-phase-a-69655f1c.bundle`.
+- SHA-256: `466460f32cfb0bddf5a3adc478dd4f64c95f71bf18585a84aa12fb549f2a5c80`.
+- `git bundle verify` ve `git fsck --strict` geçti; yalnız zararsız dangling tree kayıtları görüldü.
+- Production/canlı/shadow bağlantısı veya yazımı, DB mutation, migration/seed, push, tag-push, deploy ve publish yapılmadı.
+
+### 16.4 Açık kalan karar
+
+Aşama B global soft-delete altyapı düzeltmesi hâlâ **NO-GO** durumundadır. Tam call-site envanteri, explicit deleted-record sözleşmesi, gerçek transaction/Proxy test matrisi ve ayrı kullanıcı onayı olmadan başlatılmayacaktır.

@@ -333,3 +333,12 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Blocking frontend API route contract kapısı 182 merkezi istemci operasyonunu 233 OpenAPI operasyonuyla karşılaştırıyor; missing=0 ve dashboard raw-network ihlali=0.
 - Ürün commitleri: `eaa1fc53`, `e294623d`. Backend 124/124 suite (1152 passed, 1 skipped), frontend 38/38 dosya (260 test), typecheck, i18n, ops, RBAC ve 56/56 migration manifest geçti.
 - Canlı/production/shadow erişimi, migration/seed, push, tag-push, deploy ve publish yapılmadı.
+
+## Active Focus - 2026-08-07 Review Center Soft-Delete Parity Aşama A
+
+- Dar Aşama A `69655f1c` ile tamamlandı: Review Center ticket/FAQ sayaçları ve FAQ hedef sorguları yalnız aktif kayıtlarla eşleşiyor.
+- Ticket listesi backend hatasını boş kuyruktan ayırıyor, lokalize retry sunuyor ve eski eşzamanlı istek yanıtlarını request-id ile yok sayıyor.
+- FAQ read/publish/approve/dismiss/update yolları soft-deleted kayıtları dışlıyor. `PATCH /faq/:id` gerçek whitelist DTO + service allowlist kullanıyor; mass-assignment, null/blank ve şema drift regresyonları kapalı.
+- Son kanıt: backend 125/125 suite (1168 passed, 1 skipped), frontend 38/38 dosya (262 test), typecheck/i18n/ops/API/RBAC/migration kapıları temiz; code ve security review GO, C/H/M=0.
+- Aşama B global Prisma Proxy/middleware düzeltmesi ayrı iş ve NO-GO: tam call-site envanteri ve ayrıca kullanıcı onayı gerektiriyor.
+- Kalıcı sınır: production/canlı/shadow erişimi veya yazımı, migration/seed, push, tag-push, deploy ve publish yok.

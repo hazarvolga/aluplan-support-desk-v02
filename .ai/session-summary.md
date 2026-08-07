@@ -3955,3 +3955,13 @@ Maintenance rule:
 - Product code commit: `93870762`; migration commit: `c23867e1`.
 - No push, tag-push, deploy, publish, or live-system action occurred.
 - Static frontend/OpenAPI parity audit found three pre-existing gaps for separate work: CRM settings wrong route, unimplemented MFA backend contract, and unimplemented MJML content/announcement contract. No code change for those findings was made in this phase.
+
+## 2026-08-07 - Review Center active-record parity Aşama A
+
+- Product commit `69655f1c` aligned live-chat, unassigned-ticket and FAQ pending counts with active target lists through explicit `deletedAt: null` predicates.
+- FAQ list/count, single read, public feed, approval, dismissal and edit paths now preserve soft-delete integrity without changing the global Prisma layer.
+- Added runtime `UpdateFaqDto` plus service-side allowlisting to prevent PATCH mass assignment; null, blank, size and OpenAPI parity constraints are regression-tested.
+- Tickets UI now distinguishes API failure from an empty queue, offers localized retry, and ignores stale concurrent responses.
+- Verification: backend 125/125 suites (1168 passed, 1 skipped), frontend 38/38 files (262 passed), targeted backend 33/33, both typechecks, i18n, ops 24/24, API contract, RBAC contract, migration manifest/integrity and diff hygiene passed. Independent code/security reviews returned GO with no Critical/High/Medium findings.
+- Restore: `restore/post-review-center-phase-a-20260807-69655f1c`; complete-history bundle `.private-data/restore-points/post-review-center-phase-a-69655f1c.bundle`, SHA-256 `466460f32cfb0bddf5a3adc478dd4f64c95f71bf18585a84aa12fb549f2a5c80`.
+- No production/live/shadow access or write, DB mutation, migration/seed, push, tag push, deploy or publish. Global Prisma soft-delete Aşama B remains NO-GO pending a separate full inventory and user approval.

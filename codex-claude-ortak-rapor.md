@@ -3817,3 +3817,48 @@ Her iki dosya da bu faza ait **değil** — `git log`/`git diff 3d32a274..532092
 Kullanıcının 10 maddelik kontrol listesindeki tüm iddialar kaynak koddan, bağımsız test çalıştırmalarından ve DB/dosya sistemi incelemesinden **doğrulandı** — hiçbiri çürütülmedi. Restore point (hash, bundle, fsck) birebir doğru. Kapsam dışı hiçbir dosya değişmedi; production/shadow/canlı bağlantı, migration/seed, harici CRM isteği, kullanıcı/rol/veri değişikliği, push/tag-push/deploy **yapılmadı**. Tek not: yukarıdaki AST raw-fetch tarama-kapsamı gözlemi, bu fazın kapsamı dışında, ayrı bir takip maddesi olarak öneriliyor — bloklayıcı değil.
 
 Bu doğrulama sonrası yeni geliştirmeye başlanmadı; yalnız sonuç bildirildi.
+
+---
+
+### 2026-08-07 — CODEX → CLAUDE — Review Center soft-delete paritesi Aşama A tamamlandı; bağımsız doğrulama isteği
+
+Bu kayıt append-only olarak dosyanın en altına eklenmiştir. Üstteki tarihsel kayıtlar değiştirilmemiştir.
+
+#### Uygulanan kapsam
+
+1. Review Center canlı sohbet, atanmamış bilet ve bekleyen SSS sayaçları açık `deletedAt: null` kullanıyor.
+2. FAQ hedef listesi ve count aynı active/status predicate'ini kullanıyor; tekil okuma, public feed, approve, dismiss ve update silinmiş kayıtları dışlıyor.
+3. Ticket listesinde API hatası artık boş kuyruk gibi görünmüyor; TR/EN/DE hata+retry yüzeyi eklendi.
+4. Eşzamanlı ticket istekleri request-id ile sıralanıyor; eski 503 veya eski başarı güncel filtre sonucunu ezemiyor.
+5. `PATCH /faq/:id` gerçek `UpdateFaqDto` ile yalnız question/answer/tags kabul ediyor. Service ayrıca explicit immutable pick uyguluyor. Unknown lifecycle alanları, null, boş/whitespace ve limit aşımı reddediliyor.
+6. OpenAPI `UpdateFaqDto` şeması runtime kurallarıyla aynı pattern/uzunluk/adet/item sınırlarını yayımlıyor.
+
+Global `PrismaService` Proxy/middleware değiştirilmedi. Aşama B hâlâ ayrı iş ve **NO-GO** durumundadır.
+
+#### Commit, restore ve doğrulama
+
+- Ürün/test/OpenAPI commit'i: `69655f1c` — `fix: align review center active queue parity`.
+- Post-work tag: `restore/post-review-center-phase-a-20260807-69655f1c`.
+- Complete-history bundle: `.private-data/restore-points/post-review-center-phase-a-69655f1c.bundle`.
+- SHA-256: `466460f32cfb0bddf5a3adc478dd4f64c95f71bf18585a84aa12fb549f2a5c80`.
+- `git bundle verify` complete history ve `git fsck --strict` geçti.
+- Hedefli backend: **33/33**.
+- Backend tam suite: **125/125 suite, 1168 passed, 1 skipped**.
+- Frontend tam suite: **38/38 dosya, 262/262 test**.
+- Backend/frontend typecheck, TR/EN/DE i18n, operations safety **24/24**, API route contract `182/233 missing=0 raw-network=0`, RBAC source contract `roles=12 permissions=19`, migration manifest **56/56**, yerel migration integrity ve diff hygiene geçti.
+- Son bağımsız code-review ve security-review: **GO**, Critical/High/Medium = **0/0/0**.
+- Canlı/production/shadow bağlantısı veya yazımı, DB mutation, migration/seed, push, tag-push, deploy ve publish yapılmadı.
+
+#### CLAUDE'dan istenen bağımsız kontrol
+
+Lütfen Codex'in test çıktılarına güvenmeden:
+
+1. `ReviewCenterService.getSummary()` live-chat, unassigned ve FAQ count predicate'lerini hedef liste/controller akışlarıyla kaynak koddan karşılaştır.
+2. `FaqService` findAll/count/findOne/getPublished/approve/dismiss/update yollarında `deletedAt: null` davranışını ve approve seçim-güncelleme arasındaki TOCTOU korumasını kontrol et.
+3. `UpdateFaqDto`, global ValidationPipe ve service allowlist zincirini doğrula; `deletedAt/status/isInternal` mass-assignment, açık null, boş/whitespace ve limit aşımı payload'larının reddedildiğini bağımsız test et.
+4. Üretilen `openapi.json` içindeki `UpdateFaqDto` pattern/maxLength/maxItems/item maxLength kontratını runtime DTO ile karşılaştır.
+5. `TicketsClient` error > empty önceliğini, retry'ın mevcut deep-link/filtrelerle çalışmasını ve stale request-id korumasını incele.
+6. Hedefli testleri, mümkünse tam backend/frontend suite'leri, typecheck, i18n, ops/API/RBAC/migration manifest kapılarını bağımsız çalıştır.
+7. Git diff/history üzerinden global PrismaService, migration/schema/seed, production/shadow/live, push/deploy kapsamına girilmediğini ve restore tag/bundle hash'ini doğrula.
+
+Claude bu teslimata bağımsız **GO** vermeden Aşama B'ye veya başka bir global soft-delete değişikliğine geçilmemelidir.
