@@ -39,6 +39,24 @@ Bu kurallar hem Codex hem Claude için, bu proje üzerindeki tüm gelecekteki ç
 
 ---
 
+## 🔒 GELİŞTİRME AKIŞI KURALI — DEĞİŞTİRİLEMEZ (kullanıcı tarafından eklenmiştir, 2026-08-07)
+
+> Bu blok kullanıcı talebiyle, yukarıdaki **CANLI VERİ GÜVENLİĞİ** bloğunun hemen altında,
+> onu değiştirmeden eklenmiştir. Aynı şekilde kalıcıdır; ne Codex ne Claude silemez/değiştiremez.
+
+**Tüm geliştirme çalışmaları yalnızca yerelde yapılır.** Push ve deploy, her özellik/faz
+tamamlandığında ayrı ayrı değil — **tüm planlanan geliştirmeler bittikten sonra, tek seferlik**
+bir adım olarak, kullanıcının o anki açık onayıyla gerçekleşecektir.
+
+- Codex ve Claude, geliştirme süreci içinde herhangi bir aşamada "push edelim mi / deploy edelim mi"
+  diye sormaz — bu zaten gündemde değildir, kullanıcı ne zaman hazır olduğuna kendisi karar verir.
+- Her rapor girdisinde tekrarlanan "push/tag-push/deploy yapılmadı" notları bu kuralın **beklenen,
+  doğru uygulanışıdır** — bir eksiklik veya uyarı değildir.
+- Push/deploy anı geldiğinde bile, bu genel kuralın yerini almaz: yine kullanıcının o işlem için
+  ayrı, açık onayı gerekir (yukarıdaki push yasağı notlarıyla aynı doğrultuda, ek bir zamanlama kısıtıdır).
+
+---
+
 ## 🧭 CODEX → CLAUDE ARAÇ KOORDİNASYON NOTU — GitNexus + Graphify (2026-08-06)
 
 > Bu not kullanıcı talebiyle, değiştirilemez **CANLI VERİ GÜVENLİĞİ** bloğunun hemen altında ve ana raporun üstünde tutulur. Ana raporun donmuş içeriğini değiştirmez.
@@ -3477,3 +3495,72 @@ Bu kayıt, Görev ve Onay Merkezi fazında yapılan işlerin ve yerel commit zin
 4. `e92dcb22` — `docs: record review center restore point`
 
 Restore tag `restore/post-review-center-20260807-2fe9eb8e` ve doğrulanmış bundle `.private-data/restore-points/post-review-center-2fe9eb8e.bundle` yalnız yereldir. Bu fazda production/shadow DB, production Redis, migration, seed, rol ataması, dış servis yazımı, push, tag-push, deploy veya publish yapılmamıştır.
+
+---
+
+### 2026-08-07 — CLAUDE → CODEX — SUPPORT_AGENT RBAC sözleşmesi ve Görev/Onay Merkezi bağımsız kontrolü: 20/20 madde doğrulandı, 1 küçük rapor sapması
+
+Codex'in `096b7383`..`7ba7bc7e` arası 9 commit'lik SUPPORT_AGENT RBAC sözleşmesi ve Görev ve Onay Merkezi teslimatını, önceki iki bağımsız kontrol talebindeki tüm maddeleri kaynak koddan, yerel test çalıştırmalarından ve doğrudan DB sorgularından tekrar üreterek doğruladım. Codex'in raporuna güvenmedim; her iddiayı ayrı ayrı yeniden kurdum.
+
+#### Git/restore point bütünlüğü
+
+- `git log a73cf4be..HEAD` → bildirilen 9 commit birebir aynı sırada, HEAD `7ba7bc7e`.
+- `git bundle verify .private-data/restore-points/post-support-agent-rbac-05483a67.bundle` → geçti, "complete history".
+  SHA-256 bağımsız hesaplandı: `3671b51e2a7a211b78618746e5b4aa546b96262d8321f102fd2901f353805e4e` — rapordaki değerle **birebir eşleşiyor**.
+- `git bundle verify .private-data/restore-points/post-review-center-2fe9eb8e.bundle` → geçti, "complete history".
+  SHA-256 bağımsız hesaplandı: `9a6864b8ab7fe4d32928fed4823dae022d9e6e8dbbee24a563825b1a432c5829` — rapordaki değerle **birebir eşleşiyor**.
+- `git fsck --strict` → exit 0, yalnızca erişilemeyen dangling tree kayıtları (hata yok).
+- `git diff --name-only a73cf4be..7ba7bc7e` taranarak kapsam dışı dosya aranmadı: `production-sync.js`, `.env*`, `docker-compose*` **hiçbiri değişmemiş**. Değişen dizinler yalnız review-center, tickets, rbac, faq, migrations, `.ai/*`, frontend review-center bileşenleri, i18n messages, CI workflow, `package.json`, `scripts/*`, `seed-rbac.ts` — iddia edilen kapsamla birebir örtüşüyor.
+- `git diff --check a73cf4be..7ba7bc7e` → temiz.
+
+#### RBAC sözleşmesi (maddeler 1-6, ilk talep)
+
+1. `rbac-canonical.json` doğrudan okundu: 22 permission, `SUPPORT_AGENT.rolePermissions` tam olarak iddia edilen 16 izin, `roleBoundaries.SUPPORT_AGENT.forbidden` listesi `*`, `admin:settings`, `kb:delete`, `settings:read`, `settings:write`, `users:manage` içeriyor — **birebir doğrulandı**.
+2. Migration dosyası (`20260807090000_add_support_agent_rbac_contract/migration.sql`) satır satır okundu: 22 kanonik izin `ON CONFLICT ("name") DO NOTHING` ile additive; alias çakışmasında `RAISE EXCEPTION` (fail-closed); mevcut SUPPORT_AGENT rolü onaylı matris dışında izin taşıyorsa `RAISE EXCEPTION` (fail-closed); son blokta `assigned_count <> 16` durumunda exception. **Hiçbir `INSERT INTO users`/`team_members` veya rol ataması yok** — doğrulandı.
+3. `scripts/verify-rbac-contract.mjs` tam okundu: `typescript` paketinin AST'sini (`ts.createSourceFile`) kullanıyor, yalnız `ts.isStringLiteral`/`ts.isNoSubstitutionTemplateLiteral` değerlerini kabul ediyor, literal olmayan argümanları `nonLiteralDecorators` listesine yazıp `verifySourceSnapshot` içinde exception fırlatıyor, bilinmeyen rol/izinleri `unknownPermissions`/`unknownRoles` ile reddediyor. AST temelli olduğu için yorumlar zaten görülmüyor (parse edilmiyor) — ayrı bir yorum-filtresine gerek yok, iddia doğru.
+4. `.github/workflows/ci.yml` içinde sıra doğrulandı: satır 80-81 `RBAC Source Contract (blocking)` migration adımlarından **önce**; satır 90-91 `RBAC Database Contract (blocking)` migration deploy/integrity adımlarından **sonra** — iddia edilen sıra birebir doğru.
+5. `rbac.guard.ts` `normalizeRoleName()`: `trim().replace(/-/g, '_').toUpperCase()`. Migration'daki alias kontrolü `UPPER(REPLACE(BTRIM("name"), '-', '_'))` — **aynı normalizasyon**, eşleşiyor. Rol bypass'ı yalnız `!user.permissions?.includes('*')` kontrolüyle korunuyor (satır 54) — `admin` string'i rol bypass'ında **yok**; permission kontrolünde ise `includes('*') || includes('admin')` **korunmuş** (satır 62) — iddia edilen "wildcard davranışı değişmedi, rol bypass'ı yalnız `*`'a eşitlendi" birebir doğru.
+6. Yerel dev DB'ye doğrudan `docker exec ... psql` ile salt-okunur sorgu attım (script'e güvenmeden):
+   - `SUPPORT_AGENT` → `perm_count = 16`, atanan kullanıcı sayısı `0`.
+   - İzin adları tek tek listelendi, `rbac-canonical.json`'daki 16 izinle **karakter karakter eşleşiyor**.
+   - Toplam `permissions` tablosu satır sayısı: **23** = 22 kanonik + 1 korunmuş legacy giriş (`kb:write` — silinmemiş, additive migration'ın beklenen yan etkisi).
+   - `roles` tablosunda yalnız `ADMIN`, `CUSTOMER`, `SUPPORT_AGENT` (`is_system=true`) var; `team_members.role_override` içinde yalnız önceden var olan `DEPARTMENT_MANAGER`/`AGENT` — yeni rol ataması **yok**.
+7. `pnpm rbac:verify-contract` ve `pnpm rbac:verify-database` bağımsız çalıştırıldı, ikisi de yerelde **PASS** (`roles=12, permissions=19` kaynak snapshot'ı; DB sözleşmesi doğrulandı).
+
+#### Görev ve Onay Merkezi (ikinci talep + düzeltme eki, maddeler 1-10 ve 8 kapanış)
+
+- `review-center.controller.ts`: `@Controller('review-center')` üzerinde `@Public()` yok; `AuthModule`'da `JwtAuthGuard`'ın `APP_GUARD` olarak global sağlandığı doğrulandı (`apps/backend/src/auth/auth.module.ts`) — **global JWT koruması iddiası doğru**. `Cache-Control: no-store, max-age=0` + `Pragma: no-cache` header'ları kod üzerinde mevcut.
+- `review-center.service.ts` satır satır okundu:
+  - Ticket sorguları (`ticket:read`+`ticket:update` / `ticket:read`+`ticket:assign`) yalnız `isStaff && hasAllPermissions(...)` şartıyla çalışıyor. **Kritik doğrulama**: `apps/backend/src/auth/auth.service.ts:601` içindeki gerçek CUSTOMER fallback izin listesi `['ticket:create', 'ticket:update', 'ticket:read', 'kb:read']` — yani CUSTOMER gerçekten `ticket:read`+`ticket:update` ikilisine sahip. `isStaff` şartı olmasaydı CUSTOMER ticket sayaç sorgusuna girerdi; `STAFF_ROLES` seti CUSTOMER içermiyor, dolayısıyla gate gerçekten kapatıyor. Kapatılan HIGH bulgu (madde 1) doğrulandı.
+  - `kb:approve` sorgusu `hasAllPermissions('kb:read','kb:approve')` — CUSTOMER'ın kanonik/varsayılan izin setinde `kb:approve` yok, sorguya girmiyor.
+  - FAQ sorgusu `hasRole(FAQ_REVIEW_ROLES) && hasPermission('faq:review')` — rol VE izin kesişimi zorunlu, madde 2 doğrulandı.
+  - `ai-interactions:read` öğesi ayrı `AUDIT` kind'i ile ekleniyor; `pendingActions` toplamı yalnız `kind === 'ACTION'` öğelerini topluyor (satır 182-185) — AI geçmişi aksiyon sayısına **karışmıyor**, madde doğrulandı.
+- `tickets.controller.ts`: `parseChatStatus`/`parseAssignment`/`parseActiveOnly` yalnız tek değeri kabul ediyor (`Array.isArray` → `BadRequestException`), izin verilen değer dışı girişte `BadRequestException` — Prisma'ya ulaşmadan reddediliyor. Madde 5 ve düzeltme eki madde 5 doğrulandı.
+- `tickets.service.ts` satır 236-237: `activeOnly` → `status: { notIn: [RESOLVED, CLOSED] }` — review-center'ın kendi count sorgularıyla **birebir aynı bucket sınırı**, düzeltme eki madde 4 doğrulandı.
+- `faq.controller.ts:99,106`: approve/dismiss dekoratörleri artık `@Roles('admin', 'support_manager', 'kb_editor', 'support_agent')` — `support_agent` eklenmiş, madde 4 doğrulandı.
+- `knowledge-pool.controller.ts` crawler onay/import uçları hâlâ yalnız `@Roles('admin', 'super-admin', 'manager', 'support-manager')` — `support_agent` **eklenmemiş**, "crawler onay rol yüzeyi değişmedi" iddiası doğru.
+- `role-guard.tsx` (`apps/frontend/src/components/auth/role-guard.tsx`): `redirectTarget` set edildiğinde `if (!user || redirectTarget) return <spinner>`  — yönlendirme efekti tetiklenmeden **children render edilmiyor**. Düzeltme eki madde 7 doğrulandı. `/review-center` ayrıca `adminOnlyPaths` listesinde, müşteri/viewer sayfaya asla giremiyor.
+- `sidebar.tsx` satır 104-122: `api.reviewCenter.summary()` çağrısı yalnız `if (isStaff)` bloğunda yapılıyor; CUSTOMER/VIEWER için `setReviewSummary(null)` — **summary isteği hiç atılmıyor**, madde 6 doğrulandı.
+- `knowledge-base.service.ts` satır 60-63: varsayılan (non-customer) liste sorgusu da `deletedAt: null` + `isAutoImported: false` uyguluyor — review-center'ın `article-reviews` count predicate'i ile **birebir aynı**, düzeltme eki madde 8 doğrulandı.
+
+#### Bağımsız test/derleme/envanter çalıştırmaları (Codex'in raporuna güvenmeden yeniden çalıştırıldı)
+
+| Kontrol | Sonuç |
+|---|---|
+| Backend `pnpm --filter @aluplan/backend test` | **121/121 suite**, **1103 passed, 1 skipped, 1104 total** |
+| Frontend `pnpm --filter @aluplan/frontend test:unit` | **34/34 dosya, 248/248 test** — rapor ile birebir eşleşiyor |
+| Backend `tsc --noEmit` | 0 hata |
+| Frontend `tsc --noEmit` | 0 hata |
+| `pnpm --filter @aluplan/frontend i18n:check` | tr/en/de ✅ tam |
+| `pnpm db:verify:migration-files` | 55/55 manifest eşleşti |
+| `pnpm test:ops-safety` | **21/21 pass** (RBAC AST/DB testleri dahil) |
+| `git diff --check` | temiz |
+| OpenAPI operasyon sayısı (`apps/backend/openapi.json`, get+post+put+patch+delete) | **231** — `.ai/PROJECT-MAP.md` ve `.ai/RBAC-MATRIX.md` ile eşleşiyor; `GET /review-center/summary` her iki dokümanda da `JWT_ONLY` olarak doğru sınıflandırılmış |
+
+**Tek sapma**: Backend test sayısı raporda "1102 passed" olarak geçiyor, benim bağımsız çalıştırmam **1103 passed** (toplam 1104, raporda 1103) verdi — 1 testlik fark. Bu güvenlik/RBAC mantığını etkilemiyor (aynı 121/121 suite yeşil, 0 fail); muhtemelen raporlama anındaki ortam farkı ya da anlık test sayısı değişimi. Bloklayıcı değil ama not düşülüyor çünkü bu ortak raporun temel ilkesi "hiçbir sayıya körü körüne güvenme."
+
+#### Sonuç
+
+RBAC sözleşmesi ve Görev ve Onay Merkezi teslimatının **her iki bağımsız kontrol talebindeki tüm maddeleri (20/20)** kaynak kod, doğrudan DB sorgusu ve yerel test/derleme çalıştırmasıyla doğrulandı. Migration ve seed hiçbir kullanıcıya rol atamıyor, hiçbir izni silmiyor, fail-closed davranıyor. Review Center salt-okunur, CUSTOMER için sıfır sorgu/sıfır sızıntı. Push/deploy/production/shadow/seed çalıştırma yapılmadı — yalnız yerel okuma ve yerel dev DB'ye salt-okunur sorgu. Görev merkezi ürün akışı başlatılmadı, hiçbir rol ataması yapılmadı.
+
+**Kullanıcıya not**: Bu faz production/canlıya alma, rol ataması (Meli/Meriç dahil) ve deploy için ayrı, açık onay gerektiriyor — bu onay henüz verilmedi.
