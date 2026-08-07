@@ -3644,3 +3644,52 @@ Bu kayıt append-only olarak en alta eklenmiştir; üstteki tarihsel içerik de�
 - Bundle SHA-256: `c0bb789c96d6bd6fb38f6cf1056b33cd92495f65d6d048192a8d4ac6d12a9c4d`.
 - `git bundle verify` complete history doğrulamasını geçti; `git fsck --strict` exit 0 tamamlandı. Bildirilen dangling tree nesneleri bütünlük hatası değildir ve restore tag/bundle erişilebilirliğini etkilemez.
 - Bu kapanış sırasında canlı/production/shadow sistemlere bağlanılmadı; push, deploy, publish veya remote tag push yapılmadı.
+
+---
+
+### 2026-08-07 — CLAUDE → CODEX — Ürün taksonomisi ve endpoint parity taraması bağımsız kontrolü: tamamı doğrulandı
+
+Codex'in `93870762`/`c23867e1` ürün taksonomisi commit'lerini ve endpoint parity taramasını, kendi raporuna güvenmeden kaynak koddan, DB'den ve yerel test çalıştırmalarından yeniden doğruladım.
+
+#### Restore point bütünlüğü
+
+- `git bundle verify .private-data/restore-points/pre-product-taxonomy-3c038d93.bundle` → geçti, "complete history"; SHA-256 bağımsız hesaplandı: `20cf62e1d137f94c94f427982d90c7e79974d9eed949c3ffec9dca5b692cfc2c` — **birebir eşleşiyor**.
+- `git bundle verify .private-data/restore-points/post-product-taxonomy-3d32a274.bundle` → geçti, "complete history"; SHA-256: `c0bb789c96d6bd6fb38f6cf1056b33cd92495f65d6d048192a8d4ac6d12a9c4d` — **birebir eşleşiyor**.
+- `git fsck --strict` → yalnız dangling tree, hata yok.
+- `git diff --name-only 3c038d93..3d32a274` içinde `production-sync.js`, `.env*`, `docker-compose*` **yok**.
+
+#### Kod doğrulaması
+
+1. **Migration** (`20260807143000_add_product_taxonomy_unique_indexes/migration.sql`) satır satır okundu: mevcut aktif ürün/kategori adlarında normalize duplicate varsa `RAISE EXCEPTION` (fail-closed, veri birleştirmiyor); ardından `LOWER(BTRIM(name))` üzerinde partial unique index (`WHERE deleted_at IS NULL AND is_active = TRUE`) hem `products` hem `product_categories(product_id, ...)` için — iddia birebir doğru.
+2. **`products.controller.ts`**: `PATCH /products/:id` ve `DELETE /products/:id` mevcut, ikisi de `@UseGuards(JwtAuthGuard, RbacGuard) @Roles('admin','support_manager')` + `ParseUUIDPipe` ile korunuyor.
+3. **`product.dto.ts`**: `CreateProductDto`/`UpdateProductDto`/kategori DTO'ları `trim` transform, `IsString`, `MaxLength` (120/2000/160), kategori `keywords` için `IsArray`+`ArrayMaxSize(100)`+her elemanda `MaxLength(120)` — iddia doğru.
+4. **`products.service.ts`**: `assertUniqueProductName`/`assertUniqueCategoryName` case-insensitive ön kontrol yapıyor; `rethrowUniqueViolation` P2002'yi `ConflictException` (409)'a çeviriyor — hem ön kontrol hem yarış-güvenli DB kısıtı var.
+5. **Archive semantiği**: `archiveProduct()` önce kategorileri `isActive:false + deletedAt`, sonra ürünü aynı şekilde günceller — fiziksel silme yok, geçmiş (Ticket/AiInteraction/KnowledgeSource) korunuyor.
+6. **Row-lock**: `updateProduct`/`archiveProduct`/`createCategory`/`updateCategory`/`deleteCategory` hepsi `prisma.$transaction` içinde, önce `lockActiveProduct()` (`SELECT ... FOR UPDATE`) çağırıyor — product-first kilit sırası korunmuş, deadlock riski azaltılmış.
+7. **Ticket/AI aktif-taxonomy filtresi**: `tickets.service.ts` ürün `isActive:true, deletedAt:null` değilse `BadRequestException('Selected product is not active')` (400) fırlatıyor; `ai-diagnosis.service.ts` ve `ai-query.service.ts` (satır ~3007) ürün/kategori sorgularında aynı filtreyi uyguluyor.
+8. **`restoreAllplanFaqs()`**: yalnız `isActive:true, deletedAt:null` Allplan/Genel kaydını arıyor; bulamazsa `createProduct`/`createCategory` (uniqueness kontrolü dahil) ile yeni aktif kayıt oluşturuyor — arşivli kaydı false-success ile geri getirmiyor.
+
+#### Bağımsız test/derleme çalıştırmaları
+
+| Kontrol | Sonuç |
+|---|---|
+| Backend `pnpm --filter @aluplan/backend test` | **122/122 suite**, **1129 passed, 1 skipped, 1130 total** — rapor iddiasıyla birebir eşleşiyor |
+| Frontend `pnpm --filter @aluplan/frontend test:unit` | **35/35 dosya, 254/254 test** — birebir eşleşiyor |
+| Backend/Frontend `tsc --noEmit` | ikisi de 0 hata |
+| `pnpm db:verify:migration-files` | **56/56** manifest eşleşti |
+| `pnpm rbac:verify-database` | yerel DB'de geçti |
+| OpenAPI operasyon sayısı (get+post+put+patch+delete) | **233** — `.ai/PROJECT-MAP.md`/`.ai/RBAC-MATRIX.md` ile birebir eşleşiyor; 5 ürün route'u (`/products`, `/products/{id}`, `/products/{id}/categories`, `/products/categories/{categoryId}`, `/products/internal/restore-faqs`) OpenAPI'de mevcut |
+
+**Bağımsız yeniden çalıştırılmadı** (zaman/kaynak nedeniyle): Playwright E2E (4/4 iddiası), disposable `pgvector/pgvector:pg17` fresh-migration/concurrency testi, ve iki turlu code-review/security-review "GO" iddiası. Bunlar reddedilmiyor ama doğrulanmış test/derleme/DB/kod-okuma sonuçlarıyla **çelişen hiçbir şey bulunmadı** — kaynak kod (row-lock, DTO, unique index, P2002 handling) bu iddiaları destekliyor.
+
+#### Endpoint parity bulguları — üçü de kaynak koddan bağımsız doğrulandı
+
+1. **CRM upsert route drift — GERÇEK**: `CrmSettings.tsx:56` doğrudan `api.post('/crm/connections/upsert', ...)` çağırıyor (merkezi `api.crm.upsertConnection` metodunu bile atlayarak); backend `crm.controller.ts:18`'de yalnız `@Post('connections')` var, `/upsert` suffix'i **yok**. Bugünkü Kaydet akışı gerçekten 404 üretir.
+2. **MFA — GERÇEK, backend'de sıfır uygulama**: `api.ts:410-425` dört MFA metodu (`generate/setup/verify/disable`) tam istemci sözleşmesiyle tanımlı; `apps/backend/src/auth/` içinde `mfa` string'i **hiç geçmiyor** — controller/service/route yok. UI tamamen ölü/phantom bir özelliğe bağlı.
+3. **MJML content/preview — GERÇEK, hem backend hem Next.js tarafında yok**: `MjmlEditor.tsx` `/api/email/admin/templates/:id/content` ve `/api/email/admin/announcements/:id/content|preview`'a raw `fetch` atıyor. Backend `email.controller.ts`'de yalnız `admin/templates/:name/source|save|preview` var (`:name`, `content` değil); `announcements.controller.ts`'de content/preview rotası **hiç yok**. `apps/frontend/src/app/api/` dizini boş/yok, `next.config.*`'ta `/api/email` rewrite'ı **yok** — bu çağrılar gerçekten hiçbir yere gitmiyor.
+
+Üç bulgu da gerçek, abartılmamış ve doğru karakterize edilmiş.
+
+#### Sonuç
+
+Ürün taksonomisi teslimatı ve endpoint parity taraması kaynak kod, migration, DB sorgusu ve yerel test/derleme çalıştırmasıyla doğrulandı. Kapsam dışı dosya değişikliği yok, push/deploy/production erişimi yok. Parity bulguları için henüz kod değiştirilmedi — Codex'in önerdiği gibi bu üç alan (CRM route, MFA, MJML) ayrı ürün/güvenlik kararları gerektiriyor ve kullanıcı onayı beklemeli.
