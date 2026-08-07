@@ -42,10 +42,13 @@ describe('ReviewCenterService', () => {
         const summary = await service.getSummary({
             role: { name: 'support-agent' },
             permissions: [
+                'ticket:read',
                 'ticket:update',
                 'ticket:assign',
+                'kb:read',
                 'kb:approve',
                 'faq:manage',
+                'faq:review',
                 'ai-interactions:read',
             ],
         });
@@ -63,7 +66,7 @@ describe('ReviewCenterService', () => {
     it('does not leak queue existence or execute count queries for customers', async () => {
         const summary = await service.getSummary({
             role: 'CUSTOMER',
-            permissions: ['ticket:read', 'ticket:create'],
+            permissions: ['ticket:create', 'ticket:read', 'ticket:update', 'kb:read'],
         });
 
         expect(summary.items).toEqual([]);
@@ -73,10 +76,49 @@ describe('ReviewCenterService', () => {
         expect(prisma.crawlCandidate.count).not.toHaveBeenCalled();
     });
 
+    it('does not query a queue unless the caller can both open and act on it', async () => {
+        const summary = await service.getSummary({
+            role: 'SUPPORT_AGENT',
+            permissions: ['ticket:update', 'ticket:assign', 'kb:approve', 'faq:manage'],
+        });
+
+        expect(summary.items).toEqual([]);
+        expect(prisma.ticket.count).not.toHaveBeenCalled();
+        expect(prisma.knowledgeArticle.count).not.toHaveBeenCalled();
+        expect(prisma.faqEntry.count).not.toHaveBeenCalled();
+    });
+
+    it('does not treat the legacy admin permission as a role wildcard', async () => {
+        const summary = await service.getSummary({
+            role: 'AGENT',
+            permissions: ['admin'],
+        });
+
+        expect(summary.items.map(({ id }) => id)).not.toContain('faq-candidates');
+        expect(summary.items.map(({ id }) => id)).not.toContain('crawler-candidates');
+        expect(prisma.faqEntry.count).not.toHaveBeenCalled();
+        expect(prisma.crawlCandidate.count).not.toHaveBeenCalled();
+    });
+
+    it('counts the same authored article review set shown by the destination list', async () => {
+        await service.getSummary({
+            role: 'SUPPORT_AGENT',
+            permissions: ['kb:read', 'kb:approve'],
+        });
+
+        expect(prisma.knowledgeArticle.count).toHaveBeenCalledWith({
+            where: {
+                status: 'REVIEW',
+                deletedAt: null,
+                isAutoImported: false,
+            },
+        });
+    });
+
     it('counts only active requested chats and active unassigned tickets', async () => {
         await service.getSummary({
             role: 'SUPPORT_AGENT',
-            permissions: ['ticket:update', 'ticket:assign'],
+            permissions: ['ticket:read', 'ticket:update', 'ticket:assign'],
         });
 
         expect(prisma.ticket.count).toHaveBeenNthCalledWith(1, {
@@ -91,5 +133,14 @@ describe('ReviewCenterService', () => {
                 status: { notIn: ['RESOLVED', 'CLOSED'] },
             },
         });
+
+        const summary = await service.getSummary({
+            role: 'SUPPORT_AGENT',
+            permissions: ['ticket:read', 'ticket:update', 'ticket:assign'],
+        });
+        expect(summary.items.find(({ id }) => id === 'live-chat-requests')?.href)
+            .toContain('activeOnly=true');
+        expect(summary.items.find(({ id }) => id === 'unassigned-tickets')?.href)
+            .toContain('activeOnly=true');
     });
 });

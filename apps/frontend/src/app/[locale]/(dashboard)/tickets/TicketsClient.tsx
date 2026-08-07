@@ -90,6 +90,8 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const queueDeepLink = getTicketQueueDeepLink(searchParams);
     const [scope, setScope] = useState<TicketScope>('all');
     const didInitializeQueueRef = useRef(false);
+    const queueKey = `${queueDeepLink.chatStatus ?? ''}|${queueDeepLink.assignment ?? ''}|${queueDeepLink.activeOnly ? 'active' : ''}`;
+    const previousQueueKeyRef = useRef(queueKey);
 
     const userRole = user?.role;
     const r = typeof userRole === 'object' && userRole !== null ? (userRole as { name?: string }).name : userRole || (user?.roles && user.roles[0]);
@@ -110,6 +112,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
             if (searchFilter.trim()) params.search = searchFilter.trim();
             if (queueDeepLink.chatStatus) params.chatStatus = queueDeepLink.chatStatus;
             if (queueDeepLink.assignment) params.assignment = queueDeepLink.assignment;
+            if (queueDeepLink.activeOnly) params.activeOnly = 'true';
             if (scopeFilter === 'mine' && user?.id && !isCustomer) {
                 params.assignedTo = user.id;
             }
@@ -119,20 +122,23 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
             setStatusCounts(res.statusCounts ?? null);
         } catch { /* handled */ }
         setLoading(false);
-    }, [filter, isCustomer, queueDeepLink.assignment, queueDeepLink.chatStatus, scope, search, user?.id]);
+    }, [filter, isCustomer, queueDeepLink.activeOnly, queueDeepLink.assignment, queueDeepLink.chatStatus, scope, search, user?.id]);
 
     // Auto-load tickets after the authenticated user is known.
     // Support team members should land directly on their own operational queue.
     useEffect(() => {
-        if (initialTickets.length > 0 || !user || didInitializeQueueRef.current) return;
+        const queueChanged = previousQueueKeyRef.current !== queueKey;
+        previousQueueKeyRef.current = queueKey;
+        if (!user) return;
+        if (!queueChanged && (initialTickets.length > 0 || didInitializeQueueRef.current)) return;
 
-        const initialScope: TicketScope = queueDeepLink.assignment
+        const initialScope: TicketScope = queueDeepLink.assignment || queueDeepLink.chatStatus
             ? 'all'
             : user.isSupportTeamMember ? 'mine' : 'all';
         didInitializeQueueRef.current = true;
         setScope(initialScope);
         load(filter, initialScope, search);
-    }, [filter, initialTickets.length, load, queueDeepLink.assignment, search, user]);
+    }, [filter, initialTickets.length, load, queueDeepLink.assignment, queueDeepLink.chatStatus, queueKey, search, user]);
 
     const toggleSelect = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();

@@ -106,11 +106,13 @@ describe('TicketsController', () => {
             await controller.findAll({
                 chatStatus: 'REQUESTED',
                 assignment: 'UNASSIGNED',
+                activeOnly: 'true',
             }, req);
 
             expect(mockTicketsService.findAll).toHaveBeenCalledWith(expect.objectContaining({
                 chatStatus: 'REQUESTED',
                 assignment: 'UNASSIGNED',
+                activeOnly: true,
             }));
         });
 
@@ -122,6 +124,18 @@ describe('TicketsController', () => {
                 'chatStatus must be one of',
             );
 
+            expect(mockTicketsService.findAll).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            { assignment: 'ALL' },
+            { assignment: ['UNASSIGNED', 'UNASSIGNED'] },
+            { activeOnly: 'false' },
+            { activeOnly: ['true', 'true'] },
+        ])('rejects invalid review-center queue filters before querying Prisma: %p', (query) => {
+            const req = { user: { sub: 'admin1', role: 'ADMIN' } };
+
+            expect(() => controller.findAll(query, req)).toThrow();
             expect(mockTicketsService.findAll).not.toHaveBeenCalled();
         });
     });

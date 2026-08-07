@@ -1,12 +1,14 @@
 export type TicketQueueDeepLink = {
     chatStatus?: 'REQUESTED';
     assignment?: 'UNASSIGNED';
+    activeOnly?: true;
 };
 
 export function getTicketQueueDeepLink(params: URLSearchParams): TicketQueueDeepLink {
     return {
         chatStatus: params.get('chatStatus') === 'REQUESTED' ? 'REQUESTED' : undefined,
         assignment: params.get('assignment') === 'UNASSIGNED' ? 'UNASSIGNED' : undefined,
+        activeOnly: params.get('activeOnly') === 'true' ? true : undefined,
     };
 }
 

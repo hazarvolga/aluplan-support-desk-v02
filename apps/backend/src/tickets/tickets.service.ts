@@ -209,6 +209,7 @@ export class TicketsService {
         assignedTo?: string;
         assignment?: 'UNASSIGNED';
         chatStatus?: ChatStatus;
+        activeOnly?: true;
         teamId?: string;
         userId?: string; // Filter by creator
         isSlaBreached?: boolean;
@@ -217,7 +218,7 @@ export class TicketsService {
         page?: number;
         limit?: number;
     }) {
-        const { status, priority, assignedTo, assignment, chatStatus, teamId, userId, isSlaBreached, search, includeStatusCounts = false, page = 1, limit = 20 } = params;
+        const { status, priority, assignedTo, assignment, chatStatus, activeOnly, teamId, userId, isSlaBreached, search, includeStatusCounts = false, page = 1, limit = 20 } = params;
         const normalizedSearch = search?.trim();
 
         // If teamId is provided, get all userIds in that team
@@ -232,6 +233,9 @@ export class TicketsService {
 
         const where: Prisma.TicketWhereInput = {
             ...(status && { status }),
+            ...(activeOnly && {
+                AND: [{ status: { notIn: [TicketStatus.RESOLVED, TicketStatus.CLOSED] } }],
+            }),
             ...(priority && { priority }),
             ...(chatStatus && { chatStatus }),
             ...(userId && { userId }),

@@ -10,10 +10,12 @@ describe('review center deep-link filters', () => {
         expect(getTicketQueueDeepLink(new URLSearchParams('chatStatus=REQUESTED'))).toEqual({
             chatStatus: 'REQUESTED',
             assignment: undefined,
+            activeOnly: undefined,
         });
-        expect(getTicketQueueDeepLink(new URLSearchParams('assignment=UNASSIGNED'))).toEqual({
+        expect(getTicketQueueDeepLink(new URLSearchParams('assignment=UNASSIGNED&activeOnly=true'))).toEqual({
             chatStatus: undefined,
             assignment: 'UNASSIGNED',
+            activeOnly: true,
         });
     });
 
@@ -21,6 +23,7 @@ describe('review center deep-link filters', () => {
         expect(getTicketQueueDeepLink(new URLSearchParams('chatStatus=LIVE&assignment=ALL'))).toEqual({
             chatStatus: undefined,
             assignment: undefined,
+            activeOnly: undefined,
         });
     });
 

@@ -17,13 +17,40 @@ import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 const CHAT_STATUSES = new Set<string>(Object.values(ChatStatus));
 
-function parseChatStatus(value: unknown): ChatStatus | undefined {
+function parseSingleQueryValue(value: unknown, name: string): string | undefined {
     if (value === undefined || value === null || value === '') return undefined;
-    const normalized = String(Array.isArray(value) ? value[0] : value).trim().toUpperCase();
+    if (Array.isArray(value)) {
+        throw new BadRequestException(`${name} must be provided once`);
+    }
+    return String(value);
+}
+
+function parseChatStatus(value: unknown): ChatStatus | undefined {
+    const rawValue = parseSingleQueryValue(value, 'chatStatus');
+    if (rawValue === undefined) return undefined;
+    const normalized = rawValue.trim().toUpperCase();
     if (!CHAT_STATUSES.has(normalized)) {
         throw new BadRequestException(`chatStatus must be one of: ${[...CHAT_STATUSES].join(', ')}`);
     }
     return normalized as ChatStatus;
+}
+
+function parseAssignment(value: unknown): 'UNASSIGNED' | undefined {
+    const rawValue = parseSingleQueryValue(value, 'assignment');
+    if (rawValue === undefined) return undefined;
+    if (rawValue !== 'UNASSIGNED') {
+        throw new BadRequestException('assignment must be UNASSIGNED');
+    }
+    return 'UNASSIGNED';
+}
+
+function parseActiveOnly(value: unknown): true | undefined {
+    const rawValue = parseSingleQueryValue(value, 'activeOnly');
+    if (rawValue === undefined) return undefined;
+    if (rawValue !== 'true') {
+        throw new BadRequestException('activeOnly must be true');
+    }
+    return true;
 }
 
 @ApiTags('Tickets')
@@ -58,6 +85,7 @@ export class TicketsController {
     @ApiQuery({ name: 'assignedTo', required: false })
     @ApiQuery({ name: 'assignment', required: false, enum: ['UNASSIGNED'] })
     @ApiQuery({ name: 'chatStatus', required: false, enum: ChatStatus })
+    @ApiQuery({ name: 'activeOnly', required: false, enum: ['true'] })
     @ApiQuery({ name: 'teamId', required: false })
     @ApiQuery({ name: 'isSlaBreached', required: false, type: Boolean })
     @ApiQuery({ name: 'search', required: false })
@@ -74,8 +102,9 @@ export class TicketsController {
             status: query.status,
             priority: query.priority,
             assignedTo: query.assignedTo,
-            assignment: query.assignment === 'UNASSIGNED' ? 'UNASSIGNED' : undefined,
+            assignment: parseAssignment(query.assignment),
             chatStatus: parseChatStatus(query.chatStatus),
+            activeOnly: parseActiveOnly(query.activeOnly),
             teamId: query.teamId,
             userId,
             isSlaBreached,

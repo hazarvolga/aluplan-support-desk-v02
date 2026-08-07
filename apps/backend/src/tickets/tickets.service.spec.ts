@@ -368,6 +368,7 @@ describe('TicketsService', () => {
                 await service.findAll({
                     chatStatus: ChatStatus.REQUESTED,
                     assignment: 'UNASSIGNED',
+                    activeOnly: true,
                 });
 
                 expect(prisma.ticket.findMany).toHaveBeenCalledWith(
@@ -375,6 +376,7 @@ describe('TicketsService', () => {
                         where: expect.objectContaining({
                             chatStatus: ChatStatus.REQUESTED,
                             assignedTo: null,
+                            AND: [{ status: { notIn: [TicketStatus.RESOLVED, TicketStatus.CLOSED] } }],
                         }),
                     }),
                 );

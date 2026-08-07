@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
     Database, Globe, FileText, RefreshCw,
@@ -55,6 +55,8 @@ export default function KnowledgePoolPage() {
     const searchParams = useSearchParams();
     const initialDeepLink = getKnowledgePoolDeepLink(searchParams);
     const [activeTab, setActiveTab] = useState<string>(initialDeepLink.tab);
+    const deepLinkKey = `${initialDeepLink.tab}|${initialDeepLink.status}`;
+    const previousDeepLinkKeyRef = useRef(deepLinkKey);
 
     // Sources State
     const [sources, setSources] = useState<any[]>([]);
@@ -98,6 +100,13 @@ export default function KnowledgePoolPage() {
     const [isBulkDeletingCandidates, setIsBulkDeletingCandidates] = useState(false);
 
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (previousDeepLinkKeyRef.current === deepLinkKey) return;
+        previousDeepLinkKeyRef.current = deepLinkKey;
+        setActiveTab(initialDeepLink.tab);
+        setCrawlStatusFilter(initialDeepLink.status);
+    }, [deepLinkKey, initialDeepLink.status, initialDeepLink.tab]);
 
     const [urlName, setUrlName] = useState('');
     const [urlAddress, setUrlAddress] = useState('');

@@ -41,6 +41,20 @@ const CRAWLER_REVIEW_ROLES = new Set([
     'SUPPORT_MANAGER',
 ]);
 
+const STAFF_ROLES = new Set([
+    'ADMIN',
+    'AGENT',
+    'DEPARTMENT_MANAGER',
+    'KB_EDITOR',
+    'MANAGER',
+    'SENIOR_AGENT',
+    'SUPER_ADMIN',
+    'SUPERUSER',
+    'SUPPORT_AGENT',
+    'SUPPORT_MANAGER',
+    'TEAM_LEAD',
+]);
+
 function normalizeRoleName(role: ReviewCenterUser['role']): string {
     const rawRole = typeof role === 'string' ? role : role?.name;
     return typeof rawRole === 'string'
@@ -58,18 +72,21 @@ export class ReviewCenterService {
         const hasWildcard = permissions.has('*') || permissions.has('admin');
         const hasPermission = (permission: string) =>
             hasWildcard || permissions.has(permission);
+        const hasAllPermissions = (...required: string[]) =>
+            required.every(hasPermission);
         const hasRole = (allowedRoles: ReadonlySet<string>) =>
-            hasWildcard || allowedRoles.has(role);
+            permissions.has('*') || allowedRoles.has(role);
+        const isStaff = STAFF_ROLES.has(role);
 
         const itemPromises: Array<Promise<ReviewCenterItem>> = [];
 
-        if (hasPermission('ticket:update')) {
+        if (isStaff && hasAllPermissions('ticket:read', 'ticket:update')) {
             itemPromises.push(this.countedItem(
                 {
                     id: 'live-chat-requests',
                     kind: 'ACTION',
                     group: 'OPERATIONAL',
-                    href: '/tickets?chatStatus=REQUESTED',
+                    href: '/tickets?chatStatus=REQUESTED&activeOnly=true',
                     priority: 'URGENT',
                 },
                 this.prisma.ticket.count({
@@ -81,13 +98,13 @@ export class ReviewCenterService {
             ));
         }
 
-        if (hasPermission('ticket:assign')) {
+        if (isStaff && hasAllPermissions('ticket:read', 'ticket:assign')) {
             itemPromises.push(this.countedItem(
                 {
                     id: 'unassigned-tickets',
                     kind: 'ACTION',
                     group: 'OPERATIONAL',
-                    href: '/tickets?assignment=UNASSIGNED',
+                    href: '/tickets?assignment=UNASSIGNED&activeOnly=true',
                     priority: 'URGENT',
                 },
                 this.prisma.ticket.count({
@@ -99,7 +116,7 @@ export class ReviewCenterService {
             ));
         }
 
-        if (hasPermission('kb:approve')) {
+        if (hasAllPermissions('kb:read', 'kb:approve')) {
             itemPromises.push(this.countedItem(
                 {
                     id: 'article-reviews',
@@ -109,12 +126,16 @@ export class ReviewCenterService {
                     priority: 'NORMAL',
                 },
                 this.prisma.knowledgeArticle.count({
-                    where: { status: ArticleStatus.REVIEW },
+                    where: {
+                        status: ArticleStatus.REVIEW,
+                        deletedAt: null,
+                        isAutoImported: false,
+                    },
                 }),
             ));
         }
 
-        if (hasRole(FAQ_REVIEW_ROLES)) {
+        if (hasRole(FAQ_REVIEW_ROLES) && hasPermission('faq:review')) {
             itemPromises.push(this.countedItem(
                 {
                     id: 'faq-candidates',
