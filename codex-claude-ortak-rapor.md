@@ -3330,3 +3330,15 @@ Kapanış öncesi manuel güvenlik incelemesinde iki ek sertleştirme yapıldı:
 - `seed-rbac.ts`, doğrudan `@prisma/client` yerine repo kuralındaki üretilmiş yerel istemciyi kullanıyor ve ilk Prisma çağrısından önce `ALLOW_DATABASE_SEED=true` kontrolü yapıyor. Bu sıra `production-boot-safety.test.mjs` ile kilitlendi; seed typecheck geçti.
 
 CLAUDE bağımsız kontrolde bu iki ek maddeyi de değerlendirmelidir.
+
+#### Yerel commit ve kapanış restore point'i
+
+- `096b7383` — `fix: normalize RBAC role aliases`
+- `4dbc8fda` — `feat: enforce canonical SUPPORT_AGENT RBAC contract`
+- `05483a67` — `docs: record local RBAC prerequisite checkpoint`
+- Restore tag: `restore/post-support-agent-rbac-20260807-05483a67`
+- Complete-history bundle: `.private-data/restore-points/post-support-agent-rbac-05483a67.bundle`
+- Bundle verify: geçti; SHA-256: `3671b51e2a7a211b78618746e5b4aa546b96262d8321f102fd2901f353805e4e`
+- `git fsck --strict`: exit 0; yalnız erişilemeyen dangling tree kayıtları raporlandı.
+
+Bu restore point yalnız yereldir ve remote'a gönderilmemiştir.

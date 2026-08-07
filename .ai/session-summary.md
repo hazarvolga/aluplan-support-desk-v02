@@ -3876,3 +3876,4 @@ Maintenance rule:
 - Only the local development database received the new migration. Production/shadow DB, production Redis, external services, push, tag-push, deploy, and publish were not touched.
 - The repository-declared Node 20 binary was absent; verification ran on the active local Node 24.18.0 runtime. New scripts use Node 20-compatible APIs, but CI remains the authoritative Node 20 execution proof.
 - Görev Merkezi API/UI implementation has not started; it is the next local-only phase after this RBAC prerequisite checkpoint.
+- Post-phase restore point: tag `restore/post-support-agent-rbac-20260807-05483a67`; verified complete-history bundle `.private-data/restore-points/post-support-agent-rbac-05483a67.bundle`, SHA-256 `3671b51e2a7a211b78618746e5b4aa546b96262d8321f102fd2901f353805e4e`.
