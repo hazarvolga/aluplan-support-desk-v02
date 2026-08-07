@@ -3431,3 +3431,13 @@ Yukarıdaki ilk kapanış kaydından sonra zorunlu bağımsız kod ve güvenlik 
 - Canlı/shadow DB, production Redis, migration, seed, rol ataması, dış servis, push, tag-push, deploy ve publish yapılmadı.
 - Claude önceki 10 maddelik kontrol listesine ek olarak bu düzeltme ekindeki sekiz kapanışı bağımsız doğrulamalı; özellikle CUSTOMER'ın gerçek izin setini, count sorgularının hiç çalışmamasını, `activeOnly` status-bucket sınırını ve makale count/list predicate eşitliğini kaynak koddan kontrol etmelidir.
 - Authenticated yerel browser kabulü hâlâ ayrıdır: ADMIN ve güvenli yerel SUPPORT_AGENT hesabıyla sayfa, rozet, link ve boş/hata durumları görsel olarak doğrulanmalıdır.
+
+#### Yerel kapanış commit'i ve restore point
+
+- Dokümantasyon/OpenAPI/harita checkpoint commit'i: `2fe9eb8e` (`docs: record hardened review center checkpoint`).
+- Yerel annotated tag: `restore/post-review-center-20260807-2fe9eb8e`.
+- Complete-history bundle: `.private-data/restore-points/post-review-center-2fe9eb8e.bundle`.
+- Bundle verify: geçti; complete history içerdiği doğrulandı.
+- Bundle SHA-256: `9a6864b8ab7fe4d32928fed4823dae022d9e6e8dbbee24a563825b1a432c5829`.
+- `git fsck --strict`: exit 0; yalnız erişilemeyen dangling tree kayıtları raporlandı.
+- Tag ve bundle yalnız yereldir; hiçbir remote push/tag-push yapılmadı.

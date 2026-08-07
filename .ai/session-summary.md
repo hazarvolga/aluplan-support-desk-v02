@@ -3903,3 +3903,4 @@ Maintenance rule:
 - No production/shadow DB, production Redis, external integration, migration, seed, user-role assignment, push, tag-push, deploy or publish occurred.
 - Authenticated local visual acceptance remains: ADMIN and, when a safe local account exists, SUPPORT_AGENT should verify queue visibility, direct links and empty/error states.
 - Claude was asked to independently review the authorization-query boundary, action/audit separation, query validation and 231-route documentation parity before any release decision.
+- Local restore point: tag `restore/post-review-center-20260807-2fe9eb8e`; verified complete-history bundle `.private-data/restore-points/post-review-center-2fe9eb8e.bundle`, SHA-256 `9a6864b8ab7fe4d32928fed4823dae022d9e6e8dbbee24a563825b1a432c5829`.
