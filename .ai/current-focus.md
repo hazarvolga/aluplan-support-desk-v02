@@ -306,3 +306,14 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Local business counts remain 1282 users / 162 tickets / 259 AI interactions / 29 FAQs / 0 FAQ provenance rows.
 - Remaining release evidence: build and smoke the Docker runner where registry access is available. Do not run manual production-sync without a disposable-PostgreSQL rollback/lock-duration acceptance test and separate user approval.
 - No production/shadow connection, push, tag-push, deploy, publish, or live secret rotation occurred.
+
+## Active Focus - 2026-08-07 Görev ve Onay Merkezi
+
+- Yerel, yetki kapsamlı Görev ve Onay Merkezi backend summary endpoint'i, frontend sayfası ve sidebar merkezi tamamlandı (`1efacf33`).
+- Merkezi yüzey canlı destek, atanmamış bilet, makale/FAQ/crawler onayı ve ayrı AI denetim bağlantısını bir araya getiriyor; hiçbir işlemi otomatik onaylamıyor.
+- Yetkisiz kuyruklar sorgulanmıyor veya sayı olarak açıklanmıyor; CUSTOMER için summary isteği yapılmıyor.
+- Backend 121/121 suite (1102 passed, 1 skipped), frontend 34/34 dosya (248 test), typecheck, i18n, ops ve RBAC kapıları geçti.
+- Bağımsız incelemede bulunan müşteri global-count sızıntısı, kart/hedef yetki farkı, count/list parity, stale query geçişi ve RoleGuard render flash sorunları `ef9bfe7e` ile kapatıldı; ikinci kod ve güvenlik incelemeleri GO verdi.
+- Kimliksiz smoke doğrulandı: API 401/no-store; frontend `/tr/review-center` login'e yönleniyor.
+- Sıradaki kabul adımı: kullanıcı yerel olarak giriş yaptıktan sonra ADMIN ve mümkünse SUPPORT_AGENT ile görsel/işlevsel browser smoke. Claude bağımsız çapraz doğrulaması da bekleniyor.
+- Canlı bağlantı/yazma, production migration, rol ataması, push, tag-push, deploy ve publish yasaktır.

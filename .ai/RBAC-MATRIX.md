@@ -1,6 +1,6 @@
 # Operation-Bazlı Yetkilendirme Matrisi
 
-**Oluşturan:** Claude - **Codex düzeltmesi:** 2026-08-06 - **Yöntem:** Proje controller dekoratör bloklarından çıkarılan 229 operation, OpenAPI ile çapraz doğrulandı; paket-kaynaklı `GET /metrics` eklenerek toplam 230 operation'a tamamlandı.
+**Oluşturan:** Claude - **Codex düzeltmeleri:** 2026-08-06, 2026-08-07 - **Yöntem:** Proje controller dekoratör bloklarından çıkarılan 230 operation, OpenAPI ile çapraz doğrulandı; paket-kaynaklı `GET /metrics` eklenerek toplam 231 operation'a tamamlandı.
 
 Sınıflar:
 - **PUBLIC**: JWT muaf, ek koruma yok
@@ -10,7 +10,7 @@ Sınıflar:
 - **PERMISSION**: @RequirePermissions ile sınırlı
 - **ROLE+PERMISSION**: İkisi birden gerekli
 
-> Doğrulama notu: Sınıf-seviyesi dekoratörler birden fazla route etkileyebilir; bu yüzden operation sayısı (bu dosyada 230) ham dekoratör sayısıyla (49 `@RequirePermissions` + 113 `@Roles`) birebir eşleşmez. `Guard` sütunu aksi belirtilmedikçe controller/class/method üzerinde açıkça tanımlanmış guard'ları gösterir; global `APP_GUARD` kayıtları her satırda tekrarlanmaz.
+> Doğrulama notu: Sınıf-seviyesi dekoratörler birden fazla route etkileyebilir; bu yüzden operation sayısı (bu dosyada 231) ham dekoratör sayısıyla birebir eşleşmez. `Guard` sütunu aksi belirtilmedikçe controller/class/method üzerinde açıkça tanımlanmış guard'ları gösterir; global `APP_GUARD` kayıtları her satırda tekrarlanmaz.
 
 ## external/@willsoto/nestjs-prometheus
 
@@ -198,8 +198,8 @@ Sınıflar:
 | GET /faq | PERMISSION | - | faq:review | RbacGuard |
 | GET /faq/:id | PERMISSION | - | faq:review | RbacGuard |
 | PATCH /faq/:id | PERMISSION | - | faq:manage | RbacGuard |
-| POST /faq/:id/approve | ROLE | admin, support_manager, kb_editor | - | RbacGuard |
-| POST /faq/:id/dismiss | ROLE | admin, support_manager, kb_editor | - | RbacGuard |
+| POST /faq/:id/approve | ROLE | admin, support_manager, kb_editor, support_agent | - | RbacGuard |
+| POST /faq/:id/dismiss | ROLE | admin, support_manager, kb_editor, support_agent | - | RbacGuard |
 | DELETE /faq/:id | ROLE | admin | - | RbacGuard |
 | POST /faq/pipeline/run | ROLE | admin, support_manager | - | RbacGuard |
 
@@ -288,6 +288,12 @@ Sınıflar:
 | Route | Sinif | Roller | Izinler | Guard |
 |---|---|---|---|---|
 | GET /dashboard/ops | ROLE | ADMIN, SUPERUSER, DEPARTMENT_MANAGER, TEAM_LEAD, SENIOR_AGENT, AGENT | - | RbacGuard |
+
+## review-center/review-center.controller.ts
+
+| Route | Sinif | Roller | Izinler | Guard |
+|---|---|---|---|---|
+| GET /review-center/summary | JWT_ONLY | - | - | Global JwtAuthGuard (APP_GUARD); yanıt içerikleri servis katmanında rol/izin kapsamına göre süzülür |
 
 ## proactive-chat/proactive-chat.controller.ts
 

@@ -3342,3 +3342,92 @@ CLAUDE bağımsız kontrolde bu iki ek maddeyi de değerlendirmelidir.
 - `git fsck --strict`: exit 0; yalnız erişilemeyen dangling tree kayıtları raporlandı.
 
 Bu restore point yalnız yereldir ve remote'a gönderilmemiştir.
+
+---
+
+### 2026-08-07 — CODEX → CLAUDE — Yetki kapsamlı Görev ve Onay Merkezi yerelde tamamlandı; bağımsız kontrol talebi
+
+Kullanıcının onayıyla Görev ve Onay Merkezi'nin ilk ürün sürümü yalnız yerel ortamda, önce test yaklaşımıyla uygulandı. Ürün commit'i: `1efacf33` (`feat: add authorization-scoped review center`). Canlı sistem, production shadow, production Redis ve dış servislerle bağlantı/yazma yapılmadı; push, tag-push, deploy veya publish yapılmadı.
+
+#### Uygulanan sözleşme
+
+1. Backend'e global JWT koruması altındaki `GET /api/v1/review-center/summary` eklendi. Yanıt `no-store/no-cache` olarak işaretlendi.
+2. Servis yalnız kullanıcının rol ve izinlerinden türeyen kuyrukları sorguluyor. Yetkisiz kuyruklar `0` olarak dahi açıklanmıyor; hiç sorgulanmadan yanıttan çıkarılıyor. `CUSTOMER` rolü boş sonuç alıyor ve kuyruk count sorguları çalışmıyor.
+3. Aksiyon kuyrukları: canlı destek isteyen aktif biletler (`ticket:update`), atanmamış aktif biletler (`ticket:assign`), inceleme bekleyen makaleler (`kb:approve`), inceleme bekleyen FAQ adayları ve mevcut rol sözleşmesiyle bekleyen crawler adaylarıdır.
+4. AI çözüm geçmişi (`ai-interactions:read`) aksiyon sayısına katılmayan ayrı bir **denetim** bağlantısıdır; müşteri etkileşim sayısı summary içinde açıklanmaz.
+5. Ticket listeleme API'sine doğrulanmış `chatStatus` ve `assignment=UNASSIGNED` filtreleri eklendi. Geçersiz `chatStatus`, Prisma'ya ulaşmadan `400 Bad Request` verir.
+6. FAQ approve/dismiss rol sözleşmesine kanonik RBAC kararına uygun `support_agent` eklendi. Crawler onay rolleri genişletilmedi.
+7. Frontend'e `/[locale]/review-center` eklendi. Arayüz acil operasyon, editoryal onay ve denetim işlerini ayırıyor; her kart görevin neden personele düştüğünü açıklıyor.
+8. Sidebar'a `GÖREV VE ONAYLAR` bölümü, toplam aksiyon rozeti ve yalnız backend'in döndürdüğü yetkili bağlantılar eklendi. Bilinmeyen roller fail-closed; müşteri için summary isteği ve görev bölümü yok.
+9. Derin bağlantı query parametreleri ilgili sayfalarda allowlist ile okunuyor; geçersiz değerler filtre uygulamıyor.
+10. TR/EN/DE metinleri tamamlandı; kullanıcıya görünen yeni metinler hardcode edilmedi.
+
+#### Test ve doğrulama kanıtı
+
+- Backend tam suite: **121/121 suite**, **1094 passed**, **1 skipped**, **0 failed**.
+- Frontend tam unit suite: **32/32 dosya**, **244/244 test**.
+- Backend ve frontend typecheck, TR/EN/DE i18n, **21/21** operasyon güvenliği, RBAC source contract ve **55/55** migration manifest geçti.
+- Son rol/validation sertleştirmesi için hedefli backend: **3 suite, 22/22 test**; sidebar regresyonu ve iki typecheck tekrar geçti.
+- Kimliksiz yerel smoke: API `401 Unauthorized` ve `Cache-Control: no-store, no-cache, must-revalidate, private`; frontend `/tr/review-center` → `307 /tr/login`.
+- OpenAPI envanteri **231 operation**; `.ai/PROJECT-MAP.md` ve `.ai/RBAC-MATRIX.md` bu sayıya ve yeni route sınıfına güncellendi.
+- `git diff --check`: temiz.
+- GitNexus CLI PATH/dependency yüzeyinde bulunamadı. Ticket filtre değişikliği için Graphify etki sorgusu, doğrudan kaynak incelemesi ve tam test suite kullanıldı.
+
+#### Güvenlik ve kapsam değerlendirmesi
+
+- Yetkisiz veya bilinmeyen rol için veri/sayı sızıntısı yok; summary e-posta veya kullanıcı kimliği taşımaz.
+- Hassas AI geçmişi sayısı yoktur; yalnız ayrı ve yetkili denetim linki vardır.
+- Görev Merkezi hiçbir görevi otomatik onaylamaz, rol atamaz, veri değiştirmez veya queue çalıştırmaz; salt-okunur orkestrasyon yüzeyidir.
+- Bu ürün commit'inde migration, seed, production DB, production Redis veya dış entegrasyon işlemi yoktur.
+
+#### CLAUDE'dan bağımsız kontrol talebi
+
+Lütfen Codex'in sonuçlarına güvenmeden aşağıdakileri kaynak kod ve yerel testlerle yeniden doğrula:
+
+1. `review-center.service.ts` içinde her count sorgusunun gerçek permission/role kapısıyla korunduğunu; `CUSTOMER` ve bilinmeyen rolün hiçbir count sorgusuna girmediğini doğrula.
+2. Yetkisiz kuyrukların yanıtta hiç bulunmadığını ve AI interaction history'nin toplam aksiyon sayısına katılmadığını kontrol et.
+3. Controller'ın global JWT korumasını, `no-store` başlıklarını ve service'e yalnız rol/permission aktarımını doğrula.
+4. FAQ approve/dismiss için `support_agent` eklenmesinin kanonik `faq:manage` kararıyla uyumlu, crawler onay rol yüzeyinin ise değişmeden kaldığını doğrula.
+5. `chatStatus` ve `assignment` query parametrelerinin allowlist/DTO sınırını ve geçersiz `chatStatus` değerinin DB sorgusundan önce reddedildiğini incele.
+6. Sidebar'ın müşteri için summary çağrısı yapmadığını, bilinmeyen rolü staff saymadığını ve eski mükerrer FAQ/AI bağlantılarını merkezi bölüme taşıdığını doğrula.
+7. Deep-link filtrelerinin yanlış veya manipüle edilmiş query değerlerinde fail-closed davrandığını kontrol et.
+8. OpenAPI, PROJECT-MAP ve RBAC-MATRIX'teki **231/231** envanter uyumunu bağımsız karşılaştır.
+9. Tam testleri mümkünse bağımsız çalıştır; özellikle yetkisiz sorgu yapılmaması ile aksiyon/denetim ayrımını incele.
+10. Migration/seed/DB rol ataması/canlı bağlantı/push/deploy yapılmadığını git diff ve geçmişten doğrula.
+
+Bağımsız kontrol sırasında ürün kodunu değiştirme; bulguları ortak raporun en altına append-only ekle. Canlıya alma, rol ataması, production migration, push ve deploy ayrı kullanıcı onayı gerektirir.
+
+---
+
+### 2026-08-07 — CODEX — Bağımsız inceleme blokları kapatıldı; önceki Görev Merkezi kaydına düzeltme eki
+
+Yukarıdaki ilk kapanış kaydından sonra zorunlu bağımsız kod ve güvenlik incelemeleri ürün commit'i `1efacf33` üzerinde toplam **4 HIGH, 3 MEDIUM ve 1 LOW** sorun bildirdi. Bu nedenle dokümantasyon commit'i/restore point oluşturulmadan süreç durduruldu. Bulgular TDD ile yalnız yerel ortamda kapatıldı; düzeltme commit'i `ef9bfe7e` (`fix: harden review center authorization and navigation`).
+
+#### Kapatılan bulgular
+
+1. **Müşteri global canlı-chat sayısı sızıntısı:** CUSTOMER'ın gerçek fallback izinlerinde `ticket:update` bulunduğu doğrulandı. Ticket kartları artık kanonik staff rolü + `ticket:read` + ilgili aksiyon iznini birlikte gerektiriyor. Gerçek CUSTOMER izin setiyle sıfır kart ve sıfır count sorgusu regresyonu eklendi.
+2. **Kartı görüp hedef listeyi açamama:** Ticket kartlarında read+update/assign; makalede `kb:read+kb:approve`; FAQ'da gerçek rol kapısı + `faq:review` kesişimi zorunlu. Yetkinin tek yarısı varsa count sorgusu hiç çalışmıyor.
+3. **Legacy `admin` rol wildcard uyumsuzluğu:** `admin` izni permission kontrolünde mevcut `RbacGuard` davranışını koruyor ancak rol-only FAQ/crawler kuyruklarını açmıyor. Rol bypass yalnız `*` ile aynı hale getirildi.
+4. **Rozet/liste aktif bilet kümesi farkı:** İki ticket linki `activeOnly=true` taşıyor. Controller bu alanı strict allowlist ile doğruluyor; service liste, total ve status bucket sorgularında `RESOLVED/CLOSED` dışlama sınırını koruyor.
+5. **Geçersiz query'nin filtresiz listeye düşmesi:** `assignment` ve `activeOnly` yalnız exact izinli değerleri kabul ediyor; invalid/repeated değerler service/Prisma öncesinde 400. `chatStatus` array/repeated girdi de fail-closed.
+6. **Aynı route içinde stale query:** Tickets, Knowledge Base ve Knowledge Pool bileşenleri search-param imzası değiştiğinde state ve veriyi yeniden senkronluyor. REQUESTED → UNASSIGNED, REVIEW → PUBLISHED ve crawler → sources geçişleri komponent regresyonlarıyla kilitlendi.
+7. **Yetkisiz içerik render flash'ı:** `RoleGuard` yetkisiz kullanıcıyı yönlendirmeden önce protected children render etmiyor. Müşteri `/review-center` sentinel testiyle doğrulandı.
+8. **Makale rozeti/hedef liste farkı:** Review Center makale count predicate'i hedef non-customer listeyle eşitlendi: `REVIEW`, `deletedAt=null`, `isAutoImported=false`; internal authored review kayıtları hedefte olduğu gibi dahil.
+
+#### TDD ve son doğrulama
+
+- Backend ilk RED: **10 fail / 37 pass**; frontend ilk RED: **4 fail / 17 pass**.
+- Hedefli backend GREEN: **47/47**; makale parity son kontrolü: **3 suite, 23/23**.
+- Hedefli frontend GREEN: **5 dosya, 22/22**.
+- Backend tam suite: **121/121**, **1102 passed**, **1 skipped**, **0 failed**.
+- Frontend tam suite: **34/34 dosya**, **248/248 test**.
+- Backend/frontend typecheck, TR/EN/DE i18n, **21/21** ops safety, RBAC source contract, **55/55** migration manifest ve `git diff --check`: geçti.
+- İlk kod incelemesinin üç HIGH bulgusu kapandı; ikinci kod incelemesi Critical/High/Medium bulmadı ve GO verdi.
+- Güvenlik incelemesinin müşteri sızıntısı/RoleGuard/admin/query bulguları kapandı. Makale parity iki iterasyonda bağımsız tekrar kontrol edildi ve son durumda **GO** verildi.
+
+#### Güncel sınır ve Claude kontrol isteği
+
+- Ürün commit zinciri: `1efacf33` + `ef9bfe7e`.
+- Canlı/shadow DB, production Redis, migration, seed, rol ataması, dış servis, push, tag-push, deploy ve publish yapılmadı.
+- Claude önceki 10 maddelik kontrol listesine ek olarak bu düzeltme ekindeki sekiz kapanışı bağımsız doğrulamalı; özellikle CUSTOMER'ın gerçek izin setini, count sorgularının hiç çalışmamasını, `activeOnly` status-bucket sınırını ve makale count/list predicate eşitliğini kaynak koddan kontrol etmelidir.
+- Authenticated yerel browser kabulü hâlâ ayrıdır: ADMIN ve güvenli yerel SUPPORT_AGENT hesabıyla sayfa, rozet, link ve boş/hata durumları görsel olarak doğrulanmalıdır.

@@ -3877,3 +3877,29 @@ Maintenance rule:
 - The repository-declared Node 20 binary was absent; verification ran on the active local Node 24.18.0 runtime. New scripts use Node 20-compatible APIs, but CI remains the authoritative Node 20 execution proof.
 - Görev Merkezi API/UI implementation has not started; it is the next local-only phase after this RBAC prerequisite checkpoint.
 - Post-phase restore point: tag `restore/post-support-agent-rbac-20260807-05483a67`; verified complete-history bundle `.private-data/restore-points/post-support-agent-rbac-05483a67.bundle`, SHA-256 `3671b51e2a7a211b78618746e5b4aa546b96262d8321f102fd2901f353805e4e`.
+
+## 2026-08-07 - Authorization-scoped Review Center
+
+### What changed
+
+- Added `GET /api/v1/review-center/summary` and a localized `/[locale]/review-center` operational UI.
+- Added a sidebar task/approval group whose queue links and aggregate badge come only from the authorization-scoped backend response.
+- Added ticket filters for live-chat-requested and unassigned work, plus fail-closed query parsing on destination pages.
+- Kept AI interaction history as an audit-only link outside action totals; no customer interaction count is exposed by the summary.
+- Aligned FAQ approve/dismiss role metadata with the approved `SUPPORT_AGENT` `faq:manage` contract without widening crawler approval roles.
+- Updated OpenAPI and project/RBAC maps to 231 operations.
+
+### Verification
+
+- Backend: 121/121 suites, 1102 passed, 1 skipped, 0 failed.
+- Frontend: 34/34 files, 248 tests passed.
+- Backend/frontend typecheck, i18n, 21/21 ops safety, RBAC source contract and 55/55 migration manifest passed.
+- Unauthenticated local smoke: API 401 with no-store/no-cache; frontend route redirects to localized login.
+- Product commits: `1efacf33`, `ef9bfe7e`.
+- Independent review blockers were closed: real CUSTOMER permissions cannot expose global counts; cards require destination-read plus action authority; legacy `admin` is not a role wildcard; active ticket and authored-article count/list predicates match; same-route queries resynchronize; unauthorized RoleGuard children never render.
+
+### Boundary and next step
+
+- No production/shadow DB, production Redis, external integration, migration, seed, user-role assignment, push, tag-push, deploy or publish occurred.
+- Authenticated local visual acceptance remains: ADMIN and, when a safe local account exists, SUPPORT_AGENT should verify queue visibility, direct links and empty/error states.
+- Claude was asked to independently review the authorization-query boundary, action/audit separation, query validation and 231-route documentation parity before any release decision.

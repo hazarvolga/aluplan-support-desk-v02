@@ -37,12 +37,12 @@ Müşteri sorunu
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│ Next.js 15 App Router · :3000 · 44 sayfa · tr/en/de       │
+│ Next.js 15 App Router · :3000 · 45 sayfa · tr/en/de       │
 │ Server Components + Zustand + Socket.io (TanStack yok)     │
 └────────────────────────┬─────────────────────────────────┘
                          │ REST /api/v1  +  WebSocket
 ┌────────────────────────┴─────────────────────────────────┐
-│ NestJS 11 · :4000 · 36 modül · 33+1 controller · 230 op   │
+│ NestJS 11 · :4000 · 37 modül · 34+1 controller · 231 op   │
 │ Global: JwtAuthGuard · RbacGuard · Throttler(120/dk)      │
 │         helmet · csurf · XssValidationPipe · SsrfGuard    │
 │         AuditLogInterceptor · MetricsInterceptor          │
@@ -60,9 +60,9 @@ Müşteri sorunu
 
 ---
 
-## 3. Backend — 230 operation, modül bazında
+## 3. Backend — 231 operation, modül bazında
 
-229 operation, proje içindeki 33 controller'dan; `GET /metrics` ise paket-kaynaklı `PrometheusController` sınıfından gelir.
+230 operation, proje içindeki 34 controller'dan; `GET /metrics` ise paket-kaynaklı `PrometheusController` sınıfından gelir.
 
 | Modül (OpenAPI tag) | Route | Sorumluluk |
 |---|---|---|
@@ -82,6 +82,7 @@ Müşteri sorunu
 | **Settings / Macros** | 6+6 | Ayar key-value · hazır cevaplar |
 | **Webhooks / Templates** | 5+5 | Dış webhook · duyuru şablonları |
 | **SLA Policies** | 4 | Politika CRUD |
+| **Review Center** | 1 | Yetkiye göre süzülen görev/onay özeti; mutasyon içermez |
 | Diğer (12 modül) | ~20 | Notifications, Health, Attachments, WhatsApp, Reports, Branding, EmailValidator, Prometheus, AI History, Storage, CrmWebhook, OmniChannel, Ops Dashboard |
 
 ### Public operation'lar (22 — `@Public()` dekoratörü, JWT muaf)
@@ -102,7 +103,7 @@ Müşteri sorunu
 
 ---
 
-## 4. Frontend — 44 sayfa
+## 4. Frontend — 45 sayfa
 
 ```
 (auth)/          register · reset-password · verify-email
@@ -114,6 +115,7 @@ login · help · unsubscribe · [locale] (landing)
 ├── knowledge-base (+[id], /edit, /new, /analytics)
 ├── knowledge-pool (+/upload)
 ├── faq · faq-learning · kb-approvals        ← 3 ekran, aynı FAQ kuyruğu
+├── review-center                            Yetki-kapsamlı görev ve onay yönlendirme merkezi
 ├── customers (+[id], /accounts/[id], /crm, /import)
 ├── teams (+/agents/[id], /departments/[id], /team-detail/[id])
 ├── products · users · profile · settings · system-topology · ai
@@ -220,13 +222,13 @@ Ayrıca `queue-dashboard` modülü (`ai-query-processing`, `document-parsing`, `
 
 **Organizasyon yapısı (gerçek):** 6 departman · 9 takım · 18 üyelik · **2 personel** (Meli, Meriç — ikisi de global `ADMIN` + `*` wildcard)
 
-### 230 operation'ın yetkilendirme sınıfı dağılımı (kaynak kod + OpenAPI ile doğrulandı)
+### 231 operation'ın yetkilendirme sınıfı dağılımı (kaynak kod + OpenAPI ile doğrulandı)
 
 | Sınıf | Adet | Anlamı |
 |---|---:|---|
 | `ROLE` | 132 | `@Roles(...)` ile sınırlı (class-level dahil, tekil dekoratör sayısı 113) |
 | `PERMISSION` | 49 | `@RequirePermissions(...)` ile sınırlı — dekoratör sayısıyla birebir |
-| `JWT_ONLY` | 27 | Kimlik doğrulanmış **her** kullanıcı erişir (CUSTOMER dahil) — rol/izin kontrolü yok; paket-kaynaklı `GET /metrics` dahil |
+| `JWT_ONLY` | 28 | Kimlik doğrulanmış **her** kullanıcı erişir (CUSTOMER dahil) — rol/izin kontrolü yok; paket-kaynaklı `GET /metrics` ve yetkiye göre boş/sınırlı yanıt üreten `GET /review-center/summary` dahil |
 | `PUBLIC` | 18 | JWT muaf, ek koruma yok/düşük risk; `POST /kb/articles/:id/view` dahil |
 | `PUBLIC+GUARD` | 4 | JWT muaf ama özel guard'lı |
 
@@ -346,4 +348,4 @@ Bu plan **tasarımdır** — Codex'in isteği doğrultusunda bu turda kod/script
 - **Yetki analizinde regex'e güvenmeyin** — bu haritayı çıkarırken toplam **iki ayrı turda** yanlış pozitif/negatif üretti: (1) ilk sürümde 3 route yanlış "public" sayıldı, (2) düzeltme turunda 5 `@Public()` operation kaçırıldı ve bir controller'ın DTO sınıfı gerçek controller sınıfı sanılıp `/ai` route'ları prefix'siz kaldı — ikisi de Codex'in bağımsız incelemesiyle yakalandı. **Otomatik tarama sonuçları her zaman kaynak kod okunarak veya `openapi.json` gibi otoritatif bir çıktıyla çapraz doğrulanmalı; tek başına kanıt sayılmamalı.**
 - **Truth hierarchy:** kod > testler > şema/migration > git geçmişi > `.ai` belgeleri > kök Markdown.
 - Değişiklik yapmadan önce yüksek blast-radius sembolleri kontrol edin (CLAUDE.md §4).
-- **RBAC detayı için:** `.ai/RBAC-MATRIX.md` (230 operation, tam sınıflandırma) — bu dosyayla birlikte okunmalı, tek başına yeterli değil.
+- **RBAC detayı için:** `.ai/RBAC-MATRIX.md` (231 operation, tam sınıflandırma) — bu dosyayla birlikte okunmalı, tek başına yeterli değil.

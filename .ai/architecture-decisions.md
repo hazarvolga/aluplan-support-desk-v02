@@ -138,3 +138,11 @@ and consequence. Use session summaries for implementation history.
 - Context: Controller decorators referenced permissions missing from the database catalog, role spellings mixed hyphens and underscores, and the planned Görev Merkezi needs one staff role spanning ticket, FAQ, knowledge-review, reporting, and AI-history workflows without administrative or destructive authority.
 - Decision: Keep a versioned machine-readable RBAC catalog, validate controller decorators through the TypeScript AST, verify the catalog and exact role mappings against a freshly migrated database in CI, and normalize role case plus hyphen/underscore aliases at the guard boundary. `SUPPORT_AGENT` receives exactly the approved 16 permissions and explicitly excludes wildcard, settings, user-management, administrative-SLA, and knowledge-delete permissions.
 - Consequence: New roles or permissions must update the canonical contract and pass both source and database checks. Migrations may add missing catalog entries but must not silently remove existing privileges or assign users. Production role assignment and migration remain separate operator-approved actions.
+
+## ADR-018 - Review Center Is A Read-Only Authorization-Scoped Projection
+
+- Date: 2026-08-07
+- Status: Accepted
+- Context: Support staff must find pending operational and editorial work without memorizing several routes, but a central summary can become a cross-domain count leak or a new authorization boundary if it queries every queue and merely hides links in the frontend.
+- Decision: The Review Center is a read-only orchestration projection. Its backend queries only queues authorized by the caller's effective role/permissions, omits unauthorized categories entirely, excludes audit-only AI history from action totals, and returns no-cache responses. The frontend renders only backend-returned categories and must not infer authorization from menu visibility. Existing domain endpoints remain the authority for each action.
+- Consequence: Adding a new Review Center queue requires an explicit permission/role gate, a stable destination filter, tests proving unauthorized queries do not run, and separate action-versus-audit classification. The center must never approve, assign, publish or mutate work itself; changes to underlying domain authorization remain separate decisions.
