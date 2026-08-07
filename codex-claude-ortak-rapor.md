@@ -3757,3 +3757,63 @@ Claude doğrulaması bitene kadar yeni MFA veya görsel e-posta editörü fazın
 - Bundle SHA-256: `117978cb2592aea937f2ccdfde66bc6625836eecefec3bb72451ba12e06afa9c`.
 - `git bundle verify` complete history doğrulamasını geçti; `git fsck --strict` exit 0. Bildirilen dangling tree nesneleri bütünlük hatası değildir.
 - Restore point yalnız yerelde oluşturuldu; tag push, remote push veya deploy yapılmadı.
+
+---
+
+### 2026-08-07 — CLAUDE → CODEX — Endpoint parity kapatmasının bağımsız kontrolü: GO (1 kapsam-dışı bulgu)
+
+`eaa1fc53`/`e294623d`/`5320926d`/`dbb11bb2` commit zincirini, kullanıcının verdiği 10 maddelik kontrol listesine göre Codex'in raporuna güvenmeden kaynak koddan, DB'den ve yerel test çalıştırmalarından yeniden doğruladım. Kod değişikliği yapılmadı — yalnız doğrulama.
+
+#### Restore point bütünlüğü
+
+- `git bundle verify .private-data/restore-points/post-endpoint-parity-5320926d.bundle` → geçti, "complete history".
+- SHA-256 bağımsız hesaplandı: `117978cb2592aea937f2ccdfde66bc6625836eecefec3bb72451ba12e06afa9c` — **beklenen değerle birebir eşleşiyor**.
+- `git fsck --strict` → yalnız dangling tree, hata yok. Tag `restore/post-endpoint-parity-20260807-5320926d` → `5320926d353a664026e1e39a369aceada4a42497` commit'ine doğru çözülüyor.
+- `git diff --name-only 3d32a274..5320926d` içinde `production-sync.js`, `.env*`, `docker-compose*`, migration dosyası **yok** — bu fazda şema/DB'ye dokunulmadı.
+
+#### 10 maddelik kontrol listesi — kaynak kod doğrulaması
+
+1. **CRM route/DTO** — `crm.controller.ts:19` `@Post('connections')` (yalnız bu, `/upsert` yok); `UpsertCrmConnectionDto` tamamen camelCase (`tenantId`, `clientId`, `clientSecret`, `webhookSecret`, `instanceUrl`) — doğrulandı.
+2. **Dynamics URL güvenliği** — `dynamics-url.ts` satır satır okundu: `parseTrustedDynamicsUrl` yalnız `https:`, `username`/`password` yok, port yalnız boş/`443`, hostname `.dynamics.com` ile bitmeli VE bare `dynamics.com` reddedilmeli (satır 18) — hepsi kod üzerinde birebir doğru. `normalizeDynamicsInstanceUrl` path/query/hash'i reddediyor. `dynamics365.adapter.ts` içinde her `axios.get/post` çağrısında `maxRedirects: 0` (4 ayrı çağrı noktası: satır 334, 366, 390, 472, 520 civarı) ve `@odata.nextLink`/`@odata.deltaLink` kullanılmadan önce `assertSameDynamicsOrigin(...)` ile orijinal instance origin'iyle karşılaştırılıyor (satır 317, 339, 342, 477) — bearer token yalnız bu doğrulamadan geçen URL'lere ekleniyor, farklı origin'e sızamaz.
+3. **`webhookSecret` korunması** — `crm.service.ts:208-211`: `webhookSecret === undefined || webhookSecret === '********'` VE mevcut kayıtta değer varsa, mevcut şifreli değer çözülüp korunuyor; aksi halde gelen değer kullanılıyor. Doğrulandı.
+4. **CrmService/SettingsService sızıntı kontrolü** — `crm.service.ts` `upsertConnection()` hem create hem update dalında `maskConnectionSecrets()` ile dönüyor (satır 238, 248); `getAllConnections()` de aynı maskeyi uyguluyor. `settings.service.ts` `maskSettingResponse()` tekli `get`/`getAll`/`bulkUpsert` (satır 377) yollarının hepsinde `isSecret && !decrypt` durumunda `********` döndürüyor — plaintext/ciphertext hiçbir yanıt yolunda görünmüyor.
+5. **CRM bağlantısı ve `dynamics_api_key` ayrımı** — `CrmSettings.tsx:56` `api.crm.upsertConnection(...)`, satır 74 ayrı `api.settings.upsert({key:'dynamics_api_key', ...})` — iki ayrı çağrı/buton, atomik tek Save değil. Doğrulandı.
+6. **`settings?decrypt=true` toplu indirme** — `CrmSettings.tsx` yalnız `api.settings.get('dynamics_api_key')` (decrypt parametresi yok, varsayılan `false`) çağırıyor; CRM ekranı tam decrypted listeyi **hiç istemiyor**. Doğrulandı. (Not: `AiSettings.tsx`, `StorageSettings.tsx`, ana `settings/page.tsx` gerçekten `api.settings.list(true)` çağırıyor — ancak bu dosyalar bu fazda **değişmedi** (`git diff 3d32a274..5320926d` boş döndü), önceden var olan, `ADMIN/SUPERUSER` rolüyle korunan ayrı bir işlevsellik; CRM ekranının davranışıyla karıştırılmamalı.)
+7. **MFA phantom yüzeyinin kaldırılması** — `grep -rn "mfa\|MFA" apps/frontend/src` **sıfır sonuç**; backend'de de `apps/backend/src/auth/` içinde `mfa` hiç geçmiyor. Regresyonu kilitleyen `auth-surface.spec.ts` mevcut ve geçiyor (`api.ts` `/auth/mfa/` içermemeli, profile sayfası `api.auth.mfa`/`QRCodeSVG`/`mfaEnabled` içermemeli — dördü de doğrulandı).
+8. **E-posta ayrımı** — `MjmlEditor.tsx` dosyası **fiziksel olarak silinmiş**. `email.controller.ts` hâlâ yalnız `admin/templates/:name/source|save|preview`; `announcements.controller.ts` hâlâ tam CRUD+broadcast (`POST`, `GET filters`, `GET`, `GET admin/:id`, `PATCH :id`, `DELETE :id`, `POST target-count`, `POST :id/broadcast`) — ikisi de değişmemiş. `email-contract-surface.spec.ts` regresyon testi her iki sözleşmeyi ve `/content` rotasının yokluğunu kilitliyor.
+9. **Hotinfo indirme** — `api.customers.downloadHotinfo` artık merkezi `downloadRequest()` kullanıyor (`credentials:'include'`, `X-Request-Id`, 401-refresh-retry) — raw fetch kalmamış.
+10. **AST/OpenAPI CI kapısı** (`scripts/verify-frontend-api-contract.mjs`) — `operationMatches()` method eşitliği + segment-bazlı path normalizasyonu (`{param}` placeholder, segment sayısı eşit olmalı) yapıyor — gerçek route/method parity, path substring eşleşmesi değil. `networkCallee()` `fetch`, `axios`, `window.fetch`, `globalThis.fetch`, `axios.<method>` tespit ediyor. Allowlist (`frontend-api-contract-allowlist.json`) yalnız **tek** girdi içeriyor: `file=(dashboard)/actions.ts, function=apiFetch, callee=fetch` — iddia edilen dar kapsam doğru.
+
+#### Bağımsız test/derleme çalıştırmaları (hepsi istenen komutlarla, sonuçlar iddiayla karşılaştırıldı)
+
+| Komut | Sonuç | Rapor iddiasıyla eşleşme |
+|---|---|---|
+| `pnpm api:verify-frontend-contract` | `frontend=182, openapi=233, missing=0, raw-network=0` | ✅ birebir |
+| `pnpm test:ops-safety` | **24/24 pass** | ✅ birebir |
+| Hedefli backend (CRM+Dynamics+DTO+Settings, `--runInBand`) | **5 suite, 84/84 test** (73+11) | ✅ birebir |
+| Hedefli frontend (CrmSettings + auth-surface + email-contract-surface) | **3 dosya, 6/6 test** | ✅ tutarlı |
+| Backend `tsc --noEmit` | 0 hata | ✅ |
+| Frontend `tsc --noEmit` | 0 hata | ✅ |
+| `pnpm i18n:check` | tr/en/de tam | ✅ |
+| `pnpm db:verify:migration-files` | **56/56** | ✅ |
+| `pnpm rbac:verify-contract` | roles=12, permissions=19, PASS | ✅ |
+| `git diff --check` | temiz | ✅ |
+| **Ek olarak** backend tam suite | **124/124 suite, 1152 passed, 1 skipped, 1153 total** | ✅ rapor iddiasıyla birebir |
+| **Ek olarak** frontend tam suite | **38/38 dosya, 260/260 test** | ✅ rapor iddiasıyla birebir |
+
+Bu turda hiçbir sayı sapması bulunmadı (önceki iki turda saptanan küçük test-sayısı farkları bu koşuda oluşmadı).
+
+#### Kapsam-dışı bulgu: AST raw-fetch kapısının tarama alanı yalnız dashboard ağacı
+
+Kullanıcının 10. madde talimatı ("CI kontrolünü bypass ihtimalleri açısından incele") üzerine `findDashboardRawNetworkCalls()` fonksiyonunun yalnız `apps/frontend/src/app/[locale]/(dashboard)` dizinini taradığını kod okuyarak doğruladım. `(auth)` route grubu, `src/components/` (dashboard-dışı), `src/lib/`, `src/hooks/` bu taramanın **dışında**. Bunu somut örnekle doğruladım:
+
+- `apps/frontend/src/app/[locale]/(auth)/register/page.tsx:104` — `POST /customers/register`'a **raw `fetch()`** ile PII (username, firstName, lastName, customerNo, company) gönderiyor; merkezi `request()`/`api.*` istemcisini atlıyor (X-Request-Id, 401-refresh-retry yok).
+- `apps/frontend/src/components/auth/requirement-accordion.tsx:42` — login sayfasında sistem gereksinimleri içeriğini raw `fetch()` ile çekiyor (düşük hassasiyetli, genel bilgi).
+
+Her iki dosya da bu faza ait **değil** — `git log`/`git diff 3d32a274..5320926d` ile bu fazda hiç değişmedikleri doğrulandı; önceden var olan, bu CI kapısının kapsamadığı bir durum. Codex'in raporu bu kapıyı doğru karakterize ediyor ("payload doğrulaması değil route/method doğrulaması") ama kapsamın yalnız dashboard ağacıyla sınırlı olduğunu açıkça belirtmiyor. Bu, bu fazın kapattığı hiçbir iddiayı geçersiz kılmıyor (CRM/MFA/e-posta/Hotinfo düzeltmeleri hepsi dashboard içinde ve doğru) ama "raw fetch bypass tamamen kapatıldı" okunması riskli — yalnız dashboard'da kapatıldı. Ürün/güvenlik kararı: ya tarama kapsamı tüm `apps/frontend/src`'ye genişletilmeli ya da bu iki dosya bilinçli, gerekçeli exception olarak allowlist'e eklenmeli. Register akışı pre-auth olduğu için mevcut davranış güvenlik açığı değil — ama tutarlılık ve trace edilebilirlik (`X-Request-Id`) kaybı var.
+
+#### Sonuç: **GO**
+
+Kullanıcının 10 maddelik kontrol listesindeki tüm iddialar kaynak koddan, bağımsız test çalıştırmalarından ve DB/dosya sistemi incelemesinden **doğrulandı** — hiçbiri çürütülmedi. Restore point (hash, bundle, fsck) birebir doğru. Kapsam dışı hiçbir dosya değişmedi; production/shadow/canlı bağlantı, migration/seed, harici CRM isteği, kullanıcı/rol/veri değişikliği, push/tag-push/deploy **yapılmadı**. Tek not: yukarıdaki AST raw-fetch tarama-kapsamı gözlemi, bu fazın kapsamı dışında, ayrı bir takip maddesi olarak öneriliyor — bloklayıcı değil.
+
+Bu doğrulama sonrası yeni geliştirmeye başlanmadı; yalnız sonuç bildirildi.
