@@ -3904,3 +3904,30 @@ Maintenance rule:
 - Authenticated local visual acceptance remains: ADMIN and, when a safe local account exists, SUPPORT_AGENT should verify queue visibility, direct links and empty/error states.
 - Claude was asked to independently review the authorization-query boundary, action/audit separation, query validation and 231-route documentation parity before any release decision.
 - Local restore point: tag `restore/post-review-center-20260807-2fe9eb8e`; verified complete-history bundle `.private-data/restore-points/post-review-center-2fe9eb8e.bundle`, SHA-256 `9a6864b8ab7fe4d32928fed4823dae022d9e6e8dbbee24a563825b1a432c5829`.
+
+## 2026-08-07 - Product taxonomy CRUD, archive safety, and endpoint parity audit
+
+### What changed
+
+- Added the missing product PATCH/archive endpoints and moved every products-page mutation to the authenticated central API client.
+- Added DTO validation, normalized duplicate detection, P2002-to-409 mapping, and partial normalized unique indexes for active product/category names.
+- Product and category archive operations preserve historical foreign keys. Product-first `FOR UPDATE` locking keeps concurrent archive/create/update operations consistent.
+- Ticket creation, AI diagnosis, and smart-tagging now reject or ignore archived taxonomy.
+- FAQ taxonomy restoration now creates an active replacement instead of silently reusing archived records.
+- Added unit, DTO, frontend, real-Postgres concurrency, and Playwright product lifecycle coverage.
+
+### Verification
+
+- Backend full suite: 122/122 suites, 1129 passed, 1 skipped.
+- Frontend full suite: 35/35 files, 254/254 tests.
+- Product Playwright lifecycle: 4/4 passed; generated product/category and E2E users were removed from local dev DB afterward.
+- Fresh PG17: all 56 migrations, migration integrity, schema parity, RBAC DB contract, duplicate-index behavior, and concurrency regression passed; disposable container removed.
+- Backend/frontend typecheck, TR/EN/DE i18n, migration manifest, OpenAPI/RBAC matrix 233/233 parity, and diff hygiene passed.
+- Independent code review and security review both returned GO after restore/P2002 and TOCTOU findings were fixed.
+
+### Local-only boundary and follow-up
+
+- Local dev DB on `localhost:55433` received migration `20260807143000_add_product_taxonomy_unique_indexes` after a zero-duplicate read-only audit. Production and shadow DBs were not connected to or changed.
+- Product code commit: `93870762`; migration commit: `c23867e1`.
+- No push, tag-push, deploy, publish, or live-system action occurred.
+- Static frontend/OpenAPI parity audit found three pre-existing gaps for separate work: CRM settings wrong route, unimplemented MFA backend contract, and unimplemented MJML content/announcement contract. No code change for those findings was made in this phase.

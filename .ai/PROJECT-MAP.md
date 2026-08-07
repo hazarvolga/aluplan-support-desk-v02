@@ -60,9 +60,9 @@ Müşteri sorunu
 
 ---
 
-## 3. Backend — 231 operation, modül bazında
+## 3. Backend — 233 operation, modül bazında
 
-230 operation, proje içindeki 34 controller'dan; `GET /metrics` ise paket-kaynaklı `PrometheusController` sınıfından gelir.
+232 operation, proje içindeki 34 controller'dan; `GET /metrics` ise paket-kaynaklı `PrometheusController` sınıfından gelir.
 
 | Modül (OpenAPI tag) | Route | Sorumluluk |
 |---|---|---|
@@ -78,7 +78,7 @@ Müşteri sorunu
 | **Customers** | 9 | Profil, Hotinfo, CRM eşleme, import |
 | **FAQ** | 8 | Aday listesi, onay/red, yayın, provenance |
 | **Proactive Chat** | 8 | Oturum, mesaj, kabul/red, ticket'a dönüştürme |
-| **Users / Products** | 7+7 | Kullanıcı yönetimi · ürün-kategori |
+| **Users / Products** | 7+9 | Kullanıcı yönetimi · ürün-kategori |
 | **Settings / Macros** | 6+6 | Ayar key-value · hazır cevaplar |
 | **Webhooks / Templates** | 5+5 | Dış webhook · duyuru şablonları |
 | **SLA Policies** | 4 | Politika CRUD |
@@ -222,11 +222,11 @@ Ayrıca `queue-dashboard` modülü (`ai-query-processing`, `document-parsing`, `
 
 **Organizasyon yapısı (gerçek):** 6 departman · 9 takım · 18 üyelik · **2 personel** (Meli, Meriç — ikisi de global `ADMIN` + `*` wildcard)
 
-### 231 operation'ın yetkilendirme sınıfı dağılımı (kaynak kod + OpenAPI ile doğrulandı)
+### 233 operation'ın yetkilendirme sınıfı dağılımı (kaynak kod + OpenAPI ile doğrulandı)
 
 | Sınıf | Adet | Anlamı |
 |---|---:|---|
-| `ROLE` | 132 | `@Roles(...)` ile sınırlı (class-level dahil, tekil dekoratör sayısı 113) |
+| `ROLE` | 134 | `@Roles(...)` ile sınırlı (class-level dahil, tekil dekoratör sayısı 115) |
 | `PERMISSION` | 49 | `@RequirePermissions(...)` ile sınırlı — dekoratör sayısıyla birebir |
 | `JWT_ONLY` | 28 | Kimlik doğrulanmış **her** kullanıcı erişir (CUSTOMER dahil) — rol/izin kontrolü yok; paket-kaynaklı `GET /metrics` ve yetkiye göre boş/sınırlı yanıt üreten `GET /review-center/summary` dahil |
 | `PUBLIC` | 18 | JWT muaf, ek koruma yok/düşük risk; `POST /kb/articles/:id/view` dahil |
@@ -348,4 +348,4 @@ Bu plan **tasarımdır** — Codex'in isteği doğrultusunda bu turda kod/script
 - **Yetki analizinde regex'e güvenmeyin** — bu haritayı çıkarırken toplam **iki ayrı turda** yanlış pozitif/negatif üretti: (1) ilk sürümde 3 route yanlış "public" sayıldı, (2) düzeltme turunda 5 `@Public()` operation kaçırıldı ve bir controller'ın DTO sınıfı gerçek controller sınıfı sanılıp `/ai` route'ları prefix'siz kaldı — ikisi de Codex'in bağımsız incelemesiyle yakalandı. **Otomatik tarama sonuçları her zaman kaynak kod okunarak veya `openapi.json` gibi otoritatif bir çıktıyla çapraz doğrulanmalı; tek başına kanıt sayılmamalı.**
 - **Truth hierarchy:** kod > testler > şema/migration > git geçmişi > `.ai` belgeleri > kök Markdown.
 - Değişiklik yapmadan önce yüksek blast-radius sembolleri kontrol edin (CLAUDE.md §4).
-- **RBAC detayı için:** `.ai/RBAC-MATRIX.md` (231 operation, tam sınıflandırma) — bu dosyayla birlikte okunmalı, tek başına yeterli değil.
+- **RBAC detayı için:** `.ai/RBAC-MATRIX.md` (233 operation, tam sınıflandırma) — bu dosyayla birlikte okunmalı, tek başına yeterli değil.

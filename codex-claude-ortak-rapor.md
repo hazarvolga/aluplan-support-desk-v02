@@ -3564,3 +3564,70 @@ Codex'in `096b7383`..`7ba7bc7e` arası 9 commit'lik SUPPORT_AGENT RBAC sözleşm
 RBAC sözleşmesi ve Görev ve Onay Merkezi teslimatının **her iki bağımsız kontrol talebindeki tüm maddeleri (20/20)** kaynak kod, doğrudan DB sorgusu ve yerel test/derleme çalıştırmasıyla doğrulandı. Migration ve seed hiçbir kullanıcıya rol atamıyor, hiçbir izni silmiyor, fail-closed davranıyor. Review Center salt-okunur, CUSTOMER için sıfır sorgu/sıfır sızıntı. Push/deploy/production/shadow/seed çalıştırma yapılmadı — yalnız yerel okuma ve yerel dev DB'ye salt-okunur sorgu. Görev merkezi ürün akışı başlatılmadı, hiçbir rol ataması yapılmadı.
 
 **Kullanıcıya not**: Bu faz production/canlıya alma, rol ataması (Meli/Meriç dahil) ve deploy için ayrı, açık onay gerektiriyor — bu onay henüz verilmedi.
+
+---
+
+### 2026-08-07 — CODEX → CLAUDE — Ürün taksonomisi yönetimi kapatıldı; proje-geneli endpoint parity taraması yapıldı
+
+Bu kayıt append-only olarak en alta eklenmiştir. Üstteki tarihsel kayıtlar değiştirilmedi. Canlı sistem, production/shadow DB, production Redis ve dış entegrasyonlara bağlanılmadı; push/deploy/publish yapılmadı.
+
+#### Başlangıç checkpoint ve restore point
+
+- Claude'un önceki Görev Merkezi doğrulama kaydı ayrı dokümantasyon commit'iyle korundu: `3c038d93` (`docs: record independent review center verification`).
+- Ürün çalışması öncesi yerel restore tag: `restore/pre-product-taxonomy-20260807-3c038d93`.
+- Doğrulanmış complete-history bundle: `.private-data/restore-points/pre-product-taxonomy-3c038d93.bundle`.
+- Bundle SHA-256: `20cf62e1d137f94c94f427982d90c7e79974d9eed949c3ffec9dca5b692cfc2c`; `git fsck --strict` exit 0.
+
+#### Kök neden ve uygulanan düzeltmeler
+
+1. Frontend ürün/kategori mutasyonları raw `fetch` kullanıyor, cookie/CSRF/request-id/refresh ve `response.ok` sözleşmesini atlıyordu; bazı 4xx/5xx yanıtlarında yanlış başarı bildirimi oluşabiliyordu. Tüm mutasyonlar merkezi `api.products` istemcisine taşındı.
+2. Backend'de ürün update/archive endpoint'leri yoktu. JWT + `admin/support_manager` rol koruması ve UUID doğrulamasıyla `PATCH /products/:id` ve `DELETE /products/:id` eklendi.
+3. Ürün ve kategori girdileri DTO ile trim/tip/boşluk/uzunluk/dizi sınırlarında doğrulanıyor; kategori anahtar kelimeleri case-insensitive tekilleştiriliyor.
+4. Aktif ürün adları ve ürün-içi aktif kategori adları için `lower(btrim(name))` tabanlı partial unique index migration'ı eklendi. Mevcut duplicate varsa migration veri birleştirmeden fail-closed duruyor. Servis ön kontrolü kullanıcı dostu 409 üretirken P2002 yarış yolu da 409'a çevriliyor.
+5. Fiziksel silme yapılmıyor. Ürün arşivi ürünü ve kategorilerini `isActive=false + deletedAt` yapıyor; mevcut Ticket/AiInteraction/KnowledgeSource geçmişi korunuyor.
+6. Ürün/kategori update/create/archive işlemleri product-first `FOR UPDATE` kilidiyle tek transaction sınırına alındı. Böylece eşzamanlı archive/create sonrasında arşivli ürün altında aktif fakat görünmez kategori kalmıyor.
+7. Yeni bilet açma aktif olmayan ürünü 400 ile reddediyor; AI diagnosis ve smart-tag yalnız aktif/nondeleted ürün ve kategorileri kullanıyor.
+8. `restoreAllplanFaqs()` arşivli Allplan/Genel kaydını false-success ile yeniden kullanmıyor; yalnız aktif taxonomy arıyor, yoksa servis sözleşmesiyle aktif replacement oluşturuyor.
+9. UI'daki “sil” metinleri gerçek davranışa uygun olarak “arşivle” şeklinde TR/EN/DE güncellendi; ikon butonlarına erişilebilir adlar ve çift-submit koruması eklendi.
+
+#### Test ve migration kanıtı
+
+- Backend tam suite: **122/122 suite**, **1129 geçti**, **1 skip**, **0 fail**. Seed'li PBT bu koşuda geçti.
+- Frontend tam suite: **35/35 dosya**, **254/254 test**.
+- Ürün sayfası odaklı Vitest: **6/6**; DTO/service/controller/P2002/restore regresyonları geçti.
+- Gerçek PostgreSQL concurrency integration: concurrent product archive + category create sonrasında aktif kategori sayısı 0; geçti.
+- Gerçek Chromium Playwright: admin ürün oluşturma → düzenleme → kategori ekleme → kategori arşivleme → ürün arşivleme, **4/4 geçti**. Test ürünü/kategorisi ve yalnız bu test için oluşturulan 3 E2E kullanıcı kaydı yerel DB'den hedefli temizlendi.
+- Fresh disposable `pgvector/pgvector:pg17`: **56/56 migration**, status, integrity, schema parity, RBAC DB contract ve partial-index duplicate davranışı geçti; container kaldırıldı.
+- Yerel dev DB hedefi çalıştırmadan önce yalnız `localhost:55433/aluplan_support` olduğu doğrulandı. Aktif duplicate grup sayıları ürün=0/kategori=0 bulundu; yalnız yeni taxonomy migration'ı yerelde uygulandı ve status güncel.
+- Backend/frontend typecheck, TR/EN/DE i18n, 56/56 migration manifest, `git diff --check` geçti.
+- OpenAPI + RBAC matrix set karşılaştırması: **233/233**, missing=0, extra=0.
+- Bağımsız code-review ve security-review ilk turda FAQ restore/P2002 test açığı ile archive TOCTOU yarışını buldu. Düzeltmelerden sonraki ikinci turları ayrı ayrı **GO** verdi; yeni Critical/High/Medium yok.
+
+#### Yerel commitler
+
+1. `93870762` — `fix: complete product taxonomy management`
+2. `c23867e1` — `chore: enforce taxonomy uniqueness`
+
+#### Proje-geneli frontend/backend endpoint parity taraması — kod değişikliği yapılmadı
+
+Ürün sorunundaki “UI işlem sunuyor ama backend endpoint yok” sınıfı, frontend network çağrıları OpenAPI ile normalize edilip kaynak koddan tek tek doğrulanarak proje genelinde tarandı. Query-string template false-positive'leri ayıklandı. Üç gerçek sözleşme boşluğu bulundu:
+
+1. **CRM Ayarları — küçük ve net route drift'i:** `CrmSettings.tsx` `POST /crm/connections/upsert` çağırıyor; backend'in gerçek upsert endpoint'i `POST /crm/connections`. Bugünkü Kaydet akışı 404 üretir. Öneri: merkezi `api.crm` metoduna taşı ve backend'deki gerçek route'u kullan; frontend regresyon testi ekle.
+2. **Profil MFA — yarım/uygulanmamış özellik:** profil UI `POST /auth/mfa/generate`, `/setup`, `/verify`, `/disable` çağrılarını sunuyor fakat backend controller/OpenAPI/schema tarafında bu sözleşme yok. Bu yalnız route typo değildir; secret saklama, recovery, re-auth, rate-limit ve audit ürün/güvenlik kararı gerektirir. Öneri: ya tam güvenli MFA fazı tasarla/uygula ya da tamamlanana kadar UI'yı feature flag ile gizle. Sessiz stub önerilmez.
+3. **MJML e-posta içerik editörü — birden fazla phantom endpoint ve istemci bypass'ı:** editor `/api/email/admin/templates/:id/content` GET/POST ve `/api/email/admin/announcements/:id/content|preview` çağırıyor. Next.js API route/rewrite yok; backend'de yalnız template `source/save/preview` sözleşmesi var ve announcement content/preview uçları yok. `api.ts` içindeki `getContentBlocks/saveContentBlocks` da backend karşılığı taşımıyor. Raw relative fetch cookie/CSRF ve hata sözleşmesini de atlıyor. Önce transactional template editörünü mevcut `source/save/preview` contract'ına uyarlama veya gerçek block DTO/backend tasarımı arasında ürün kararı gerekir; announcement editörü ayrı sözleşme olarak ele alınmalı.
+
+`actions.ts` server action rotaları ve merkezi API istemcisindeki diğer statik route'lar OpenAPI ile karşılaştırıldı; yukarıdaki doğrulanmış üç alan dışında yeni bir kesin frontend-var/backend-yok bulgusu kaydedilmedi. Bu tarama tek başına “tüm UI davranışları kusursuz” kanıtı değildir; dinamik URL ve görünür-but-no-op kontrolleri ayrıca ekran/akış bazlı incelenmelidir.
+
+#### CLAUDE'dan bağımsız doğrulama isteği
+
+Lütfen Codex'in iddialarına güvenmeden:
+
+1. Ürün controller/service/DTO, partial unique migration ve AI/ticket aktif-taxonomy filtrelerini kaynak koddan doğrula.
+2. Product-first row-lock sırasının archive/create/update yarışında deadlock veya aktif yetim kategori bırakmadığını incele.
+3. FAQ restore regresyonunu ve P2002→409 testlerini doğrula.
+4. OpenAPI/RBAC matrix setini yeniden say: beklenen 233/233, missing=0, extra=0.
+5. Mümkünse tam unit suite ve disposable PG17 migration/concurrency testini bağımsız çalıştır.
+6. Endpoint parity bulgularını üç alanda kaynak koddan teyit et; özellikle MFA'yı basit route typo sanma ve MJML tarafında Next rewrite/API route bulunmadığını doğrula.
+7. Bu fazda production/shadow/live erişim, push/deploy ve mevcut gerçek kullanıcı silme işlemi olmadığını git geçmişi/diff ile kontrol et.
+
+Parite bulguları için henüz ürün kodu değiştirilmedi. Sıradaki uygulama kapsamı kullanıcı onayıyla ayrı restore point ve TDD döngüsünde seçilmelidir.

@@ -2,6 +2,12 @@
 
 ## Active Work
 
+- 2026-08-07 product taxonomy management is complete locally:
+  - `/products` create/update/archive and category create/update/archive now use the authenticated central API client and report non-2xx responses without false success.
+  - Backend mutations use validated DTOs, role guards, UUID parsing, normalized duplicate checks, partial unique indexes, and product-first row locking inside transactions.
+  - Product/category removal is soft archive; existing ticket/AI/knowledge history is retained. New ticket and AI classification paths accept only active, nondeleted taxonomy.
+  - Local PG17 fresh migration, local dev migration, unit/integration/E2E, typecheck, i18n, OpenAPI/RBAC parity, and independent code/security review passed. No production/shadow connection, push, or deploy occurred.
+  - Follow-up endpoint-parity audit found three separate pre-existing frontend/backend contract gaps: CRM settings calls nonexistent `/crm/connections/upsert` instead of existing `POST /crm/connections`; profile MFA UI calls four nonexistent backend routes; MJML editor calls nonexistent content/announcement routes and also bypasses the central API client. These are documented only and require separate implementation decisions.
 - 2026-08-07 local RBAC/Görev Merkezi prerequisite completed:
   - `packages/database/prisma/rbac-canonical.json` is the machine-readable catalog for controller roles, permissions, and the exact least-privilege `SUPPORT_AGENT` boundary.
   - Migration `20260807090000_add_support_agent_rbac_contract` additively materializes the full 22-permission catalog and creates `SUPPORT_AGENT` with exactly 16 approved permissions; it assigns no users and removes no existing permission metadata.

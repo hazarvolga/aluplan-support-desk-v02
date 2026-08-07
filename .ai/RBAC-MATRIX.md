@@ -1,6 +1,6 @@
 # Operation-Bazlı Yetkilendirme Matrisi
 
-**Oluşturan:** Claude - **Codex düzeltmeleri:** 2026-08-06, 2026-08-07 - **Yöntem:** Proje controller dekoratör bloklarından çıkarılan 230 operation, OpenAPI ile çapraz doğrulandı; paket-kaynaklı `GET /metrics` eklenerek toplam 231 operation'a tamamlandı.
+**Oluşturan:** Claude - **Codex düzeltmeleri:** 2026-08-06, 2026-08-07 - **Yöntem:** Proje controller dekoratör bloklarından çıkarılan 232 operation, OpenAPI ile çapraz doğrulandı; paket-kaynaklı `GET /metrics` eklenerek toplam 233 operation'a tamamlandı.
 
 Sınıflar:
 - **PUBLIC**: JWT muaf, ek koruma yok
@@ -10,7 +10,7 @@ Sınıflar:
 - **PERMISSION**: @RequirePermissions ile sınırlı
 - **ROLE+PERMISSION**: İkisi birden gerekli
 
-> Doğrulama notu: Sınıf-seviyesi dekoratörler birden fazla route etkileyebilir; bu yüzden operation sayısı (bu dosyada 231) ham dekoratör sayısıyla birebir eşleşmez. `Guard` sütunu aksi belirtilmedikçe controller/class/method üzerinde açıkça tanımlanmış guard'ları gösterir; global `APP_GUARD` kayıtları her satırda tekrarlanmaz.
+> Doğrulama notu: Sınıf-seviyesi dekoratörler birden fazla route etkileyebilir; bu yüzden operation sayısı (bu dosyada 233) ham dekoratör sayısıyla birebir eşleşmez. `Guard` sütunu aksi belirtilmedikçe controller/class/method üzerinde açıkça tanımlanmış guard'ları gösterir; global `APP_GUARD` kayıtları her satırda tekrarlanmaz.
 
 ## external/@willsoto/nestjs-prometheus
 
@@ -315,6 +315,8 @@ Sınıflar:
 | GET /products | PUBLIC | - | - | - |
 | POST /products | ROLE | admin, support_manager | - | JwtAuthGuard,RbacGuard |
 | GET /products/:id | JWT_ONLY | - | - | JwtAuthGuard |
+| PATCH /products/:id | ROLE | admin, support_manager | - | JwtAuthGuard,RbacGuard |
+| DELETE /products/:id | ROLE | admin, support_manager | - | JwtAuthGuard,RbacGuard |
 | POST /products/:id/categories | ROLE | admin, support_manager | - | JwtAuthGuard,RbacGuard |
 | PATCH /products/categories/:categoryId | ROLE | admin, support_manager | - | JwtAuthGuard,RbacGuard |
 | DELETE /products/categories/:categoryId | ROLE | admin, support_manager | - | JwtAuthGuard,RbacGuard |
