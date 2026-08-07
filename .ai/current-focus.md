@@ -2,6 +2,11 @@
 
 ## Active Work
 
+- 2026-08-07 Review Center active-record parity Aşama A is independently closed:
+  - Product commit `69655f1c` and restore bundle SHA-256 `466460f32cfb0bddf5a3adc478dd4f64c95f71bf18585a84aa12fb549f2a5c80` received Codex code/security GO and a separate Claude GO.
+  - Independent local DB checks confirmed live-chat card/list `0/0` and FAQ candidate card/list `20/20`; all reported test, typecheck, i18n, contract, migration-manifest, and restore-integrity evidence matched without deviation.
+  - Aşama A is complete. Global Prisma Proxy/middleware Aşama B remains NO-GO and must not start without a separate inventory, plan, restore point, and explicit user approval.
+  - Work is intentionally paused after documentation closure. Push, tag-push, deploy, production/shadow access, migration/seed, and live-data changes remain forbidden.
 - 2026-08-07 product taxonomy management is complete locally:
   - `/products` create/update/archive and category create/update/archive now use the authenticated central API client and report non-2xx responses without false success.
   - Backend mutations use validated DTOs, role guards, UUID parsing, normalized duplicate checks, partial unique indexes, and product-first row locking inside transactions.
