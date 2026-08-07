@@ -24,7 +24,9 @@
         "rag:maintenance": "pnpm --filter @aluplan/backend rag:maintenance",
         "i18n:check": "pnpm --filter @aluplan/frontend i18n:check",
         "spec:verify": "node scripts/verify-specs.mjs",
-        "test:ops-safety": "node --test scripts/verify-migration-integrity.test.mjs scripts/production-boot-safety.test.mjs"
+        "test:ops-safety": "node --test scripts/verify-migration-integrity.test.mjs scripts/production-boot-safety.test.mjs scripts/verify-rbac-contract.test.mjs",
+        "rbac:verify-contract": "node scripts/verify-rbac-contract.mjs",
+        "rbac:verify-database": "node scripts/verify-rbac-contract.mjs --database"
     },
     "devDependencies": {
         "@types/handlebars": "^4.1.0",

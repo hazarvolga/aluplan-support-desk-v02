@@ -32,6 +32,10 @@ const databaseSeed = await readFile(
     new URL('../packages/database/prisma/seed.ts', import.meta.url),
     'utf8',
 );
+const rbacSeed = await readFile(
+    new URL('../packages/database/prisma/seed-rbac.ts', import.meta.url),
+    'utf8',
+);
 const createAdmin = await readFile(
     new URL('../apps/backend/create-admin.js', import.meta.url),
     'utf8',
@@ -226,6 +230,13 @@ test('seed and legacy admin helper cannot silently reset production credentials'
             `${policyMarker} must be checked before the first Prisma call`,
         );
     }
+
+    const firstRbacPrismaCall = rbacSeed.indexOf('await prisma.');
+    assert.ok(firstRbacPrismaCall > 0);
+    assert.ok(
+        rbacSeed.indexOf('ALLOW_DATABASE_SEED') < firstRbacPrismaCall,
+        'RBAC seed opt-in must be checked before the first Prisma call',
+    );
 });
 
 test('sensitive maintenance and local data files stay out of Docker build context', () => {

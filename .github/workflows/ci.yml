@@ -77,6 +77,8 @@ jobs:
         run: npx prisma generate
       - name: Operational Safety Contracts (blocking)
         run: pnpm test:ops-safety
+      - name: RBAC Source Contract (blocking)
+        run: pnpm rbac:verify-contract
       - name: Prisma Migration File Integrity (blocking)
         run: pnpm db:verify:migration-files
       - name: Prisma Fresh Migration Deploy (blocking)
@@ -85,6 +87,8 @@ jobs:
         run: pnpm exec prisma migrate status --config packages/database/prisma.config.js
       - name: Prisma Migration Integrity (blocking)
         run: pnpm db:verify:migrations
+      - name: RBAC Database Contract (blocking)
+        run: pnpm rbac:verify-database
       - name: Prisma Schema Parity (blocking)
         run: pnpm db:verify:schema-parity
       - name: Build Backend
