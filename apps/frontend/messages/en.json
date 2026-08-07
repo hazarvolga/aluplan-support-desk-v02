@@ -610,6 +610,41 @@
       }
     }
   },
+  "review_center": {
+    "eyebrow": "Human-approved operations",
+    "title": "Task and Approval Center",
+    "description": "See every item that needs expert judgment while the system is running. Each card routes you only to a real work queue you are authorized to use.",
+    "pending_label": "Pending actions",
+    "urgent": "Urgent",
+    "why_label": "Why you?",
+    "audit_label": "Review record",
+    "groups": {
+      "operational": "Live operations",
+      "operational_desc": "Work that directly affects customer waiting time.",
+      "editorial": "Knowledge quality",
+      "editorial_desc": "Content that needs expert review before publication or learning.",
+      "follow_up": "Quality and traceability",
+      "follow_up_desc": "Review AI solutions in their user and ticket context.",
+      "clear": "You have no authorized pending work in this area."
+    },
+    "empty": {
+      "title": "Queues are clear",
+      "description": "Approvals and follow-up work within your authority are complete. New tasks will appear here."
+    },
+    "error": {
+      "title": "Task summary unavailable",
+      "description": "We do not display stale counts. Check the connection and reload the current tasks.",
+      "retry": "Try again"
+    },
+    "items": {
+      "live-chat-requests": { "title": "Customers waiting for live chat", "description": "Open requests where a customer asked for a support specialist after an AI answer.", "reason": "The customer requested live support; a fast human handoff reduces waiting time." },
+      "unassigned-tickets": { "title": "Unassigned active tickets", "description": "Open tickets not yet assigned to a support specialist or team.", "reason": "Ownerless tickets create delay and SLA breach risk." },
+      "article-reviews": { "title": "Article publication reviews", "description": "Technical articles waiting for review in the knowledge base.", "reason": "Technical accuracy and customer visibility require expert review before publication." },
+      "faq-candidates": { "title": "FAQ learning candidates", "description": "FAQ candidates generated from resolved tickets and waiting to enter the knowledge base.", "reason": "AI suggestions should be verified against real support experience before becoming customer-visible." },
+      "crawler-candidates": { "title": "Crawled content candidates", "description": "Records discovered from external sources and waiting for review before ingestion.", "reason": "Source trust and content scope must be verified before affecting the knowledge pool." },
+      "ai-interaction-history": { "title": "AI solution history", "description": "Review what each user asked and which solution the AI presented.", "reason": "Makes answer quality, knowledge gaps, and ticket outcomes traceable." }
+    }
+  },
   "sidebar": {
     "app_subtitle": "Support Desk",
     "logout": "Secure Logout",
@@ -617,6 +652,8 @@
       "dashboard": "Control Panel",
       "overview": "Overview",
       "tickets": "Ticket Queue",
+      "review_section": "TASKS AND APPROVALS",
+      "review_center": "Task and Approval Center",
       "my_tickets": "My Support Requests",
       "kb_section": "KNOWLEDGE BASE",
       "articles": "Articles",

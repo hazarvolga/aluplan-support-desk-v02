@@ -27,6 +27,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/components/auth/role-guard';
+import { useSearchParams } from 'next/navigation';
+import { getTicketQueueDeepLink } from '@/components/review-center/deep-link-filters';
 
 const STATUS_COLORS: Record<string, string> = {
     NEW: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -84,6 +86,8 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [bulkLoading, setBulkLoading] = useState(false);
     const { user } = useAuth();
+    const searchParams = useSearchParams();
+    const queueDeepLink = getTicketQueueDeepLink(searchParams);
     const [scope, setScope] = useState<TicketScope>('all');
     const didInitializeQueueRef = useRef(false);
 
@@ -104,6 +108,8 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
             const params: Record<string, string> = { limit: '100', includeStatusCounts: 'true' };
             if (statusFilter) params.status = statusFilter;
             if (searchFilter.trim()) params.search = searchFilter.trim();
+            if (queueDeepLink.chatStatus) params.chatStatus = queueDeepLink.chatStatus;
+            if (queueDeepLink.assignment) params.assignment = queueDeepLink.assignment;
             if (scopeFilter === 'mine' && user?.id && !isCustomer) {
                 params.assignedTo = user.id;
             }
@@ -113,18 +119,20 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
             setStatusCounts(res.statusCounts ?? null);
         } catch { /* handled */ }
         setLoading(false);
-    }, [filter, isCustomer, scope, search, user?.id]);
+    }, [filter, isCustomer, queueDeepLink.assignment, queueDeepLink.chatStatus, scope, search, user?.id]);
 
     // Auto-load tickets after the authenticated user is known.
     // Support team members should land directly on their own operational queue.
     useEffect(() => {
         if (initialTickets.length > 0 || !user || didInitializeQueueRef.current) return;
 
-        const initialScope: TicketScope = user.isSupportTeamMember ? 'mine' : 'all';
+        const initialScope: TicketScope = queueDeepLink.assignment
+            ? 'all'
+            : user.isSupportTeamMember ? 'mine' : 'all';
         didInitializeQueueRef.current = true;
         setScope(initialScope);
         load(filter, initialScope, search);
-    }, [filter, initialTickets.length, load, search, user]);
+    }, [filter, initialTickets.length, load, queueDeepLink.assignment, search, user]);
 
     const toggleSelect = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();

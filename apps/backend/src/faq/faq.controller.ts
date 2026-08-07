@@ -96,14 +96,14 @@ export class FaqController {
     }
 
     @Post(':id/approve')
-    @Roles('admin', 'support_manager', 'kb_editor')
+    @Roles('admin', 'support_manager', 'kb_editor', 'support_agent')
     @ApiOperation({ summary: 'Approve and publish a pending FAQ' })
     approve(@Param('id') id: string) {
         return this.faqService.approveFaq(id);
     }
 
     @Post(':id/dismiss')
-    @Roles('admin', 'support_manager', 'kb_editor')
+    @Roles('admin', 'support_manager', 'kb_editor', 'support_agent')
     @ApiOperation({ summary: 'Dismiss (reject) a pending FAQ' })
     dismiss(@Param('id') id: string) {
         return this.faqService.dismissFaq(id);

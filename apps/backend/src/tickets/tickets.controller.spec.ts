@@ -98,6 +98,32 @@ describe('TicketsController', () => {
                 isSlaBreached: false,
             }));
         });
+
+        it('forwards review-center chat and unassigned queue filters', async () => {
+            const req = { user: { sub: 'admin1', role: 'ADMIN' } };
+            mockTicketsService.findAll.mockResolvedValue({ data: [], total: 0 });
+
+            await controller.findAll({
+                chatStatus: 'REQUESTED',
+                assignment: 'UNASSIGNED',
+            }, req);
+
+            expect(mockTicketsService.findAll).toHaveBeenCalledWith(expect.objectContaining({
+                chatStatus: 'REQUESTED',
+                assignment: 'UNASSIGNED',
+            }));
+        });
+
+        it('rejects an unsupported chat status before querying Prisma', () => {
+            const req = { user: { sub: 'admin1', role: 'ADMIN' } };
+            mockTicketsService.findAll.mockResolvedValue({ data: [], total: 0 });
+
+            expect(() => controller.findAll({ chatStatus: 'NOT_A_STATUS' }, req)).toThrow(
+                'chatStatus must be one of',
+            );
+
+            expect(mockTicketsService.findAll).not.toHaveBeenCalled();
+        });
     });
 
     describe('transition', () => {

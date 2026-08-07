@@ -361,6 +361,25 @@ describe('TicketsService', () => {
             }));
         });
         describe('findAll', () => {
+            it('filters review-center queues by requested chat and null assignment', async () => {
+                prisma.ticket.findMany.mockResolvedValue([]);
+                prisma.ticket.count.mockResolvedValue(0);
+
+                await service.findAll({
+                    chatStatus: ChatStatus.REQUESTED,
+                    assignment: 'UNASSIGNED',
+                });
+
+                expect(prisma.ticket.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            chatStatus: ChatStatus.REQUESTED,
+                            assignedTo: null,
+                        }),
+                    }),
+                );
+            });
+
             it('should return paginated and filtered tickets', async () => {
                 // Arrange
                 const mockTickets = [{ id: '1' }, { id: '2' }];

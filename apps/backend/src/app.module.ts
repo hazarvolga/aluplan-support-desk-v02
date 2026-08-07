@@ -49,6 +49,7 @@ import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
 import { QueueDashboardModule } from './queue-dashboard/queue-dashboard.module';
 import { ProactiveChatModule } from './proactive-chat/proactive-chat.module';
 import { OpsDashboardModule } from './ops-dashboard/ops-dashboard.module';
+import { ReviewCenterModule } from './review-center/review-center.module';
 
 @Module({
     imports: [
@@ -172,6 +173,7 @@ import { OpsDashboardModule } from './ops-dashboard/ops-dashboard.module';
         QueueDashboardModule,
         ProactiveChatModule,
         OpsDashboardModule,
+        ReviewCenterModule,
     ],
     providers: [
         {

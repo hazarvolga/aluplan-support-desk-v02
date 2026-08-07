@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { FaqController } from './faq.controller';
-import { PERMISSIONS_KEY } from '../rbac/decorators/rbac.decorators';
+import { PERMISSIONS_KEY, ROLES_KEY } from '../rbac/decorators/rbac.decorators';
 
 describe('FaqController', () => {
     const faqService = {
@@ -65,6 +65,13 @@ describe('FaqController', () => {
             await controller.getPublished('tr', { user: { role: { name: 'support-agent' } } });
 
             expect(faqService.getPublished).toHaveBeenCalledWith('tr', 50, true);
+        });
+    });
+
+    describe('candidate decisions', () => {
+        it('allows SUPPORT_AGENT to approve and dismiss the work shown in the review center', () => {
+            expect(Reflect.getMetadata(ROLES_KEY, controller.approve)).toContain('support_agent');
+            expect(Reflect.getMetadata(ROLES_KEY, controller.dismiss)).toContain('support_agent');
         });
     });
 });

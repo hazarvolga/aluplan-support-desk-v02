@@ -610,6 +610,65 @@
       }
     }
   },
+  "review_center": {
+    "eyebrow": "İnsan onaylı operasyon",
+    "title": "Görev ve Onay Merkezi",
+    "description": "Sistem çalışırken uzman kararına ihtiyaç duyan işleri tek yerde görün. Her kart sizi yalnızca yetkili olduğunuz gerçek çalışma kuyruğuna götürür.",
+    "pending_label": "Bekleyen işlem",
+    "urgent": "Acil",
+    "why_label": "Neden siz?",
+    "audit_label": "İnceleme kaydı",
+    "groups": {
+      "operational": "Canlı operasyon",
+      "operational_desc": "Müşteri bekleme süresini doğrudan etkileyen işler.",
+      "editorial": "Bilgi kalitesi",
+      "editorial_desc": "Yayınlanmadan veya öğrenme havuzuna alınmadan önce uzman kontrolü gereken içerikler.",
+      "follow_up": "Kalite ve izlenebilirlik",
+      "follow_up_desc": "AI tarafından sunulan çözümleri kullanıcı ve bilet bağlamında inceleyin.",
+      "clear": "Bu alanda şu an bekleyen yetkili göreviniz yok."
+    },
+    "empty": {
+      "title": "Kuyruklar temiz",
+      "description": "Yetkiniz kapsamındaki onay ve takip işleri tamamlanmış görünüyor. Yeni görev oluştuğunda burada listelenecek."
+    },
+    "error": {
+      "title": "Görev özeti alınamadı",
+      "description": "Eski sayıları göstermiyoruz. Bağlantıyı kontrol edip güncel görevleri yeniden yükleyin.",
+      "retry": "Yeniden dene"
+    },
+    "items": {
+      "live-chat-requests": {
+        "title": "Canlı sohbet bekleyen müşteriler",
+        "description": "AI yanıtından sonra bir destek yetkilisine bağlanmak isteyen açık talepler.",
+        "reason": "Müşteri canlı destek istedi; hızlı insan devralması bekleme süresini azaltır."
+      },
+      "unassigned-tickets": {
+        "title": "Atanmamış aktif talepler",
+        "description": "Henüz bir destek yetkilisine veya ekibe atanmamış açık talepler.",
+        "reason": "Sahipsiz talepler gecikme ve SLA ihlali riski taşır."
+      },
+      "article-reviews": {
+        "title": "Makale yayın onayları",
+        "description": "Bilgi bankasında inceleme durumunda bekleyen teknik makaleler.",
+        "reason": "Teknik doğruluk ve müşteri görünürlüğü yayın öncesi uzman kontrolü gerektirir."
+      },
+      "faq-candidates": {
+        "title": "SSS öğrenme adayları",
+        "description": "Çözülen taleplerden üretilmiş, bilgi bankasına eklenmeyi bekleyen SSS adayları.",
+        "reason": "AI önerisi gerçek destek deneyimiyle doğrulanmadan müşteriye görünür olmamalı."
+      },
+      "crawler-candidates": {
+        "title": "Tarama içerik adayları",
+        "description": "Harici kaynaklardan keşfedilmiş ve içeri aktarılmadan önce kontrol bekleyen kayıtlar.",
+        "reason": "Kaynak güvenilirliği ve içerik kapsamı bilgi havuzunu etkilemeden doğrulanmalı."
+      },
+      "ai-interaction-history": {
+        "title": "AI çözüm geçmişi",
+        "description": "Hangi kullanıcının ne sorduğunu ve AI'ın hangi çözümü sunduğunu inceleyin.",
+        "reason": "Yanıt kalitesini, bilgi boşluklarını ve bilet oluşumuna etkisini izlenebilir kılar."
+      }
+    }
+  },
   "sidebar": {
     "app_subtitle": "Destek Masası",
     "logout": "Güvenli Çıkış",
@@ -617,6 +676,8 @@
       "dashboard": "Kontrol Paneli",
       "overview": "Genel Bakış",
       "tickets": "Destek Talepleri",
+      "review_section": "GÖREV VE ONAYLAR",
+      "review_center": "Görev ve Onay Merkezi",
       "my_tickets": "Destek Taleplerim",
       "kb_section": "BİLGİ BANKASI",
       "articles": "Makaleler",

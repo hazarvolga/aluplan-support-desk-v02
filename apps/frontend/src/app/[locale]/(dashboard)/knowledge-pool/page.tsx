@@ -27,6 +27,8 @@ import {
     TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+import { useSearchParams } from 'next/navigation';
+import { getKnowledgePoolDeepLink } from '@/components/review-center/deep-link-filters';
 
 type SortField = 'name' | 'status' | 'type' | 'lastSyncedAt' | 'embeddings' | 'category';
 type SortDir = 'asc' | 'desc';
@@ -50,7 +52,9 @@ const isAllplanHelpUrl = (value: string): boolean => {
 
 export default function KnowledgePoolPage() {
     const t = useTranslations('admin.knowledge_pool');
-    const [activeTab, setActiveTab] = useState('sources');
+    const searchParams = useSearchParams();
+    const initialDeepLink = getKnowledgePoolDeepLink(searchParams);
+    const [activeTab, setActiveTab] = useState<string>(initialDeepLink.tab);
 
     // Sources State
     const [sources, setSources] = useState<any[]>([]);
@@ -83,7 +87,7 @@ export default function KnowledgePoolPage() {
     const [crawlCandidates, setCrawlCandidates] = useState<CrawlCandidate[]>([]);
     const [loadingCrawlCandidates, setLoadingCrawlCandidates] = useState(false);
     const [crawlSearch, setCrawlSearch] = useState('');
-    const [crawlStatusFilter, setCrawlStatusFilter] = useState('PENDING_REVIEW');
+    const [crawlStatusFilter, setCrawlStatusFilter] = useState<string>(initialDeepLink.status);
     const [crawlSourceFilter, setCrawlSourceFilter] = useState('');
     const [crawlFormats, setCrawlFormats] = useState<Set<LearnNowCrawlFormat>>(new Set(['knowledge_article', 'pdf']));
     const [crawlDryRun, setCrawlDryRun] = useState<any>(null);

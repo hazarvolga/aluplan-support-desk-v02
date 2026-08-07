@@ -610,6 +610,41 @@
       }
     }
   },
+  "review_center": {
+    "eyebrow": "Menschlich freigegebener Betrieb",
+    "title": "Aufgaben- und Freigabecenter",
+    "description": "Alle Vorgänge, die im laufenden Betrieb eine fachliche Entscheidung benötigen. Jede Karte führt nur zu einer Arbeitswarteschlange, für die Sie berechtigt sind.",
+    "pending_label": "Offene Vorgänge",
+    "urgent": "Dringend",
+    "why_label": "Warum Sie?",
+    "audit_label": "Prüfprotokoll",
+    "groups": {
+      "operational": "Live-Betrieb",
+      "operational_desc": "Aufgaben mit direktem Einfluss auf die Wartezeit der Kunden.",
+      "editorial": "Wissensqualität",
+      "editorial_desc": "Inhalte, die vor Veröffentlichung oder Lernen fachlich geprüft werden müssen.",
+      "follow_up": "Qualität und Nachvollziehbarkeit",
+      "follow_up_desc": "KI-Lösungen im Benutzer- und Ticketkontext prüfen.",
+      "clear": "In diesem Bereich gibt es derzeit keine berechtigten offenen Aufgaben."
+    },
+    "empty": {
+      "title": "Warteschlangen sind leer",
+      "description": "Alle Freigaben und Prüfungen in Ihrem Berechtigungsbereich sind erledigt. Neue Aufgaben erscheinen hier."
+    },
+    "error": {
+      "title": "Aufgabenübersicht nicht verfügbar",
+      "description": "Veraltete Zähler werden nicht angezeigt. Verbindung prüfen und aktuelle Aufgaben neu laden.",
+      "retry": "Erneut versuchen"
+    },
+    "items": {
+      "live-chat-requests": { "title": "Kunden warten auf Live-Chat", "description": "Offene Anfragen, bei denen nach einer KI-Antwort menschlicher Support angefordert wurde.", "reason": "Der Kunde wünscht Live-Support; eine schnelle Übergabe verkürzt die Wartezeit." },
+      "unassigned-tickets": { "title": "Nicht zugewiesene aktive Tickets", "description": "Offene Tickets ohne zuständige Fachkraft oder Team.", "reason": "Tickets ohne Verantwortlichen bergen Verzögerungs- und SLA-Risiken." },
+      "article-reviews": { "title": "Artikelfreigaben", "description": "Technische Artikel, die in der Wissensdatenbank auf Prüfung warten.", "reason": "Technische Richtigkeit und Kundensichtbarkeit erfordern eine fachliche Prüfung vor Veröffentlichung." },
+      "faq-candidates": { "title": "FAQ-Lernkandidaten", "description": "Aus gelösten Tickets erzeugte FAQ-Kandidaten vor Aufnahme in die Wissensdatenbank.", "reason": "KI-Vorschläge müssen vor Kundensichtbarkeit anhand realer Supporterfahrung geprüft werden." },
+      "crawler-candidates": { "title": "Crawler-Inhaltskandidaten", "description": "Aus externen Quellen gefundene Einträge vor der Übernahme.", "reason": "Quellenvertrauen und Inhaltsumfang müssen vor Einfluss auf den Wissens-Pool geprüft werden." },
+      "ai-interaction-history": { "title": "KI-Lösungsverlauf", "description": "Prüfen Sie Benutzerfragen und die jeweils von der KI angebotene Lösung.", "reason": "Macht Antwortqualität, Wissenslücken und Ticketergebnisse nachvollziehbar." }
+    }
+  },
   "sidebar": {
     "app_subtitle": "Support Desk",
     "logout": "Sicheres Abmelden",
@@ -617,6 +652,8 @@
       "dashboard": "Kontrollpanel",
       "overview": "Übersicht",
       "tickets": "Ticket-Warteschlange",
+      "review_section": "AUFGABEN UND FREIGABEN",
+      "review_center": "Aufgaben- und Freigabecenter",
       "my_tickets": "Meine Support-Anfragen",
       "kb_section": "WISSENSDATENBANK",
       "articles": "Artikel",

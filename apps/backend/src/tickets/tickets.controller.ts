@@ -1,5 +1,5 @@
 import {
-    Controller, Get, Post, Patch, Param, Body,
+    BadRequestException, Controller, Get, Post, Patch, Param, Body,
     Request, Query, UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
@@ -11,9 +11,20 @@ import { AddMessageDto } from './dto/add-message.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { RequirePermissions, Roles } from '../rbac/decorators/rbac.decorators';
-import { TicketStatus, TicketPriority } from '@aluplan/database';
+import { ChatStatus, TicketStatus, TicketPriority } from '@aluplan/database';
 import { Delete } from '@nestjs/common';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
+
+const CHAT_STATUSES = new Set<string>(Object.values(ChatStatus));
+
+function parseChatStatus(value: unknown): ChatStatus | undefined {
+    if (value === undefined || value === null || value === '') return undefined;
+    const normalized = String(Array.isArray(value) ? value[0] : value).trim().toUpperCase();
+    if (!CHAT_STATUSES.has(normalized)) {
+        throw new BadRequestException(`chatStatus must be one of: ${[...CHAT_STATUSES].join(', ')}`);
+    }
+    return normalized as ChatStatus;
+}
 
 @ApiTags('Tickets')
 @ApiBearerAuth()
@@ -45,6 +56,8 @@ export class TicketsController {
     @ApiQuery({ name: 'status', required: false, enum: TicketStatus })
     @ApiQuery({ name: 'priority', required: false, enum: TicketPriority })
     @ApiQuery({ name: 'assignedTo', required: false })
+    @ApiQuery({ name: 'assignment', required: false, enum: ['UNASSIGNED'] })
+    @ApiQuery({ name: 'chatStatus', required: false, enum: ChatStatus })
     @ApiQuery({ name: 'teamId', required: false })
     @ApiQuery({ name: 'isSlaBreached', required: false, type: Boolean })
     @ApiQuery({ name: 'search', required: false })
@@ -61,6 +74,8 @@ export class TicketsController {
             status: query.status,
             priority: query.priority,
             assignedTo: query.assignedTo,
+            assignment: query.assignment === 'UNASSIGNED' ? 'UNASSIGNED' : undefined,
+            chatStatus: parseChatStatus(query.chatStatus),
             teamId: query.teamId,
             userId,
             isSlaBreached,

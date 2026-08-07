@@ -168,6 +168,20 @@ export type OpsDashboardData = {
     liveFeed: Array<{ id: string; type: string; title: string; description?: string; status?: string; at: string; href: string }>;
 };
 
+export type ReviewCenterItem = {
+    id: string;
+    kind: 'ACTION' | 'AUDIT';
+    group: 'OPERATIONAL' | 'EDITORIAL' | 'FOLLOW_UP';
+    href: string;
+    priority: 'URGENT' | 'NORMAL';
+    count?: number;
+};
+
+export type ReviewCenterSummary = {
+    items: ReviewCenterItem[];
+    pendingActions: number;
+};
+
 const processQueue = (error: Error | null, token: string | null = null) => {
     failedQueue.forEach(prom => {
         if (error) {
@@ -340,6 +354,9 @@ async function downloadRequest(path: string): Promise<{ blob: Blob; filename?: s
 export const api = {
     dashboard: {
         ops: (days = 7) => request<OpsDashboardData>(`/dashboard/ops?days=${days}`),
+    },
+    reviewCenter: {
+        summary: () => request<ReviewCenterSummary>('/review-center/summary'),
     },
     auth: {
         login: (email: string, password: string) =>

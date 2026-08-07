@@ -54,6 +54,7 @@ export default async function middleware(request: NextRequest) {
         pathname.startsWith(`/${locale}/knowledge-base`) ||
         pathname.startsWith(`/${locale}/knowledge-pool`) ||
         pathname.startsWith(`/${locale}/kb-approvals`) ||
+        pathname.startsWith(`/${locale}/review-center`) ||
         pathname.startsWith(`/${locale}/products`) ||
         pathname.startsWith(`/${locale}/users`) ||
         pathname.startsWith(`/${locale}/my-tickets`) ||

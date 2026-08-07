@@ -207,6 +207,8 @@ export class TicketsService {
         status?: TicketStatus;
         priority?: TicketPriority;
         assignedTo?: string;
+        assignment?: 'UNASSIGNED';
+        chatStatus?: ChatStatus;
         teamId?: string;
         userId?: string; // Filter by creator
         isSlaBreached?: boolean;
@@ -215,7 +217,7 @@ export class TicketsService {
         page?: number;
         limit?: number;
     }) {
-        const { status, priority, assignedTo, teamId, userId, isSlaBreached, search, includeStatusCounts = false, page = 1, limit = 20 } = params;
+        const { status, priority, assignedTo, assignment, chatStatus, teamId, userId, isSlaBreached, search, includeStatusCounts = false, page = 1, limit = 20 } = params;
         const normalizedSearch = search?.trim();
 
         // If teamId is provided, get all userIds in that team
@@ -231,6 +233,7 @@ export class TicketsService {
         const where: Prisma.TicketWhereInput = {
             ...(status && { status }),
             ...(priority && { priority }),
+            ...(chatStatus && { chatStatus }),
             ...(userId && { userId }),
             ...(isSlaBreached !== undefined && { isSlaBreached }),
             ...(normalizedSearch && {
@@ -246,7 +249,9 @@ export class TicketsService {
         };
 
         // Handle assignedTo and teamId logic
-        if (assignedTo && teamId) {
+        if (assignment === 'UNASSIGNED') {
+            where.assignedTo = null;
+        } else if (assignedTo && teamId) {
             // If both are provided, the user must be assigned to the specific agent AND that agent must be in the team
             if (teamMemberIds.includes(assignedTo)) {
                 where.assignedTo = assignedTo;
