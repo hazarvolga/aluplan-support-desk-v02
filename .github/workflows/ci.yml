@@ -79,6 +79,8 @@ jobs:
         run: pnpm test:ops-safety
       - name: RBAC Source Contract (blocking)
         run: pnpm rbac:verify-contract
+      - name: Frontend API Route Contract (blocking)
+        run: pnpm api:verify-frontend-contract
       - name: Prisma Migration File Integrity (blocking)
         run: pnpm db:verify:migration-files
       - name: Prisma Fresh Migration Deploy (blocking)

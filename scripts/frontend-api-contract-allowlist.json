@@ -1,0 +1,11 @@
+{
+  "operations": [],
+  "rawNetworkCalls": [
+    {
+      "file": "apps/frontend/src/app/[locale]/(dashboard)/actions.ts",
+      "function": "apiFetch",
+      "callee": "fetch",
+      "reason": "Server Actions forward authenticated cookies server-side through the local apiFetch wrapper."
+    }
+  ]
+}
