@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 
 import { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
+import { api, type CrmConnection } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,19 +24,6 @@ import { FieldMapping } from './field-mapping';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslations, useLocale } from 'next-intl';
 import { getSocket } from '@/lib/socket';
-
-interface CrmConnection {
-    id: string;
-    provider: string;
-    tenantId: string;
-    clientId: string;
-    clientSecret: string;
-    webhookSecret: string;
-    instanceUrl: string;
-    isActive: boolean;
-    syncStatus: 'IDLE' | 'SYNCING' | 'SUCCESS' | 'ERROR';
-    lastSyncAt: string | null;
-}
 
 interface SyncDetails {
     failedRecords: Array<{ externalId: string; entityType: string; errorMessage: string; errorCode?: string }>;
@@ -78,7 +65,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
     const tc = useTranslations('common');
     const { toast } = useToast();
     const [config, setConfig] = useState({
-        provider: 'DYNAMICS_365',
+        provider: 'DYNAMICS_365' as const,
         tenantId: '',
         clientId: '',
         clientSecret: '',

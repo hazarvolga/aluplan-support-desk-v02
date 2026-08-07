@@ -144,6 +144,68 @@ describe('SettingsService', () => {
                 },
             });
         });
+
+        it('never returns plaintext or ciphertext from a secret upsert response', async () => {
+            prisma.setting.findUnique.mockResolvedValue(null);
+            prisma.setting.upsert.mockResolvedValue({
+                id: 's1',
+                key: 'dynamics_api_key',
+                value: 'encrypted-new-secret',
+                isSecret: true,
+            });
+
+            const created = await service.upsert({
+                key: 'dynamics_api_key',
+                value: 'new-secret',
+                isSecret: true,
+            });
+
+            expect(created).toEqual(expect.objectContaining({
+                key: 'dynamics_api_key',
+                value: '********',
+                isSecret: true,
+            }));
+            expect(JSON.stringify(created)).not.toContain('new-secret');
+            expect(JSON.stringify(created)).not.toContain('encrypted-');
+        });
+
+        it('masks a preserved secret when the placeholder is submitted', async () => {
+            prisma.setting.findUnique.mockResolvedValue({
+                id: 's1',
+                key: 'dynamics_api_key',
+                value: 'encrypted-existing-secret',
+                isSecret: true,
+            });
+
+            const preserved = await service.upsert({
+                key: 'dynamics_api_key',
+                value: '********',
+                isSecret: true,
+            });
+
+            expect(preserved.value).toBe('********');
+            expect(JSON.stringify(preserved)).not.toContain('existing-secret');
+            expect(prisma.setting.upsert).not.toHaveBeenCalled();
+        });
+
+        it('masks secret values returned by bulk upsert', async () => {
+            prisma.setting.findMany.mockResolvedValue([]);
+            prisma.setting.upsert.mockResolvedValue({
+                id: 's1',
+                key: 'dynamics_api_key',
+                value: 'encrypted-bulk-secret',
+                isSecret: true,
+            });
+            prisma.$transaction.mockImplementation((operations: Array<Promise<unknown>>) => Promise.all(operations));
+
+            const result = await service.bulkUpsert({
+                settings: [{ key: 'dynamics_api_key', value: 'bulk-secret', isSecret: true }],
+            });
+
+            expect(result[0]).toEqual(expect.objectContaining({ value: '********', isSecret: true }));
+            expect(JSON.stringify(result)).not.toContain('bulk-secret');
+            expect(JSON.stringify(result)).not.toContain('encrypted-');
+        });
     });
 
     describe('getValue', () => {

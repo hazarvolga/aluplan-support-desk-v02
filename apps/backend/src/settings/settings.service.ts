@@ -41,7 +41,7 @@ export class SettingsService {
         // Guard: Do not overwrite existing secrets with the masked placeholder
         if (dto.value === '********') {
             const existing = await this.get(dto.key, true);
-            if (existing) return existing;
+            if (existing) return this.maskSettingResponse(existing);
         }
 
         const isSecret = this.resolveSecretFlag(dto.key, dto.isSecret);
@@ -92,7 +92,7 @@ export class SettingsService {
             this.eventEmitter.emit('ai.embedding.provider_changed', { key: dto.key, newValue: finalValue, oldValue });
         }
 
-        return setting;
+        return this.maskSettingResponse(setting);
     }
 
     private isSecretKey(key: string): boolean {
@@ -101,6 +101,13 @@ export class SettingsService {
 
     private resolveSecretFlag(key: string, requested?: boolean): boolean {
         return requested === true || this.isSecretKey(key);
+    }
+
+    private maskSettingResponse<T extends { key: string; value: string; isSecret: boolean }>(setting: T): T {
+        const isSecret = this.resolveSecretFlag(setting.key, setting.isSecret);
+        return isSecret
+            ? { ...setting, value: '********', isSecret: true }
+            : setting;
     }
 
     private async securePlaintextSecret<T extends { key: string; value: string; isSecret: boolean }>(setting: T): Promise<T> {
@@ -367,7 +374,7 @@ export class SettingsService {
             }
         }
 
-        return results;
+        return results.map((result) => result ? this.maskSettingResponse(result) : result);
     }
 
     private withLegacyAiProviderSync<T extends { key: string; value: string; isSecret?: boolean }>(settings: T[]): T[] {

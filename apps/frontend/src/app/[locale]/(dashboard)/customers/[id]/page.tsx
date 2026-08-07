@@ -94,28 +94,12 @@ export default function CustomerProfilePage() {
 
     const handleDownloadHotinfo = async () => {
         try {
-            const url = `${process.env.NEXT_PUBLIC_API_URL || '/api'}/customers/${id}/hotinfo/download`;
-
             toast({ title: '📥 İndiriliyor', description: 'Hotinfo dosyası hazırlanıyor...' });
-
-            const response = await fetch(url, {
-                credentials: 'include'
-            });
-
-            if (!response.ok) throw new Error('İndirme başarısız oldu');
-
-            const blob = await response.blob();
+            const { blob, filename: responseFilename } = await api.customers.downloadHotinfo(id);
             const downloadUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = downloadUrl;
-
-            const contentDisposition = response.headers.get('Content-Disposition');
-            let filename = 'hotinfo.hxl';
-            if (contentDisposition && contentDisposition.includes('filename=')) {
-                filename = contentDisposition.split('filename=')[1].replace(/"/g, '');
-            }
-
-            a.download = filename;
+            a.download = responseFilename || 'hotinfo.hxl';
             document.body.appendChild(a);
             a.click();
             a.remove();

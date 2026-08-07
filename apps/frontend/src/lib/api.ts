@@ -40,6 +40,30 @@ export type KnowledgePoolBulkUploadResult = {
     total: number;
 };
 
+export type CrmConnection = {
+    id: string;
+    provider: 'DYNAMICS_365';
+    tenantId: string | null;
+    clientId: string | null;
+    clientSecret: string | null;
+    webhookSecret: string | null;
+    instanceUrl: string | null;
+    isActive: boolean;
+    syncSettings?: Record<string, unknown> | null;
+    lastSyncAt?: string | null;
+    syncStatus?: string;
+};
+
+export type UpsertCrmConnectionInput = {
+    provider: 'DYNAMICS_365';
+    tenantId: string;
+    clientId: string;
+    clientSecret: string;
+    webhookSecret?: string;
+    instanceUrl: string;
+    syncSettings?: Record<string, unknown>;
+};
+
 export type LearnNowCrawlFormat =
     | 'knowledge_article'
     | 'pdf'
@@ -406,24 +430,6 @@ export const api = {
             }
         }>('/auth/me'),
         logout: () => request<{ success: boolean }>('/auth/logout', { method: 'POST' }),
-        mfa: {
-            generate: () => request<{ secret: string; qrCodeDataUrl: string }>('/auth/mfa/generate', { method: 'POST' }),
-            setup: (token: string, secret: string) =>
-                request<{ success: boolean }>('/auth/mfa/setup', {
-                    method: 'POST',
-                    body: JSON.stringify({ token, secret }),
-                }),
-            verify: (userId: string, token: string) =>
-                request<{
-                    user: any;
-                    access_token: string;
-                    refresh_token: string;
-                }>('/auth/mfa/verify', {
-                    method: 'POST',
-                    body: JSON.stringify({ userId, token }),
-                }),
-            disable: () => request<{ success: boolean }>('/auth/mfa/disable', { method: 'POST' }),
-        },
     },
     pool: {
         list: () => request<any[]>('/knowledge-pool/sources'),
@@ -791,7 +797,7 @@ export const api = {
     },
     settings: {
         list: (decrypt = false) => request<any[]>(`/settings${decrypt ? '?decrypt=true' : ''}`),
-        get: (key: string) => request<any>(`/settings/${key}`),
+        get: (key: string, decrypt = false) => request<any>(`/settings/${key}${decrypt ? '?decrypt=true' : ''}`),
         upsert: (body: any) => request<any>('/settings', { method: 'POST', body: JSON.stringify(body) }),
         bulkUpsert: (body: { settings: any[] }) => request<any>('/settings/bulk', { method: 'POST', body: JSON.stringify(body) }),
         delete: (key: string) => request<any>(`/settings/${key}`, { method: 'DELETE' }),
@@ -820,8 +826,6 @@ export const api = {
         getTemplateSource: (name: string) => request<{ content: string }>(`/email/admin/templates/${name}/source`),
         saveTemplate: (name: string, content: string) => request<{ success: true }>(`/email/admin/templates/${name}/save`, { method: 'POST', body: JSON.stringify({ content }) }),
         previewTemplate: (name: string, data: any) => request<any>(`/email/admin/templates/${name}/preview`, { method: 'POST', body: JSON.stringify(data) }),
-        getContentBlocks: (name: string) => request<{ blocks: any[] }>(`/email/admin/templates/${name}/content`),
-        saveContentBlocks: (name: string, blocks: any[]) => request<{ success: true }>(`/email/admin/templates/${name}/content`, { method: 'POST', body: JSON.stringify({ blocks }) }),
         verifyProvider: () => request<{ provider: string; available: boolean }>('/email/admin/provider/verify', { method: 'POST' }),
         verifyImap: () => request<{ available: boolean; message: string }>('/email/admin/imap/verify', { method: 'POST' }),
         getGmailAuthUrl: () => request<{ url: string }>('/email/gmail/auth-url'),
@@ -872,8 +876,8 @@ export const api = {
         },
     },
     crm: {
-        getConnections: () => request<any[]>('/crm/connections'),
-        upsertConnection: (data: any) => request<any>('/crm/connections', {
+        getConnections: () => request<CrmConnection[]>('/crm/connections'),
+        upsertConnection: (data: UpsertCrmConnectionInput) => request<CrmConnection>('/crm/connections', {
             method: 'POST',
             body: JSON.stringify(data)
         }),

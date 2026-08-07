@@ -9,19 +9,9 @@ import { Input } from '@/components/ui/input';
 import { HotinfoGrid } from "@/components/ui/hotinfo-grid";
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, KeyRound, Monitor, UploadCloud, AlertCircle, AlertTriangle, ShieldCheck, History, Clock, FileText, Activity, LayoutDashboard, QrCode, Smartphone, SmartphoneNfc, CheckCircle2, UserCircle, Save, Loader2, Trash2, Mail, BellRing, ShieldAlert } from 'lucide-react';
+import { Shield, KeyRound, Monitor, UploadCloud, AlertCircle, AlertTriangle, History, Clock, FileText, Activity, LayoutDashboard, Smartphone, SmartphoneNfc, CheckCircle2, UserCircle, Save, Loader2, Mail, BellRing, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
-import { QRCodeSVG } from 'qrcode.react';
 import { useTranslations, useLocale } from 'next-intl';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
 
 export default function ProfilePage() {
     const t = useTranslations('profile');
@@ -49,13 +39,6 @@ export default function ProfilePage() {
     // Auth password fields
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-
-    // MFA State
-    const [mfaEnabled, setMfaEnabled] = useState(false);
-    const [mfaLoading, setMfaLoading] = useState(false);
-    const [mfaSecret, setMfaSecret] = useState<{ secret: string; qrCodeDataUrl: string } | null>(null);
-    const [mfaToken, setMfaToken] = useState('');
-    const [mfaDialogOpen, setMfaDialogOpen] = useState(false);
 
     // Email Preferences State
     const [emailPrefs, setEmailPrefs] = useState<{ emailType: string; enabled: boolean }[]>([]);
@@ -97,9 +80,6 @@ export default function ProfilePage() {
             setEmail(user.email || '');
             setRoles(user.role ? [user.role] : []);
             setAccountStatus(user.status || 'ACTIVE');
-            // @ts-ignore
-            setMfaEnabled(user.mfaEnabled || false);
-
             if (user.customerProfile) {
                 setHotinfoData(user.customerProfile.hotinfoData);
                 setHotinfoUpdatedAt(user.customerProfile.hotinfoUpdatedAt || null);
@@ -186,49 +166,6 @@ export default function ProfilePage() {
             console.error(error);
         } finally {
             setUploadingHotinfo(false);
-        }
-    };
-
-    const handleGenerateMfa = async () => {
-        setMfaLoading(true);
-        try {
-            const data = await api.auth.mfa.generate();
-            setMfaSecret(data);
-        } catch (error: any) {
-            toast.error(t('toasts.mfa_gen_failed'));
-        } finally {
-            setMfaLoading(false);
-        }
-    };
-
-    const handleEnableMfa = async () => {
-        if (!mfaSecret) return;
-        setMfaLoading(true);
-        try {
-            await api.auth.mfa.setup(mfaToken, mfaSecret.secret);
-            setMfaEnabled(true);
-            setMfaDialogOpen(false);
-            setMfaSecret(null);
-            setMfaToken('');
-            toast.success(t('toasts.mfa_enabled'));
-        } catch (error: any) {
-            toast.error(t('toasts.mfa_verify_failed') + ': ' + error.message);
-        } finally {
-            setMfaLoading(false);
-        }
-    };
-
-    const handleDisableMfa = async () => {
-        if (!confirm(t('mfa.confirm_disable'))) return;
-        setMfaLoading(true);
-        try {
-            await api.auth.mfa.disable();
-            setMfaEnabled(false);
-            toast.success(t('toasts.mfa_disabled'));
-        } catch (error: any) {
-            toast.error(t('toasts.mfa_disable_failed'));
-        } finally {
-            setMfaLoading(false);
         }
     };
 
@@ -417,111 +354,6 @@ export default function ProfilePage() {
                             </Button>
                         </div>
                     </form>
-                </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 dark:border-slate-800">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-primary" />
-                        {t('mfa.title')}
-                    </CardTitle>
-                    <CardDescription>
-                        {t('mfa.description')}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-slate-200 dark:border-slate-800">
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium">{t('mfa.status_label')}</p>
-                            <div className="flex items-center gap-1.5">
-                                {mfaEnabled ? (
-                                    <>
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">{t('mfa.active')}</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="w-2 h-2 rounded-full bg-slate-400" />
-                                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">{t('mfa.inactive')}</span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                            {mfaEnabled ? (
-                                <Button variant="destructive" size="sm" onClick={handleDisableMfa} disabled={mfaLoading}>
-                                    {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                                    {t('mfa.disable_btn')}
-                                </Button>
-                            ) : (
-                                <Dialog open={mfaDialogOpen} onOpenChange={(open) => {
-                                    setMfaDialogOpen(open);
-                                    if (open && !mfaSecret) handleGenerateMfa();
-                                }}>
-                                    <DialogTrigger asChild>
-                                        <Button size="sm" className="bg-primary hover:bg-primary/90">
-                                            <QrCode className="w-4 h-4 mr-2" />
-                                            {t('mfa.setup_btn')}
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="sm:max-w-md">
-                                        <DialogHeader>
-                                            <DialogTitle>{t('mfa.dialog_title')}</DialogTitle>
-                                            <DialogDescription>
-                                                {t('mfa.dialog_desc')}
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="flex flex-col items-center justify-center p-6 space-y-6">
-                                            {mfaLoading && !mfaSecret ? (
-                                                <div className="flex flex-col items-center gap-3 py-8">
-                                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                                    <span className="text-xs text-muted-foreground uppercase font-bold tracking-widest">{t('mfa.key_creating')}</span>
-                                                </div>
-                                            ) : mfaSecret ? (
-                                                <>
-                                                    <div className="bg-white p-4 rounded-xl border-4 border-slate-100 shadow-xl">
-                                                        <QRCodeSVG value={`otpauth://totp/Aluplan%20Support:${email}?secret=${mfaSecret.secret}&issuer=Aluplan%20Support`} size={200} />
-                                                    </div>
-                                                    <div className="w-full space-y-4">
-                                                        <div className="p-3 bg-muted/50 rounded-lg border border-white/5 text-center">
-                                                            <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1">{t('mfa.manual_key_label')}</p>
-                                                            <code className="text-sm font-mono text-primary select-all tracking-wider">{mfaSecret.secret}</code>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label htmlFor="mfaToken">{t('mfa.token_label')}</Label>
-                                                            <Input
-                                                                id="mfaToken"
-                                                                placeholder={t('mfa.token_placeholder')}
-                                                                maxLength={6}
-                                                                className="text-center text-xl tracking-[0.5em] font-mono"
-                                                                value={mfaToken}
-                                                                onChange={(e) => setMfaToken(e.target.value.replace(/\D/g, ''))}
-                                                            />
-                                                            <p className="text-[10px] text-muted-foreground text-center uppercase tracking-widest transition-all">
-                                                                {t('mfa.token_hint')}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            ) : null}
-                                        </div>
-                                        <DialogFooter className="flex sm:justify-between items-center w-full">
-                                            <Button variant="ghost" onClick={() => setMfaDialogOpen(false)}>{t('mfa.cancel')}</Button>
-                                            <Button
-                                                onClick={handleEnableMfa}
-                                                disabled={mfaLoading || mfaToken.length !== 6}
-                                                className="bg-emerald-500 hover:bg-emerald-600 text-white min-w-[140px]"
-                                            >
-                                                {mfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t('mfa.verify_enable')}
-                                            </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                            )}
-                        </div>
-                    </div>
                 </CardContent>
             </Card>
 

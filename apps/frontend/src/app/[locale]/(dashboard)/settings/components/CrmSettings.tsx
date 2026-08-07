@@ -13,7 +13,8 @@ import { toast } from 'sonner';
 export function CrmSettings() {
     const t = useTranslations('settings.crm');
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+    const [savingConnection, setSavingConnection] = useState(false);
+    const [savingApiKey, setSavingApiKey] = useState(false);
     const [showSecret, setShowSecret] = useState(false);
     const [showApiKey, setShowApiKey] = useState(false);
 
@@ -26,20 +27,20 @@ export function CrmSettings() {
     useEffect(() => {
         const load = async () => {
             try {
-                const [connections, settings] = await Promise.all([
-                    api.get('/crm/connections'),
-                    api.settings.list(true)
+                const [connections, apiKeySetting] = await Promise.all([
+                    api.crm.getConnections(),
+                    api.settings.get('dynamics_api_key')
                 ]);
 
                 const dynamics = connections.find((c: any) => c.provider === 'DYNAMICS_365');
                 if (dynamics) {
-                    setInstanceUrl(dynamics.instance_url || '');
-                    setTenantId(dynamics.tenant_id || '');
-                    setClientId(dynamics.client_id || '');
-                    setClientSecret(dynamics.client_secret || '');
+                    setInstanceUrl(dynamics.instanceUrl || '');
+                    setTenantId(dynamics.tenantId || '');
+                    setClientId(dynamics.clientId || '');
+                    setClientSecret(dynamics.clientSecret || '');
                 }
 
-                setCrmApiKey(settings.find((s: any) => s.key === 'dynamics_api_key')?.value || '');
+                setCrmApiKey(apiKeySetting?.value || '');
             } catch (error: any) {
                 console.error('Failed to load CRM settings:', error);
             } finally {
@@ -49,25 +50,33 @@ export function CrmSettings() {
         load();
     }, []);
 
-    const handleSave = async () => {
-        setSaving(true);
+    const handleSaveConnection = async () => {
+        setSavingConnection(true);
         try {
-            await Promise.all([
-                api.post('/crm/connections/upsert', {
-                    provider: 'DYNAMICS_365',
-                    instance_url: instanceUrl,
-                    tenant_id: tenantId,
-                    client_id: clientId,
-                    client_secret: clientSecret,
-                    is_active: true
-                }),
-                api.settings.upsert({ key: 'dynamics_api_key', value: crmApiKey, isSecret: true })
-            ]);
+            await api.crm.upsertConnection({
+                provider: 'DYNAMICS_365',
+                instanceUrl,
+                tenantId,
+                clientId,
+                clientSecret,
+            });
             toast.success(t('save_success'));
         } catch (error: any) {
             toast.error(t('save_error', { message: error.message }));
         } finally {
-            setSaving(false);
+            setSavingConnection(false);
+        }
+    };
+
+    const handleSaveApiKey = async () => {
+        setSavingApiKey(true);
+        try {
+            await api.settings.upsert({ key: 'dynamics_api_key', value: crmApiKey, isSecret: true });
+            toast.success(t('save_success'));
+        } catch (error: any) {
+            toast.error(t('save_error', { message: error.message }));
+        } finally {
+            setSavingApiKey(false);
         }
     };
 
@@ -166,14 +175,22 @@ export function CrmSettings() {
                         </div>
                     </div>
                 </CardContent>
-                <CardFooter className="bg-white/5 py-4 flex justify-end">
+                <CardFooter className="bg-white/5 py-4 flex justify-end gap-3">
                     <Button
-                        onClick={handleSave}
-                        disabled={saving}
+                        variant="outline"
+                        onClick={handleSaveApiKey}
+                        disabled={savingApiKey || savingConnection}
+                    >
+                        {savingApiKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                        {t('save_api_key')}
+                    </Button>
+                    <Button
+                        onClick={handleSaveConnection}
+                        disabled={savingConnection || savingApiKey}
                         className="bg-brand-600 hover:bg-brand-500 gap-2"
                     >
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        {t('save_btn', { defaultValue: 'Bağlantıyı Kaydet' })}
+                        {savingConnection ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        {t('save_connection')}
                     </Button>
                 </CardFooter>
             </Card>

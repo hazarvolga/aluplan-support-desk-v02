@@ -1458,6 +1458,8 @@
       "client_id": "Client ID",
       "client_secret": "Client Secret",
       "api_key": "CRM API Key (x-api-key)",
+      "save_connection": "CRM bağlantısını kaydet",
+      "save_api_key": "API anahtarını kaydet",
       "save_success": "CRM ayarları kaydedildi.",
       "save_error": "Kaydetme hatası: {message}"
     },

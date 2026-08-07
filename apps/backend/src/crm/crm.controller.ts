@@ -3,6 +3,7 @@ import { CrmService } from './crm.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
+import { UpsertCrmConnectionDto } from './dto/upsert-crm-connection.dto';
 
 @Controller('crm')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -16,7 +17,7 @@ export class CrmController {
     }
 
     @Post('connections')
-    async upsertConnection(@Body() dto: any) {
+    async upsertConnection(@Body() dto: UpsertCrmConnectionDto) {
         return this.crmService.upsertConnection(dto);
     }
 

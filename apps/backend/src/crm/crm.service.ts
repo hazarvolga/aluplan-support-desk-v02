@@ -6,6 +6,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { CrmProvider, SyncStatus, Prisma } from '@aluplan/database';
 import { CryptoService } from '../utils/crypto.service';
+import { UpsertCrmConnectionDto } from './dto/upsert-crm-connection.dto';
 
 interface FailedRecord {
     externalId: string;
@@ -169,6 +170,14 @@ export class CrmService {
         return '********';
     }
 
+    private maskConnectionSecrets<T extends { clientSecret?: string | null; webhookSecret?: string | null }>(connection: T) {
+        return {
+            ...connection,
+            clientSecret: this.maskSecret(connection.clientSecret),
+            webhookSecret: this.maskSecret(connection.webhookSecret),
+        };
+    }
+
     async getAllConnections() {
         const connections = await this.prisma.crmConnection.findMany({
             where: { deletedAt: null },
@@ -180,27 +189,27 @@ export class CrmService {
         });
 
         // Use standard masking utility (Security Fix)
-        return connections.map((conn) => ({
-            ...conn,
-            clientSecret: this.maskSecret(conn.clientSecret),
-            webhookSecret: this.maskSecret(conn.webhookSecret),
-        }));
+        return connections.map((connection) => this.maskConnectionSecrets(connection));
     }
 
-    async upsertConnection(dto: any) {
-        const { provider, ...config } = dto;
+    async upsertConnection(dto: UpsertCrmConnectionDto) {
+        const { provider, ...incomingConfig } = dto;
 
         // Fetch existing to handle masked secrets
         const existing = await this.prisma.crmConnection.findFirst({
             where: { provider: provider as CrmProvider, deletedAt: null },
         });
 
-        if (config.clientSecret === '********' && existing?.clientSecret) {
-            config.clientSecret = this.crypto.decrypt(existing.clientSecret);
-        }
-        if (config.webhookSecret === '********' && existing?.webhookSecret) {
-            config.webhookSecret = this.crypto.decrypt(existing.webhookSecret);
-        }
+        const config = {
+            ...incomingConfig,
+            clientSecret: incomingConfig.clientSecret === '********' && existing?.clientSecret
+                ? this.crypto.decrypt(existing.clientSecret)
+                : incomingConfig.clientSecret,
+            webhookSecret: (incomingConfig.webhookSecret === undefined || incomingConfig.webhookSecret === '********')
+                && existing?.webhookSecret
+                ? this.crypto.decrypt(existing.webhookSecret)
+                : incomingConfig.webhookSecret,
+        };
 
         // Verify connection before saving
         const adapter = this.getAdapter(provider);
@@ -218,7 +227,7 @@ export class CrmService {
         };
 
         if (existing) {
-            return this.prisma.crmConnection.update({
+            const updated = await this.prisma.crmConnection.update({
                 where: { id: existing.id },
                 data: {
                     ...encryptedConfig,
@@ -226,8 +235,9 @@ export class CrmService {
                     syncStatus: SyncStatus.IDLE,
                 },
             });
+            return this.maskConnectionSecrets(updated);
         }
-        return this.prisma.crmConnection.create({
+        const created = await this.prisma.crmConnection.create({
             data: {
                 provider,
                 ...encryptedConfig,
@@ -235,6 +245,7 @@ export class CrmService {
                 syncStatus: SyncStatus.IDLE,
             },
         });
+        return this.maskConnectionSecrets(created);
     }
 
     async verifyConnectionById(id: string) {
