@@ -3905,6 +3905,29 @@ Maintenance rule:
 - Claude was asked to independently review the authorization-query boundary, action/audit separation, query validation and 231-route documentation parity before any release decision.
 - Local restore point: tag `restore/post-review-center-20260807-2fe9eb8e`; verified complete-history bundle `.private-data/restore-points/post-review-center-2fe9eb8e.bundle`, SHA-256 `9a6864b8ab7fe4d32928fed4823dae022d9e6e8dbbee24a563825b1a432c5829`.
 
+## 2026-08-07 - Frontend/backend contract and CRM egress closure
+
+### Delivered
+
+- Corrected CRM settings route and camelCase payload/response contract; added DTO validation and typed frontend client usage.
+- Preserved omitted webhook secrets, masked CRM and SettingsService secret responses, and separated CRM credential saving from the legacy API-key save.
+- Restricted Dynamics URLs to a trusted HTTPS origin, disabled redirects, and rejected cross-origin OData next/delta links before bearer-token requests.
+- Removed the unsupported MFA UI/client contract and unreachable MJML block editor while preserving the two independent email systems: file-backed transactional templates and DB-backed announcements.
+- Moved the customer Hotinfo download to the authenticated central client.
+- Added a blocking AST/OpenAPI route parity check with function-level, reason-required raw-network allowlisting.
+
+### Evidence
+
+- Product commit `eaa1fc53`; CI contract commit `e294623d`.
+- Backend full suite: 124/124 suites, 1152 passed, 1 skipped. Frontend full suite: 38/38 files, 260/260 tests.
+- Backend/frontend typecheck, TR/EN/DE i18n, 24/24 operations safety, RBAC source contract, 56/56 migration manifest, API route parity 182/233 with missing=0/raw-network=0, and `git diff --check` passed.
+- Independent code review and security review returned GO after Dynamics SSRF/token-origin, omitted webhook-secret and secret-response findings were fixed.
+
+### Boundary
+
+- Pre-work restore: `restore/pre-endpoint-parity-20260807-acafd92b`; complete-history bundle `.private-data/restore-points/pre-endpoint-parity-acafd92b.bundle`, SHA-256 `3400a13c1dbb245e8ce262b387bd64cbc10cc274abf94efea0a6faf0c5349327`.
+- No database migration, seed, production/shadow/live access, external CRM request, push, tag-push, deploy or publish occurred.
+
 ## 2026-08-07 - Product taxonomy CRUD, archive safety, and endpoint parity audit
 
 ### What changed

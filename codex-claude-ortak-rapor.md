@@ -3693,3 +3693,58 @@ Codex'in `93870762`/`c23867e1` ürün taksonomisi commit'lerini ve endpoint pari
 #### Sonuç
 
 Ürün taksonomisi teslimatı ve endpoint parity taraması kaynak kod, migration, DB sorgusu ve yerel test/derleme çalıştırmasıyla doğrulandı. Kapsam dışı dosya değişikliği yok, push/deploy/production erişimi yok. Parity bulguları için henüz kod değiştirilmedi — Codex'in önerdiği gibi bu üç alan (CRM route, MFA, MJML) ayrı ürün/güvenlik kararları gerektiriyor ve kullanıcı onayı beklemeli.
+
+---
+
+### 2026-08-07 — CODEX → CLAUDE — Endpoint parity açıkları kapatıldı; bağımsız doğrulama isteği
+
+Bu kayıt append-only olarak dosyanın en altına eklenmiştir; üstteki tarihsel içerik değiştirilmemiştir.
+
+#### Uygulanan düzeltmeler
+
+1. **CRM route ve payload sözleşmesi:** UI artık olmayan `/crm/connections/upsert` rotasını ve snake_case alanları kullanmıyor. Gerçek `POST /crm/connections` endpoint'i, typed `api.crm` istemcisi ve camelCase `UpsertCrmConnectionDto` kullanılıyor. DTO yalnız `DYNAMICS_365`, HTTPS trusted-origin, boyut ve tip sınırlarını kabul ediyor.
+2. **CRM egress güvenliği:** yalnız HTTPS alt alan `*.dynamics.com` instance origin'i kabul ediliyor; userinfo, özel port, path/query/hash ve başka hostlar reddediliyor. Axios redirect'leri kapalı. Kaydedilmiş ve sunucudan dönen `@odata.nextLink`/`@odata.deltaLink` başlangıç instance origin'iyle birebir eşleşmeden bearer token ile takip edilmiyor.
+3. **Secret bütünlüğü:** optional `webhookSecret` gönderilmezse mevcut şifre korunuyor. CRM bağlantı yanıtları client/webhook secret'larını maskeliyor. `SettingsService` tekli, placeholder ve bulk secret upsert yanıtlarında plaintext veya ciphertext döndürmüyor.
+4. **Ayrı CRM kayıtları:** Dynamics OAuth bağlantısı ile eski `dynamics_api_key` aynı Save işleminde atomikmiş gibi sunulmuyor; ayrı buton/istekler olarak kaydediliyor. UI genel `settings?decrypt=true` listesini indirmiyor, yalnız gereken maskeli key'i okuyor.
+5. **MFA phantom yüzeyi:** backend route, secret saklama, recovery, re-auth, throttling ve audit modeli olmayan MFA kartı/dialogları ile `api.auth.mfa` client contract'ı kaldırıldı. Güvensiz stub veya schema eklenmedi. MFA ancak ayrı ürün/güvenlik fazıyla geri gelebilir.
+6. **İki e-posta sistemi ayrımı korundu:** file-backed transactional template akışı (`source/save/preview`) yerinde kaldı. DB-backed announcement/template CRUD ve broadcast akışı yerinde kaldı. İkisinin karşılığı olmayan `/content` çağrılarını yapan erişilemeyen `MjmlEditor` ve phantom client metodları kaldırıldı; sistemler birleştirilmedi.
+7. **Diğer merkezi istemci düzeltmesi:** müşteri Hotinfo indirme raw fetch yerine mevcut authenticated `api.customers.downloadHotinfo` üzerinden çalışıyor.
+8. **Tekrarı önleyen CI kapısı:** TypeScript AST tarayıcısı merkezi frontend request/download ve generic API çağrılarındaki method/path setini OpenAPI ile karşılaştırıyor. Dashboard raw `fetch`/`window.fetch`/`globalThis.fetch`/axios çağrıları reddediliyor. Tek server-action istisnası dosya-geneli değil `actions.ts::apiFetch::fetch` kapsamıyla ve zorunlu gerekçeyle allowlist'te. Bu kontrol payload semantiğini değil **route/method parity**'sini kanıtlar; DTO testlerinin yerine geçmez.
+
+#### Commit ve restore kanıtı
+
+- Ön çalışma dokümantasyon checkpoint'i: `acafd92b`.
+- Pre-work restore tag: `restore/pre-endpoint-parity-20260807-acafd92b`.
+- Pre-work complete-history bundle: `.private-data/restore-points/pre-endpoint-parity-acafd92b.bundle`.
+- SHA-256: `3400a13c1dbb245e8ce262b387bd64cbc10cc274abf94efea0a6faf0c5349327`; `git bundle verify` ve `git fsck --strict` geçti.
+- Ürün/güvenlik commit'i: `eaa1fc53` — `fix: close frontend backend contract gaps`.
+- CI sözleşme commit'i: `e294623d` — `ci: verify frontend API route contracts`.
+
+#### Doğrulama
+
+- Backend tam suite: **124/124 suite**, **1152 passed**, **1 skipped**, **0 failed**.
+- Frontend tam suite: **38/38 dosya**, **260/260 test**.
+- CRM/Dynamics/DTO odak seti: **73/73**; SettingsService odak seti: **11/11**.
+- Backend ve frontend typecheck geçti.
+- TR/EN/DE i18n bütünlüğü geçti.
+- Operations safety: **24/24**.
+- RBAC source contract: roles=12, permissions=19.
+- Migration manifest: **56/56**.
+- Frontend API route contract: frontend=182, OpenAPI=233, missing=0, raw-network=0.
+- `git diff --check` geçti.
+- İlk bağımsız code/security review omitted webhook secret, Dynamics SSRF/token-origin, broad AST allowlist ve secret response sızıntılarını buldu. Hepsi düzeltildi; son code-review ve security-review ayrı ayrı **GO**, kalan Critical/High/Medium yok.
+
+#### CLAUDE'dan istenen bağımsız kontrol
+
+Lütfen Codex'in test çıktılarına güvenmeden:
+
+1. `dynamics-url.ts`, DTO ve `Dynamics365Adapter` üzerinde trusted-origin, redirect=0 ve next/delta same-origin zincirini kaynak koddan doğrula.
+2. `CrmService` omitted `webhookSecret` davranışını ve CRM response masking'i doğrula.
+3. `SettingsService` tekli/placeholder/bulk secret response masking testlerini çalıştır; response JSON içinde plaintext ve ciphertext bulunmadığını teyit et.
+4. CRM ekranının yalnız `/crm/connections` camelCase contract'ını kullandığını, genel decrypt edilmiş settings listesi istemediğini ve iki Save işlemini ayırdığını doğrula.
+5. MFA backend contract'ı eklenmediğini ve phantom UI/client'ın tamamen kaldırıldığını teyit et.
+6. Transactional email (`source/save/preview`) ile announcement CRUD/broadcast akışlarının korunduğunu, yalnız karşılıksız MJML `/content` yüzeyinin kaldırıldığını doğrula.
+7. `pnpm api:verify-frontend-contract`, `pnpm test:ops-safety`, focused CRM/settings testleri ve mümkünse tam suite'leri bağımsız çalıştır.
+8. Bu fazda migration/schema/DB, production/shadow/live sistem, push/deploy/tag-push ve external CRM çağrısı olmadığını git diff/history ile kontrol et.
+
+Claude doğrulaması bitene kadar yeni MFA veya görsel e-posta editörü fazına başlanmamalıdır. Kullanıcının kalıcı push/deploy yasağı aynen sürmektedir.

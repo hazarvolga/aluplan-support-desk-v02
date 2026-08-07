@@ -323,3 +323,13 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Kimliksiz smoke doğrulandı: API 401/no-store; frontend `/tr/review-center` login'e yönleniyor.
 - Sıradaki kabul adımı: kullanıcı yerel olarak giriş yaptıktan sonra ADMIN ve mümkünse SUPPORT_AGENT ile görsel/işlevsel browser smoke. Claude bağımsız çapraz doğrulaması da bekleniyor.
 - Canlı bağlantı/yazma, production migration, rol ataması, push, tag-push, deploy ve publish yasaktır.
+
+## Active Focus - 2026-08-07 Frontend/Backend Contract Closure
+
+- CRM ayarları gerçek `POST /crm/connections` camelCase DTO sözleşmesine taşındı; secret yanıtları maskeli, mevcut webhook secret alan gönderilmezse korunuyor.
+- Dynamics outbound istekleri yalnız güvenilir HTTPS `*.dynamics.com` origin'ine gider; redirect kapalı ve OData next/delta linkleri aynı origin'e kilitli.
+- CRM bağlantısı ile eski `dynamics_api_key` ayrı kaydediliyor; UI tüm settings secret'larını decrypt ederek istemiyor.
+- Backend güvenlik modeli olmayan MFA kontrolleri ve karşılığı olmayan MJML block editor kaldırıldı. Transactional template `source/save/preview` ile DB-backed announcement yapısı ayrı kaldı.
+- Blocking frontend API route contract kapısı 182 merkezi istemci operasyonunu 233 OpenAPI operasyonuyla karşılaştırıyor; missing=0 ve dashboard raw-network ihlali=0.
+- Ürün commitleri: `eaa1fc53`, `e294623d`. Backend 124/124 suite (1152 passed, 1 skipped), frontend 38/38 dosya (260 test), typecheck, i18n, ops, RBAC ve 56/56 migration manifest geçti.
+- Canlı/production/shadow erişimi, migration/seed, push, tag-push, deploy ve publish yapılmadı.
