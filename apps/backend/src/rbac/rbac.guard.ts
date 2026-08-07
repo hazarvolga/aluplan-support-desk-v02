@@ -14,10 +14,16 @@ interface AuthUser {
 export class RbacGuard implements CanActivate {
     constructor(private reflector: Reflector) { }
 
+    private normalizeRoleName(roleName: string): string {
+        return roleName.trim().replace(/-/g, '_').toUpperCase();
+    }
+
     private getRoleName(role: UserRole): string | null {
         if (!role) return null;
-        if (typeof role === 'string') return role.toUpperCase();
-        if (typeof role === 'object' && 'name' in role) return (role.name as string).toUpperCase();
+        if (typeof role === 'string') return this.normalizeRoleName(role);
+        if (typeof role === 'object' && 'name' in role) {
+            return this.normalizeRoleName(role.name);
+        }
         return null;
     }
 
@@ -42,7 +48,9 @@ export class RbacGuard implements CanActivate {
         if (requiredRoles?.length) {
             const userRole = this.getRoleName(user.role);
 
-            const hasRole = requiredRoles.some(role => role.toUpperCase() === userRole);
+            const hasRole = requiredRoles.some(
+                (role) => this.normalizeRoleName(role) === userRole,
+            );
             if (!hasRole && !user.permissions?.includes('*')) {
                 throw new ForbiddenException(`Requires role: ${requiredRoles.join(' | ')}`);
             }
