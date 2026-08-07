@@ -84,6 +84,24 @@ describe('TicketsService', () => {
             expect(prisma.ticket.create).toHaveBeenCalled();
         });
 
+        it('should reject an archived or unknown product before creating a ticket', async () => {
+            const dto = {
+                subject: 'License problem',
+                description: 'Activation fails',
+                productId: '11111111-1111-4111-8111-111111111111',
+            };
+            prisma.product.findFirst.mockResolvedValue(null);
+
+            await expect(service.create(dto, 'user1')).rejects.toThrow(BadRequestException);
+
+            expect(prisma.product.findFirst).toHaveBeenCalledWith({
+                where: { id: dto.productId, isActive: true, deletedAt: null },
+                select: { id: true },
+            });
+            expect(prisma.ticket.create).not.toHaveBeenCalled();
+            expect(mockAiQueryService.smartTagTicket).not.toHaveBeenCalled();
+        });
+
         it('should reuse an existing ticket for the same AI interaction', async () => {
             const dto = {
                 subject: 'License borrow',

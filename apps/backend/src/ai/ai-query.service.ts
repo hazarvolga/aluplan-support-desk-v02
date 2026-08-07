@@ -3004,8 +3004,8 @@ ${conversation}
     async smartTagTicket(productId: string, text: string, hotinfoContext?: any): Promise<{ tags: string[] }> {
         try {
             const product = await this.prisma.product.findUnique({
-                where: { id: productId },
-                include: { categories: true }
+                where: { id: productId, isActive: true, deletedAt: null },
+                include: { categories: { where: { isActive: true, deletedAt: null } } }
             });
 
             if (!product || product.categories.length === 0) return { tags: [] };

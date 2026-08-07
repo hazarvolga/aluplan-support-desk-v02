@@ -52,6 +52,23 @@ describe('AiDiagnosisService', () => {
 
             expect(result.productId).toBe('p1');
             expect(result.productName).toBe('SCIA Engineer');
+            expect(mockPrisma.product.findMany).toHaveBeenCalledWith({
+                where: { isActive: true, deletedAt: null },
+                include: { categories: { where: { isActive: true, deletedAt: null } } },
+            });
+        });
+
+        it('does not use an explicitly selected archived product', async () => {
+            mockPrisma.product.findUnique.mockResolvedValue(null);
+            mockPrisma.product.findMany.mockResolvedValue([]);
+
+            const result = await service.analyze('ALLPLAN license issue', undefined, 'archived-product');
+
+            expect(mockPrisma.product.findUnique).toHaveBeenCalledWith({
+                where: { id: 'archived-product', isActive: true, deletedAt: null },
+                include: { categories: { where: { isActive: true, deletedAt: null } } },
+            });
+            expect(result.productId).toBeNull();
         });
 
         it('should identify categories and keywords', async () => {

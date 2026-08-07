@@ -2716,7 +2716,11 @@
       "subtitle": "Manage the main products and subcategories for classification by artificial intelligence for your support departments.",
       "actions": {
         "add_product": "Add New Product",
-        "add_category": "Add Category"
+        "add_category": "Add Category",
+        "edit_product": "Edit product",
+        "archive_product": "Archive product",
+        "edit_category": "Edit category",
+        "archive_category": "Archive category"
       },
       "empty": {
         "no_products": "No Products Defined Yet",
@@ -2752,14 +2756,14 @@
         "product_added": "New product added",
         "category_updated": "Category updated",
         "category_added": "New category added",
-        "product_deleted": "Product deleted",
-        "category_deleted": "Category deleted",
+        "product_deleted": "Product archived",
+        "category_deleted": "Category archived",
         "save_failed": "Registration failed",
         "delete_failed": "Deletion failed"
       },
       "confirms": {
-        "delete_product": "Are you sure you want to delete this product and all categories under it?",
-        "delete_category": "Are you sure you want to delete this category?"
+        "delete_product": "Archive this product and all its categories? Existing ticket history will be preserved.",
+        "delete_category": "Archive this category? Existing ticket history will be preserved."
       }
     },
     "faq": {
@@ -4309,7 +4313,11 @@
     "subtitle": "Destek departmanlarınız için ana ürünleri ve yapay zeka tarafından sınıflandırılacak alt kategorileri yönetin.",
     "actions": {
       "add_product": "Yeni Ürün Ekle",
-      "add_category": "Kategori Ekle"
+      "add_category": "Kategori Ekle",
+      "edit_product": "Ürünü düzenle",
+      "archive_product": "Ürünü arşivle",
+      "edit_category": "Kategoriyi düzenle",
+      "archive_category": "Kategoriyi arşivle"
     },
     "empty": {
       "no_products": "Henüz Ürün Tanımlanmamış",
@@ -4345,14 +4353,14 @@
       "product_added": "Yeni ürün eklendi",
       "category_updated": "Kategori güncellendi",
       "category_added": "Yeni kategori eklendi",
-      "product_deleted": "Ürün silindi",
-      "category_deleted": "Kategori silindi",
+      "product_deleted": "Ürün arşivlendi",
+      "category_deleted": "Kategori arşivlendi",
       "save_failed": "Kayıt başarısız",
       "delete_failed": "Silme başarısız"
     },
     "confirms": {
-      "delete_product": "Bu ürünü ve altındaki tüm kategorileri silmek istediğinize emin misiniz?",
-      "delete_category": "Bu kategoriyi silmek istediğinize emin misiniz?"
+      "delete_product": "Bu ürünü ve altındaki tüm kategorileri arşivlemek istediğinize emin misiniz? Mevcut bilet geçmişi korunur.",
+      "delete_category": "Bu kategoriyi arşivlemek istediğinize emin misiniz? Mevcut bilet geçmişi korunur."
     }
   },
   "faq": {

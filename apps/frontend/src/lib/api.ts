@@ -777,6 +777,17 @@ export const api = {
     },
     products: {
         list: () => request<any[]>('/products'),
+        create: (body: { name: string; description?: string }) =>
+            request<any>('/products', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: { name?: string; description?: string }) =>
+            request<any>(`/products/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        archive: (id: string) => request<any>(`/products/${id}`, { method: 'DELETE' }),
+        createCategory: (productId: string, body: { name: string; keywords?: string[] }) =>
+            request<any>(`/products/${productId}/categories`, { method: 'POST', body: JSON.stringify(body) }),
+        updateCategory: (categoryId: string, body: { name?: string; keywords?: string[] }) =>
+            request<any>(`/products/categories/${categoryId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        archiveCategory: (categoryId: string) =>
+            request<any>(`/products/categories/${categoryId}`, { method: 'DELETE' }),
     },
     settings: {
         list: (decrypt = false) => request<any[]>(`/settings${decrypt ? '?decrypt=true' : ''}`),

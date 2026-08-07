@@ -2740,7 +2740,11 @@
       "subtitle": "Destek departmanlarınız için ana ürünleri ve yapay zeka tarafından sınıflandırılacak alt kategorileri yönetin.",
       "actions": {
         "add_product": "Yeni Ürün Ekle",
-        "add_category": "Kategori Ekle"
+        "add_category": "Kategori Ekle",
+        "edit_product": "Ürünü düzenle",
+        "archive_product": "Ürünü arşivle",
+        "edit_category": "Kategoriyi düzenle",
+        "archive_category": "Kategoriyi arşivle"
       },
       "empty": {
         "no_products": "Henüz Ürün Tanımlanmamış",
@@ -2776,14 +2780,14 @@
         "product_added": "Yeni ürün eklendi",
         "category_updated": "Kategori güncellendi",
         "category_added": "Yeni kategori eklendi",
-        "product_deleted": "Ürün silindi",
-        "category_deleted": "Kategori silindi",
+        "product_deleted": "Ürün arşivlendi",
+        "category_deleted": "Kategori arşivlendi",
         "save_failed": "Kayıt başarısız",
         "delete_failed": "Silme başarısız"
       },
       "confirms": {
-        "delete_product": "Bu ürünü ve altındaki tüm kategorileri silmek istediğinize emin misiniz?",
-        "delete_category": "Bu kategoriyi silmek istediğinize emin misiniz?"
+        "delete_product": "Bu ürünü ve altındaki tüm kategorileri arşivlemek istediğinize emin misiniz? Mevcut bilet geçmişi korunur.",
+        "delete_category": "Bu kategoriyi arşivlemek istediğinize emin misiniz? Mevcut bilet geçmişi korunur."
       }
     },
     "faq": {
@@ -4333,7 +4337,11 @@
     "subtitle": "Destek departmanlarınız için ana ürünleri ve yapay zeka tarafından sınıflandırılacak alt kategorileri yönetin.",
     "actions": {
       "add_product": "Yeni Ürün Ekle",
-      "add_category": "Kategori Ekle"
+      "add_category": "Kategori Ekle",
+      "edit_product": "Ürünü düzenle",
+      "archive_product": "Ürünü arşivle",
+      "edit_category": "Kategoriyi düzenle",
+      "archive_category": "Kategoriyi arşivle"
     },
     "empty": {
       "no_products": "Henüz Ürün Tanımlanmamış",
@@ -4369,14 +4377,14 @@
       "product_added": "Yeni ürün eklendi",
       "category_updated": "Kategori güncellendi",
       "category_added": "Yeni kategori eklendi",
-      "product_deleted": "Ürün silindi",
-      "category_deleted": "Kategori silindi",
+      "product_deleted": "Ürün arşivlendi",
+      "category_deleted": "Kategori arşivlendi",
       "save_failed": "Kayıt başarısız",
       "delete_failed": "Silme başarısız"
     },
     "confirms": {
-      "delete_product": "Bu ürünü ve altındaki tüm kategorileri silmek istediğinize emin misiniz?",
-      "delete_category": "Bu kategoriyi silmek istediğinize emin misiniz?"
+      "delete_product": "Bu ürünü ve altındaki tüm kategorileri arşivlemek istediğinize emin misiniz? Mevcut bilet geçmişi korunur.",
+      "delete_category": "Bu kategoriyi arşivlemek istediğinize emin misiniz? Mevcut bilet geçmişi korunur."
     }
   },
   "faq": {

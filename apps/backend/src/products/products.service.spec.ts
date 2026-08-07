@@ -12,8 +12,10 @@ describe('ProductsService', () => {
         {
           provide: PrismaService,
           useValue: {
-            product: { create: jest.fn(), findMany: jest.fn(), findUnique: jest.fn() },
-            productCategory: { create: jest.fn(), update: jest.fn(), delete: jest.fn() },
+            product: { create: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
+            productCategory: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
+            $queryRaw: jest.fn().mockResolvedValue([{ id: 'locked-row' }]),
+            $transaction: jest.fn(),
           },
         },
       ],

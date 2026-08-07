@@ -75,6 +75,16 @@ export class TicketsService {
             }
         }
 
+        if (dto.productId) {
+            const activeProduct = await this.prisma.product.findFirst({
+                where: { id: dto.productId, isActive: true, deletedAt: null },
+                select: { id: true },
+            });
+            if (!activeProduct) {
+                throw new BadRequestException('Selected product is not active');
+            }
+        }
+
         const priority = dto.priority ?? TicketPriority.MEDIUM;
         const [ticketNumber, slaDeadlines] = await Promise.all([
             this.generateTicketNumber(),

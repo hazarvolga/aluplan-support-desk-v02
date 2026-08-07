@@ -395,6 +395,21 @@ describe('AiQueryService', () => {
             // Assert
             expect(result.tags).toEqual([]);
             expect(mockAiService.reformat).not.toHaveBeenCalled();
+            expect(mockPrismaService.product.findUnique).toHaveBeenCalledWith({
+                where: { id: 'p1', isActive: true, deletedAt: null },
+                include: { categories: { where: { isActive: true, deletedAt: null } } },
+            });
+        });
+
+        it('should not search or call AI when the selected product is archived', async () => {
+            mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+            const result = await service.smartTagTicket('archived-product', 'license issue');
+
+            expect(result.tags).toEqual([]);
+            expect(mockEmbeddingService.searchTickets).not.toHaveBeenCalled();
+            expect(mockEmbeddingService.search).not.toHaveBeenCalled();
+            expect(mockAiService.reformat).not.toHaveBeenCalled();
         });
 
         it('should return matching tag from AI response', async () => {
