@@ -2,6 +2,13 @@
 
 ## Active Work
 
+- 2026-08-07 local RBAC/Görev Merkezi prerequisite completed:
+  - `packages/database/prisma/rbac-canonical.json` is the machine-readable catalog for controller roles, permissions, and the exact least-privilege `SUPPORT_AGENT` boundary.
+  - Migration `20260807090000_add_support_agent_rbac_contract` additively materializes the full 22-permission catalog and creates `SUPPORT_AGENT` with exactly 16 approved permissions; it assigns no users and removes no existing permission metadata.
+  - Source and database RBAC contract checks are blocking CI gates. A clean temporary PostgreSQL database passed all 55 migrations and the RBAC database contract.
+  - `RbacGuard` now normalizes case plus hyphen/underscore role aliases, matching existing controller literals such as `support-manager` to canonical DB roles such as `SUPPORT_MANAGER`.
+  - The local development database has `SUPPORT_AGENT` with 16 permissions and 0 assigned users. Do not assign real users or apply this migration to production without a separately approved rollout.
+  - Next product phase is the local-only Görev Merkezi backend summary contract, followed by the sidebar/UI surface and local E2E verification.
 - 2026-08-05 prod shadow data safety baseline:
   - Binding rule: all production-data work is one-way `prod -> local`, read-only from production. Never point local `DATABASE_URL` at production IP `167.86.84.107`; never run `prisma migrate deploy/reset/resolve` against production.
   - A read-only production PostgreSQL dump was taken from Coolify database container `lwk8ok04ocg4w4soog0c888g` (`pgvector/pgvector:pg17`), database `aluplan_support`.

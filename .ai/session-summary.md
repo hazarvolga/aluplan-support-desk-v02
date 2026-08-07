@@ -3849,3 +3849,30 @@ Maintenance rule:
 - GitNexus CLI was unavailable in this checkout, so `detect_changes` could not run. The reviewed diff was limited to the Dashboard component and its co-located test.
 - Dashboard-specific timeout, abort, retry and stale-response generation control remain a separate resilience improvement; the global API helper was intentionally left unchanged to avoid affecting long-running uploads, crawler jobs and AI requests.
 - No backend, database, migration, production/shadow data, push, tag-push, deploy or publish operation occurred.
+
+## Follow-up - 2026-08-07 Canonical RBAC Contract And Local SUPPORT_AGENT
+
+### What changed
+
+- Added a TypeScript-AST RBAC source scanner and a machine-readable canonical role/permission contract.
+- Added blocking CI checks before and after fresh migration deploy so unknown decorators, missing permissions, and an over-privileged `SUPPORT_AGENT` fail closed.
+- Added an additive migration that materializes the full 22-permission catalog and creates `SUPPORT_AGENT` with exactly 16 approved permissions; no user is assigned and existing permission metadata is preserved.
+- Updated the local RBAC seed to consume the canonical catalog and give ADMIN only the existing `*` wildcard.
+- The RBAC seed now uses the generated local database client and refuses to query the database without explicit `ALLOW_DATABASE_SEED=true` opt-in; the operations-safety test locks this ordering.
+- Fixed `RbacGuard` role matching so existing hyphenated controller aliases and underscore-backed DB roles resolve consistently.
+- Aligned migration alias detection with runtime normalization, including surrounding-whitespace rejection via `BTRIM`.
+
+### Verification
+
+- TDD: the alias regression failed 3 cases before the guard fix, then passed 16/16.
+- Operational safety contracts passed 21/21; RBAC source and local DB contracts passed.
+- All 55 migrations plus the RBAC database contract passed on a newly created temporary PostgreSQL database; the temporary database was removed afterward.
+- Local development DB read-only verification: `SUPPORT_AGENT` has 16 permissions and 0 assigned users.
+- Backend full suite: 119/119 suites, 1086 passed, 1 skipped, 0 failed.
+- Backend/frontend typecheck, TR/EN/DE i18n, 55-file migration integrity, and `git diff --check` passed.
+
+### Boundary
+
+- Only the local development database received the new migration. Production/shadow DB, production Redis, external services, push, tag-push, deploy, and publish were not touched.
+- The repository-declared Node 20 binary was absent; verification ran on the active local Node 24.18.0 runtime. New scripts use Node 20-compatible APIs, but CI remains the authoritative Node 20 execution proof.
+- Görev Merkezi API/UI implementation has not started; it is the next local-only phase after this RBAC prerequisite checkpoint.

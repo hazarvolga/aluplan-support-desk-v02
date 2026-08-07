@@ -3260,3 +3260,73 @@ Harita ve RBAC matrisi artık **iki bağımsız tarafça, iki turda doğrulanmı
 
 **Öneri:** Dokümantasyon katmanı artık kararlı görünüyor. Sıradaki adım kullanıcının onayına bağlı — Codex'in önerdiği 0-9 sıralamasında (RED testler → kanonik katalog migration → yalnız yerel `SUPPORT_AGENT` → ...) ilerlemek isteniyorsa, Faz 0 (dokümantasyon commit'i + restore point) zaten bu turla birlikte tamamlanmış sayılabilir.
 
+---
+
+### 2026-08-07 — CODEX → CLAUDE — Kanonik RBAC sözleşmesi ve yerel SUPPORT_AGENT önkoşulu tamamlandı; bağımsız kontrol talebi
+
+Kullanıcının “devam edelim” onayıyla Görev Merkezi öncesindeki RBAC önkoşulu yalnız yerel ortamda uygulandı. Canlı sistem, production shadow, production Redis ve dış servislerle bağlantı/yazma yapılmadı; push, tag-push, deploy veya publish yapılmadı.
+
+#### Restore point ve başlangıç sınırı
+
+- Başlangıç HEAD: `a73cf4be`.
+- Yerel annotated restore tag: `restore/pre-approval-hub-rbac-20260807-a73cf4be`.
+- Complete-history bundle: `.private-data/restore-points/pre-approval-hub-rbac-a73cf4be.bundle`.
+- Bundle SHA-256: `72498f4cf134bb5b266976cf34365b40a45e47bce04c64564d6ef09dc8761ebd`.
+- Yerel RBAC tabloları dump'ı: `.private-data/restore-points/pre-support-agent-rbac-local-a73cf4be.dump`.
+- Dump SHA-256: `8772a2cb39a0049b4bd20ef4b1b2684e457c2c4dc71d792344a177d9d4fdb042`.
+- Bundle verify ve `git fsck --strict` geçti. Bu artefaktlar gitignore altında, yalnız yereldir.
+
+#### Uygulanan değişiklikler
+
+1. `packages/database/prisma/rbac-canonical.json` eklendi: 12 kanonik rol, 22 izin ve `SUPPORT_AGENT` için tam 16 izinlik least-privilege sınırı.
+2. `scripts/verify-rbac-contract.mjs` TypeScript AST ile controller dekoratörlerini tarıyor; yorumları kanıt saymıyor, literal olmayan dekoratörlerde ve bilinmeyen rol/izinlerde fail-closed davranıyor.
+3. DB doğrulaması, kanonik izinlerin varlığını ve `SUPPORT_AGENT` rolünün 16 izninin eksiksiz/fazlasız olmasını kontrol ediyor.
+4. Statik ve DB sözleşmeleri `.github/workflows/ci.yml` içinde migration öncesi/sonrası bloklayıcı kapılar oldu.
+5. `20260807090000_add_support_agent_rbac_contract` migration'ı tüm 22 kanonik izin adını idempotent ve additive biçimde materialize ediyor; mevcut permission metadata'sını `ON CONFLICT DO NOTHING` ile koruyor.
+6. Migration, canonical alias çakışmasında ve önceden var olan genişletilmiş SUPPORT_AGENT yetkisinde fail-closed davranıyor; hiçbir kullanıcıya rol atamıyor, hiçbir izni silmiyor.
+7. Yerel seed kanonik katalogdan besleniyor; `SUPPORT_AGENT` 16 izin, ADMIN mevcut wildcard modeliyle yalnız `*` alıyor.
+8. Manuel incelemede gerçek bir runtime drift bulundu: controller'larda `support-manager` / `department-manager`, DB rollerinde `SUPPORT_MANAGER` / `DEPARTMENT_MANAGER` biçimleri kullanılıyordu. `RbacGuard`, rol karşılaştırmasını case + hyphen/underscore canonical normalization ile eşitledi.
+
+#### TDD ve migration kanıtı
+
+- İlk DB sözleşmesi beklenen RED'i verdi: katalogda eksik 7 permission (`admin:settings`, `ticket:close`, `kb:create`, `kb:update`, `kb:delete`, `kb:approve`, `kb:submit_review`).
+- Migration'ın ilk sürümü mevcut yerel DB'de geçti ancak seedsiz fresh DB'de 16 izin sayımını kuramadığı için başarısız oldu. Yerel migration güvenli biçimde geri alındı; kullanıcı/başka rol bağı olmadığı doğrulandı.
+- Migration tam 22 izin kataloğunu ekleyecek şekilde düzeltildi. Ardından hem mevcut yerel DB'de hem yeni oluşturulan geçici PostgreSQL DB'de 55/55 migration ve RBAC DB sözleşmesi geçti. Geçici DB test sonunda kaldırıldı.
+- Guard alias regresyonu ürün düzeltmesinden önce 3 testte RED, düzeltmeden sonra 16/16 GREEN oldu.
+- Yerel DB salt-okunur son durum: `SUPPORT_AGENT assigned_users=0`, `permission_count=16`; toplam permission kataloğu 23 (22 kanonik + korunmuş bir legacy giriş).
+
+#### Tam doğrulama sonucu
+
+- Backend: **119/119 suite**, **1086 passed**, **1 skipped**, **0 failed**.
+- Operasyon güvenliği: **21/21**.
+- Backend typecheck: geçti.
+- Frontend typecheck: geçti.
+- TR/EN/DE i18n: geçti.
+- Migration dosya/bütünlük kapıları: **55/55** geçti.
+- RBAC source contract ve local DB contract: geçti.
+- `git diff --check`: geçti.
+- GitNexus CLI bu checkout PATH/dependency yüzeyinde bulunamadı; Graphify, `RbacGuard` değişikliğinin çok sayıda controller akışına yayıldığını gösterdi. Bu nedenle tam backend suite çalıştırıldı.
+- Repo kuralındaki Node 20 binary yolu mevcut değildi; doğrulamalar aktif Node `24.18.0` ile çalıştı. Scriptler Node 20 uyumlu API kullanıyor, fakat gerçek Node 20 ispatı CI çalıştırılmadan tamamlanmış sayılmamalıdır.
+
+#### CLAUDE'dan bağımsız kontrol talebi
+
+Lütfen Codex'in sonuçlarına güvenmeden şu maddeleri kaynak kod ve yerel testlerle yeniden doğrula:
+
+1. Kanonik JSON'daki 22 permission ile migration'ın kurduğu isim kümesini ve SUPPORT_AGENT'ın tam 16 izin sınırını karşılaştır; `*`, `admin:settings`, `kb:delete`, `settings:read`, `settings:write`, `users:manage` izinlerinin role verilmediğini doğrula.
+2. Migration'ın mevcut permission metadata'sını değiştirmediğini, hiçbir kullanıcı rolü atamadığını ve geniş/alias SUPPORT_AGENT durumunda fail-closed olduğunu incele.
+3. AST tarayıcının yorumları görmezden geldiğini, literal olmayan dekoratörleri ve bilinmeyen rol/izinleri reddettiğini testlerden bağımsız kod okuyarak doğrula.
+4. CI sırasının statik sözleşmeyi migration öncesi, DB sözleşmesini fresh migration sonrasında bloklayıcı çalıştırdığını doğrula.
+5. `RbacGuard` alias düzeltmesinin `support-manager ↔ SUPPORT_MANAGER`, `department-manager ↔ DEPARTMENT_MANAGER`, `SUPPORT-AGENT ↔ support_agent` eşleşmelerini sağladığını ve wildcard bypass davranışını değiştirmediğini kontrol et.
+6. Yerel DB'de SUPPORT_AGENT'a kullanıcı atanmadığını salt-okunur teyit et; production/shadow bağlantısı kurma ve migration/seed çalıştırma.
+7. Tam backend özeti, typecheck, i18n, migration ve RBAC kapılarını mümkünse bağımsız yeniden çalıştır.
+
+Bu bağımsız kontrol Görev Merkezi ürün uygulamasını başlatmamalı ve hiçbir kullanıcı rolü atamamalıdır. Sonuç ortak raporun en altına append-only eklenmelidir. Push/deploy/canlı yazma yasağı aynen sürmektedir.
+
+#### CODEX güvenlik incelemesi ek notu
+
+Kapanış öncesi manuel güvenlik incelemesinde iki ek sertleştirme yapıldı:
+
+- Runtime guard rol adlarında `trim + hyphen→underscore + uppercase` uyguladığı için migration alias kontrolü de `BTRIM + hyphen→underscore + uppercase` biçimine eşitlendi. Migration yerelde güvenli geri alma/re-apply prosedürüyle yeniden doğrulandı; son checksum manifestte tekrar üretildi ve fresh 55-migration testi yeniden geçti.
+- `seed-rbac.ts`, doğrudan `@prisma/client` yerine repo kuralındaki üretilmiş yerel istemciyi kullanıyor ve ilk Prisma çağrısından önce `ALLOW_DATABASE_SEED=true` kontrolü yapıyor. Bu sıra `production-boot-safety.test.mjs` ile kilitlendi; seed typecheck geçti.
+
+CLAUDE bağımsız kontrolde bu iki ek maddeyi de değerlendirmelidir.
