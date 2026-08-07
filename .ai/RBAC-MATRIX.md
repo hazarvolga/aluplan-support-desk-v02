@@ -1,6 +1,6 @@
 # Operation-Bazlı Yetkilendirme Matrisi
 
-**Oluşturan:** Claude - **Tarih:** 2026-08-06 - **Yöntem:** 229 backend operasyonunun tamamı, controller dekoratör bloklarından programatik olarak çıkarıldı (kaynak koddan, tahmin değil).
+**Oluşturan:** Claude - **Codex düzeltmesi:** 2026-08-06 - **Yöntem:** Proje controller dekoratör bloklarından çıkarılan 229 operation, OpenAPI ile çapraz doğrulandı; paket-kaynaklı `GET /metrics` eklenerek toplam 230 operation'a tamamlandı.
 
 Sınıflar:
 - **PUBLIC**: JWT muaf, ek koruma yok
@@ -10,7 +10,14 @@ Sınıflar:
 - **PERMISSION**: @RequirePermissions ile sınırlı
 - **ROLE+PERMISSION**: İkisi birden gerekli
 
-> Doğrulama notu: Sınıf-seviyesi dekoratörler birden fazla route etkileyebilir; bu yüzden route sayısı (bu dosyada 229) ham dekoratör sayısıyla (49 @RequirePermissions + 113 @Roles) birebir eşleşmez.
+> Doğrulama notu: Sınıf-seviyesi dekoratörler birden fazla route etkileyebilir; bu yüzden operation sayısı (bu dosyada 230) ham dekoratör sayısıyla (49 `@RequirePermissions` + 113 `@Roles`) birebir eşleşmez. `Guard` sütunu aksi belirtilmedikçe controller/class/method üzerinde açıkça tanımlanmış guard'ları gösterir; global `APP_GUARD` kayıtları her satırda tekrarlanmaz.
+
+## external/@willsoto/nestjs-prometheus
+
+| Route | Sinif | Roller | Izinler | Guard |
+|---|---|---|---|---|
+| GET /metrics | JWT_ONLY | - | - | Global JwtAuthGuard (APP_GUARD) |
+
 ## ai/ai-interaction-history.controller.ts
 
 | Route | Sinif | Roller | Izinler | Guard |
@@ -223,7 +230,7 @@ Sınıflar:
 | PATCH /kb/articles/:id/archive | PERMISSION | - | kb:delete | RbacGuard |
 | DELETE /kb/articles/:id | PERMISSION | - | kb:delete | RbacGuard |
 | GET /kb/search | PERMISSION | - | kb:read | RbacGuard |
-| POST /kb/articles/:id/view | PUBLIC+GUARD | - | - | RbacGuard |
+| POST /kb/articles/:id/view | PUBLIC | - | - | RbacGuard (RBAC metadata yok; `canActivate()` izin verir) |
 | POST /kb/articles/:id/feedback | JWT_ONLY | - | - | RbacGuard |
 | GET /kb/articles/:id/analytics | PERMISSION | - | reports:read | RbacGuard |
 | GET /kb/articles/:id/compare | PERMISSION | - | kb:read | RbacGuard |
@@ -404,4 +411,3 @@ Sınıflar:
 |---|---|---|---|---|
 | GET /whatsapp/webhook | PUBLIC | - | - | - |
 | POST /whatsapp/webhook | PUBLIC+GUARD | - | - | WhatsAppWebhookSignatureGuard |
-

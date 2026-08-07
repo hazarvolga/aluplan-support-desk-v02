@@ -42,7 +42,7 @@ Müşteri sorunu
 └────────────────────────┬─────────────────────────────────┘
                          │ REST /api/v1  +  WebSocket
 ┌────────────────────────┴─────────────────────────────────┐
-│ NestJS 11 · :4000 · 36 modül · 33 controller · 229 route  │
+│ NestJS 11 · :4000 · 36 modül · 33+1 controller · 230 op   │
 │ Global: JwtAuthGuard · RbacGuard · Throttler(120/dk)      │
 │         helmet · csurf · XssValidationPipe · SsrfGuard    │
 │         AuditLogInterceptor · MetricsInterceptor          │
@@ -60,7 +60,9 @@ Müşteri sorunu
 
 ---
 
-## 3. Backend — 229 route, modül bazında
+## 3. Backend — 230 operation, modül bazında
+
+229 operation, proje içindeki 33 controller'dan; `GET /metrics` ise paket-kaynaklı `PrometheusController` sınıfından gelir.
 
 | Modül (OpenAPI tag) | Route | Sorumluluk |
 |---|---|---|
@@ -91,10 +93,10 @@ Müşteri sorunu
 | Kategori | Adet | Örnek | Gerçek koruma |
 |---|---|---|---|
 | Rate-limited auth akışı | 5 | `POST /auth/login` (20/dk), `/forgot-password` (10/dk), `/resend-verification` (5/dk), `/reset-password` (10/dk), `/verify-email` (10/dk) | `@Throttle` + (BULGU-02 sonrası) `purpose` claim doğrulaması |
-| Guard'lı public | 5 | `POST /auth/refresh` (`RefreshGuard`) · `POST /crm/webhooks/dynamics365` (`CrmWebhookGuard`) · `POST /omni-channel/webhook/email` (`InboundEmailWebhookSignatureGuard`) · `POST /whatsapp/webhook` (`WhatsAppWebhookSignatureGuard`) | Dekoratör tabanlı guard |
+| Guard'lı public | 4 | `POST /auth/refresh` (`RefreshGuard`) · `POST /crm/webhooks/dynamics365` (`CrmWebhookGuard`) · `POST /omni-channel/webhook/email` (`InboundEmailWebhookSignatureGuard`) · `POST /whatsapp/webhook` (`WhatsAppWebhookSignatureGuard`) | Dekoratör tabanlı guard |
 | Inline doğrulamalı | 3 | `GET /email/gmail/callback` (state tüketimi) · `POST /email/webhook/resend` (Svix HMAC imza) · `POST /email/unsubscribe` (HMAC-imzalı token — **`JWT_SECRET` yoksa `'fallback-secret'`'e düşüyor, ayrı not edildi**) | Guard değil, method içinde manuel kontrol |
 | Path-traversal korumalı dosya sunumu | 2 | `GET /storage/*path` (basePath `startsWith` kontrolü) · `GET /branding/assets/*path` | Inline path normalize |
-| Gerçekten korumasız (tasarım gereği düşük risk) | 7 | `GET /products` (katalog), `GET /health`, `GET /auth/system-requirements`, `POST /customers/register`, `POST /kb/articles/:id/view` (anonim sayaç), `GET /email/track/:logId` (pixel), `POST /auth/lookup` (e-posta domain lookup — **rate limit yok, düşük öncelikli inceleme adayı**) | Yok — tasarım gereği açık |
+| Gerçekten korumasız (tasarım gereği düşük risk) | 8 | `GET /products` (katalog), `GET /health`, `GET /auth/system-requirements`, `POST /customers/register`, `POST /kb/articles/:id/view` (anonim sayaç), `GET /email/track/:logId` (pixel), `GET /whatsapp/webhook` (Meta doğrulama), `POST /auth/lookup` (e-posta domain lookup — **rate limit yok, düşük öncelikli inceleme adayı**) | Yok — tasarım gereği açık |
 
 **En düşük önceliğe rağmen not edilmesi gereken 2 nokta:** (1) `POST /auth/lookup`'ta rate limit yok; (2) `POST /email/unsubscribe`'ın HMAC fallback secret'ı üretimde `JWT_SECRET` her zaman set olduğu için pratikte tetiklenmez, ama kod olarak kırılgan bir varsayılan.
 
@@ -161,7 +163,7 @@ login · help · unsubscribe · [locale] (landing)
 | `document-parsing` | `DocumentParsingProcessor` | `document-ai.service.ts` |
 | `kb-summarizer` | `KbSummarizerProcessor` | `faq.service.ts` |
 | `proactive-chat` | `ProactiveChatTimeoutProcessor` | `proactive-chat.service.ts`, `notifications.gateway.ts` |
-| `embedding-migration` | `EmbeddingMigrationProcessor` | **Bulunamadı** — kayıtlı + processor'ı var ama hiçbir `.add()` çağrısı yok; muhtemelen CLI script/manuel tetikleme veya kullanılmayan altyapı |
+| `embedding-migration` | `EmbeddingMigrationProcessor` | `SettingsService` `ai.embedding.provider_changed` event'ini yayınlar → `EmbeddingMigrationProcessor.handleProviderChange()` cache'i temizler ve `migrationQueue.add('migrate-vectors', ...)` çağırır |
 
 Ayrıca `queue-dashboard` modülü (`ai-query-processing`, `document-parsing`, `crm-sync`, `email`) izleme/stalled-job-recovery amacıyla bu kuyrukları **tüketmeden** enjekte eder — yukarıdaki tabloya dahil edilmedi.
 
@@ -218,17 +220,17 @@ Ayrıca `queue-dashboard` modülü (`ai-query-processing`, `document-parsing`, `
 
 **Organizasyon yapısı (gerçek):** 6 departman · 9 takım · 18 üyelik · **2 personel** (Meli, Meriç — ikisi de global `ADMIN` + `*` wildcard)
 
-### 229 operation'ın yetkilendirme sınıfı dağılımı (kaynak koddan doğrulandı)
+### 230 operation'ın yetkilendirme sınıfı dağılımı (kaynak kod + OpenAPI ile doğrulandı)
 
 | Sınıf | Adet | Anlamı |
 |---|---:|---|
 | `ROLE` | 132 | `@Roles(...)` ile sınırlı (class-level dahil, tekil dekoratör sayısı 113) |
 | `PERMISSION` | 49 | `@RequirePermissions(...)` ile sınırlı — dekoratör sayısıyla birebir |
-| `JWT_ONLY` | 26 | Kimlik doğrulanmış **her** kullanıcı erişir (CUSTOMER dahil) — rol/izin kontrolü yok |
-| `PUBLIC` | 17 | JWT muaf, ek koruma yok/düşük risk |
-| `PUBLIC+GUARD` | 5 | JWT muaf ama özel guard'lı |
+| `JWT_ONLY` | 27 | Kimlik doğrulanmış **her** kullanıcı erişir (CUSTOMER dahil) — rol/izin kontrolü yok; paket-kaynaklı `GET /metrics` dahil |
+| `PUBLIC` | 18 | JWT muaf, ek koruma yok/düşük risk; `POST /kb/articles/:id/view` dahil |
+| `PUBLIC+GUARD` | 4 | JWT muaf ama özel guard'lı |
 
-> Not: 229/230 — bir operation regex sınırları içinde sınıflandırılamadı, manuel doğrulama gerekebilir.
+> `GET /metrics`, proje içi controller dosyasından değil `@willsoto/nestjs-prometheus` paketinin `PrometheusController` sınıfından gelir. `@Public()` veya route-level guard taşımadığı için uygulamanın global `JwtAuthGuard` korumasıyla `JWT_ONLY` sınıfındadır. Matrisin `Guard` sütunu aksi açıkça belirtilmedikçe controller/class/method üzerinde tanımlı explicit guard'ları gösterir; global `APP_GUARD` kayıtlarını her satırda tekrar etmez.
 
 ### 🔴 Kritik RBAC drift'i — DB izin kataloğu endpoint taleplerini karşılamıyor
 
@@ -244,7 +246,7 @@ Controller'ların `@RequirePermissions` ile istediği **7 izin, `permissions` ta
 | `kb:approve` | `POST /kb/:id/review` — **makale onay/red** | **Yalnız ADMIN** |
 | `kb:submit_review` | `POST /kb/:id/submit` — incelemeye gönderme | **Yalnız ADMIN** |
 
-**Kanıt:** `rbac.guard.ts:53-56` — `userPermissions.includes(perm)` kontrolü, DB'de olmayan bir izin string'ini **hiçbir role hiçbir zaman** veremez; tek geçiş yolu `userPermissions.includes('*')`. Bu yüzden bu 7 izinden herhangi biri gerektiğinde **fiilen yalnız ADMIN geçer** — role sistemi görünürde çalışıyor gibi dursa da bu 7 alan için aslında devre dışı.
+**Kanıt:** `rbac.guard.ts:53-58` — permission kontrolünde `*` ve legacy `admin` string'i genel bypass kabul edilir; aksi durumda istenen permission'ın kullanıcı permission listesinde birebir bulunması gerekir. Yerel dev DB kataloğunda legacy `admin` permission'ı bulunmadığından bugünkü yerel veri durumunda bu 7 izin için pratik geçiş yolu ADMIN'in `*` wildcard'ıdır. Güvenlik sözleşmesi bu nedenle “yalnız `*`” değil, “`*` veya legacy `admin`; mevcut katalogda yalnız `*` üretilebilir” şeklinde okunmalıdır.
 
 **Görev ve Onay Merkezi'ne doğrudan etkisi:** "Makale Onayları" kartının arkasındaki `kb:approve` bugün **kimsede yok** (ADMIN wildcard hariç). Bu izin DB kataloğuna eklenmeden hiçbir `SUPPORT_AGENT` makale onaylayamaz.
 
@@ -272,7 +274,7 @@ Controller'ların `@RequirePermissions` ile istediği **7 izin, `permissions` ta
 | `kb:approve` | ✅ | ✅ (kullanıcı onayı) | ❌ | **DB'ye eklenmeli** — Görev Merkezi'nin ön koşulu |
 | `kb:delete` | ✅ | ❌ (kullanıcı: "yüksek riskli, ayrıca onaylanmadan eklenmesin") | ❌ | **DB'ye eklenmeli**, SUPPORT_AGENT'a atanmaz |
 | `faq:read/review` | ✅ | ✅ | `faq:read` | Zaten DB'de var |
-| `faq:manage` | ✅ | ⚠️ karar bekliyor | ❌ | Onay + auto-publish yönetimi — kullanıcı kararı gerekli |
+| `faq:manage` | ✅ | ✅ (kullanıcı onayı) | ❌ | FAQ yazma/yönetme; role-only kalıcı silme yetkisini kapsamaz |
 | `ai-interactions:read` | ✅ | ✅ (kullanıcı onayı) | ❌ | Zaten DB'de var |
 | `reports:read` | ✅ | ✅ | ❌ | Zaten DB'de var |
 | `admin:settings` | ✅ | ❌ | ❌ | **DB'ye eklenmeli**, SLA politika yönetimi ADMIN'de kalır |
@@ -296,7 +298,7 @@ Bu plan **tasarımdır** — Codex'in isteği doğrultusunda bu turda kod/script
 1. Destek personeli tam admin yetkisine sahip (least-privilege ihlali)
 2. `admin@example.com` seed hesabı üretimde ACTIVE, sıfır aktivite
 3. Route'ların çoğunda rol/izin kontrolü yok — yalnız JWT (çoğu için doğru, ama denetlenmemiş)
-4. Yalnız 8 route izin-tabanlı; 40 route rol-tabanlı
+4. Permission ve rol korumasının operation-bazlı güncel dağılımı yukarıdaki tabloda ve `.ai/RBAC-MATRIX.md` içinde tutulur; eski dekoratör-sayımı temelli `8/40` özeti kaldırılmıştır.
 
 ---
 
@@ -344,4 +346,4 @@ Bu plan **tasarımdır** — Codex'in isteği doğrultusunda bu turda kod/script
 - **Yetki analizinde regex'e güvenmeyin** — bu haritayı çıkarırken toplam **iki ayrı turda** yanlış pozitif/negatif üretti: (1) ilk sürümde 3 route yanlış "public" sayıldı, (2) düzeltme turunda 5 `@Public()` operation kaçırıldı ve bir controller'ın DTO sınıfı gerçek controller sınıfı sanılıp `/ai` route'ları prefix'siz kaldı — ikisi de Codex'in bağımsız incelemesiyle yakalandı. **Otomatik tarama sonuçları her zaman kaynak kod okunarak veya `openapi.json` gibi otoritatif bir çıktıyla çapraz doğrulanmalı; tek başına kanıt sayılmamalı.**
 - **Truth hierarchy:** kod > testler > şema/migration > git geçmişi > `.ai` belgeleri > kök Markdown.
 - Değişiklik yapmadan önce yüksek blast-radius sembolleri kontrol edin (CLAUDE.md §4).
-- **RBAC detayı için:** `.ai/RBAC-MATRIX.md` (229 operation, tam sınıflandırma) — bu dosyayla birlikte okunmalı, tek başına yeterli değil.
+- **RBAC detayı için:** `.ai/RBAC-MATRIX.md` (230 operation, tam sınıflandırma) — bu dosyayla birlikte okunmalı, tek başına yeterli değil.
