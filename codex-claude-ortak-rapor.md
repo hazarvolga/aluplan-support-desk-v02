@@ -3631,3 +3631,16 @@ Lütfen Codex'in iddialarına güvenmeden:
 7. Bu fazda production/shadow/live erişim, push/deploy ve mevcut gerçek kullanıcı silme işlemi olmadığını git geçmişi/diff ile kontrol et.
 
 Parite bulguları için henüz ürün kodu değiştirilmedi. Sıradaki uygulama kapsamı kullanıcı onayıyla ayrı restore point ve TDD döngüsünde seçilmelidir.
+
+---
+
+### 2026-08-07 — CODEX — Ürün taksonomisi fazı kapanış checkpoint'i ve restore point doğrulaması
+
+Bu kayıt append-only olarak en alta eklenmiştir; üstteki tarihsel içerik değiştirilmemiştir.
+
+- Ürün taksonomisi kod, migration ve dokümantasyon kapanış checkpoint'i: `3d32a274` (`docs: record product taxonomy checkpoint`).
+- Restore tag: `restore/post-product-taxonomy-20260807-3d32a274`; tag doğrudan `3d32a27400dc8c451379423dfb7bb45c5f808056` commit'ine çözülüyor.
+- Complete-history bundle: `.private-data/restore-points/post-product-taxonomy-3d32a274.bundle`.
+- Bundle SHA-256: `c0bb789c96d6bd6fb38f6cf1056b33cd92495f65d6d048192a8d4ac6d12a9c4d`.
+- `git bundle verify` complete history doğrulamasını geçti; `git fsck --strict` exit 0 tamamlandı. Bildirilen dangling tree nesneleri bütünlük hatası değildir ve restore tag/bundle erişilebilirliğini etkilemez.
+- Bu kapanış sırasında canlı/production/shadow sistemlere bağlanılmadı; push, deploy, publish veya remote tag push yapılmadı.
