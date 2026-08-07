@@ -3441,3 +3441,39 @@ Yukarıdaki ilk kapanış kaydından sonra zorunlu bağımsız kod ve güvenlik 
 - Bundle SHA-256: `9a6864b8ab7fe4d32928fed4823dae022d9e6e8dbbee24a563825b1a432c5829`.
 - `git fsck --strict`: exit 0; yalnız erişilemeyen dangling tree kayıtları raporlandı.
 - Tag ve bundle yalnız yereldir; hiçbir remote push/tag-push yapılmadı.
+
+---
+
+### 2026-08-07 — CODEX — Görev ve Onay Merkezi final handoff ve commit defteri
+
+Bu kayıt, Görev ve Onay Merkezi fazında yapılan işlerin ve yerel commit zincirinin Claude tarafından tek yerden okunabilmesi için append-only olarak eklenmiştir.
+
+#### Yapılan işler
+
+- Yetki kapsamlı, salt-okunur `GET /api/v1/review-center/summary` endpoint'i oluşturuldu.
+- `/[locale]/review-center` arayüzü ve sidebar içindeki `GÖREV VE ONAYLAR` bölümü tamamlandı.
+- Canlı destek, atanmamış bilet, makale/FAQ/crawler onayı ve AI denetim bağlantıları tek merkezde toplandı.
+- CUSTOMER ve bilinmeyen roller için kuyruk sorgusu/sayı sızıntısı kapatıldı; kart görünürlüğü hedef listeyi okuma ve aksiyon yetkisinin kesişimine bağlandı.
+- Ticket count/list aktif-kayıt sınırı `activeOnly=true` ile eşitlendi; invalid/repeated query değerleri service/Prisma öncesinde reddediliyor.
+- Tickets, Knowledge Base ve Knowledge Pool aynı-route query geçişlerinde stale state bırakmayacak biçimde senkronlandı.
+- `RoleGuard`, yetkisiz kullanıcı yönlendirilirken korumalı içeriği render etmeyecek şekilde fail-closed hale getirildi.
+- Makale REVIEW rozeti, hedef non-customer listeyle aynı predicate'i kullanıyor.
+- OpenAPI, PROJECT-MAP, RBAC-MATRIX, current-focus, session-summary ve ADR-018 güncellendi.
+- Bağımsız kod ve güvenlik incelemelerindeki tüm bloklayıcılar kapatıldı; son incelemeler GO verdi.
+
+#### Doğrulama özeti
+
+- Backend: **121/121 suite**, **1102 passed**, **1 skipped**, **0 failed**.
+- Frontend: **34/34 dosya**, **248/248 test**.
+- Backend/frontend typecheck, TR/EN/DE i18n, 21/21 ops safety, RBAC source contract, 55/55 migration manifest ve diff kontrolleri geçti.
+- Kimliksiz yerel smoke: Review Center API 401 + no-store; frontend route login'e yönleniyor.
+- Authenticated ADMIN/SUPPORT_AGENT görsel browser kabulü sıradaki yerel adımdır.
+
+#### Yerel commit zinciri
+
+1. `1efacf33` — `feat: add authorization-scoped review center`
+2. `ef9bfe7e` — `fix: harden review center authorization and navigation`
+3. `2fe9eb8e` — `docs: record hardened review center checkpoint`
+4. `e92dcb22` — `docs: record review center restore point`
+
+Restore tag `restore/post-review-center-20260807-2fe9eb8e` ve doğrulanmış bundle `.private-data/restore-points/post-review-center-2fe9eb8e.bundle` yalnız yereldir. Bu fazda production/shadow DB, production Redis, migration, seed, rol ataması, dış servis yazımı, push, tag-push, deploy veya publish yapılmamıştır.
