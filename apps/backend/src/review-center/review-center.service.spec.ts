@@ -125,12 +125,14 @@ describe('ReviewCenterService', () => {
             where: {
                 chatStatus: 'REQUESTED',
                 status: { notIn: ['RESOLVED', 'CLOSED'] },
+                deletedAt: null,
             },
         });
         expect(prisma.ticket.count).toHaveBeenNthCalledWith(2, {
             where: {
                 assignedTo: null,
                 status: { notIn: ['RESOLVED', 'CLOSED'] },
+                deletedAt: null,
             },
         });
 
@@ -142,5 +144,19 @@ describe('ReviewCenterService', () => {
             .toContain('activeOnly=true');
         expect(summary.items.find(({ id }) => id === 'unassigned-tickets')?.href)
             .toContain('activeOnly=true');
+    });
+
+    it('excludes soft-deleted FAQ candidates from the review queue count', async () => {
+        await service.getSummary({
+            role: 'SUPPORT_AGENT',
+            permissions: ['faq:review'],
+        });
+
+        expect(prisma.faqEntry.count).toHaveBeenCalledWith({
+            where: {
+                status: 'PENDING_REVIEW',
+                deletedAt: null,
+            },
+        });
     });
 });

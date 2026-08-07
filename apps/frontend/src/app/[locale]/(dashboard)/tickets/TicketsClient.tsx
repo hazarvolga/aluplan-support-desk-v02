@@ -80,6 +80,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const [tickets, setTickets] = useState<any[]>(initialTickets);
     const [total, setTotal] = useState(initialTotal);
     const [loading, setLoading] = useState(initialTickets.length === 0);
+    const [loadError, setLoadError] = useState(false);
     const [filter, setFilter] = useState('');
     const [search, setSearch] = useState('');
     const [statusCounts, setStatusCounts] = useState<StatusCounts | null>(null);
@@ -90,6 +91,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const queueDeepLink = getTicketQueueDeepLink(searchParams);
     const [scope, setScope] = useState<TicketScope>('all');
     const didInitializeQueueRef = useRef(false);
+    const loadRequestIdRef = useRef(0);
     const queueKey = `${queueDeepLink.chatStatus ?? ''}|${queueDeepLink.assignment ?? ''}|${queueDeepLink.activeOnly ? 'active' : ''}`;
     const previousQueueKeyRef = useRef(queueKey);
 
@@ -105,7 +107,9 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
         scopeFilter: TicketScope = scope,
         searchFilter: string = search,
     ) => {
+        const requestId = ++loadRequestIdRef.current;
         setLoading(true);
+        setLoadError(false);
         try {
             const params: Record<string, string> = { limit: '100', includeStatusCounts: 'true' };
             if (statusFilter) params.status = statusFilter;
@@ -117,11 +121,18 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                 params.assignedTo = user.id;
             }
             const res = await api.tickets.list(params);
+            if (requestId !== loadRequestIdRef.current) return;
             setTickets(res.data ?? []);
             setTotal(res.total ?? 0);
             setStatusCounts(res.statusCounts ?? null);
-        } catch { /* handled */ }
-        setLoading(false);
+        } catch {
+            if (requestId !== loadRequestIdRef.current) return;
+            setLoadError(true);
+        } finally {
+            if (requestId === loadRequestIdRef.current) {
+                setLoading(false);
+            }
+        }
     }, [filter, isCustomer, queueDeepLink.activeOnly, queueDeepLink.assignment, queueDeepLink.chatStatus, scope, search, user?.id]);
 
     // Auto-load tickets after the authenticated user is known.
@@ -386,6 +397,21 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                         <div className="p-20 text-center bg-white/[0.01] min-w-[1000px]">
                             <Loader2 className="inline-block h-8 w-8 text-primary animate-spin" />
                             <p className="text-[10px] font-bold mt-4 text-muted-foreground uppercase tracking-[0.3em] opacity-40">{t('table.loading')}</p>
+                        </div>
+                    ) : loadError ? (
+                        <div role="alert" className="p-20 text-center min-w-[1000px]">
+                            <AlertCircle className="h-12 w-12 text-rose-400 mx-auto mb-4" />
+                            <p className="text-[11px] font-bold text-rose-300 uppercase tracking-[0.2em]">
+                                {t('table.load_error')}
+                            </p>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => load(filter, scope, search)}
+                                className="mt-5 border-rose-400/30 text-rose-200 hover:bg-rose-500/10"
+                            >
+                                {t('table.retry')}
+                            </Button>
                         </div>
                     ) : tickets.length === 0 ? (
                         <div className="p-20 text-center min-w-[1000px] opacity-30">

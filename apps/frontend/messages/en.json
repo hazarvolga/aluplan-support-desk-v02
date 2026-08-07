@@ -723,6 +723,8 @@
     "table": {
       "loading": "Waiting_for_Data_Logs",
       "empty": "Queue_Empty",
+      "load_error": "Support requests could not be loaded",
+      "retry": "Retry",
       "header": {
         "system_id": "System_ID",
         "company": "Company",

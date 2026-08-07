@@ -7,6 +7,7 @@ import { FaqService } from './faq.service';
 import { FaqStatus } from '@aluplan/database';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { RequirePermissions, Roles } from '../rbac/decorators/rbac.decorators';
+import { UpdateFaqDto } from './dto/update-faq.dto';
 
 const FAQ_STATUSES = new Set<string>(Object.values(FaqStatus));
 const FAQ_STAFF_ROLES = new Set([
@@ -91,7 +92,7 @@ export class FaqController {
     @Patch(':id')
     @RequirePermissions('faq:manage')
     @ApiOperation({ summary: 'Edit FAQ question/answer/tags' })
-    update(@Param('id') id: string, @Body() body: { question?: string; answer?: string; tags?: string[] }) {
+    update(@Param('id') id: string, @Body() body: UpdateFaqDto) {
         return this.faqService.updateFaq(id, body);
     }
 

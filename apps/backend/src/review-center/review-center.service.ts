@@ -93,6 +93,7 @@ export class ReviewCenterService {
                     where: {
                         chatStatus: ChatStatus.REQUESTED,
                         status: { notIn: [TicketStatus.RESOLVED, TicketStatus.CLOSED] },
+                        deletedAt: null,
                     },
                 }),
             ));
@@ -111,6 +112,7 @@ export class ReviewCenterService {
                     where: {
                         assignedTo: null,
                         status: { notIn: [TicketStatus.RESOLVED, TicketStatus.CLOSED] },
+                        deletedAt: null,
                     },
                 }),
             ));
@@ -145,7 +147,7 @@ export class ReviewCenterService {
                     priority: 'NORMAL',
                 },
                 this.prisma.faqEntry.count({
-                    where: { status: FaqStatus.PENDING_REVIEW },
+                    where: { status: FaqStatus.PENDING_REVIEW, deletedAt: null },
                 }),
             ));
         }

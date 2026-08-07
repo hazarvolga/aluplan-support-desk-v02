@@ -325,7 +325,10 @@ export class FaqService {
     // ─── CRUD ────────────────────────────────────────────────
     async findAll(params: { status?: FaqStatus; page?: number; limit?: number }): Promise<{ data: any[]; total: number; page: number; limit: number; pages: number }> {
         const { status, page = 1, limit = 20 } = params;
-        const statusFilter = status ? { status: status } : {};
+        const statusFilter = {
+            deletedAt: null,
+            ...(status ? { status } : {}),
+        };
 
         const [data, total] = await Promise.all([
             this.prisma.faqEntry.findMany({
@@ -354,7 +357,7 @@ export class FaqService {
 
     async findOne(id: string): Promise<any> {
         return this.prisma.faqEntry.findUnique({
-            where: { id },
+            where: { id, deletedAt: null },
             include: {
                 sources: {
                     where: { deletedAt: null },
@@ -371,14 +374,14 @@ export class FaqService {
 
     async approveFaq(id: string): Promise<any> {
         const candidate = await this.prisma.faqEntry.findUnique({
-            where: { id },
+            where: { id, deletedAt: null },
             select: { question: true, answer: true },
         });
         if (!candidate?.question?.trim()) throw new BadRequestException('FAQ_QUESTION_REQUIRED');
         if (!candidate.answer?.trim()) throw new BadRequestException('FAQ_ANSWER_REQUIRED');
 
         const faq = await this.prisma.faqEntry.update({
-            where: { id },
+            where: { id, deletedAt: null },
             data: {
                 status: 'PUBLISHED',
                 publishedAt: new Date(),
@@ -390,11 +393,22 @@ export class FaqService {
     }
 
     async dismissFaq(id: string): Promise<any> {
-        return this.prisma.faqEntry.update({ where: { id }, data: { status: 'DISMISSED' } });
+        return this.prisma.faqEntry.update({ where: { id, deletedAt: null }, data: { status: 'DISMISSED' } });
     }
 
     async updateFaq(id: string, data: { question?: string; answer?: string; tags?: string[] }): Promise<any> {
-        const faq = await this.prisma.faqEntry.update({ where: { id }, data });
+        if (data.question !== undefined && !data.question.trim()) {
+            throw new BadRequestException('FAQ_QUESTION_REQUIRED');
+        }
+        if (data.answer !== undefined && !data.answer.trim()) {
+            throw new BadRequestException('FAQ_ANSWER_REQUIRED');
+        }
+        const updateData = {
+            ...(data.question !== undefined ? { question: data.question } : {}),
+            ...(data.answer !== undefined ? { answer: data.answer } : {}),
+            ...(data.tags !== undefined ? { tags: data.tags } : {}),
+        };
+        const faq = await this.prisma.faqEntry.update({ where: { id, deletedAt: null }, data: updateData });
         if (data.question !== undefined || data.answer !== undefined || data.tags !== undefined) {
             await this.refreshFaqQuestionEmbedding(faq);
         }
@@ -441,6 +455,7 @@ export class FaqService {
             where: {
                 status: 'PUBLISHED',
                 language,
+                deletedAt: null,
                 ...(!includeInternal && { isInternal: false })
             },
             orderBy: [{ frequency: 'desc' }, { publishedAt: 'desc' }],

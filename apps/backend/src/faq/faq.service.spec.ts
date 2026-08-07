@@ -203,7 +203,7 @@ describe('FaqService - Knowledge Base CRUD', () => {
             expect(result.total).toBe(2);
             expect(result.pages).toBe(1);
             expect(localMockPrismaService.faqEntry.findMany).toHaveBeenCalledWith({
-                where: {},
+                where: { deletedAt: null },
                 include: {
                     sources: {
                         where: { deletedAt: null },
@@ -220,6 +220,37 @@ describe('FaqService - Knowledge Base CRUD', () => {
                 skip: 0,
                 take: 10,
             });
+            expect(localMockPrismaService.faqEntry.count).toHaveBeenCalledWith({
+                where: { deletedAt: null },
+            });
+        });
+
+        it('combines status and active-record filters for the review queue', async () => {
+            localMockPrismaService.faqEntry.findMany.mockResolvedValue([]);
+            localMockPrismaService.faqEntry.count.mockResolvedValue(0);
+
+            await service.findAll({ status: 'PENDING_REVIEW', page: 1, limit: 20 });
+
+            expect(localMockPrismaService.faqEntry.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { status: 'PENDING_REVIEW', deletedAt: null },
+                }),
+            );
+            expect(localMockPrismaService.faqEntry.count).toHaveBeenCalledWith({
+                where: { status: 'PENDING_REVIEW', deletedAt: null },
+            });
+        });
+    });
+
+    describe('findOne', () => {
+        it('never returns a soft-deleted FAQ', async () => {
+            localMockPrismaService.faqEntry.findUnique.mockResolvedValue(null);
+
+            await service.findOne('faq-1');
+
+            expect(localMockPrismaService.faqEntry.findUnique).toHaveBeenCalledWith(
+                expect.objectContaining({ where: { id: 'faq-1', deletedAt: null } }),
+            );
         });
     });
 
@@ -239,8 +270,12 @@ describe('FaqService - Knowledge Base CRUD', () => {
 
             // Assert
             expect(result).toEqual(updatedFaq);
+            expect(localMockPrismaService.faqEntry.findUnique).toHaveBeenCalledWith({
+                where: { id: 'faq-1', deletedAt: null },
+                select: { question: true, answer: true },
+            });
             expect(localMockPrismaService.faqEntry.update).toHaveBeenCalledWith({
-                where: { id: 'faq-1' },
+                where: { id: 'faq-1', deletedAt: null },
                 data: {
                     status: 'PUBLISHED',
                     publishedAt: expect.any(Date),
@@ -252,10 +287,34 @@ describe('FaqService - Knowledge Base CRUD', () => {
         });
     });
 
+    describe('getPublished', () => {
+        it('excludes soft-deleted FAQs from the public feed', async () => {
+            localMockPrismaService.faqEntry.findMany.mockResolvedValue([]);
+
+            await service.getPublished('tr', 50, false);
+
+            expect(localMockPrismaService.faqEntry.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: {
+                        status: 'PUBLISHED',
+                        language: 'tr',
+                        deletedAt: null,
+                        isInternal: false,
+                    },
+                }),
+            );
+        });
+    });
+
     describe('updateFaq', () => {
         it('should update FAQ specific fields', async () => {
             // Arrange
-            const updateData = { question: 'Updated Q', answer: 'Updated A' };
+            const updateData = {
+                question: 'Updated Q',
+                answer: 'Updated A',
+                deletedAt: new Date(),
+                status: 'PUBLISHED',
+            } as any;
             const updatedFaq = { id: 'faq-1', ...updateData };
             localMockPrismaService.faqEntry.update.mockResolvedValue(updatedFaq);
 
@@ -265,11 +324,32 @@ describe('FaqService - Knowledge Base CRUD', () => {
             // Assert
             expect(result).toEqual(updatedFaq);
             expect(localMockPrismaService.faqEntry.update).toHaveBeenCalledWith({
-                where: { id: 'faq-1' },
-                data: updateData
+                where: { id: 'faq-1', deletedAt: null },
+                data: { question: 'Updated Q', answer: 'Updated A' },
             });
             expect(mockAiService.embed).toHaveBeenCalledWith('Updated Q');
             expect(localMockPrismaService.$executeRaw).toHaveBeenCalled();
+        });
+
+        it.each([
+            ['question', 'FAQ_QUESTION_REQUIRED'],
+            ['answer', 'FAQ_ANSWER_REQUIRED'],
+        ])('rejects a blank %s before updating Prisma', async (field, errorCode) => {
+            await expect(service.updateFaq('faq-1', { [field]: '   ' } as any)).rejects.toThrow(errorCode);
+            expect(localMockPrismaService.faqEntry.update).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('dismissFaq', () => {
+        it('never mutates a soft-deleted FAQ', async () => {
+            localMockPrismaService.faqEntry.update.mockResolvedValue({ id: 'faq-1', status: 'DISMISSED' });
+
+            await service.dismissFaq('faq-1');
+
+            expect(localMockPrismaService.faqEntry.update).toHaveBeenCalledWith({
+                where: { id: 'faq-1', deletedAt: null },
+                data: { status: 'DISMISSED' },
+            });
         });
     });
 

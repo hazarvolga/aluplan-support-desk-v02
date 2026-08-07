@@ -747,6 +747,8 @@
     "table": {
       "loading": "Veri Günlükleri Bekleniyor",
       "empty": "Kuyruk Boş",
+      "load_error": "Destek talepleri yüklenemedi",
+      "retry": "Tekrar Dene",
       "header": {
         "system_id": "Sistem_ID",
         "company": "Şirket",
