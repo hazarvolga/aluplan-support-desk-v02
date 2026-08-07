@@ -3927,6 +3927,7 @@ Maintenance rule:
 
 - Pre-work restore: `restore/pre-endpoint-parity-20260807-acafd92b`; complete-history bundle `.private-data/restore-points/pre-endpoint-parity-acafd92b.bundle`, SHA-256 `3400a13c1dbb245e8ce262b387bd64cbc10cc274abf94efea0a6faf0c5349327`.
 - No database migration, seed, production/shadow/live access, external CRM request, push, tag-push, deploy or publish occurred.
+- Post-work restore tag `restore/post-endpoint-parity-20260807-5320926d` resolves to documentation checkpoint `5320926d353a664026e1e39a369aceada4a42497`. Complete-history bundle `.private-data/restore-points/post-endpoint-parity-5320926d.bundle` passed `git bundle verify`; SHA-256 `117978cb2592aea937f2ccdfde66bc6625836eecefec3bb72451ba12e06afa9c`; `git fsck --strict` exit 0 (dangling trees only).
 
 ## 2026-08-07 - Product taxonomy CRUD, archive safety, and endpoint parity audit
 

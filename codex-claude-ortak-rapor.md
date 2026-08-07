@@ -3748,3 +3748,12 @@ Lütfen Codex'in test çıktılarına güvenmeden:
 8. Bu fazda migration/schema/DB, production/shadow/live sistem, push/deploy/tag-push ve external CRM çağrısı olmadığını git diff/history ile kontrol et.
 
 Claude doğrulaması bitene kadar yeni MFA veya görsel e-posta editörü fazına başlanmamalıdır. Kullanıcının kalıcı push/deploy yasağı aynen sürmektedir.
+
+#### Post-work restore point
+
+- Dokümantasyon checkpoint commit'i: `5320926d` — `docs: record endpoint parity closure`.
+- Yerel restore tag: `restore/post-endpoint-parity-20260807-5320926d`; tag hedefi `5320926d353a664026e1e39a369aceada4a42497` olarak doğrulandı.
+- Complete-history bundle: `.private-data/restore-points/post-endpoint-parity-5320926d.bundle`.
+- Bundle SHA-256: `117978cb2592aea937f2ccdfde66bc6625836eecefec3bb72451ba12e06afa9c`.
+- `git bundle verify` complete history doğrulamasını geçti; `git fsck --strict` exit 0. Bildirilen dangling tree nesneleri bütünlük hatası değildir.
+- Restore point yalnız yerelde oluşturuldu; tag push, remote push veya deploy yapılmadı.
