@@ -6,15 +6,10 @@ import {
     Cpu, 
     ChevronRight, 
     ArrowRight,
-    Search,
-    Clock,
     Layers,
     Database,
     Wrench,
-    Network,
-    Terminal,
     Zap,
-    HelpCircle,
     ExternalLink,
     PlayCircle
 } from 'lucide-react';
@@ -91,7 +86,7 @@ const LandingHub = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="text-5xl md:text-8xl font-black tracking-tighter leading-[0.85] uppercase"
+                            className="text-5xl md:text-7xl font-black tracking-tighter leading-[0.85] uppercase"
                         >
                             {t('hero.title').split(' ').map((word, i) => (
                                 <span key={i} className={i === 0 ? "text-primary" : "text-white"}>
@@ -209,46 +204,7 @@ const LandingHub = () => {
                     </div>
                 </section>
 
-                {/* 3. Highlighted FAQs (Public Troubleshooting) */}
-                <section id="faq-section" className="mb-40">
-                    <div className="max-w-4xl mx-auto space-y-12">
-                        <div className="text-center space-y-4">
-                            <HelpCircle className="w-8 h-8 text-primary mx-auto opacity-50" />
-                            <h2 className="text-3xl font-black tracking-tighter uppercase">{t('faq.title')}</h2>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {[1, 2, 3].map((i) => (
-                                 <motion.div
-                                    key={i}
-                                    id={`faq-item-${i}`}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: i * 0.1 }}
-                                    className="p-6 bg-black/40 border border-white/5 hover:border-primary/20 transition-all group cursor-pointer"
-                                >
-                                    <div className="mb-4 text-primary opacity-40 group-hover:opacity-100 transition-opacity">
-                                        {i === 1 && <Zap className="w-6 h-6" aria-hidden="true" />}
-                                        {i === 2 && <Layers className="w-6 h-6" aria-hidden="true" />}
-                                        {i === 3 && <Cpu className="w-6 h-6" aria-hidden="true" />}
-                                    </div>
-                                    <h4 className="font-bold text-white mb-3 uppercase text-sm group-hover:text-primary transition-colors">
-                                        {t(`faq.item${i}_title`)}
-                                    </h4>
-                                    <p className="text-white/40 text-xs leading-relaxed">
-                                        {t(`faq.item${i}_desc`)}
-                                    </p>
-                                    <div className="mt-4 flex items-center gap-2 text-[10px] font-black text-primary/60 group-hover:text-primary tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-all">
-                                        REHBERİ_GÖRÜNTÜLE <ArrowRight className="w-3 h-3" aria-hidden="true" />
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                {/* 4. Local Integrations & Add-ons */}
+                {/* 3. Local Integrations & Add-ons */}
                 <section id="integrations-section">
                     <motion.div 
                         initial={{ opacity: 0, scale: 0.98 }}
@@ -257,115 +213,98 @@ const LandingHub = () => {
                         className="bg-primary/5 border border-primary/20 p-12 wireframe-corner wireframe-corner-tl wireframe-corner-br relative overflow-hidden"
                     >
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[80px] pointer-events-none" />
-                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
-                            <div className="md:w-1/3 text-center md:text-left space-y-4">
-                                <h2 className="text-xs font-black tracking-[0.4em] text-primary uppercase">{t('integrations.title')}</h2>
-                                <p className="text-white/40 text-sm leading-relaxed font-medium">
-                                    Türkiye pazarı için özel olarak geliştirilmiş Allplan eklentileri ve yerel hakediş entegrasyonları.
+                        <div className="relative z-10 flex flex-col gap-10">
+                            <div id="integrations-heading" className="max-w-3xl mx-auto text-center space-y-4">
+                                <h2 className="text-sm md:text-base font-black tracking-[0.4em] text-primary uppercase">{t('integrations.title')}</h2>
+                                <p className="text-white/40 text-base leading-relaxed font-medium">
+                                    {t('integrations.subtitle')}
                                 </p>
                             </div>
                             
-                            <div className="md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                 <div 
+                            <div id="integrations-grid" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                 <a
                                     id="integration-oska" 
-                                    onClick={() => window.open(t('integrations.oska_link'), '_blank')}
+                                    href={t('integrations.oska_link')}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="p-6 bg-black/40 border border-white/5 group hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden"
                                 >
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-2xl group-hover:bg-primary/10 transition-all pointer-events-none" />
-                                    <div className="w-10 h-10 bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-4 group-hover:bg-primary group-hover:text-black transition-all">
+                                    <div className="absolute top-5 right-5 w-10 h-10 bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-all">
                                         <Database className="w-5 h-5" id="integration-oska-icon" aria-hidden="true" />
                                     </div>
-                                    <h4 className="font-black text-white text-sm tracking-widest uppercase mb-2 group-hover:text-primary transition-colors flex items-center gap-2">
+                                    <h4 className="pr-12 min-h-10 font-black text-white text-sm tracking-widest uppercase mb-2 group-hover:text-primary transition-colors flex items-center gap-2">
                                         {t('integrations.oska_title')}
                                         <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all" aria-hidden="true" />
                                     </h4>
                                     <p className="text-white/30 text-xs leading-relaxed group-hover:text-white/50 transition-colors">
                                         {t('integrations.oska_desc')}
                                     </p>
-                                </div>
-                                 <div 
+                                </a>
+                                 <a
                                     id="integration-plugins" 
-                                    onClick={() => window.open(t('integrations.imar_link'), '_blank')}
+                                    href={t('integrations.imar_link')}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="p-6 bg-black/40 border border-white/5 group hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden"
                                 >
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-2xl group-hover:bg-primary/10 transition-all pointer-events-none" />
-                                    <div className="w-10 h-10 bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-4 group-hover:bg-primary group-hover:text-black transition-all">
+                                    <div className="absolute top-5 right-5 w-10 h-10 bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-all">
                                         <Wrench className="w-5 h-5" id="integration-plugins-icon" aria-hidden="true" />
                                     </div>
-                                    <h4 className="font-black text-white text-sm tracking-widest uppercase mb-2 group-hover:text-primary transition-colors flex items-center gap-2">
+                                    <h4 className="pr-12 min-h-10 font-black text-white text-sm tracking-widest uppercase mb-2 group-hover:text-primary transition-colors flex items-center gap-2">
                                         {t('integrations.plugins_title')}
                                         <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all" aria-hidden="true" />
                                     </h4>
                                     <p className="text-white/30 text-xs leading-relaxed group-hover:text-white/50 transition-colors">
                                         {t('integrations.plugins_desc')}
                                     </p>
-                                </div>
+                                </a>
+                                 <a
+                                    id="integration-bimflex"
+                                    href={t('integrations.bimflex_link')}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-6 bg-black/40 border border-white/5 group hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 blur-2xl group-hover:bg-primary/10 transition-all pointer-events-none" />
+                                    <div className="absolute top-5 right-5 w-10 h-10 bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-all">
+                                        <Layers className="w-5 h-5" id="integration-bimflex-icon" aria-hidden="true" />
+                                    </div>
+                                    <h4 className="pr-12 min-h-10 font-black text-white text-sm tracking-widest uppercase mb-2 group-hover:text-primary transition-colors flex items-center gap-2">
+                                        {t('integrations.bimflex_title')}
+                                        <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all" aria-hidden="true" />
+                                    </h4>
+                                    <p className="text-white/30 text-xs leading-relaxed group-hover:text-white/50 transition-colors">
+                                        {t('integrations.bimflex_desc')}
+                                    </p>
+                                </a>
                             </div>
                         </div>
                     </motion.div>
                 </section>
             </main>
 
-            {/* 5. Platform Stats */}
-            <section id="stats-section" className="mb-40">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {[1, 2, 3].map((i) => (
-                             <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.1 }}
-                                className="p-10 bg-gradient-to-br from-white/5 to-transparent border border-white/5 wireframe-corner wireframe-corner-tl wireframe-corner-br"
-                            >
-                                <div className="text-4xl font-black tracking-tighter text-primary mb-2">
-                                    {i === 1 && t('stats.users')}
-                                    {i === 2 && t('stats.projects')}
-                                    {i === 3 && t('stats.support')}
-                                </div>
-                                <div className="text-[10px] font-black tracking-[0.3em] text-white/40 uppercase">
-                                    {i === 1 && t('stats.users_label')}
-                                    {i === 2 && t('stats.projects_label')}
-                                    {i === 3 && t('stats.support_label')}
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* 6. Social Proof / Trusted By */}
-            <section id="social-proof-section" className="mb-40 overflow-hidden">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-12">
-                        <div className="space-y-4 md:w-1/2">
-                            <h2 className="text-2xl font-black tracking-tighter uppercase leading-tight">
-                                {t('social_proof.title')}
-                            </h2>
-                            <p className="text-white/40 text-sm font-medium leading-relaxed">
-                                {t('social_proof.subtitle')}
-                            </p>
-                        </div>
-                        <div className="md:w-1/2 grid grid-cols-3 gap-8 opacity-20 grayscale transition-all hover:opacity-100 hover:grayscale-0">
-                            {/* Symbols instead of real logos for now */}
-                            {[1, 2, 3, 4, 5, 6].map((i) => (
-                                <div key={i} className="flex items-center justify-center p-4 border border-white/5">
-                                    <Cpu className="w-8 h-8" />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             {/* Footer */}
             <footer className="relative z-10 border-t border-white/5 bg-black/60 shadow-2xl py-12">
                 <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div className="flex items-center gap-3 opacity-30 grayscale hover:grayscale-0 transition-all cursor-pointer group">
+                    <a
+                        id="footer-corporate-link"
+                        href="https://aluplan.com.tr/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 opacity-40 grayscale hover:opacity-100 hover:grayscale-0 transition-all group"
+                    >
                         <Cpu className="w-5 h-5 group-hover:text-primary transition-colors" aria-hidden="true" />
-                        <span className="font-black text-[10px] tracking-widest uppercase">ALUPLAN SUPPORT</span>
-                    </div>
+                        <span className="flex flex-col gap-1">
+                            <span className="font-black text-[10px] tracking-widest uppercase">
+                                {t('footer_company_name')}
+                            </span>
+                            <span className="text-[8px] text-white/50 tracking-[0.12em] group-hover:text-primary/80 transition-colors">
+                                {t('footer_platform_label')} · {t('footer_corporate_link_label')} →
+                            </span>
+                        </span>
+                    </a>
                     <p className="text-[10px] text-white/20 font-black tracking-widest uppercase">
                         {t('footer_copy')}
                     </p>
@@ -379,6 +318,20 @@ const LandingHub = () => {
                             {t('footer_encryption')}
                         </span>
                     </div>
+                </div>
+                <div id="footer-subfooter" className="max-w-7xl mx-auto px-6 mt-10 pt-6 border-t border-white/5 text-center">
+                    <p lang="en" className="text-[10px] text-white/30 font-bold tracking-[0.16em]">
+                        {t('footer_credit_prefix')}{' '}
+                        <a
+                            id="footer-credit-link"
+                            href="https://hazarvolga.com.tr/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary/70 hover:text-primary transition-colors"
+                        >
+                            {t('footer_credit_name')}
+                        </a>
+                    </p>
                 </div>
             </footer>
 

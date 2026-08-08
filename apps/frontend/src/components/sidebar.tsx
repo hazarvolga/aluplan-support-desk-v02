@@ -285,7 +285,7 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                 </nav>
 
                 <div className="mt-auto border-t border-white/5 pt-4 space-y-4">
-                    <LanguageSwitcher />
+                    <LanguageSwitcher persistToProfile />
                     <button
                         onClick={handleLogout}
                         className="group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:bg-red-500/10 hover:text-red-400"

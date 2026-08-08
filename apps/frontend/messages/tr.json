@@ -3,9 +3,14 @@
     "title": "Aluplan Destek Sistemi",
     "cta_login": "Giriş Yap",
     "cta_register": "Müşteri Erişimi Al",
-    "footer_copy": "© 2025 Aluplan A.Ş. Tüm hakları saklıdır.",
+    "footer_copy": "© 2025 Tüm hakları saklıdır.",
     "footer_status": "DURUM: AKTİF",
     "footer_encryption": "ŞİFRELEME: AES-256",
+    "footer_credit_prefix": "Designed and developed by",
+    "footer_credit_name": "Hazar Volga Ekiz",
+    "footer_company_name": "ALUPLAN PROGRAM SİSTEMLERİ",
+    "footer_platform_label": "Müşteri Destek Platformu",
+    "footer_corporate_link_label": "Kurumsal web sitesini ziyaret edin",
     "hero": {
       "badge": "Yeni Nesil Mühendislik Desteği",
       "ai_badge": "POWERED BY ALLPLAN AI",
@@ -22,37 +27,20 @@
       "card2_title": "Öğrenci Lisansları",
       "card2_desc": "Allplan Campus üzerinden ücretsiz öğrenci ve eğitmen lisansınızı hemen alın.",
       "card2_cta": "Campus Portalı",
-      "card2_link": "https://campus.allplan.com/index.html",
-      "oska_link": "https://aluplan.com.tr/solutions/bimx5",
-      "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi"
-    },
-    "faq": {
-      "title": "POPÜLER_ÇÖZÜMLER",
-      "item1_title": "Lisans Kayıtlandırma",
-      "item1_desc": "Softlock ve Wibu aktivasyon süreçleri için adım adım rehber.",
-      "item2_title": "Lisans Transferi",
-      "item2_desc": "Bilgisayar değişikliği veya format öncesi lisans taşıma işlemleri.",
-      "item3_title": "Sistem Gereksinimleri",
-      "item3_desc": "Allplan'ın en yüksek performansta çalışması için güncel donanım tavsiyeleri."
+      "card2_link": "https://campus.allplan.com/index.html"
     },
     "integrations": {
       "title": "TÜRKİYE'YE_ÖZEL_ÇÖZÜMLER",
+      "subtitle": "Türkiye pazarı için özel olarak geliştirilmiş Allplan eklentileri ve yerel hakediş entegrasyonları.",
       "oska_title": "Oska e-Hakediş Entegrasyonu",
       "oska_desc": "Allplan metraj verilerini katalog ayarlarıyla doğrudan e-Hakediş'e aktarın.",
+      "oska_link": "https://aluplan.com.tr/solutions/bimx5",
       "plugins_title": "Yerel Yönetmelik Eklentileri",
-      "plugins_desc": "TAKS, KAKS, Otopark hesabı ve m2 cetvelleri gibi Planlı Alanlara özel araçlar."
-    },
-    "stats": {
-      "users": "10.000+",
-      "users_label": "Aktif Kullanıcı",
-      "projects": "5.000+",
-      "projects_label": "BIM Modeli",
-      "support": "7/24",
-      "support_label": "Teknik Destek"
-    },
-    "social_proof": {
-      "title": "SEKTÖR_LİDERLERİNİN_TERCİHİ",
-      "subtitle": "Türkiye'nin önde gelen mimarlık ve mühendislik ofisleri Allplan ile geleceği tasarlıyor."
+      "plugins_desc": "TAKS, KAKS, Otopark hesabı ve m2 cetvelleri gibi Planlı Alanlara özel araçlar.",
+      "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi",
+      "bimflex_title": "BIMFlex Otomatik Donatılandırma",
+      "bimflex_desc": "FlexSoft tarafından geliştirilen BIMFlex, Allplan içindeki kolon, kiriş, perde duvar ve döşemelerinizi BIM uyumlu gerçek donatı nesneleriyle otomatik donatılandırır.",
+      "bimflex_link": "https://aluplan.com.tr/solutions/bimflex"
     }
   },
   "auth": {

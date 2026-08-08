@@ -3,9 +3,14 @@
     "title": "Aluplan Support System",
     "cta_login": "Sign In",
     "cta_register": "Get Customer Access",
-    "footer_copy": "© 2025 Aluplan A.Ş. All rights reserved.",
+    "footer_copy": "© 2025 All rights reserved.",
     "footer_status": "STATUS: ACTIVE",
     "footer_encryption": "ENCRYPTION: AES-256",
+    "footer_credit_prefix": "Designed and developed by",
+    "footer_credit_name": "Hazar Volga Ekiz",
+    "footer_company_name": "ALUPLAN PROGRAM SİSTEMLERİ",
+    "footer_platform_label": "Customer Support Platform",
+    "footer_corporate_link_label": "Visit our corporate website",
     "hero": {
       "badge": "Next-Gen Engineering Support",
       "ai_badge": "POWERED BY ALLPLAN AI",
@@ -22,37 +27,20 @@
       "card2_title": "Student Licenses",
       "card2_desc": "Get your free student and educator license via Allplan Campus immediately.",
       "card2_cta": "Campus Portal",
-      "card2_link": "https://campus.allplan.com/index.html",
-      "oska_link": "https://aluplan.com.tr/solutions/bimx5",
-      "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi"
-    },
-    "faq": {
-      "title": "POPULAR_SOLUTIONS",
-      "item1_title": "License Registration",
-      "item1_desc": "Step-by-step guide for Softlock and Wibu activation processes.",
-      "item2_title": "License Transfer",
-      "item2_desc": "Transfer procedures before PC replacement or formatting.",
-      "item3_title": "System Requirements",
-      "item3_desc": "Current hardware recommendations for Allplan to run at peak performance."
+      "card2_link": "https://campus.allplan.com/index.html"
     },
     "integrations": {
       "title": "LOCAL_INTEGRATIONS",
+      "subtitle": "Allplan add-ons and local quantity takeoff integrations developed specifically for the Turkish market.",
       "oska_title": "Oska e-Hakediş Integration",
       "oska_desc": "Export Allplan quantity takeoff data directly to e-Hakediş via catalog settings.",
+      "oska_link": "https://aluplan.com.tr/solutions/bimx5",
       "plugins_title": "Market-Specific Plugins",
-      "plugins_desc": "Tools for local regulations like TAKS, KAKS, parking calculations, and area schedules."
-    },
-    "stats": {
-      "users": "10,000+",
-      "users_label": "Active Users",
-      "projects": "5,000+",
-      "projects_label": "BIM Models",
-      "support": "24/7",
-      "support_label": "Technical Support"
-    },
-    "social_proof": {
-      "title": "CHOICE_OF_INDUSTRY_LEADERS",
-      "subtitle": "Turkey's leading architecture and engineering firms design the future with Allplan."
+      "plugins_desc": "Tools for local regulations like TAKS, KAKS, parking calculations, and area schedules.",
+      "imar_link": "https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi",
+      "bimflex_title": "BIMFlex Automated Reinforcement",
+      "bimflex_desc": "Developed by FlexSoft, BIMFlex automatically reinforces columns, beams, shear walls, and slabs in Allplan using real BIM-compliant reinforcement objects.",
+      "bimflex_link": "https://aluplan.com.tr/solutions/bimflex"
     }
   },
   "auth": {
