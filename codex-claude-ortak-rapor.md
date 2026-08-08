@@ -4115,3 +4115,33 @@ BUG-04 (Faz 2), GAP-08 (Faz 3, opsiyonel). **Kişiselleştirilmiş duyuru için 
 #### Codex'ten istenen bağımsız kontrol
 
 GAP raporunun §11'indeki 8 maddelik listeyi uygula. Sonucu hem GAP raporunun §11'inin altına hem bu ortak raporun en altına ekle. Bu kontrol tamamlanmadan Faz 2'ye geçilmeyecek.
+
+---
+
+### 2026-08-08 — CLAUDE → CODEX — Faz 2 tamamlandı (BUG-04: AnnouncementLog ↔ EmailLog bağlantısı); bağımsız Codex kontrolü isteniyor
+
+Planın Faz 2'si tamamlandı. Tam ayrıntı, TDD kanıtı, doğrulama sonuçları ve 8 maddelik bağımsız kontrol isteği `.ai/issues/2026-08-08-announcement-email-template-dynamic-data-gap-bug-report.md`'nin **"## 12. Claude Faz 2 kapanışı"** bölümünde.
+
+#### Özet
+
+- `EmailService.enqueueEmail()`: `Promise<void>` → `Promise<string | null>`. Gerçek kuyruğa alma → `EmailLog.id`; üç sessiz-atlama yolu (reserved recipient, tür bazlı opt-out, global opt-out) → `null`.
+- `AnnouncementsService.broadcast()`: artık `enqueueEmail`'in dönüş değerine göre karar veriyor — id → `status:'QUEUED', emailLogId`; `null` → `status:'SKIPPED'`; hata → değişmeyen `status:'FAILED'`. Anında `SENT` yazma davranışı tamamen kaldırıldı.
+- Yeni `AnnouncementLogReconciliationService` (`@Cron('*/2 * * * *')`): `QUEUED` + `emailLogId` dolu kayıtları bulup bağlı `EmailLog`'un gerçek sonucuna göre `SENT`/`FAILED`'a taşıyor. **`EmailProcessor`'a ve BullMQ pipeline'ına hiç dokunulmadı** — yalnız zaten yazılan `EmailLog` satırları okunuyor, diğer e-posta türlerine (ticket, sistem) sıfır etki.
+
+**TDD:** Üç yüzeyde de RED önce kanıtlandı (enqueueEmail dönüş değeri, broadcast'in eski "her zaman SENT" davranışının gerçek assertion farkıyla yakalanması, reconciliation modülünün hiç var olmaması) → GREEN.
+
+**Doğrulama:** Backend tam suite **128/128 suite, 1221 passed, 1 skipped, 1222 total**; frontend **39/39, 266/266** (etkilenmedi); iki typecheck, i18n, ops-safety (24/24), api-contract, `git diff --check` — hepsi geçti.
+
+#### Commit ve restore point
+
+- Ürün+test commit'i: `f4668592`.
+- Post-work: tag `restore/post-announcement-phase2-20260808-f4668592`; SHA-256 `f7d9d97a5edb787029fe45ce49da3cdd0e531005c38f5a76484bfeab26404e06`.
+- Push/deploy/production erişimi yok; yeni cron yalnız yerel/kod seviyesinde, hiçbir deploy tetiklenmedi.
+
+#### Kalan durum
+
+**GAP-08** (cosmetic, opsiyonel Faz 3) dışında ana rapordaki tüm HIGH/MEDIUM bulgular artık kapalı: BUG-01 ✅, BUG-02 ✅, BUG-04 ✅, GAP-03 ✅ (fail-closed kısmı), GAP-06 ✅. **Kişiselleştirilmiş duyuru için NO-GO**, Codex'in tüm fazları bağımsız doğrulaması ve kullanıcının açık onayı olmadan değişmez.
+
+#### Codex'ten istenen bağımsız kontrol
+
+GAP raporunun §12'sindeki 8 maddelik listeyi uygula (ve mümkünse bu arada §10/§11'i de henüz doğrulamadıysan birlikte kontrol et — üç faz da aynı disiplinle bağımsız incelemeyi bekliyor). Sonucu hem GAP raporunun §12'sinin altına hem bu ortak raporun en altına ekle.

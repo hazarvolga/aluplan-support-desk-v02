@@ -561,3 +561,60 @@ Bu doğrulama tamamlanana kadar BUG-01/BUG-04/GAP-06/07/08 fazlarından hiçbiri
 8. Restore point hash'lerini bağımsız hesapla; diff kapsamının yalnız `apps/backend/src/announcements/` ile sınırlı olduğunu doğrula.
 
 Bu kontrol tamamlanmadan Faz 2'ye (BUG-04) geçilmeyecek.
+
+---
+
+## 12. Claude Faz 2 kapanışı (uygulayıcı olarak) — bağımsız Codex kontrolü isteniyor
+
+**Tarih:** 2026-08-08 · **Kapsam:** BUG-04 (AnnouncementLog erken SENT işaretlemesi + emailLogId bağının kurulmaması).
+
+### Yapılan değişiklikler
+
+1. `EmailService.enqueueEmail()`: dönüş tipi `Promise<void>` → `Promise<string | null>`. Gerçek kuyruğa alma başarılıysa oluşturulan `EmailLog.id`'yi döndürüyor; üç "sessiz atlama" yolunda (production'da reserved/test alıcı, kullanıcı tür bazlı opt-out, kullanıcı global opt-out) `null` döndürüyor — önceden bu üç durumda da yalın `return;` vardı ve çağıran taraf başarıyla ayırt edemiyordu.
+2. `AnnouncementsService.broadcast()`: `enqueueEmail(...)`'in dönüş değerine göre karar veriyor:
+   - id döndüyse → `AnnouncementLog.update({status:'QUEUED', emailLogId: id})` — artık asla anında `SENT` yazmıyor.
+   - `null` döndüyse (opt-out/engellenen alıcı) → `status:'SKIPPED'` — bu bir teslimat hatası değil, ayrı bir durum.
+   - `enqueueEmail` hata fırlatırsa → değişmeyen mevcut `status:'FAILED'` davranışı.
+3. **Yeni dosya** `apps/backend/src/announcements/announcement-log-reconciliation.service.ts`: `@Cron('*/2 * * * *')` ile iki dakikada bir, `status='QUEUED'` VE `emailLogId` dolu olan `AnnouncementLog` kayıtlarını buluyor, bağlı `EmailLog.status`'unu okuyup gerçek sonuca göre `SENT` (sentAt kopyalanarak) veya `FAILED` (error kopyalanarak) yapıyor. Hâlâ `QUEUED`/işlemde olan kayıtlara dokunmuyor, sonraki turda tekrar bakıyor. Bağlı `EmailLog` bulunamazsa (silinmiş/bozuk referans) çökmeden atlıyor.
+4. `announcements.module.ts`'e yeni servis provider olarak eklendi. `ScheduleModule.forRoot()` zaten `AppModule` seviyesinde global olduğu için ek bir modül bağlama gerekmedi.
+5. **`EmailProcessor` (`email.processor.ts`) ve BullMQ pipeline'ının kendisi hiç değiştirilmedi** — reconciliation servisi yalnız zaten yazılan `EmailLog` satırlarını okuyor; bu, tüm diğer e-posta türlerini (ticket, sistem) etkileme riskini sıfırlıyor.
+
+### TDD kanıtı
+
+- `email.service.spec.ts`'e eklenen 4 test önce RED (`Received: undefined` yerine `null`/id bekleniyordu), implementasyon sonrası GREEN.
+- `announcements.service.spec.ts`'e eklenen 3 test RED durumunda **eski hatayı doğrudan gösterdi**: beklenen `{status:'QUEUED', emailLogId:...}` yerine gerçek çıktı `{status:'SENT', sentAt:...}` idi — yani test, mevcut buggy davranışı gerçek assertion farkıyla yakaladı. İmplementasyon sonrası GREEN.
+- `announcement-log-reconciliation.service.spec.ts`: modül dosyası yokken `Cannot find module` (RED) → 7/7 GREEN ilk denemede (SENT/FAILED/QUEUED-bekliyor/eksik-EmailLog/çoklu-kayıt senaryoları dahil).
+
+### Doğrulama kanıtı
+
+- Backend tam suite: **128/128 suite**, **1221 passed**, **1 skipped**, **1222 total**.
+- Frontend tam suite: **39/39 dosya**, **266/266 test** (bu faz frontend'e dokunmadı, sanity).
+- Backend/frontend `tsc --noEmit`: 0 hata (diğer iki `enqueueEmail` çağıranı — `customers.service.ts`, `ai-reporting.service.ts` — dönüş değerini kullanmadıkları için sorunsuz derlendi).
+- `pnpm i18n:check`, `pnpm test:ops-safety` (24/24), `pnpm api:verify-frontend-contract`, `git diff --check`: hepsi geçti.
+
+### Commit ve restore point
+
+- Ürün+test commit'i: `f4668592` — `fix: link AnnouncementLog to real EmailLog delivery outcome (BUG-04)`.
+- Pre-work (Faz 2 öncesi = Faz 1 sonrası): tag `restore/post-announcement-phase1-20260808-df724734` (Faz 1 kapanışıyla aynı nokta).
+- Post-work: tag `restore/post-announcement-phase2-20260808-f4668592`; bundle SHA-256 `f7d9d97a5edb787029fe45ce49da3cdd0e531005c38f5a76484bfeab26404e06`.
+- `git bundle verify` + `git fsck --strict`: kritik hata yok.
+- Push, tag-push, deploy yapılmadı; production/shadow/canlı bağlantı, migration/seed yok. Yeni cron job yalnız yerelde tanımlı, hiçbir deploy/production etkisi yok.
+
+### Hâlâ açık
+
+- **GAP-08** (opsiyonel, düşük öncelik, cosmetic — `contentMjml` adlandırması). Bu madde bir güvenlik/doğruluk kapısı değil.
+- Ana rapordaki tüm HIGH/MEDIUM şiddetli bulgular (BUG-01, BUG-02, BUG-04, GAP-03, GAP-06) artık kapalı.
+- **Kişiselleştirilmiş/dinamik duyuru için NO-GO**, Codex'in bu ve önceki fazları bağımsız doğrulaması ve kullanıcının açık onayı olmadan değişmez.
+
+### Codex'ten istenen bağımsız kontrol
+
+1. `email.service.ts`'in üç skip yolunda da (`return null;`) ve başarı yolunda (`return draftLog.id;`) doğru döndüğünü kaynak koddan doğrula.
+2. `announcements.service.ts:broadcast()`'in `enqueueEmail`'in dönüş değerine göre `QUEUED`/`SKIPPED`/`FAILED` ayrımını doğru yaptığını doğrula.
+3. `announcement-log-reconciliation.service.ts`'in yalnız `status='QUEUED' AND emailLogId IS NOT NULL` kayıtları sorguladığını, `EmailProcessor`'a hiç dokunmadığını doğrula.
+4. `announcements.module.ts`'e servisin eklendiğini ve `ScheduleModule.forRoot()`'un zaten global olduğunu (ek modül bağlama gerekmediğini) teyit et.
+5. Yeni testleri bağımsız çalıştır; özellikle "eski davranış" (her zaman SENT) iddiasının gerçek RED farkıyla kanıtlandığını kod/test geçmişinden teyit et.
+6. `email.processor.ts` ve `customers.service.ts`/`ai-reporting.service.ts`'in bu commit'te değişmediğini `git diff` ile doğrula.
+7. Tam backend/frontend suite, typecheck, i18n, ops-safety, api-contract kapılarını bağımsız çalıştır.
+8. Restore point hash'lerini bağımsız hesapla; diff kapsamının yalnız `apps/backend/src/announcements/` ve `apps/backend/src/email/email.service.ts`(+spec) ile sınırlı olduğunu doğrula.
+
+Bu kontrol tamamlanmadan ve kullanıcı onayı olmadan kişiselleştirilmiş duyuru gönderimine geçilmeyecek. GAP-08 (Faz 3) kullanıcı isterse ayrıca ele alınabilir.
