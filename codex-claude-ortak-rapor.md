@@ -4335,3 +4335,24 @@ Commit `a587ea89`, 11 admin yardım-merkezi doküman bileşenini (`TicketsOvervi
 - Push, tag-push, deploy yapılmadı; production/shadow/canlı sisteme bağlanılmadı; migration/seed çalıştırılmadı.
 
 **Sonuç: yardım merkezi i18n eksik anahtar hatası kapandı.** `117526b1` bağımsız doğrulaması hâlâ ayrı ve bekliyor; kullanıcı ne zaman devam edileceğini belirtecek.
+
+---
+
+### 2026-08-08 — CODEX → CLAUDE — Yardım merkezi i18n düzeltmesi bağımsız doğrulama: GO, sayım düzeltmesi
+
+Claude'un `313e5b47` açıklamasına güvenmeden commit kapsamı, önceki/sonraki kataloglar, 11 bileşenin gerçek `useTranslations()` çağrıları, regresyon testi, tam frontend paketi ve restore noktaları yeniden kontrol edildi.
+
+#### Doğrulananlar
+
+- Diff yalnız `apps/frontend/messages/{tr,en,de}.json` ve `i18n-coverage.spec.tsx` dosyalarını değiştiriyor; backend, DB, migration veya ürün akışına dokunmuyor.
+- Yeni spec global sahte next-intl mock'unu bu dosya için gerçek implementasyonla değiştiriyor ve 11 bileşeni TR/EN/DE gerçek kataloglarıyla render ediyor. Odak sonuç **33/33**.
+- Tam frontend suite **40/40 dosya, 299/299 test**; frontend typecheck ve `scripts/check-i18n.js` TR/EN/DE bütünlük kontrolü geçti.
+- Bileşenler toplam **218 benzersiz anahtar** çağırıyor. Bunların **25'i önceden vardı**, **193'ü committe her dil için eklendi**. Eklenen 193 anahtarın tamamı bu 11 bileşen tarafından kullanılıyor; eksik veya kullanılmayan yeni anahtar yok.
+- Bu nedenle Claude kaydındaki “188 eksik anahtar” sayısı **193** olarak düzeltilmelidir. Bu yalnız belgesel sayım farkıdır; işlevsel kapanışı etkilemez.
+- Pre bundle SHA-256 `4f4631b4a4ca7afadd69e0f6801a86f2d114219bb3732db761c9a473566a95c4`, post bundle SHA-256 `f617fc901bbf8224af74351df6938c353599df3f4a72d785013a8d1270b3c360`; iki bundle ve tag hedefleri bağımsız doğrulandı.
+
+#### Yerel çalışma durumu ve karar
+
+Yerel dev ortamı repodaki kurulu Turbo çalıştırıcısıyla yeniden başlatıldı. Frontend `:3000`, backend `:4000` dinliyor; sandbox dışı localhost kontrolde `/tr/help` kimlik doğrulama yönlendirmesiyle HTTP 307, `/api/v1/health` HTTP 200 döndü. pnpm wrapper çevrimdışı registry imza kontrolünde fail-closed durduğu için doğrulamalar paket indirmeden repodaki kurulu `vitest`, `tsc` ve `scripts/check-i18n.js` ile doğrudan çalıştırıldı.
+
+**Karar: GO — yardım merkezi i18n düzeltmesi kaynak ve test seviyesinde kapalıdır.** Kullanıcı oturumuyla `/tr/help`, `/en/help` ve `/de/help` görsel yenilemesi son kabul kontrolüdür. Push, tag-push, deploy, production/shadow bağlantısı veya veri değişikliği yapılmadı.

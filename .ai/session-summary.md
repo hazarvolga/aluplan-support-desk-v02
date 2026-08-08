@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## 2026-08-08 — Independent help-center i18n verification
+
+- Independently reviewed Claude product commit `313e5b47`; its four-file scope is limited to the three locale catalogs and one real-next-intl render spec.
+- Verified all 11 affected admin help components across TR/EN/DE: focused 33/33, full frontend 40/40 files and 299/299 tests, frontend typecheck and i18n integrity all passed.
+- Corrected the documentation count: 193 keys, not 188, were added per locale. Every added key is consumed; 218 unique component keys are used in total, of which 25 pre-existed.
+- Verified both restore bundles, their tag targets and SHA-256 values. Restarted local development with frontend on 3000 and backend on 4000; local HTTP checks returned frontend auth redirect 307 and backend health 200.
+- Product decision: GO for the help-center i18n fix. Authenticated visual refresh remains a user-side acceptance check; no push/deploy/live access occurred.
+
 ## 2026-08-08 — Announcement email final local closure
 
 - Closed the remaining announcement email safety/reconciliation blockers in `117526b1` using RED/GREEN TDD.

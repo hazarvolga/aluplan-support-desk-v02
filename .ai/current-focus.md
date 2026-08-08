@@ -2,6 +2,12 @@
 
 ## Active Work
 
+- 2026-08-08 help-center i18n fix `313e5b47` received independent Codex **GO**:
+  - Scope is limited to `messages/{tr,en,de}.json` plus the real-catalog render regression test; no backend, DB, migration, queue or production code changed.
+  - All 11 affected admin help components render against all three real catalogs without leaking raw `help.docs.admin.*` keys: 33/33 focused; full frontend 40/40 files and 299/299 tests; frontend typecheck and i18n integrity passed.
+  - Independent leaf-key accounting corrects the historical report from 188 to **193 newly added keys per locale**. All 193 are used; the 11 components call 218 unique keys in total and 25 already existed.
+  - Pre/post restore bundles and reported SHA-256 values were independently verified. Local frontend/backend dev servers are running on ports 3000/4000; no push, deploy or live access occurred.
+
 - 2026-08-08 announcement email final local closure is complete at product commit `117526b1`:
   - §16's parameterless block, webhook-before-cron status mapping, and >200 starvation blockers are closed.
   - Additional code/security review findings for `@root/@data`, helper arity, partial/decorator AST bypass, and select/update TOCTOU were fixed in the same TDD phase.
