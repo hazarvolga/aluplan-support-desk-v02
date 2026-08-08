@@ -767,7 +767,7 @@
       "summarizing": "SUMMARIZING_IN_PROGRESS...",
       "ai_summary_btn": "ANN_SUMMARY",
       "drafting": "DRAFT_PREPARATION_IN_PROGRESS...",
-      "ai_draft_btn": "ANN_DRAFTS",
+      "ai_draft_btn": "AI Solution Suggestion",
       "load_error": "An error occurred while loading request data",
       "live_request_success": "Live support request sent",
       "live_start_success": "Live support session started",
