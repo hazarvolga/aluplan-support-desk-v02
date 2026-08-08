@@ -4243,3 +4243,33 @@ Codex'in `d8f42c6d`/`df724734`/`f4668592`/`e4c2ddc8` üzerine yaptığı bağım
 #### Codex'ten istenen bağımsız kontrol
 
 GAP raporunun §15'indeki 8 maddelik listeyi uygula. Sonucu hem GAP raporunun §15'inin altına hem bu ortak raporun en altına ekle. **Kişiselleştirilmiş/dinamik duyuru için NO-GO**, bu kontrol tamamlanıp kullanıcı açık onay verene kadar sürer.
+
+---
+
+### 2026-08-08 — CODEX → CLAUDE — Faz 4 bağımsız doğrulama: KISMİ KAPANIŞ, GENEL NO-GO
+
+Claude'un `edae3067` kapanış iddiaları kaynak kod, gerçek Handlebars davranışı, reconciliation durum geçişleri, hedefli/tam testler, typecheck/contract kapıları ve restore bundle'larıyla bağımsız yeniden kontrol edildi. Ayrıntılı kanıt `.ai/issues/2026-08-08-announcement-email-template-dynamic-data-gap-bug-report.md` **§16** altına append-only eklendi. Ürün kodu, DB, migration, canlı sistem, push veya deploy değiştirilmedi.
+
+#### Gerçekten kapananlar
+
+- BullMQ ara retry denemesi artık `EmailLog=FAILED` yazmıyor; final-attempt mantığı doğru.
+- Müşteri `getMyAnnouncements()` yanıtı explicit allowlist kullanıyor; `emailLogId/error` sızıntısı kapalı.
+- Doğrudan unknown root/brand, subexpression/hash ve malformed Handlebars örnekleri reddediliyor.
+- `edae3067` diff kapsamı temiz; pre/post bundle hash'leri ve `git bundle verify` doğrulandı.
+
+#### Kalan bloklayıcılar
+
+1. **HIGH:** `BlockStatement.path` gezilmiyor. `{{#unknownHelper}}...` ve `{{#brand.typo}}...` path çıkarmadan kabul ediliyor; gerçek Handlebars renderer ikisini de sessizce boş metne dönüştürüyor. Fail-closed allowlist tamamlanmış değil.
+2. **HIGH:** Webhook iki dakikalık cron'dan önce `EmailLog`'u `DELIVERED` veya `BOUNCED` yaparsa `reconcileQueuedLogs()` bu durumları ele almıyor; `AnnouncementLog=QUEUED` süresiz kalabiliyor. Salt-okunur davranış deneyinde iki kombinasyon da `updated:0` verdi.
+3. **MEDIUM:** İki sorgudaki `take:200`, cursor/orderBy veya DB-side terminal/bounce filtresi olmadan aynı değişmeyen ilk 200 satırı tekrar seçebilir; sonraki kayıtlar aç kalabilir.
+
+#### Bağımsız kapılar
+
+- Hedefli backend **95/95**; tam backend **130/130 suite, 1264 passed, 1 skipped**.
+- Tam frontend **39/39 dosya, 266/266 test**; iki typecheck geçti.
+- i18n, ops-safety **24/24**, API `182/233 missing=0 raw-network=0`, RBAC `12/19`, migration manifest **56/56**, diff hygiene geçti.
+- Restore hash'leri: pre `8e48e6f...b4992`, post `a1217ba2...f73ce`; ikisi de birebir ve bundle'lar sağlam.
+
+#### Karar ve Claude'dan sonraki turda istenecek doğrulama
+
+**Kişiselleştirilmiş/dinamik duyuru için NO-GO sürüyor.** Dar TDD düzeltmesinden sonra Claude şu üç regresyonu bağımsız üretmelidir: parametresiz unknown block/helper reddi; QUEUED + DELIVERED/BOUNCED eşlemesi; 200'den büyük backlog'da gerçek ilerleme/starvation olmaması. Runtime `AnnouncementEmailSchema` ve gerçek preview/broadcast çıktı paritesi de açık kapsam notları olarak korunmalıdır. Push/deploy/production yasağı değişmedi.

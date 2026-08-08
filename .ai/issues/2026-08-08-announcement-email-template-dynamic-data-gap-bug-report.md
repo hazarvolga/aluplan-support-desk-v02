@@ -788,3 +788,52 @@ Madde 1'i düzeltirken mevcut `announcements.service.property.spec.ts` (fast-che
 8. Kendi ortamında testleri/typecheck/i18n/ops-safety/api-contract'ı bağımsız çalıştır; restore point hash'lerini bağımsız hesapla; diff kapsamının yalnız announcements/email modülleriyle sınırlı olduğunu doğrula.
 
 Bu doğrulama tamamlanana ve kullanıcı açık onay verene kadar kişiselleştirilmiş/dinamik duyuru gönderimi **NO-GO** olarak kalır.
+
+---
+
+## 16. CODEX bağımsız Faz 4 doğrulaması — kısmi kapanış, genel NO-GO
+
+**Tarih:** 2026-08-08
+
+**İncelenen ürün commit'i:** `edae3067`
+**Yöntem:** Ortak rapordaki ve §15'teki kapanış iddialarına güvenilmeden kaynak kod, gerçek Handlebars davranışı, reconciliation durum geçişleri, testler, typecheck/contract kapıları ve restore bundle'ları yeniden kontrol edildi. Ürün kodu, DB, migration, canlı sistem, push veya deploy değiştirilmedi.
+
+### Doğrulanan ve kapanan parçalar
+
+- `EmailProcessor`, ara BullMQ denemelerinde `FAILED` yazmıyor; yalnız `attemptsMade + 1 >= attempts` olduğunda terminal hata kaydediyor. Hedefli testler ilk ve son deneme davranışını ölçüyor.
+- `getMyAnnouncements()` explicit `select` kullanıyor; müşteri yanıtından `emailLogId` ve ham provider/SMTP `error` alanları çıkarılmış.
+- Doğrudan bilinmeyen root/brand path, subexpression/hash ve malformed Handlebars senaryoları artık reddediliyor; parser hatası `BadRequestException` olarak normalize ediliyor.
+- `edae3067` yalnız announcement/email modüllerindeki dokuz ürün/test dosyasını değiştiriyor; migration/schema/DB/env dosyası yok.
+- Pre/post restore bundle SHA-256 değerleri raporla birebir eşleşti ve iki bundle da `git bundle verify` kontrolünden geçti.
+
+### Kalan bloklayıcılar
+
+1. **HIGH — `BlockStatement.path` hiç doğrulanmıyor; fail-closed allowlist hâlâ tamamlanmadı.**
+
+   `announcement-content-safety.ts:106-112` block node'unda yalnız params/hash/program/inverse geziliyor; block'un kendi path'i kaydedilmiyor. Salt-okunur gerçek Handlebars deneyinde hem `{{#unknownHelper}}hidden{{/unknownHelper}}` hem `{{#brand.typo}}hidden{{/brand.typo}}` için çıkarılan path listesi boş kaldı, güvenlik kontrolü **ACCEPT** verdi ve gerçek renderer hata atmadan `""` üretti. Bu, bilinmeyen içeriğin yine sessizce kaybolabildiğini kanıtlıyor. Mevcut testlerde parametresiz bilinmeyen block/helper regresyonu yok.
+
+2. **HIGH — Webhook cron'dan önce çalışırsa `AnnouncementLog=QUEUED` kalıcı kalıyor.**
+
+   Email processor önce `EmailLog=SENT` yazıyor; Resend webhook'u bunu `DELIVERED` veya `BOUNCED` yapabiliyor (`email.controller.ts:126-131`). Ancak `reconcileQueuedLogs()` yalnız `SENT` ve `FAILED` durumlarını ele alıyor (`announcement-log-reconciliation.service.ts:71-83`). Salt-okunur mock davranış deneyinde `AnnouncementLog=QUEUED + EmailLog=DELIVERED` ve `...=BOUNCED` kombinasyonlarının ikisi de `updated:0` verdi. İki dakikalık cron'dan önce webhook gelmesi normal bir yarış olduğundan teslim edilmiş veya bounce olmuş duyuru süresiz `QUEUED` görünebilir. Yeni bounce pass yalnız zaten `AnnouncementLog=SENT` olmuş kayıtları taradığı için bu yarışı kapatmıyor.
+
+3. **MEDIUM — `take:200` batch sınırı ilerleme garantisi vermiyor.**
+
+   Hem QUEUED hem SENT/bounce sorgusunda `take:200` var; fakat cursor/orderBy yok ve sorgular yalnız gerçekten terminal/BOUNCED bağlı kayıtları DB tarafında filtrelemiyor. İlk 200 satırın bağlı EmailLog'u hâlâ QUEUED/SENT/DELIVERED ise aynı değişmeyen satırlar her cron'da yeniden seçilebilir; 201. ve sonraki terminal veya BOUNCED kayıtlar aç kalabilir. Batch limiti performans riskini sınırlar, ancak backlog ilerlemesini garanti etmez.
+
+### Açık fakat önceden kabul edilmiş kapsam notları
+
+- `AnnouncementEmailSchema` gerçek `TemplateService.compile()` zincirinde hâlâ enforce edilmiyor.
+- Preview ile broadcast'in gerçek render çıktısı davranışsal olarak eşitlenmiş değil.
+
+### Bağımsız doğrulama kanıtı
+
+- Hedefli backend: **4/4 suite, 95/95 test**.
+- Tam backend: **130/130 suite, 1264 passed, 1 skipped**.
+- Tam frontend: **39/39 dosya, 266/266 test**.
+- Backend/frontend typecheck: geçti.
+- i18n kontrolü, ops-safety **24/24**, frontend API contract `182/233 missing=0 raw-network=0`, RBAC `roles=12 permissions=19`, migration manifest **56/56**, `git diff --check`: geçti.
+- Restore SHA-256: pre `8e48e6f3ab3e2a0fcd2d4c020b49bbf2ed2beb91a8ab2a0bfc0c9488998b4992`; post `a1217ba28c38c8edc0778c32aa8615678f0ac6d615da9d1eba0f0b86a4af73ce`; ikisi de doğrulandı.
+
+### Karar
+
+**Genel karar: NO-GO.** `edae3067` önceki dört bulgunun önemli bölümünü gerçekten kapatıyor; ancak tam fail-closed Handlebars sözleşmesi ve webhook durum yarışı kapanmadı. Kişiselleştirilmiş/dinamik duyuru gönderimi açılmamalı. Sıradaki dar TDD düzeltmesi: (1) block path/helper allowlist'i, (2) QUEUED kayıtlar için `SENT/DELIVERED/BOUNCED/FAILED` eksiksiz durum eşlemesi, (3) DB tarafında uygun sonuca göre filtrelenen veya cursor ile ilerleyen batch modeli. Sonrasında yeniden Codex + Claude bağımsız doğrulaması gerekir.

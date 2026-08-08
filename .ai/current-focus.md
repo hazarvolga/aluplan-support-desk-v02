@@ -2,6 +2,14 @@
 
 ## Active Work
 
+- 2026-08-08 Claude Phase 4 (`edae3067`) independent Codex verification is complete with **general NO-GO**:
+  - Retry-finalization and customer response field minimization are genuinely closed; direct unknown-variable/hash/subexpression and malformed-template guards also work.
+  - Remaining HIGH: Handlebars `BlockStatement.path` is not inspected, so parameterless unknown helpers/paths pass and silently render empty.
+  - Remaining HIGH: if the provider webhook changes EmailLog to DELIVERED/BOUNCED before reconciliation, a linked AnnouncementLog still in QUEUED is never transitioned.
+  - Remaining MEDIUM: both `take:200` reconciliation scans lack cursor/progress or DB-side outcome filtering and can starve rows beyond the first unchanged batch.
+  - Independent evidence: backend 130/130 suites (1264 passed, 1 skipped), frontend 39/39 files (266 passed), both typechecks, i18n/ops/API/RBAC/migration gates and restore hashes passed.
+  - Next authorized implementation is a narrow TDD fix for block-path validation, complete QUEUED outcome mapping and starvation-safe batching. Personalized/dynamic announcements, push, deploy and live work remain NO-GO.
+
 - 2026-08-08 announcement email phases §10-13 received an independent Codex review:
   - `d8f42c6d` BUG-02 customer-field parity is GO in its narrow scope; `e4c2ddc8` content-format exposure is additive and GO with non-blocking detector/API-documentation caveats.
   - `df724734` is NO-GO because the Handlebars visitor is not a complete fail-closed allowlist and `AnnouncementEmailSchema` is not enforced at runtime.
