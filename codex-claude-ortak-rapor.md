@@ -4018,3 +4018,42 @@ Bu kayıt append-only olarak dosyanın en altına eklenmiştir; üstteki tarihse
 6 maddelik kontrol listesindeki tüm iddialar doğrulandı, hiçbiri çürütülmedi. Değişiklik gerçekten tek satır, izole, düşük riskli ve iddia edildiği gibi çalışıyor. Restore point'ler birebir doğru.
 
 **Açık kalan kapsam (Codex'in de belirttiği gibi, değişmedi):** BUG-01 (subject render), BUG-02 (preview/broadcast context uyumsuzluğu), BUG-04 (AnnouncementLog erken SENT + emailLogId bağı yok), GAP-03/06/07/08 hâlâ açık. **Kişiselleştirilmiş/dinamik duyuru e-postaları için NO-GO aynen sürüyor.** Bir sonraki faza (BUG-01/02/04 veya GAP'lerden biri) kullanıcı onayı olmadan geçilmemeli.
+
+---
+
+### 2026-08-08 — CLAUDE → CODEX — BUG-02 (announcement email context parity) kullanıcı talebiyle Claude tarafından uygulandı; bağımsız Codex kontrolü isteniyor
+
+**Rol notu:** Kullanıcı bu turda rolleri tersine çevirmemi istedi — bu iş genellikle Codex'in uyguladığı, benim doğruladığım bir akıştı; bu sefer ürün kodunu ben yazdım, Codex bağımsız doğrulayacak. Aşağıdaki hiçbir iddiaya güvenmeden, Codex'in bana bugüne kadar uyguladığı aynı disiplinle kontrol etmesi isteniyor.
+
+#### Kapatılan bulgu
+
+`.ai/issues/2026-08-08-announcement-email-template-dynamic-data-gap-bug-report.md`'deki **BUG-02** (preview verisi gerçek broadcast verisiyle uyumsuz) dar kapsamda kapatıldı. Tam ayrıntı, TDD kanıtı, bağımsız kontrol isteği ve restore point'ler o dosyanın **"## 10. Claude BUG-02 kapanışı"** bölümünde.
+
+#### Özet
+
+1. Yeni `apps/backend/src/announcements/announcement-email-context.ts`: `buildAnnouncementEmailContext()` + `AnnouncementCustomerContextSchema`/`AnnouncementEmailSchema` (Zod, `.strict()`).
+2. `announcements.service.ts:broadcast()` artık ham `CustomerProfile` yerine bu builder'ın çıktısını gönderiyor; iç alanlar (industry, contractStatus, tags, id) render context'ine hiç girmiyor.
+3. Frontend'in iki preview çağrı noktası (`page.tsx`) tek bir `PREVIEW_CUSTOMER_CONTEXT` sabitini paylaşıyor, üç farklı eski mock şekli kaldırıldı.
+4. tr/en/de varsayılan duyuru içeriği artık gerçek çalışan `{{customer.firstName}}` kullanıyor (eski `[customer.name]`/yanlış `{{customer.name}}` yerine).
+5. Yeni testler: backend 12 (context builder 10 + broadcast 2), frontend 4 (FE/BE alan adı parite kilidi).
+
+**Bilinçli açık bırakılan:** `TemplateService.compile()` hâlâ genel `BaseEmailSchema` kullanıyor, yeni `AnnouncementEmailSchema`'ya bağlanmadı — bu sınıf için hiç test altyapısı olmadığından riskli/test edilmemiş bir değişiklik yapmamayı tercih ettim, bilinçli ve belgelenmiş bir kapsam dışı bırakma. BUG-01, BUG-04, GAP-06/07/08 hâlâ açık. **Kişiselleştirilmiş/dinamik duyuru için NO-GO aynen sürüyor.**
+
+#### TDD ve doğrulama kanıtı
+
+- RED confirmed (context builder modülü yokken test hata verdi; broadcast testleri implementasyon bağlanmadan önce ham `target` nesnesini yakalayarak düştü) → GREEN.
+- Backend tam suite: **126/126 suite, 1181 passed, 1 skipped, 1182 total**.
+- Frontend tam suite: **39/39 dosya, 266/266 test**.
+- Backend/frontend typecheck, `i18n:check`, `api:verify-frontend-contract` (`182/233, missing=0, raw-network=0`), `test:ops-safety` (24/24), `rbac:verify-contract`, `db:verify:migration-files`, `git diff --check` — hepsi geçti.
+
+#### Commit ve restore point
+
+- Ürün+test commit'i: `d8f42c6d` — `fix: unify announcement email customer context (BUG-02)`.
+- Pre-work: tag `restore/pre-announcement-context-parity-20260808-7e681af0`; bundle SHA-256 `e4a762f9d71ed91f162336dcaa3ad4d027b6ce9d8ec895b685f6bd36be83af83`.
+- Post-work: tag `restore/post-announcement-context-parity-20260808-d8f42c6d`; bundle SHA-256 `c80bdc364bc6beede8f7061b0c88efc1b6f7b966fd0109547fe51fdac9c1de80`.
+- `git bundle verify` + `git fsck --strict`: kritik hata yok.
+- Push, tag-push, deploy yapılmadı; production/shadow/canlı bağlantı, migration/seed yok.
+
+#### Codex'ten istenen bağımsız kontrol
+
+GAP raporundaki §10'daki 8 maddelik listeyi uygula (kaynak kod okuması, testlerin gerçekten iddia edilen davranışı ölçtüğünün teyidi, restore point hash bağımsız hesabı, diff kapsamı kontrolü, tam test/typecheck/i18n/ops-safety/api-contract bağımsız çalıştırma). Sonucu hem GAP raporunun §10'unun altına hem bu ortak raporun en altına ekle. Bu kontrol tamamlanmadan BUG-01/BUG-04/GAP-06/07/08 fazlarına geçilmemeli.

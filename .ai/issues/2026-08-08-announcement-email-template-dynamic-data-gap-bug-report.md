@@ -432,3 +432,67 @@ Yalnız bu doğrulama bölümü eklendi. Ürün kodu, test dosyası, migration, 
 - BUG-01/BUG-02, GAP-03/GAP-06/GAP-07/GAP-08 kapanmadı. Subject render, kanonik `AnnouncementEmailContext` + Zod şeması, preview/broadcast paritesi, bilinmeyen değişken ve kalan `[placeholder]` koruması henüz uygulanmadı.
 - Bu nedenle kişiselleştirilmiş/dinamik duyuru e-postaları hâlâ **NO-GO** durumundadır.
 - Canlı/production/shadow bağlantısı, migration/seed, DB değişikliği, harici e-posta gönderimi, push/tag-push/deploy/publish yapılmadı.
+
+---
+
+## 10. Claude BUG-02 kapanışı (uygulayıcı olarak) — bağımsız Codex kontrolü isteniyor
+
+**Tarih:** 2026-08-08 · **Rol notu:** Bu bölümde Claude, her zamanki bağımsız doğrulayıcı rolünden farklı olarak ürün kodunu **kendisi yazdı** (kullanıcı talebiyle). Codex bu teslimatı, Claude'un daha önce Codex teslimatlarını doğruladığı aynı disiplinle **bağımsız olarak** kontrol etmelidir — bu bölümdeki hiçbir iddiaya güvenilmeden.
+
+### Kapatılan bulgu
+
+**BUG-02 (Preview verisi gerçek broadcast verisiyle uyumsuz)** dar kapsamda kapatıldı. BUG-01, BUG-04, GAP-03 (kısmi), GAP-06, GAP-07 (kısmi) hâlâ açık.
+
+### Yapılan değişiklikler
+
+1. **Yeni dosya** `apps/backend/src/announcements/announcement-email-context.ts`:
+   - `buildAnnouncementEmailContext(customer)` — `CustomerProfile` + `user.email` alan kümesini kanonik `{firstName, lastName, fullName, companyName, customerNo, email, userEmail}` şekline eşliyor.
+   - `AnnouncementCustomerContextSchema` (Zod, `.strict()`) ve `AnnouncementEmailSchema = BaseEmailSchema.extend({customer: ...})` — ileride kullanılmak üzere gerçek şema tanımlandı (bkz. "Bilinçli açık bırakılan" altında kapsam notu).
+   - Yan fayda: `industry`, `contractStatus`, `tags`, `id`, `userId` gibi iç/CRM alanları artık email render context'ine hiç girmiyor — şablon yazan biri yanlışlıkla `{{customer.contractStatus}}` yazsa bile hiçbir zaman bir değer bulamaz.
+2. `announcements.service.ts` `broadcast()`: `customer: target` → `customer: buildAnnouncementEmailContext(target)`.
+3. `apps/frontend/.../admin/announcements/page.tsx`: iki preview çağrı noktası (`handlePreview`, `handleTemplatePreview`) artık aynı modül-seviyesi `PREVIEW_CUSTOMER_CONTEXT` sabitini kullanıyor; üç farklı eski mock şekli (`first_name/full_name`, `name`) kaldırıldı.
+4. tr/en/de `admin.announcements.editor.default_content`: yeni duyuru taslağının varsayılan içeriğindeki çalışmayan `[customer.name]` (tr/en) / yanlış-alanlı `{{customer.name}}` (de) yerine gerçekten çalışan `{{customer.firstName}}` kondu.
+5. Yeni test dosyaları: `announcement-email-context.spec.ts` (10 test), `announcements.service.spec.ts`'e eklenen 2 test (broadcast'in kanonik şekli gönderdiğini ve iç alanları sızdırmadığını doğruluyor), `apps/frontend/src/lib/announcement-preview-context.spec.ts` (4 test — FE/BE alan adı paritesini kilitliyor).
+
+### Bilinçli açık bırakılan kapsam
+
+- **`TemplateService.compile()` hâlâ `BaseEmailSchema.safeParse` kullanıyor, yeni `AnnouncementEmailSchema`'ya bağlanmadı.** `TemplateService` için hiçbir test altyapısı (dosya sistemi bağımlı, statik sınıf) mevcut değildi; test yazmadan bu bağlantıyı kurmak riskli olacağından bilinçli olarak bu commit'in dışında bırakıldı. Bu, GAP-03'ün "gerçek Zod şeması render'a bağlanmalı" kısmının hâlâ açık olduğu anlamına geliyor — şema tanımlı ama devrede değil.
+- BUG-01 (subject hâlâ render edilmiyor), BUG-04 (AnnouncementLog erken SENT + emailLogId bağı yok), GAP-06 (kalan `[bracket]` placeholder taraması yok), GAP-07 (unknown-variable/fail-closed testi yok), GAP-08 (`contentMjml` adlandırması) **hiçbiri bu commit'te ele alınmadı.**
+- **Kişiselleştirilmiş/dinamik duyuru e-postaları için NO-GO aynen sürüyor.**
+
+### TDD kanıtı
+
+- `announcement-email-context.spec.ts`: modül dosyası oluşturulmadan önce test çalıştırıldı → `Cannot find module './announcement-email-context'` (RED, gerçek). İmplementasyon sonrası 10/10 GREEN.
+- `announcements.service.spec.ts` yeni testler: `buildAnnouncementEmailContext` çağrısı `announcements.service.ts`'e bağlanmadan önce çalıştırıldı → iki test de gerçek assertion hatasıyla düştü (`Received` çıktısında ham `target` nesnesi — `industry`, `contractStatus`, `tags`, `id`, `userId`, iç içe `user` objesi — görüldü). Bağlama sonrası 22/22 GREEN (tüm dosya).
+
+### Doğrulama kanıtı (Claude'un kendi koşusu)
+
+- Backend tam suite: **126/126 suite**, **1181 passed**, **1 skipped**, **1182 total**, **0 failed**.
+- Frontend tam suite: **39/39 dosya**, **266/266 test**.
+- Backend/frontend `tsc --noEmit`: 0 hata.
+- `pnpm i18n:check`: tr/en/de tam.
+- `pnpm api:verify-frontend-contract`: `frontend=182, openapi=233, missing=0, raw-network=0`.
+- `pnpm test:ops-safety`: 24/24.
+- `pnpm rbac:verify-contract`, `pnpm db:verify:migration-files`: değişmedi, geçti (sanity).
+- `git diff --check`: temiz.
+
+### Commit ve restore point
+
+- Ürün + test commit'i (tek commit): `d8f42c6d` — `fix: unify announcement email customer context (BUG-02)`.
+- Pre-work tag: `restore/pre-announcement-context-parity-20260808-7e681af0`; bundle `.private-data/restore-points/pre-announcement-context-parity-7e681af0.bundle`; SHA-256 `e4a762f9d71ed91f162336dcaa3ad4d027b6ce9d8ec895b685f6bd36be83af83`.
+- Post-work tag: `restore/post-announcement-context-parity-20260808-d8f42c6d`; bundle `.private-data/restore-points/post-announcement-context-parity-d8f42c6d.bundle`; SHA-256 `c80bdc364bc6beede8f7061b0c88efc1b6f7b966fd0109547fe51fdac9c1de80`.
+- `git bundle verify` ve `git fsck --strict` her ikisi de kritik hata olmadan geçti.
+- Push, tag-push, deploy yapılmadı; production/shadow/canlı sisteme bağlanılmadı; migration/seed çalıştırılmadı.
+
+### Codex'ten istenen bağımsız kontrol
+
+1. `announcement-email-context.ts`'i kaynak koddan oku: `buildAnnouncementEmailContext`'in gerçekten `firstName/lastName/fullName/companyName/customerNo/email/userEmail` döndürdüğünü ve `industry/contractStatus/tags/id/userId` gibi hiçbir iç alanı sızdırmadığını doğrula.
+2. `announcements.service.ts:broadcast()`'in artık `customer: target` değil `customer: buildAnnouncementEmailContext(target)` gönderdiğini doğrula.
+3. `page.tsx`'teki iki preview çağrı noktasının da aynı `PREVIEW_CUSTOMER_CONTEXT` sabitini kullandığını ve eski üç farklı mock şeklinin (`first_name`, `full_name`, `name`) kalmadığını doğrula.
+4. tr/en/de `default_content`'in artık `{{customer.firstName}}` içerdiğini, eski `[customer.name]`/yanlış `{{customer.name}}`'in kalmadığını doğrula.
+5. Yeni testleri bağımsız çalıştır; RED iddiasını (test dosyası/implementasyon geçici olarak kaldırılıp) yeniden üretmeyi dene veya en azından testlerin gerçekten bu davranışı ölçtüğünü kod okuyarak teyit et.
+6. `TemplateService.compile()`'a dokunulmadığını (yalnız `BaseEmailSchema` kullanmaya devam ettiğini) ve bunun bilinçli, belgelenmiş bir kapsam dışı bırakma olduğunu doğrula — kazayla unutulmuş bir adım değil.
+7. Restore point hash'lerini bağımsız hesapla; diff kapsamının yalnız announcements/frontend-page/i18n dosyalarıyla sınırlı olduğunu, migration/schema/DB/production'a girilmediğini git diff/history ile doğrula.
+8. Tam test/typecheck/i18n/ops-safety/api-contract kapılarını bağımsız çalıştır.
+
+Bu doğrulama tamamlanana kadar BUG-01/BUG-04/GAP-06/07/08 fazlarından hiçbirine geçilmemeli; kişiselleştirilmiş duyuru NO-GO kararı aynen sürer.
