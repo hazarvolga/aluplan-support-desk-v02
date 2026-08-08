@@ -3989,6 +3989,7 @@ Maintenance rule:
 - Local dev DB on `localhost:55433` received migration `20260807143000_add_product_taxonomy_unique_indexes` after a zero-duplicate read-only audit. Production and shadow DBs were not connected to or changed.
 - Product code commit: `93870762`; migration commit: `c23867e1`.
 - No push, tag-push, deploy, publish, or live-system action occurred.
+
 - Static frontend/OpenAPI parity audit found three pre-existing gaps for separate work: CRM settings wrong route, unimplemented MFA backend contract, and unimplemented MJML content/announcement contract. No code change for those findings was made in this phase.
 
 ## 2026-08-07 - Review Center active-record parity Aşama A
@@ -4022,3 +4023,15 @@ Maintenance rule:
 - Production decision remains NO-GO: Faz 8 runbook is fixed to an obsolete three-migration set; DR/backup paths can mask failures; staging does not prove immutable image promotion; PG version is inconsistent; worker/cron jobs are in-process; old shadow sanitization is incomplete; PostgreSQL restore alone does not protect R2/local object data.
 - Independent planning, CI/DR/backup and data/RAG/storage reviews agreed on the same NO-GO decision. No code, DB, migration, seed, live system, push, tag-push or deploy was changed.
 - Next safe phase is local-only Faz A: repair the current runbook/DR/backup/staging contracts, define a worker/cron maintenance boot strategy, create exact immutable images, and rerun full release gates before requesting live read-only drift authorization.
+
+## Follow-up - 2026-08-08 Production Release Faz A.1.1
+
+- Replaced the stale fixed migration assumptions with a canonical-ledger resolver and fail-closed Faz 8 runbook.
+- Product/tooling commit: `8fbdc0b1` (`fix(release): derive production migration plan from ledger`).
+- The resolver is opt-in for database access, uses a read-only repeatable-read transaction, writes only mode-`0600` artifacts under `.private-data`, records provenance, and never logs the connection URL.
+- Independent review found and closed three important issues before commit: contradictory lifecycle rows, hidden historical checksum-marker acceptance, and insufficient artifact/storage provenance.
+- Final tests: planner 19/19, combined operations safety 43/43, migration files 56/56; code/security reviews GO with no Critical/High/Medium findings.
+- Read-only Coolify inventory showed backend/frontend running deployed commit `d9b21b9d`, healthy PG17+pgvector and running Redis. MinIO is intentionally retired; S3-compatible storage is canonical.
+- A Coolify database configuration snapshot unexpectedly returned the PostgreSQL credential unmasked. It was neither reused nor written into project docs; production PostgreSQL credential rotation is now a mandatory release checklist item.
+- Restore tag/bundle: `restore/post-release-a11-20260808-8fbdc0b1`, SHA-256 `ecb15b14da121665c3d30c94df13784b954c3b939b0ebb39b724c3a2250eb9af`; bundle verify and strict fsck passed (historical dangling trees only).
+- No production query, SSH command, data write, migration, seed, push, tag-push or deploy occurred. Next local phase: A.1.2 backup hardening.

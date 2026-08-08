@@ -4429,3 +4429,52 @@ Kullanıcının veri kaybı olmadan canlıya geçiş hazırlığı talebi için 
 Bağımsız plan, CI/DR/backup ve veri/RAG/storage incelemeleri aynı NO-GO kararına ulaştı; çürütülen ana bulgu yoktur. Bu turda ürün kodu, DB, migration, seed, production/shadow/R2/Redis değiştirilmedi; push, tag-push ve deploy yapılmadı.
 
 Sıradaki güvenli faz yalnız yereldir: güncel ledger tabanlı runbook, fail-closed DR/backup/staging kapıları, PG17 hizalaması, worker/cron maintenance boot stratejisi, immutable backend/frontend image ve exact release testleri. Canlı salt-okunur envanter için bile ayrıca kullanıcı onayı alınacaktır.
+
+---
+
+### 2026-08-08 — CODEX → CLAUDE — Production release Faz A.1.1 tamamlandı: ledger-driven migration planı
+
+Faz A.1.1 yalnız yerel kapsamda tamamlandı. Sabit “üç pending migration” varsayımı kaldırıldı; production planı artık kanonik 56 migration dosyası/checksum manifesti ile production `_prisma_migrations` ledger farkından türetiliyor.
+
+#### Uygulanan sözleşme
+
+- Yeni `scripts/resolve-production-migration-plan.mjs`, online modda açık `ALLOW_PRODUCTION_LEDGER_READ=1` opt-in olmadan bağlantı açmıyor.
+- Online okuma `REPEATABLE READ READ ONLY` transaction içinde tek statik ledger SELECT'i ve `finally` rollback kullanıyor.
+- Unknown migration, canonical checksum drift, iki alanı da boş veya iki alanı da dolu lifecycle, duplicate-success ve çözülmemiş deneme fail-closed reddediliyor.
+- ADR-011'e ait `20260426202926_add_proactive_chat=manual-psql-fix` marker'ı varsayılan olarak reddediliyor. Yalnız exact migration+marker, başarılı satır ve açık CLI acknowledgement birlikteyse kabul ediliyor; artifact gerçek `ledgerChecksum` ile `matchMode: accepted-marker` bilgisini görünür tutuyor.
+- Artifact yalnız `.private-data` altına mode `0600` yazılıyor; offline input SHA-256, normalize ledger digest, capture zamanı ve online modda secret içermeyen hedef fingerprint'i kaydediliyor. Offline artifact tek başına production GO kanıtı değil.
+- Faz 8 runbook S3-compatible object storage'ı kanonik kabul ediyor. MinIO kullanımdan kaldırılmış eski Coolify kaydıdır; başlatılmayacak. S3 object parity yanında versioning/immutable backup ve ayrı restore/canary GO kapısıdır; local fallback yalnız tarihsel kurtarma envanteridir.
+
+#### Bağımsız review ve doğrulama
+
+İlk review turunda bulunan çelişkili lifecycle yeniden uygulama riski, marker'ın kanonik checksum gibi gizlenmesi, read-only sıra testi eksikliği ve provenance/storage eksikleri kapatıldı. İkinci turda code review ve security review ayrı ayrı **GO** verdi; Critical/High/Medium = **0/0/0**.
+
+- Planner hedef testleri: **19/19**.
+- Birleşik operations-safety: **43/43**.
+- Migration manifest/file integrity: **56/56**.
+- `git diff --check`: temiz.
+- GitNexus CLI bu checkout'ta mevcut değildi; kurulmadı. Mevcut Graphify ile release/migration etki bağlamı salt-okunur sorgulandı.
+- `pnpm` wrapper bu makinede sürüm/test çağrısında çıktı vermeden zaman aşımına uğruyor; aynı `test:ops-safety` içeriği kurulu Node ile doğrudan eksiksiz çalıştırıldı. Bu bir ürün testi hatası olarak sınıflandırılmadı, ortam sapması olarak kaydedildi.
+
+#### Salt-okunur Coolify canlı envanteri
+
+- Backend `running`: deployed commit `d9b21b9d7b5c4c259acbe9a5828fdd04ba077ce2`.
+- Frontend `running`: aynı deployed commit `d9b21b9d7b5c4c259acbe9a5828fdd04ba077ce2`.
+- PostgreSQL `running/healthy`, image `pgvector/pgvector:pg17`.
+- Redis `running`.
+- MinIO `exited`, kullanıcı tarafından beklendiği gibi artık kullanılmıyor; S3 kullanılıyor.
+- Yerel aday deployed commit'in descendant'ıdır ve A.1.1 sonrası **155 commit** ileridedir; bu yalnız Git ilişkisidir, production veri/schema paritesi kanıtı değildir.
+
+Coolify database General sayfası browser erişilebilirlik çıktısında PostgreSQL parolasını beklenmedik biçimde maskesiz gösterdi. Değer bu rapora veya başka dosyaya yazılmadı, tekrar edilmedi ve bağlantı için kullanılmadı. Buna rağmen credential artık ifşa edilmiş kabul edilmelidir: production geçişinden önce PostgreSQL parolası ve ona bağlı backend/backup bağlantıları atomik olarak rotate edilip yeniden doğrulanmalıdır.
+
+#### Commit ve restore point
+
+- Yerel commit: `8fbdc0b1` — `fix(release): derive production migration plan from ledger`.
+- Tag: `restore/post-release-a11-20260808-8fbdc0b1`.
+- Bundle: `.private-data/restore-points/post-release-a11-20260808-8fbdc0b1.bundle`.
+- Bundle SHA-256: `ecb15b14da121665c3d30c94df13784b954c3b939b0ebb39b724c3a2250eb9af`.
+- `git bundle verify`: sağlam, tam geçmiş.
+- Tag ve HEAD aynı commit: `8fbdc0b15b5b196e2562ca03a8a7ca3e0914d11d`.
+- `git fsck --strict`: exit 0; yalnız tarihsel dangling tree kayıtları.
+
+Bu fazda production DB sorgusu, SSH komutu, migration, seed, veri değişikliği, push, tag-push veya deploy yapılmadı. Sıradaki güvenli faz yalnız yerel **A.1.2 — fail-closed custom-format backup tooling ve testleri**dir.

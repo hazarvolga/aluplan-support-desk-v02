@@ -389,3 +389,16 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Son kanıt: backend 125/125 suite (1168 passed, 1 skipped), frontend 38/38 dosya (262 test), typecheck/i18n/ops/API/RBAC/migration kapıları temiz; code ve security review GO, C/H/M=0.
 - Aşama B global Prisma Proxy/middleware düzeltmesi ayrı iş ve NO-GO: tam call-site envanteri ve ayrıca kullanıcı onayı gerektiriyor.
 - Kalıcı sınır: production/canlı/shadow erişimi veya yazımı, migration/seed, push, tag-push, deploy ve publish yok.
+
+## Active Focus - 2026-08-08 Production Release Faz A.1.1
+
+- Ledger-driven, fail-closed production migration planner and current Faz 8 runbook are complete locally in `8fbdc0b1`.
+- The planner derives pending migrations from canonical files/manifest versus `_prisma_migrations`; it rejects unknown, checksum-drifted, unresolved, contradictory-lifecycle and duplicate-success rows.
+- The single ADR-011 historical marker is default-deny and only accepted with an exact explicit acknowledgement; the artifact preserves the real ledger marker and match mode.
+- Artifacts are restricted to `.private-data`, mode `0600`, and include ledger digest/capture provenance without connection secrets. Online reading is one `REPEATABLE READ READ ONLY` transaction with a static SELECT and rollback.
+- Coolify read-only UI evidence: backend and frontend are running the same deployed commit `d9b21b9d`; production PostgreSQL reports healthy on `pgvector/pgvector:pg17`; Redis is running. Local release HEAD is a descendant and must not be treated as live parity.
+- MinIO is intentionally retired; the canonical storage target is S3-compatible object storage. The runbook now requires S3 parity plus versioning/immutable-backup restore canary. Local fallback is only a historical recovery inventory.
+- Coolify's database General page unexpectedly exposed the PostgreSQL password in browser automation output. The value is not recorded or reused. PostgreSQL credential rotation and dependent connection updates are mandatory before release approval.
+- Verification: focused planner tests 19/19, combined operations-safety 43/43, migration manifest 56/56, diff-check clean; independent code and security reviews GO with Critical/High/Medium = 0/0/0.
+- Restore: `restore/post-release-a11-20260808-8fbdc0b1`; bundle `.private-data/restore-points/post-release-a11-20260808-8fbdc0b1.bundle`, SHA-256 `ecb15b14da121665c3d30c94df13784b954c3b939b0ebb39b724c3a2250eb9af`, complete history verified.
+- Next safe phase is local-only A.1.2: fail-closed custom-format backup tooling and tests. No production DB query, SSH action, migration, seed, push, tag-push or deploy occurred in A.1.1.
