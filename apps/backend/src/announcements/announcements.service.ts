@@ -6,6 +6,7 @@ import { CreateAnnouncementDto, UpdateAnnouncementDto, TargetCriteriaDto } from 
 import { Prisma, AnnouncementLog } from '@aluplan/database';
 import { buildAnnouncementEmailContext } from './announcement-email-context';
 import { assertAnnouncementContentIsSafeToSend, renderAnnouncementSubject } from './announcement-content-safety';
+import { detectAnnouncementContentFormat } from './announcement-content-format';
 
 @Injectable()
 export class AnnouncementsService {
@@ -32,7 +33,7 @@ export class AnnouncementsService {
     }
 
     async findAll() {
-        return this.prisma.announcement.findMany({
+        const announcements = await this.prisma.announcement.findMany({
             where: { deletedAt: null },
             include: {
                 author: {
@@ -51,10 +52,11 @@ export class AnnouncementsService {
                 createdAt: 'desc',
             },
         });
+        return announcements.map((announcement) => this.withContentFormat(announcement));
     }
 
     async findOne(id: string) {
-        return this.prisma.announcement.findUnique({
+        const announcement = await this.prisma.announcement.findUnique({
             where: { id },
             include: {
                 author: true,
@@ -66,6 +68,23 @@ export class AnnouncementsService {
                 },
             },
         });
+        return announcement ? this.withContentFormat(announcement) : announcement;
+    }
+
+    /**
+     * GAP-08: `contentMjml` is a legacy-named column that today almost
+     * always holds rich-text HTML, not MJML. Rather than have every
+     * consumer re-guess the format from the raw string, read paths expose
+     * the already-detected value explicitly. No schema change — this is
+     * computed at read time, not stored.
+     */
+    private withContentFormat<T extends { contentMjml: string }>(
+        announcement: T,
+    ): T & { contentFormat: ReturnType<typeof detectAnnouncementContentFormat> } {
+        return {
+            ...announcement,
+            contentFormat: detectAnnouncementContentFormat(announcement.contentMjml || ''),
+        };
     }
 
     async update(id: string, dto: UpdateAnnouncementDto) {
@@ -185,9 +204,9 @@ export class AnnouncementsService {
                 }
 
                 // Enqueue Email via existing EmailService
-                // Use master-announcement template for new HTML content, 'raw' for old raw MJML content
+                // Use master-announcement template for rich-text HTML content, 'raw' for MJML content
                 const content = announcement.contentMjml || '';
-                const isMjml = content.trim().toLowerCase().startsWith('<mjml>') || content.trim().toLowerCase().startsWith('<mj-');
+                const isMjml = detectAnnouncementContentFormat(content) === 'MJML';
                 const customerContext = buildAnnouncementEmailContext(target);
 
                 await this.emailService.enqueueEmail({

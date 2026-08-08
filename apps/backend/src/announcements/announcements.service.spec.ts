@@ -177,6 +177,54 @@ describe('AnnouncementsService — findAll', () => {
             where: { deletedAt: null },
         }));
     });
+
+    // GAP report GAP-08: `contentMjml` is a legacy name; most announcements
+    // actually hold rich-text HTML. Every list item should say explicitly
+    // which format it is instead of leaving callers to re-guess.
+    it('annotates each announcement with its detected contentFormat', async () => {
+        prisma.announcement.findMany.mockResolvedValue([
+            { id: 'ann-html', contentMjml: '<p>Merhaba!</p>' },
+            { id: 'ann-mjml', contentMjml: '<mjml><mj-body></mj-body></mjml>' },
+        ]);
+
+        const result = await service.findAll();
+
+        expect(result).toEqual([
+            expect.objectContaining({ id: 'ann-html', contentFormat: 'RICH_HTML' }),
+            expect.objectContaining({ id: 'ann-mjml', contentFormat: 'MJML' }),
+        ]);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// findOne
+// ---------------------------------------------------------------------------
+
+describe('AnnouncementsService — findOne', () => {
+    let prisma: any;
+    let service: AnnouncementsService;
+
+    beforeEach(async () => {
+        prisma = buildPrismaMock();
+        service = await buildService(prisma, buildEmailMock(), buildGatewayMock());
+    });
+
+    it('returns null unchanged when the announcement does not exist', async () => {
+        prisma.announcement.findUnique.mockResolvedValue(null);
+
+        await expect(service.findOne('missing')).resolves.toBeNull();
+    });
+
+    it('annotates the announcement with its detected contentFormat (GAP-08)', async () => {
+        prisma.announcement.findUnique.mockResolvedValue({
+            id: 'ann-1',
+            contentMjml: '<mj-section><mj-text>Hi</mj-text></mj-section>',
+        });
+
+        const result = await service.findOne('ann-1');
+
+        expect(result).toEqual(expect.objectContaining({ id: 'ann-1', contentFormat: 'MJML' }));
+    });
 });
 
 // ---------------------------------------------------------------------------
