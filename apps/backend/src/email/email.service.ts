@@ -175,7 +175,7 @@ export class EmailService implements OnModuleInit {
             'email-verification', 'security-alert', 'two-factor-auth'
         ];
 
-        if (template === 'raw' || template === 'broadcast') return 'ANNOUNCEMENTS';
+        if (template === 'raw' || template === 'broadcast' || template === 'master-announcement') return 'ANNOUNCEMENTS';
         if (tickets.includes(template)) return 'TICKETS';
         if (system.includes(template)) return 'SYSTEM';
 
