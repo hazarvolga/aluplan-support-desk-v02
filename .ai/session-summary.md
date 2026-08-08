@@ -4013,3 +4013,12 @@ Maintenance rule:
 - Post-fix restore tag `restore/post-announcement-bug05-20260808-bddd51ac`; complete-history bundle `.private-data/restore-points/post-announcement-bug05-bddd51ac.bundle` verified with SHA-256 `236c1800c7ad09486b7bc5ecde455150c1d773437a6311874e1fa140f5b7b2f6`.
 - Residual boundary: BUG-04 remains open because consent-skipped announcements can still be recorded as `SENT`; subject rendering, canonical context/Zod validation, preview parity and unresolved placeholder protection also remain open. Personalized dynamic announcements remain NO-GO.
 - No production/shadow/live connection, migration, seed, DB mutation, external email send, push, tag-push, deploy or publish occurred.
+
+## 2026-08-08 - Production release readiness and live-drift audit
+
+- Chose a release-readiness/live-drift audit instead of another broad code GAP report; canonical artifact: `.ai/issues/2026-08-08-production-release-readiness-live-drift-audit.md`.
+- Local candidate is `4e1c6819`, 153 commits ahead of local `main`; this is release scope evidence, not proof of live drift. Live image digest/commit remains unknown until a separately authorized read-only inventory.
+- Current local gates passed: operations safety 24/24, backend/frontend typecheck, TR/EN/DE i18n, API contract `182/233 missing=0 raw-network=0`, RBAC source `12 roles/19 permissions`, migration manifest `56/56` and diff hygiene.
+- Production decision remains NO-GO: Faz 8 runbook is fixed to an obsolete three-migration set; DR/backup paths can mask failures; staging does not prove immutable image promotion; PG version is inconsistent; worker/cron jobs are in-process; old shadow sanitization is incomplete; PostgreSQL restore alone does not protect R2/local object data.
+- Independent planning, CI/DR/backup and data/RAG/storage reviews agreed on the same NO-GO decision. No code, DB, migration, seed, live system, push, tag-push or deploy was changed.
+- Next safe phase is local-only Faz A: repair the current runbook/DR/backup/staging contracts, define a worker/cron maintenance boot strategy, create exact immutable images, and rerun full release gates before requesting live read-only drift authorization.

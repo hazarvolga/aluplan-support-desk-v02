@@ -4409,3 +4409,23 @@ Bu fazda backend, Prisma şeması, migration, DB, seed, production/shadow ortam�
 - Tag hedefi ve HEAD: `0a8ddc437602f64bc57e9fcb4118cdf03df79851`.
 - `git fsck --strict`: hata yok; yalnız önceki çalışma süreçlerinden kalan erişilemeyen `dangling tree` nesneleri raporlandı.
 - Remote push/tag-push/deploy yapılmadı.
+
+---
+
+### 2026-08-08 — CODEX → CLAUDE — Production release readiness / live-drift audit: NO-GO
+
+Kullanıcının veri kaybı olmadan canlıya geçiş hazırlığı talebi için yeni bir genel kod GAP raporu yerine release adayı ile canlı durumun ayrı kanıtlandığı bir **Production Release Readiness + Live Drift Audit** oluşturuldu:
+
+- Kanonik belge: `.ai/issues/2026-08-08-production-release-readiness-live-drift-audit.md`.
+- Yerel aday: `4e1c6819`; çalışma ağacı denetim başlangıcında temizdi. `main..HEAD` 153 commit fakat bu sayı canlı drift kanıtı değildir; canlı image digest/commit ayrıca salt-okunur belirlenmelidir.
+- Güncel yerel hızlı kapılar: ops-safety 24/24, iki typecheck, TR/EN/DE i18n, API `182/233 missing=0 raw-network=0`, RBAC `12/19`, migration manifest `56/56`, diff-check GO.
+- Production kararı: **NO-GO**. Faz 8 runbook yalnız üç eski migration’ı varsayıyor; zincir artık 56 dosya ve sonraki RBAC/taxonomy migration’ları DML/fail-closed veri önkoşulları içeriyor.
+- DR/backup katmanı bugün release kanıtı değil: workflow script hatasını yutuyor, rapor artifact yolu bozuk, PG16/PG17 ve backup formatı tutarsız; bazı backup yolları bozuk/yerel fallback’i başarı gibi raporlayabiliyor.
+- DB dump tek başına yeterli değil: R2/S3 nesneleri ve S3 hatasında local fallback’e yazılmış olası dosyalar DB key’leriyle birlikte envanterlenmeli.
+- Backend içinde 9 BullMQ queue ve 10 cron/tekrarlı iş yüzeyi var; dashboard yalnız 4 queue’yu gösteriyor. Eski/yeni backend aynı production DB/Redis üzerinde örtüşmemeli; ilk cutover maintenance + tek backend modeliyle prova edilmeli.
+- Eski 2026-08-05 shadow snapshot 14 dolu secret setting nedeniyle uygulama runtime kaynağı değildir; taze PG17 dump, clone-only tam sanitizer ve boş staging Redis gereklidir.
+- RAG sözleşmesi Gemini `v2_2/3072`, version+dimension izolasyonu ve exact-search fallback’tir. Deploy sırasında provider/model/reindex değişikliği yok; exact image üzerinde güncel RAG kabul seti gerekir.
+
+Bağımsız plan, CI/DR/backup ve veri/RAG/storage incelemeleri aynı NO-GO kararına ulaştı; çürütülen ana bulgu yoktur. Bu turda ürün kodu, DB, migration, seed, production/shadow/R2/Redis değiştirilmedi; push, tag-push ve deploy yapılmadı.
+
+Sıradaki güvenli faz yalnız yereldir: güncel ledger tabanlı runbook, fail-closed DR/backup/staging kapıları, PG17 hizalaması, worker/cron maintenance boot stratejisi, immutable backend/frontend image ve exact release testleri. Canlı salt-okunur envanter için bile ayrıca kullanıcı onayı alınacaktır.

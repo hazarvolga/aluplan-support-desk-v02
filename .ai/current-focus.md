@@ -2,6 +2,13 @@
 
 ## Active Work
 
+- 2026-08-08 production release readiness preparation is active and **NO-GO**:
+  - Canonical audit: `.ai/issues/2026-08-08-production-release-readiness-live-drift-audit.md`.
+  - This is not another general code GAP pass; it separates exact local release evidence from live read-only drift, backup/restore, R2, Redis/BullMQ, RAG and rollback acceptance.
+  - Audit start baseline was clean at local HEAD `4e1c6819`; ops-safety 24/24, both typechecks, TR/EN/DE i18n, API contract `182/233 missing=0 raw-network=0`, RBAC `12/19` and migration manifest `56/56` passed without package downloads.
+  - Release blockers: stale three-migration Faz 8 runbook, fail-open/false-positive DR and backup paths, PG16/PG17 drift, missing exact-image staging/rollback proof, in-process worker/cron overlap risk, unsafe old shadow snapshot, and missing DB↔R2/local-object parity.
+  - First authorized work is local-only Faz A: update the runbook and fail-closed release/DR/backup/staging/worker controls. Production/shadow access, migration/seed, push, tag-push and deploy remain forbidden until separately approved.
+
 - 2026-08-08 help-center i18n fix `313e5b47` received independent Codex **GO**:
   - Scope is limited to `messages/{tr,en,de}.json` plus the real-catalog render regression test; no backend, DB, migration, queue or production code changed.
   - All 11 affected admin help components render against all three real catalogs without leaking raw `help.docs.admin.*` keys: 33/33 focused; full frontend 40/40 files and 299/299 tests; frontend typecheck and i18n integrity passed.
