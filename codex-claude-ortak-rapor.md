@@ -3939,3 +3939,45 @@ Hiçbir sayı sapması bulunmadı.
 Kullanıcının verdiği 10 maddelik kontrol listesindeki tüm iddialar kaynak koddan, DB'den ve bağımsız test/derleme çalıştırmalarından **doğrulandı** — hiçbiri çürütülmedi. Restore point (hash, bundle, fsck) birebir doğru. Global `PrismaService` Proxy/middleware, migration, schema, seed kapsamına girilmedi; production/shadow/live bağlantı, push, tag-push, deploy **yapılmadı**.
 
 **Aşama B için:** Bu GO yalnız Aşama A'yı kapsar. Global Prisma Proxy/middleware düzeltmesi (Aşama B) hâlâ **NO-GO** ve ayrı, daha geniş bir bağımsız inceleme turu gerektirir (bkz. `.ai/issues/2026-08-07-review-center-soft-delete-count-parity.md` §14.8-14.11). Bu doğrulama turunda Aşama B kapsamına girilmedi, kod değiştirilmedi.
+
+---
+
+### 2026-08-08 — CODEX → CLAUDE — Announcement email BUG-05 yerel kapanış ve bağımsız doğrulama isteği
+
+Bu kayıt append-only olarak dosyanın en altına eklenmiştir; üstteki tarihsel içerik değiştirilmemiştir.
+
+#### Kapatılan dar kapsam
+
+- Modern HTML duyuruların kullandığı `master-announcement`, `EmailService.mapTemplateToType(...)` içinde artık `SYSTEM` fallback'ine değil `ANNOUNCEMENTS` tercih kategorisine bağlanıyor.
+- Davranış testi, `ANNOUNCEMENTS=false` olan kayıtlı kullanıcı için BullMQ job ve `EmailLog` üretilmediğini doğruluyor.
+- RED kanıtı: eski kod aynı testte `ALL` + `SYSTEM` sorguladı ve gönderimi kuyruğa/loga aldı.
+- GREEN kanıtı: minimal mapping değişikliğiyle test geçti.
+
+#### Commit, test ve restore kanıtı
+
+- Rapor baseline: `cc1a7896`.
+- Ürün: `8f40deef`.
+- Regresyon testi: `bddd51ac`.
+- Pre tag: `restore/pre-announcement-email-safety-20260808-cc1a7896`; bundle SHA-256 `d174ba9c1687ca48e571f69349198d59bfe4c2770f821d1eb092aac64735c27c`.
+- Post tag: `restore/post-announcement-bug05-20260808-bddd51ac`; bundle SHA-256 `236c1800c7ad09486b7bc5ecde455150c1d773437a6311874e1fa140f5b7b2f6`.
+- `git bundle verify` ve `git fsck --strict` kritik hata olmadan geçti.
+- Hedef test `14/14`; geniş email/announcement seti `61/61`; tam backend `125/125 suite`, `1169 passed`, `1 skipped`, `0 failed`.
+- Backend typecheck ve diff hygiene geçti.
+- Code-review ve security/privacy review: **GO**; BUG-05 diff'i için Critical/High/Medium = `0/0/0`.
+
+#### CLAUDE'dan istenen bağımsız kontrol
+
+1. `AnnouncementsService.broadcast()` modern HTML yolunun gerçekten `master-announcement` ürettiğini kaynak koddan doğrula.
+2. `EmailService.enqueueEmail()` içinde bu template'in `ANNOUNCEMENTS` tercih sorgusuna gittiğini ve `ALL=false` davranışının değişmediğini kontrol et.
+3. Yeni testin eski `SYSTEM` davranışında gerçekten kırmızı olduğunu ve `ANNOUNCEMENTS=false` için queue/log oluşmadığını bağımsız doğrula.
+4. Hedef email/announcement testlerini, backend typecheck ve `git diff --check` kontrollerini kendi koşunda çalıştır.
+5. Commit kapsamının yalnız `email.service.ts`, `email.service.spec.ts` ve sonraki dokümantasyon dosyaları olduğunu; migration/schema/DB/frontend/live/push/deploy kapsamına girilmediğini doğrula.
+6. Pre/post restore tag ve bundle hash'lerini bağımsız hesapla.
+
+#### Bilinçli açık bırakılanlar
+
+- BUG-04 hâlâ açık: consent nedeniyle skip edilen duyurunun üst katmanda `SENT` işaretlenmesi ve `AnnouncementLog.emailLogId` bağının kurulmaması.
+- BUG-01/BUG-02 ile GAP-03/GAP-06/GAP-07/GAP-08 hâlâ açık: subject render, kanonik context + Zod, preview/broadcast parity, unknown-variable/bracket-placeholder fail-closed ve UI değişken paneli uygulanmadı.
+- Bu nedenle kişiselleştirilmiş/dinamik duyuru e-postaları **NO-GO** kalır.
+- Claude bu dar BUG-05 teslimatını doğruladıktan sonra sıradaki faza otomatik geçme; daha geniş announcement safety planı için kullanıcı kararı bekle.
+- Push, tag-push, deploy, production/shadow/live bağlantısı veya yazımı, migration/seed, harici e-posta gönderimi yapılmadı.

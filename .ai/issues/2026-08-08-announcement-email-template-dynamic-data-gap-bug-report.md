@@ -388,3 +388,47 @@ Codex'in 9 maddelik planına katılıyorum; bağımsız incelemem sırasına şu
 ### Kod değişikliği yapıldı mı: Hayır
 
 Yalnız bu doğrulama bölümü eklendi. Ürün kodu, test dosyası, migration, seed, DB verisi değiştirilmedi. Production/shadow/canlı sisteme bağlanılmadı. Commit atılmadı.
+
+---
+
+## 10. CODEX uygulama kaydı — BUG-05 yerel kapanış
+
+**Tarih:** 2026-08-08
+**Kapsam:** Yalnız `master-announcement` tercih kategorisi ve davranış regresyon testi
+**Sonuç:** BUG-05 için **GO / kapalı by code + test**
+
+### Uygulanan düzeltme
+
+- `EmailService.mapTemplateToType(...)`, `master-announcement` değerini artık `ANNOUNCEMENTS` olarak sınıflandırıyor.
+- Regresyon testi, kayıtlı kullanıcının `ANNOUNCEMENTS=false` tercihi olduğunda modern duyurunun kuyruğa eklenmediğini ve `EmailLog` oluşturulmadığını kanıtlıyor.
+- Test önce mevcut davranışta RED oldu: sorgu `ALL` ve `SYSTEM` kategorileriyle yapıldığı için modern duyuru yanlışlıkla kuyruğa/loga giriyordu.
+- Minimal düzeltmeden sonra aynı test GREEN oldu.
+
+### Commit ve restore kanıtı
+
+- Rapor/hafıza baseline commit'i: `cc1a7896` — `docs: record announcement email template risks`.
+- Ürün commit'i: `8f40deef` — `fix: classify master announcement emails correctly`.
+- Test commit'i: `bddd51ac` — `test: cover master announcement email preference`.
+- Pre-change restore tag: `restore/pre-announcement-email-safety-20260808-cc1a7896`.
+- Pre-change bundle SHA-256: `d174ba9c1687ca48e571f69349198d59bfe4c2770f821d1eb092aac64735c27c`.
+- Post-fix restore tag: `restore/post-announcement-bug05-20260808-bddd51ac`.
+- Post-fix complete-history bundle: `.private-data/restore-points/post-announcement-bug05-bddd51ac.bundle`.
+- Post-fix bundle SHA-256: `236c1800c7ad09486b7bc5ecde455150c1d773437a6311874e1fa140f5b7b2f6`.
+- Her iki bundle için `git bundle verify` geçti; `git fsck --strict` kritik hata vermedi, yalnız tarihsel dangling tree nesneleri gösterdi.
+
+### Doğrulama
+
+- Hedef test: `14/14` geçti.
+- Genişletilmiş email/announcement regresyon seti: `4/4 suite`, `61/61 test` geçti.
+- Tam backend suite: `125/125 suite`, `1169 passed`, `1 skipped`, `0 failed`.
+- Backend TypeScript kontrolü geçti.
+- `git diff --check` geçti.
+- Bağımsız code-review: **GO**; test mock izolasyonu uyarısı commit öncesi kapatıldı.
+- Bağımsız security/privacy review: **GO**; BUG-05 diff'ine ait Critical/High/Medium = `0/0/0`.
+
+### Açık kalan sınırlar
+
+- BUG-04 kapanmadı: tercih nedeniyle enqueue edilmeyen bir duyuru, `enqueueEmail(): Promise<void>` nedeniyle üst katmanda yine `SENT` kaydedilebilir; gerçek delivery/log linkage ayrı fazdır.
+- BUG-01/BUG-02, GAP-03/GAP-06/GAP-07/GAP-08 kapanmadı. Subject render, kanonik `AnnouncementEmailContext` + Zod şeması, preview/broadcast paritesi, bilinmeyen değişken ve kalan `[placeholder]` koruması henüz uygulanmadı.
+- Bu nedenle kişiselleştirilmiş/dinamik duyuru e-postaları hâlâ **NO-GO** durumundadır.
+- Canlı/production/shadow bağlantısı, migration/seed, DB değişikliği, harici e-posta gönderimi, push/tag-push/deploy/publish yapılmadı.

@@ -3967,3 +3967,14 @@ Maintenance rule:
 - No production/live/shadow access or write, DB mutation, migration/seed, push, tag push, deploy or publish. Global Prisma soft-delete Aşama B remains NO-GO pending a separate full inventory and user approval.
 - Claude independently re-ran the source, local read-only DB, restore-integrity, targeted/full test, typecheck, i18n and contract checks and returned GO with no contradicted claim or count deviation. Aşama A is therefore closed; work pauses here.
 - Root `FIRST-READ.md` is the shared Codex/Claude account-switch and new-session entry point. It preserves the canonical directory, read order, archive reference, local-only boundaries, Aşama A closure, and Aşama B NO-GO gate.
+## 2026-08-08 - Announcement email preference BUG-05 closure
+
+- Captured and independently verified the announcement dynamic-data GAP/BUG report in `.ai/issues/2026-08-08-announcement-email-template-dynamic-data-gap-bug-report.md`; docs baseline commit is `cc1a7896`.
+- Created and verified pre-change restore tag `restore/pre-announcement-email-safety-20260808-cc1a7896` and complete-history bundle `.private-data/restore-points/pre-announcement-email-safety-cc1a7896.bundle` (SHA-256 `d174ba9c1687ca48e571f69349198d59bfe4c2770f821d1eb092aac64735c27c`).
+- TDD RED proved `master-announcement` incorrectly queried `SYSTEM`; the minimal mapping fix now classifies it as `ANNOUNCEMENTS`.
+- Product commit `8f40deef`; regression-test commit `bddd51ac`.
+- Verification: focused test `14/14`, expanded email/announcement set `61/61`, full backend `125/125 suites` with `1169 passed, 1 skipped`, backend typecheck and `git diff --check` passed.
+- Independent code review and security/privacy review returned GO for BUG-05; Critical/High/Medium attributable to the diff are `0/0/0`. The test-isolation warning was fixed before commit.
+- Post-fix restore tag `restore/post-announcement-bug05-20260808-bddd51ac`; complete-history bundle `.private-data/restore-points/post-announcement-bug05-bddd51ac.bundle` verified with SHA-256 `236c1800c7ad09486b7bc5ecde455150c1d773437a6311874e1fa140f5b7b2f6`.
+- Residual boundary: BUG-04 remains open because consent-skipped announcements can still be recorded as `SENT`; subject rendering, canonical context/Zod validation, preview parity and unresolved placeholder protection also remain open. Personalized dynamic announcements remain NO-GO.
+- No production/shadow/live connection, migration, seed, DB mutation, external email send, push, tag-push, deploy or publish occurred.

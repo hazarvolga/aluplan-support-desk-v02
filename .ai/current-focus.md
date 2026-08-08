@@ -2,6 +2,12 @@
 
 ## Active Work
 
+- 2026-08-08 announcement email safety BUG-05 is closed locally:
+  - Modern `master-announcement` messages now use the `ANNOUNCEMENTS` preference category instead of the `SYSTEM` fallback.
+  - A behavioral regression test proves that a registered recipient with `ANNOUNCEMENTS=false` produces neither a BullMQ job nor an `EmailLog` row.
+  - Product commit `8f40deef`; test commit `bddd51ac`; focused email/announcement tests `61/61`, full backend suite `125/125` with `1169 passed, 1 skipped`, backend typecheck and diff hygiene passed.
+  - Independent code and security reviews returned GO for BUG-05. The separate BUG-04 status/log-linkage defect and the personalization/subject/context/placeholder gaps remain open, so personalized dynamic announcements remain NO-GO.
+  - Post-fix restore tag `restore/post-announcement-bug05-20260808-bddd51ac`; verified complete-history bundle SHA-256 `236c1800c7ad09486b7bc5ecde455150c1d773437a6311874e1fa140f5b7b2f6`.
 - 2026-08-07 Review Center active-record parity Aşama A is independently closed:
   - Product commit `69655f1c` and restore bundle SHA-256 `466460f32cfb0bddf5a3adc478dd4f64c95f71bf18585a84aa12fb549f2a5c80` received Codex code/security GO and a separate Claude GO.
   - Independent local DB checks confirmed live-chat card/list `0/0` and FAQ candidate card/list `20/20`; all reported test, typecheck, i18n, contract, migration-manifest, and restore-integrity evidence matched without deviation.
