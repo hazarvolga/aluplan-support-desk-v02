@@ -29,6 +29,53 @@ describe('extractHandlebarsVariablePaths', () => {
         expect(paths).toEqual(['customer.companyName']);
     });
 
+    describe('parameterless block path coverage', () => {
+        it('extracts an unknown parameterless block helper', () => {
+            expect(extractHandlebarsVariablePaths(
+                '{{#unknownHelper}}hidden{{/unknownHelper}}',
+            )).toEqual(['unknownHelper']);
+        });
+
+        it('extracts an unknown parameterless context path', () => {
+            expect(extractHandlebarsVariablePaths(
+                '{{#brand.typo}}hidden{{/brand.typo}}',
+            )).toEqual(['brand.typo']);
+        });
+
+        it.each(['if', 'unless', 'each', 'with'])(
+            'does not treat the built-in %s block helper as a variable',
+            (helper) => {
+                expect(extractHandlebarsVariablePaths(
+                    `{{#${helper} customer.companyName}}{{customer.companyName}}{{/${helper}}}`,
+                )).toEqual(['customer.companyName']);
+            },
+        );
+
+        it('allows a known parameterless context block path', () => {
+            expect(extractHandlebarsVariablePaths(
+                '{{#customer.companyName}}shown{{/customer.companyName}}',
+            )).toEqual(['customer.companyName']);
+        });
+
+        it.each(['if', 'unless', 'each', 'with'])(
+            'rejects built-in %s without its required argument',
+            (helper) => {
+                expect(() => extractHandlebarsVariablePaths(
+                    `{{#${helper}}}hidden{{/${helper}}}`,
+                )).toThrow(`${helper} requires exactly one argument`);
+            },
+        );
+
+        it.each(['if', 'unless', 'each', 'with'])(
+            'rejects built-in %s with too many arguments',
+            (helper) => {
+                expect(() => extractHandlebarsVariablePaths(
+                    `{{#${helper} customer.firstName customer.lastName}}hidden{{/${helper}}}`,
+                )).toThrow(`${helper} requires exactly one argument`);
+            },
+        );
+    });
+
     it('ignores plain text with no Handlebars syntax', () => {
         expect(extractHandlebarsVariablePaths('Hello, no variables here.')).toEqual([]);
     });
@@ -36,6 +83,37 @@ describe('extractHandlebarsVariablePaths', () => {
     it('ignores @index/@key style data variables', () => {
         const paths = extractHandlebarsVariablePaths('{{#each items}}{{@index}}{{/each}}');
         expect(paths).not.toContain('@index');
+    });
+
+    describe('@data path coverage', () => {
+        it('normalizes a known @root path into the regular announcement allowlist', () => {
+            expect(extractHandlebarsVariablePaths('{{@root.customer.firstName}}')).toEqual([
+                'customer.firstName',
+            ]);
+        });
+
+        it('does not hide an unknown @root path from validation', () => {
+            expect(extractHandlebarsVariablePaths('{{@root.customer.typo}}')).toEqual([
+                'customer.typo',
+            ]);
+        });
+
+        it('records unknown @data variables so fail-closed validation rejects them', () => {
+            expect(extractHandlebarsVariablePaths('{{@secret}}')).toEqual(['@secret']);
+        });
+    });
+
+    describe('unsupported partial and decorator syntax', () => {
+        it.each([
+            ['partial', '{{> customer.firstName}}'],
+            ['partial block', '{{#> customer.firstName}}body{{/customer.firstName}}'],
+            ['decorator', '{{* inline "customer.firstName"}}'],
+            ['decorator block', '{{#*inline "customer.firstName"}}body{{/inline}}'],
+        ])('rejects %s nodes fail-closed', (_label, template) => {
+            expect(() => extractHandlebarsVariablePaths(template)).toThrow(
+                'Announcement templates do not support Handlebars partials or decorators',
+            );
+        });
     });
 
     // Codex independent review (2026-08-08): the AST walker only visited
@@ -59,7 +137,7 @@ describe('extractHandlebarsVariablePaths', () => {
 
         it('extracts a variable passed as a Hash pair value on a block helper', () => {
             const paths = extractHandlebarsVariablePaths(
-                '{{#with x=customer.fullname}}y{{/with}}',
+                '{{#with customer.firstName x=customer.fullname}}y{{/with}}',
             );
             expect(paths).toContain('customer.fullname');
         });
@@ -271,6 +349,90 @@ describe('assertAnnouncementContentIsSafeToSend', () => {
                 'OK',
                 '<mj-text>{{log value=customer.fullname}}</mj-text>',
             )).toThrow();
+        });
+
+        it.each([
+            ['unknown helper', '{{#unknownHelper}}hidden{{/unknownHelper}}', 'unknownHelper'],
+            ['unknown brand path', '{{#brand.typo}}hidden{{/brand.typo}}', 'brand.typo'],
+        ])('throws for a parameterless %s block', (_label, template, offendingPath) => {
+            expect(() => assertAnnouncementContentIsSafeToSend(
+                'OK',
+                `<mj-text>${template}</mj-text>`,
+            )).toThrow(new BadRequestException(
+                `Announcement references unsupported variables: ${offendingPath}`,
+            ));
+        });
+
+        it('throws for an unknown parameterless block in the subject', () => {
+            expect(() => assertAnnouncementContentIsSafeToSend(
+                '{{#unknownHelper}}hidden{{/unknownHelper}}',
+                '<mj-text>OK</mj-text>',
+            )).toThrow(new BadRequestException(
+                'Announcement references unsupported variables: unknownHelper',
+            ));
+        });
+
+        it.each(['if', 'unless', 'each', 'with'])(
+            'allows the built-in %s block helper with a known variable',
+            (helper) => {
+                expect(() => assertAnnouncementContentIsSafeToSend(
+                    'OK',
+                    `<mj-text>{{#${helper} customer.companyName}}shown{{/${helper}}}</mj-text>`,
+                )).not.toThrow();
+            },
+        );
+
+        it('allows a known parameterless context block', () => {
+            expect(() => assertAnnouncementContentIsSafeToSend(
+                'OK',
+                '<mj-text>{{#customer.companyName}}shown{{/customer.companyName}}</mj-text>',
+            )).not.toThrow();
+        });
+
+        it('rejects an unknown @root path instead of silently rendering it empty', () => {
+            expect(() => assertAnnouncementContentIsSafeToSend(
+                'OK',
+                '<mj-text>{{@root.customer.typo}}</mj-text>',
+            )).toThrow(new BadRequestException(
+                'Announcement references unsupported variables: customer.typo',
+            ));
+        });
+
+        it('allows a known @root path that exists in the real render context', () => {
+            expect(() => assertAnnouncementContentIsSafeToSend(
+                'OK',
+                '<mj-text>{{@root.customer.firstName}}</mj-text>',
+            )).not.toThrow();
+        });
+
+        it.each(['if', 'unless', 'each', 'with'])(
+            'fails closed before send when built-in %s has no argument',
+            (helper) => {
+                expect(() => assertAnnouncementContentIsSafeToSend(
+                    'OK',
+                    `<mj-text>{{#${helper}}}hidden{{/${helper}}}</mj-text>`,
+                )).toThrow(BadRequestException);
+            },
+        );
+
+        it.each(['if', 'unless', 'each', 'with'])(
+            'fails closed before send when built-in %s has too many arguments',
+            (helper) => {
+                expect(() => assertAnnouncementContentIsSafeToSend(
+                    'OK',
+                    `<mj-text>{{#${helper} customer.firstName customer.lastName}}hidden{{/${helper}}}</mj-text>`,
+                )).toThrow(BadRequestException);
+            },
+        );
+
+        it('rejects the inline-decorator partial bypass before send', () => {
+            const bypass = '{{#*inline "customer.firstName"}}' +
+                '{{customer.typo}}{{/inline}}{{> customer.firstName}}';
+
+            expect(() => assertAnnouncementContentIsSafeToSend(
+                'OK',
+                `<mj-text>${bypass}</mj-text>`,
+            )).toThrow(BadRequestException);
         });
     });
 });

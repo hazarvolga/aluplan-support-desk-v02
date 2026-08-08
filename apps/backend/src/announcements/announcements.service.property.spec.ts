@@ -311,6 +311,8 @@ describe('AnnouncementsService — Property 1: New logs have null readAt', () =>
                 fc.string({ minLength: 1, maxLength: 100 }), // title
                 fc.string({ minLength: 0, maxLength: 500 }),  // contentMjml
                 async (customers, title, contentMjml) => {
+                    fc.pre(isSafeToBroadcast('Test Subject', contentMjml));
+
                     const { mock: prismaMock, createdLogs } = buildPrismaMock();
                     const emailMock = buildEmailMock();
                     const { mock: gatewayMock } = buildGatewayMock();
@@ -414,6 +416,8 @@ describe('AnnouncementsService — Property 11: Excerpt is a bounded prefix of o
             fc.asyncProperty(
                 fc.string({ minLength: 0, maxLength: 2000 }),
                 async (contentMjml) => {
+                    fc.pre(isSafeToBroadcast('Test Subject', contentMjml));
+
                     const { mock: prismaMock } = buildPrismaMock();
                     const emailMock = buildEmailMock();
                     const { mock: gatewayMock, calls } = buildGatewayMock();

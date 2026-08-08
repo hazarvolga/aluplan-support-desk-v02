@@ -47,6 +47,16 @@ const KNOWN_BRAND_FIELDS = new Set([
 /** Top-level (no-prefix) paths that exist in the render context regardless of template. */
 const KNOWN_ROOT_PATHS = new Set(['unsubscribe_url']);
 
+/**
+ * Built-in block helpers supported by the announcement editor. A block path
+ * that is not one of these helpers is a context path and must pass through the
+ * same fail-closed allowlist as every other variable reference.
+ */
+const KNOWN_BLOCK_HELPERS = new Set(['if', 'unless', 'each', 'with']);
+
+/** Standard Handlebars iteration metadata that never resolves application data. */
+const KNOWN_SAFE_DATA_PATHS = new Set(['@index', '@key', '@first', '@last']);
+
 const BRACKET_PLACEHOLDER_PATTERN = /\[[\p{L}][\p{L}\p{N}\s]{0,60}\]/gu;
 
 function visitParamOrSubExpression(node: hbs.AST.Expression | undefined, onPath: (path: hbs.AST.PathExpression) => void): void {
@@ -75,15 +85,25 @@ function visitHash(hash: hbs.AST.Hash | undefined, onPath: (path: hbs.AST.PathEx
  *
  * Uses the real Handlebars parser instead of a regex so block helpers
  * (`{{#if x}}`), sub-expressions (`{{#if (lookup customer 'x')}}`), hash
- * arguments (`{{log value=customer.x}}`), partials, and comments are all
- * handled correctly rather than only the top-level mustache/block form.
+ * arguments (`{{log value=customer.x}}`) and comments are handled correctly.
+ * Partials and decorators are deliberately unsupported and rejected: they
+ * introduce a second executable template namespace that the announcement
+ * allowlist cannot safely validate in isolation.
  */
 export function extractHandlebarsVariablePaths(template: string): string[] {
     const ast = Handlebars.parse(template);
     const paths = new Set<string>();
 
     const recordPath = (path: hbs.AST.PathExpression) => {
-        if (path.data) return; // @index, @key, ...
+        if (path.data) {
+            if (KNOWN_SAFE_DATA_PATHS.has(path.original)) return;
+            if (path.original.startsWith('@root.')) {
+                paths.add(path.original.slice('@root.'.length));
+                return;
+            }
+            paths.add(path.original);
+            return;
+        }
         if (path.original === 'this' || path.original === '.') return;
         paths.add(path.original);
     };
@@ -105,6 +125,13 @@ export function extractHandlebarsVariablePaths(template: string): string[] {
             }
             case 'BlockStatement': {
                 const block = node as hbs.AST.BlockStatement;
+                if (KNOWN_BLOCK_HELPERS.has(block.path.original)) {
+                    if ((block.params ?? []).length !== 1) {
+                        throw new Error(`${block.path.original} requires exactly one argument`);
+                    }
+                } else {
+                    recordPath(block.path);
+                }
                 (block.params ?? []).forEach((param) => visitParamOrSubExpression(param, recordPath));
                 visitHash(block.hash, recordPath);
                 visit(block.program);
@@ -112,19 +139,14 @@ export function extractHandlebarsVariablePaths(template: string): string[] {
                 break;
             }
             case 'PartialStatement': {
-                const partial = node as hbs.AST.PartialStatement;
-                visitParamOrSubExpression(partial.name as hbs.AST.Expression, recordPath);
-                (partial.params ?? []).forEach((param) => visitParamOrSubExpression(param, recordPath));
-                visitHash(partial.hash, recordPath);
-                break;
+                throw new Error('Announcement templates do not support Handlebars partials or decorators');
             }
             case 'PartialBlockStatement': {
-                const partialBlock = node as hbs.AST.PartialBlockStatement;
-                visitParamOrSubExpression(partialBlock.name as hbs.AST.Expression, recordPath);
-                (partialBlock.params ?? []).forEach((param) => visitParamOrSubExpression(param, recordPath));
-                visitHash(partialBlock.hash, recordPath);
-                visit(partialBlock.program);
-                break;
+                throw new Error('Announcement templates do not support Handlebars partials or decorators');
+            }
+            case 'Decorator':
+            case 'DecoratorBlock': {
+                throw new Error('Announcement templates do not support Handlebars partials or decorators');
             }
             default:
                 break;
