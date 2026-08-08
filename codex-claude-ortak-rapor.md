@@ -4273,3 +4273,34 @@ Claude'un `edae3067` kapanış iddiaları kaynak kod, gerçek Handlebars davran�
 #### Karar ve Claude'dan sonraki turda istenecek doğrulama
 
 **Kişiselleştirilmiş/dinamik duyuru için NO-GO sürüyor.** Dar TDD düzeltmesinden sonra Claude şu üç regresyonu bağımsız üretmelidir: parametresiz unknown block/helper reddi; QUEUED + DELIVERED/BOUNCED eşlemesi; 200'den büyük backlog'da gerçek ilerleme/starvation olmaması. Runtime `AnnouncementEmailSchema` ve gerçek preview/broadcast çıktı paritesi de açık kapsam notları olarak korunmalıdır. Push/deploy/production yasağı değişmedi.
+
+---
+
+### 2026-08-08 — CODEX → CLAUDE — Duyuru e-postası nihai yerel düzeltme: `117526b1`, CODEX GO
+
+Ortak rapor append-only olarak güncellendi. §16'daki iki HIGH ve bir MEDIUM bulgu TDD ile kapatıldı; yol boyunca code/security review'un bulduğu `@root/@data`, helper aritesi, decorator/partial ve select/update TOCTOU açıkları da aynı fazda çözüldü.
+
+#### Son durum
+
+- Handlebars send guard; parameterless bilinmeyen block/helper, unknown `@root/@data`, partial/decorator ve yanlış built-in helper aritesini fail-closed reddediyor.
+- QUEUED kayıtlar `SENT/DELIVERED/BOUNCED/FAILED` sonuçlarının tamamını işliyor.
+- DB-side actionable relation filtresi + deterministik batch ile 200+ backlog starvation kapalı; 205 kayıt testi 200/5/0 drain'i kanıtlıyor.
+- Conditional `updateMany`, hem AnnouncementLog eski statüsünü hem EmailLog snapshot statüsünü kontrol ederek overlap/webhook yarışında eski sonuç yazılmasını önlüyor.
+- Broadcast PBT generator'ları yalnız güvenlik katmanından geçmesi gereken payload alanına sınırlandı; önceki failure seed ayrıca geçti.
+
+#### Kanıt
+
+- Ürün/test commit'i: `117526b1`.
+- Nihai odak: 3 suite, 108/108; geniş announcement/email: 9 suite, 159/159; PBT seed: 12/12.
+- Tam backend: 130/130 suite, 1305 passed, 1 skipped. Tam frontend: 39/39 dosya, 266/266 test.
+- İki typecheck, i18n, ops-safety 24/24, API 182/233 missing=0 raw-network=0, RBAC 12/19, migration 56/56, diff-check geçti.
+- Bağımsız code/security review: GO; Critical/High/Medium = 0/0/0.
+- Pre restore SHA-256 `65672cb3e2d924f516a30c1899383ff9ced96eb360aef39e35b055250a80a300`.
+- Post restore SHA-256 `2ddd2119a815eee6b72e4507fe5eb595c06bed9db2ed843b7de28d91ee09b095`.
+- Ayrıntılı kayıt: `.ai/issues/2026-08-08-announcement-email-template-dynamic-data-gap-bug-report.md` §17.
+
+#### Claude'dan bağımsız son kontrol isteği
+
+`117526b1` commit'ini önceki açıklamalara güvenmeden kaynak koddan doğrula. Özellikle unknown block, `@root` typo, inline decorator/partial PoC, built-in helper 0/2 argüman, QUEUED+DELIVERED/BOUNCED, 201. kayıt starvation, 205 kayıt 200/5/0 drain ve EmailLog status TOCTOU senaryolarını bağımsız çalıştır. Tam test/typecheck/i18n/contract kapılarını ve iki restore hash'ini doğrula; sonucu dedicated GAP raporunun §17 altına ve ortak raporun en altına append-only yaz.
+
+Önceden kabul edilmiş runtime announcement-schema ve byte-level preview/broadcast parity notları non-blocking olarak korunuyor. **Codex yerel teknik kararı GO'dur; push, tag-push, deploy ve canlı gönderim kullanıcı açıkça onaylamadan yasaktır.**

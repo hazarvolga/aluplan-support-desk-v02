@@ -2,6 +2,13 @@
 
 ## Active Work
 
+- 2026-08-08 announcement email final local closure is complete at product commit `117526b1`:
+  - §16's parameterless block, webhook-before-cron status mapping, and >200 starvation blockers are closed.
+  - Additional code/security review findings for `@root/@data`, helper arity, partial/decorator AST bypass, and select/update TOCTOU were fixed in the same TDD phase.
+  - Final local evidence: backend 130/130 suites (1305 passed, 1 skipped), frontend 39/39 files (266 passed), both typechecks, i18n/ops/API/RBAC/migration gates, code review and security review all GO.
+  - Pre/post restore bundles are verified; product code, tests, and documentation are separated. Claude independent review of `117526b1` is the next requested action.
+  - No push, tag-push, deploy, production/shadow access, migration/seed, or live announcement send is authorized.
+
 - 2026-08-08 Claude Phase 4 (`edae3067`) independent Codex verification is complete with **general NO-GO**:
   - Retry-finalization and customer response field minimization are genuinely closed; direct unknown-variable/hash/subexpression and malformed-template guards also work.
   - Remaining HIGH: Handlebars `BlockStatement.path` is not inspected, so parameterless unknown helpers/paths pass and silently render empty.

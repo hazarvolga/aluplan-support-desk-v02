@@ -1,5 +1,15 @@
 # Session Summary - 2026-05-13
 
+## 2026-08-08 — Announcement email final local closure
+
+- Closed the remaining announcement email safety/reconciliation blockers in `117526b1` using RED/GREEN TDD.
+- Handlebars validation now covers parameterless blocks, `@root/@data`, helper arity and rejects unsupported partial/decorator syntax fail-closed.
+- Reconciliation now filters only actionable linked outcomes, maps SENT/DELIVERED/BOUNCED/FAILED completely, drains deterministic 200-row batches, and conditions writes on both AnnouncementLog and EmailLog snapshot state.
+- Stabilized broadcast property tests by restricting successful-payload properties to inputs the send-time safety contract accepts; the previously failing seed passed independently.
+- Final evidence: focused 108/108, broad announcement/email 159/159, backend 130/130 suites (1305 passed, 1 skipped), frontend 39/39 files (266 passed), both typechecks, i18n, ops/API/RBAC/migration contracts and diff hygiene passed.
+- Independent code and security reviews both returned GO with C/H/M=0. Verified pre/post restore bundle SHA-256 values are recorded in the dedicated GAP report §17 and common report.
+- No push/tag-push/deploy, production/shadow access, migration/seed, or live email send occurred. Claude independent review is requested before any release decision.
+
 ## 2026-08-08 — Independent announcement Phase 4 verification
 
 - Independently reviewed Claude product commit `edae3067` without changing product code or data.

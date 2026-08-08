@@ -837,3 +837,47 @@ Bu doğrulama tamamlanana ve kullanıcı açık onay verene kadar kişiselleşti
 ### Karar
 
 **Genel karar: NO-GO.** `edae3067` önceki dört bulgunun önemli bölümünü gerçekten kapatıyor; ancak tam fail-closed Handlebars sözleşmesi ve webhook durum yarışı kapanmadı. Kişiselleştirilmiş/dinamik duyuru gönderimi açılmamalı. Sıradaki dar TDD düzeltmesi: (1) block path/helper allowlist'i, (2) QUEUED kayıtlar için `SENT/DELIVERED/BOUNCED/FAILED` eksiksiz durum eşlemesi, (3) DB tarafında uygun sonuca göre filtrelenen veya cursor ile ilerleyen batch modeli. Sonrasında yeniden Codex + Claude bağımsız doğrulaması gerekir.
+
+---
+
+## 17. CODEX nihai düzeltme ve yerel kapanış kaydı
+
+**Tarih:** 2026-08-08
+**Ürün commit'i:** `117526b1` (`fix: close announcement template safety gaps`)
+**Karar:** **CODEX YEREL GO** — §16'daki iki HIGH ve bir MEDIUM bulgu ile bu turdaki bağımsız incelemelerde bulunan ek AST/race açıkları kapandı. Push/deploy/canlı gönderim için bu kayıt izin değildir.
+
+### Kapatılan teknik sorunlar
+
+1. `BlockStatement.path` artık doğrulanıyor. Yalnız `if`, `unless`, `each`, `with` built-in helper olarak kabul ediliyor ve her biri tam bir argüman istiyor. Parametresiz bilinmeyen helper/context yolu fail-closed reddediliyor.
+2. `@root.*` yolları normal context yoluna çevrilip aynı allowlist'e sokuluyor; yalnız sabit güvenli Handlebars metadata alanları (`@index`, `@key`, `@first`, `@last`) yok sayılıyor. Bilinmeyen `@data` alanları reddediliyor.
+3. Announcement editöründe kullanılmayan `PartialStatement`, `PartialBlockStatement`, `Decorator` ve `DecoratorBlock` düğümleri açıkça fail-closed reddediliyor. Inline decorator + partial bypass PoC'si regresyon testine dönüştürüldü.
+4. QUEUED reconciliation yalnız bağlı EmailLog'u `SENT`, `DELIVERED`, `BOUNCED` veya `FAILED` olan kayıtları DB tarafında seçiyor. Eşleme `SENT/DELIVERED → SENT`, `BOUNCED → BOUNCED`, `FAILED → FAILED` şeklinde tamamlandı.
+5. Late-bounce pass yalnız gerçekten `EmailLog=BOUNCED` olan yakın tarihli SENT kayıtları seçiyor. Her iki sorgu deterministik sıralı ve 200 kayıtla sınırlı; her seçilen kayıt sorgu predicate'inden çıktığı için starvation oluşmuyor.
+6. Her update `updateMany` ile hem AnnouncementLog'un beklenen eski statüsünü hem seçilen EmailLog snapshot statüsünü koşulluyor. Cron overlap veya webhook select/update yarışı eski sonucu yazamıyor ve sayaç yalnız gerçekten değişen satırları sayıyor.
+7. Mevcut property-based broadcast testlerindeki iki generator, testin konusu olan başarılı broadcast payload'ını ölçmek üzere `isSafeToBroadcast()` önkoşuluna bağlandı. Daha önce görülen seed `35568478` ayrıca tekrar çalıştırıldı ve geçti.
+
+### TDD ve doğrulama kanıtı
+
+- İlk RED: iki odak suite **17 hata** ile block-path, eksik DELIVERED/BOUNCED eşlemesi ve starvation sorunlarını yeniden üretti.
+- Güvenlik/kod incelemelerinin ek RED'leri: `@root/@data`, helper aritesi, decorator/partial bypass ve select/update TOCTOU senaryoları önce başarısız oldu, sonra GREEN'e döndü.
+- Nihai odak: **3 suite, 108/108 test**.
+- Geniş announcement/email odak seti: **9 suite, 159/159 test**; PBT failure seed ayrıca **12/12** geçti.
+- Tam backend: **130/130 suite**, **1305 passed**, **1 skipped**, **0 failed**.
+- Tam frontend: **39/39 dosya**, **266/266 test**.
+- Backend/frontend typecheck, TR/EN/DE i18n, ops-safety **24/24**, API contract `frontend=182/openapi=233/missing=0/raw-network=0`, RBAC `roles=12/permissions=19`, migration manifest **56/56** ve `git diff --check`: geçti.
+- Bağımsız code-review ve security-review: **GO**, Critical/High/Medium = **0/0/0**.
+- GitNexus CLI bu shell'de mevcut değildi; Graphify salt-okunur etki sorgusu çalıştırıldı. Bu eksiklik ürün/test kapılarını etkilemedi.
+
+### Restore point'ler
+
+- Pre: `restore/pre-announcement-final-closure-20260808-b6110a49`; bundle `.private-data/restore-points/pre-announcement-final-closure-b6110a49.bundle`; SHA-256 `65672cb3e2d924f516a30c1899383ff9ced96eb360aef39e35b055250a80a300`.
+- Post: `restore/post-announcement-final-closure-20260808-117526b1`; bundle `.private-data/restore-points/post-announcement-final-closure-117526b1.bundle`; SHA-256 `2ddd2119a815eee6b72e4507fe5eb595c06bed9db2ed843b7de28d91ee09b095`.
+- İki bundle `git bundle verify` kontrolünden geçti ve tag'ler beklenen commitlere çözüldü. Tag-push yapılmadı.
+
+### Kapsam kararı ve Claude doğrulama isteği
+
+§16'daki üç release blokeri ve bu turda bulunan türev güvenlik açıkları Codex tarafında kapalıdır. Önceden kabul edilmiş iki non-blocking kapsam notu — genel `TemplateService.compile()` katmanına announcement-specific Zod şemasının bağlanmaması ve MJML/HTML preview ile broadcast çıktısının byte-level eşitlik testi — bu committe mimari olarak genişletilmedi; kanonik customer context, send-time AST/placeholder guard ve gerçek broadcast testleri korunuyor.
+
+Claude bağımsız olarak özellikle şunları yeniden üretmelidir: unknown parameterless block, `@root` typo, decorator/partial PoC, built-in helper yanlış aritesi, QUEUED+DELIVERED/BOUNCED eşlemesi, 201. kayıt starvation senaryosu, 205 kayıt 200/5/0 drain ve select/update arasında EmailLog statüsü değişimi. `117526b1` ile pre/post restore hash'lerini ve yukarıdaki tüm kapıları bağımsız doğrulamalıdır.
+
+**Yerel geliştirme konusu Codex açısından kapalıdır.** Kullanıcının ayrıca açık karar vermediği hiçbir push, deploy, tag-push veya canlı duyuru gönderimi yapılmayacaktır.
