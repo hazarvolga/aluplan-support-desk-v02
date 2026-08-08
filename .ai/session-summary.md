@@ -4001,6 +4001,15 @@ Maintenance rule:
 - Verification: backend 125/125 suites (1168 passed, 1 skipped), frontend 38/38 files (262 passed), targeted backend 33/33, both typechecks, i18n, ops 24/24, API contract, RBAC contract, migration manifest/integrity and diff hygiene passed. Independent code/security reviews returned GO with no Critical/High/Medium findings.
 - Restore: `restore/post-review-center-phase-a-20260807-69655f1c`; complete-history bundle `.private-data/restore-points/post-review-center-phase-a-69655f1c.bundle`, SHA-256 `466460f32cfb0bddf5a3adc478dd4f64c95f71bf18585a84aa12fb549f2a5c80`.
 - No production/live/shadow access or write, DB mutation, migration/seed, push, tag push, deploy or publish. Global Prisma soft-delete Aşama B remains NO-GO pending a separate full inventory and user approval.
+
+## 2026-08-08 - Production Release A.1.2 local closure
+
+- Product/tooling commit `64c5d2bc` hardens the operator backup path with explicit opt-in, PG17 custom-format dump validation, checksums, private artifact boundaries, lock and symlink protections, S3 conditional no-clobber upload, verified metadata and READY-last publication.
+- The legacy in-process scheduled/API backup implementation is quarantined behind a fixed 503 response; exception and public-health responses no longer expose unsafe status, query, audit or driver details.
+- Final evidence: backup `44/44`, ops `87/87`, backend `132/132` suites (`1311 passed`, `1 skipped`), frontend `42/42` files (`308 passed`), both typechecks, i18n, API/RBAC and migration `56/56`; independent TDD/code/security reviews GO with C/H/M `0/0/0`.
+- Existing Cloudflare R2 application bucket `aluplan-support-desk` (`402` objects, `37.42 GB` observed) was not written, moved, renamed or deleted. `aluplancoolify` is unrelated. Proposed DB-only bucket `aluplan-support-desk-db-backups` is not yet created/configured.
+- Verified restore point: `restore/post-release-a12-20260808-64c5d2bc`; bundle SHA-256 `a6b1f98e8828d3a6ec9b5f01e2887408eb42832d777699eb3aba9d147b67c0cd`.
+- Production remains NO-GO until A.1.3 exact-image, real Cloudflare R2 round-trip and disposable PG17+pgvector restore evidence. No live DB/R2/SSH action, migration, seed, push, tag-push or deploy occurred.
 - Claude independently re-ran the source, local read-only DB, restore-integrity, targeted/full test, typecheck, i18n and contract checks and returned GO with no contradicted claim or count deviation. Aşama A is therefore closed; work pauses here.
 - Root `FIRST-READ.md` is the shared Codex/Claude account-switch and new-session entry point. It preserves the canonical directory, read order, archive reference, local-only boundaries, Aşama A closure, and Aşama B NO-GO gate.
 ## 2026-08-08 - Announcement email preference BUG-05 closure

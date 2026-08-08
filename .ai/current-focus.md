@@ -402,3 +402,12 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Verification: focused planner tests 19/19, combined operations-safety 43/43, migration manifest 56/56, diff-check clean; independent code and security reviews GO with Critical/High/Medium = 0/0/0.
 - Restore: `restore/post-release-a11-20260808-8fbdc0b1`; bundle `.private-data/restore-points/post-release-a11-20260808-8fbdc0b1.bundle`, SHA-256 `ecb15b14da121665c3d30c94df13784b954c3b939b0ebb39b724c3a2250eb9af`, complete history verified.
 - Next safe phase is local-only A.1.2: fail-closed custom-format backup tooling and tests. No production DB query, SSH action, migration, seed, push, tag-push or deploy occurred in A.1.1.
+
+## Active Focus - 2026-08-08 Production Release Faz A.1.2
+
+- Yerel fail-closed backup sözleşmesi `64c5d2bc` ile tamamlandı: explicit opt-in, PG17 custom dump, archive doğrulaması, SHA-256, private path/lock/symlink/ownership kontrolleri, READY-last ve S3 no-clobber/owned-cleanup.
+- Eski uygulama-içi cron/shell/plain-SQL backup yolu karantinaya alındı; ADMIN backup endpoint'i sabit 503 döndürüyor. Hata filtresi ve public health yanıtlarındaki hassas ayrıntı sızıntıları kapatıldı.
+- Kanıt: backup `44/44`, ops `87/87`, backend `132/132` suite (`1311 passed`, `1 skipped`), frontend `42/42` dosya (`308 passed`), typecheck/i18n/API/RBAC/migration `56/56`; TDD/code/security review GO, C/H/M `0/0/0`.
+- Mevcut R2 `aluplan-support-desk` uygulama bucket'ındaki `402` nesne / `37.42 GB` veri değişmedi. `aluplancoolify` kapsam dışı. Ayrı DB backup hedefi önerisi `aluplan-support-desk-db-backups`; henüz oluşturulmadı.
+- Restore: `restore/post-release-a12-20260808-64c5d2bc`; bundle SHA-256 `a6b1f98e8828d3a6ec9b5f01e2887408eb42832d777699eb3aba9d147b67c0cd`.
+- Production hâlâ NO-GO. Sıradaki güvenli faz A.1.3: exact image + gerçek Cloudflare R2 conditional round-trip + disposable PG17/pgvector restore drill. Canlı erişim/yazım, migration/seed, push/tag-push/deploy yok.

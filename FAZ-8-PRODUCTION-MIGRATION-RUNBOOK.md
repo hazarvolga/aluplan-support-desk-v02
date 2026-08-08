@@ -353,3 +353,42 @@ Yalnız DB restore etmek kabul edilmez.
 
 Bu fazların tamamı bağımsız test/review ve ayrıca kullanıcı GO’su almadan
 production salt-okunur envanterden cutover aşamasına ilerlenmez.
+
+## 12. 2026-08-08 yerel durum eki — A.1.2 tamamlandı
+
+Faz A.1.2 yalnız yerel kapsamda `64c5d2bc` commit'iyle tamamlandı. Kanonik
+backup yolu artık açık opt-in gerektiren PostgreSQL 17 custom-format dump,
+`--no-owner --no-privileges`, arşiv doğrulaması, SHA-256, mode `0600`,
+READY-last yayınlama ve fail-closed S3 aktarım sözleşmesi kullanır. Path,
+symlink, ownership, lock, endpoint, collision ve yalnız bu çalıştırmanın
+oluşturduğu artifact'ları temizleme sınırları testlerle kilitlidir.
+
+Eski uygulama-içi cron/API backup yolu güvenli bir yedek kanıtı üretmediği için
+devre dışıdır; ADMIN endpoint'i sabit `503 / DATABASE_BACKUP_DISABLED` döndürür.
+Hata filtresinde durum kodu, validation dizisi, sorgu/fragment ve audit
+redaksiyonu; public health yanıtlarında da yalnız `up/down` görünürlüğü
+korunur.
+
+Yerel kanıtlar: backup safety `44/44`, operations safety `87/87`, backend
+`132/132` suite (`1311 passed`, `1 skipped`, `0 failed`), frontend `42/42`
+dosya (`308/308`), iki typecheck, i18n, API/RBAC sözleşmeleri ve migration
+manifesti `56/56` geçti. TDD, code review ve security review ayrı ayrı GO verdi;
+Critical/High/Medium `0/0/0`.
+
+Mevcut Cloudflare R2 `aluplan-support-desk` bucket'ı uygulama dosyalarının
+kanonik alanıdır; gözlenen `402` nesne ve `37.42 GB` veri bu fazda taşınmadı,
+silinmedi, yeniden adlandırılmadı veya yazılmadı. `aluplancoolify` kapsam
+dışıdır. Veritabanı yedekleri için önerilen ayrı bucket adı
+`aluplan-support-desk-db-backups` olup henüz oluşturulmadı veya
+yapılandırılmadı.
+
+Restore point: `restore/post-release-a12-20260808-64c5d2bc`; bundle
+`.private-data/restore-points/post-release-a12-20260808-64c5d2bc.bundle`,
+SHA-256 `a6b1f98e8828d3a6ec9b5f01e2887408eb42832d777699eb3aba9d147b67c0cd`.
+Bundle tam geçmiş ve tag/HEAD eşitliği doğrulandı.
+
+Bu sonuç production GO değildir. A.1.3'te exact backend image smoke,
+Cloudflare R2 üzerinde ayrı DB-only bucket ile conditional upload/download/hash
+kanıtı ve izole PostgreSQL 17 + pgvector restore tatbikatı tamamlanmadan
+cutover yapılmaz. Bu fazda canlı DB/R2/SSH erişimi veya yazımı, migration,
+seed, push, tag-push ve deploy yapılmadı.
