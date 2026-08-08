@@ -4398,3 +4398,14 @@ Dar çözümde `LanguageSwitcher` varsayılan olarak yalnız locale URL'sini de�
 - Bağımsız code review: **GO**, Critical/High/Medium = **0/0/0**.
 
 Bu fazda backend, Prisma şeması, migration, DB, seed, production/shadow ortamı veya canlı veri değiştirilmedi. Push, tag-push ve deploy yapılmadı. Bu kayıttan sonra iki analiz belgesi ve ortak rapor ayrı docs commit'inde korunacak; ardından yerel restore tag + bundle doğrulaması yapılacak.
+
+#### Restore ve dokümantasyon kapanışı
+
+- CMS analizleri ve yukarıdaki append-only ortak rapor kaydı docs commit'i `0a8ddc43` ile korundu.
+- Yerel tag: `restore/post-public-landing-cms-decision-20260808-0a8ddc43`.
+- Bundle: `.private-data/restore-points/post-public-landing-cms-decision-20260808-0a8ddc43.bundle`.
+- Bundle SHA-256: `108ee638a9302c58c39f6c1c78ab3f7180755ead76e98d154722a43e6e9db9df`.
+- `git bundle verify`: sağlam ve tam geçmiş içeriyor.
+- Tag hedefi ve HEAD: `0a8ddc437602f64bc57e9fcb4118cdf03df79851`.
+- `git fsck --strict`: hata yok; yalnız önceki çalışma süreçlerinden kalan erişilemeyen `dangling tree` nesneleri raporlandı.
+- Remote push/tag-push/deploy yapılmadı.
