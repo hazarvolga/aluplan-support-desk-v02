@@ -496,3 +496,68 @@ Yalnız bu doğrulama bölümü eklendi. Ürün kodu, test dosyası, migration, 
 8. Tam test/typecheck/i18n/ops-safety/api-contract kapılarını bağımsız çalıştır.
 
 Bu doğrulama tamamlanana kadar BUG-01/BUG-04/GAP-06/07/08 fazlarından hiçbirine geçilmemeli; kişiselleştirilmiş duyuru NO-GO kararı aynen sürer.
+
+---
+
+## 11. Claude Faz 1 kapanışı (uygulayıcı olarak) — bağımsız Codex kontrolü isteniyor
+
+**Tarih:** 2026-08-08 · **Kapsam:** BUG-01 (subject render), GAP-06 (kalan bracket placeholder taraması), GAP-03'ün fail-closed unknown-variable kısmı.
+
+### Yapılan değişiklikler
+
+1. **Yeni dosya** `apps/backend/src/announcements/announcement-content-safety.ts`:
+   - `extractHandlebarsVariablePaths(template)` — gerçek Handlebars AST'ını (`Handlebars.parse`) kullanarak, regex değil, template içindeki tüm `{{...}}` değişken yollarını çıkarıyor; block helper adlarını (`if`/`each`), `@index` gibi data değişkenlerini ve `this`'i hariç tutuyor.
+   - `findUnknownCustomerVariables(paths)` — yalnız `customer.*` öneki taşıyan yolları, kanonik 7 alan listesiyle (`firstName/lastName/fullName/companyName/customerNo/email/userEmail`) karşılaştırıp bilinmeyenleri döndürüyor. `brand.*`, `unsubscribe_url` gibi diğer alanlara dokunmuyor.
+   - `findLeftoverBracketPlaceholders(text)` — `[Tarih]`, `[Şirket Adı]` tarzı kalıntı placeholder'ları buluyor.
+   - `assertAnnouncementContentIsSafeToSend(subject, contentMjml)` — yukarıdaki ikisini birleştirip herhangi biri bulunursa `BadRequestException` fırlatıyor.
+   - `renderAnnouncementSubject(subject, context)` — subject'i gövdeyle aynı customer context'iyle, aynı `noEscape:true` ayarıyla Handlebars üzerinden render ediyor.
+2. `announcements.service.ts:broadcast()`:
+   - `assertAnnouncementContentIsSafeToSend(...)` çağrısı, `announcement` bulunduktan hemen sonra, **durum `SENDING`'e çevrilmeden önce** ekleniyor — reddedilen bir broadcast hiçbir DB durumunu değiştirmiyor, hiçbir müşteri sorgulanmıyor.
+   - Döngü içinde `subject: announcement.subject` → `subject: renderAnnouncementSubject(announcement.subject, customerContext)` — her alıcı için kendi context'iyle render ediliyor.
+3. `email.processor.ts`, `TemplateService.compile()` ve diğer `enqueueEmail` çağıranları (`customers.service.ts`, `ai-reporting.service.ts`) **dokunulmadı** — kapsam bilinçli olarak yalnız `announcements.service.ts` ile sınırlı tutuldu.
+
+### TDD kanıtı
+
+- `announcement-content-safety.spec.ts`: modül dosyası oluşturulmadan önce test çalıştırıldı → `Cannot find module` (RED, gerçek). İmplementasyon sonrası **21/21 GREEN** ilk denemede.
+- `announcements.service.spec.ts`'e eklenen 5 entegrasyon testi gerçek `broadcast()` akışına karşı çalışıyor: subject render, subject'te/content'te bracket placeholder reddi, content'te bilinmeyen değişken reddi, temiz içeriğin sorunsuz geçmesi. Placeholder/unknown-variable testlerinde ayrıca `enqueueEmail`'in hiç çağrılmadığı ve `prisma.announcement.update`/`customerProfile.findMany`'nin hiç tetiklenmediği (yani durumun SENDING'e çevrilmediği) doğrulanıyor.
+
+### Bir TypeScript tip sorunu ve düzeltmesi (şeffaflık için not)
+
+İlk yazımda `import type { AST as HandlebarsAST } from 'handlebars'` ile tip hatası aldım — `@types/handlebars`, AST tiplerini (`Node`, `Program`, `PathExpression`, ...) modülün export'u olarak değil, ayrı bir global ambient namespace (`hbs`) altında tanımlıyor. `tsc --noEmit` bunu hemen yakaladı (9 hata); `hbs.AST.*` global tip referanslarına geçilerek düzeltildi, testler değişmeden geçmeye devam etti. Bu, typecheck'in neden her fazın zorunlu bir doğrulama adımı olduğunun somut bir örneği.
+
+### Doğrulama kanıtı
+
+- Backend tam suite: **127/127 suite**, **1207 passed**, **1 skipped**, **1208 total**.
+- Frontend tam suite: **39/39 dosya**, **266/266 test** (bu faz frontend'e dokunmadı, sanity kontrolü).
+- Backend/frontend `tsc --noEmit`: 0 hata (Handlebars tip düzeltmesinden sonra).
+- `pnpm i18n:check`: tr/en/de tam.
+- `pnpm test:ops-safety`: 24/24.
+- `pnpm api:verify-frontend-contract`: `frontend=182, openapi=233, missing=0, raw-network=0`.
+- `git diff --check`: temiz.
+
+### Commit ve restore point
+
+- Ürün+test commit'i: `df724734` — `fix: render announcement subject and fail closed on unsafe content (BUG-01, GAP-06, GAP-03)`.
+- Pre-work (Faz 1 öncesi): tag `restore/pre-announcement-phase1-20260808-b6ed33a2`; bundle SHA-256 `fe0fa12240b2bcb127e53c6fc8a1406f08025aed8aecbafaf54372139142ed56`.
+- Post-work: tag `restore/post-announcement-phase1-20260808-df724734`; bundle SHA-256 `cb31cf35ef8cafeba0cfc422a0691b517a4f52a1b685bd7e5ce38a28fcc1d8f3`.
+- `git bundle verify` + `git fsck --strict`: kritik hata yok.
+- Push, tag-push, deploy yapılmadı; production/shadow/canlı bağlantı, migration/seed yok.
+
+### Hâlâ açık
+
+- **BUG-04**: `AnnouncementLog` erken `SENT` işaretlemesi ve `emailLogId` bağının kurulmaması — Faz 2.
+- **GAP-08**: `contentMjml` adlandırması — Faz 3, opsiyonel/düşük öncelik.
+- **Kişiselleştirilmiş/dinamik duyuru için NO-GO aynen sürüyor** — Faz 2 kapanıp Codex bağımsız GO vermeden ve kullanıcı onayı olmadan değişmez.
+
+### Codex'ten istenen bağımsız kontrol
+
+1. `announcement-content-safety.ts`'i kaynak koddan oku: `extractHandlebarsVariablePaths`'in gerçekten Handlebars AST'ını kullandığını (regex değil), block helper adlarını path saymadığını doğrula.
+2. `findUnknownCustomerVariables`'ın yalnız `customer.*` önekini kontrol ettiğini, `brand.*`/`unsubscribe_url`'a dokunmadığını doğrula.
+3. `assertAnnouncementContentIsSafeToSend`'in `broadcast()` içinde durum `SENDING`'e çevrilmeden **önce** çağrıldığını; reddedilen bir çağrıda hiçbir DB yazımı/müşteri sorgusu olmadığını kod okuyarak teyit et.
+4. `renderAnnouncementSubject`'in gerçekten her alıcı için ayrı ayrı, doğru customer context'iyle çağrıldığını doğrula.
+5. `email.processor.ts`, `TemplateService.compile()`, `customers.service.ts`, `ai-reporting.service.ts`'in bu commit'te değişmediğini `git diff` ile doğrula.
+6. Yeni testleri bağımsız çalıştır; özellikle placeholder/unknown-variable red testlerinde `enqueueEmail`'in hiç çağrılmadığını teyit et.
+7. Tam backend/frontend suite, typecheck, i18n, ops-safety, api-contract kapılarını bağımsız çalıştır.
+8. Restore point hash'lerini bağımsız hesapla; diff kapsamının yalnız `apps/backend/src/announcements/` ile sınırlı olduğunu doğrula.
+
+Bu kontrol tamamlanmadan Faz 2'ye (BUG-04) geçilmeyecek.

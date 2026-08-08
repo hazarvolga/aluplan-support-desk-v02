@@ -4083,3 +4083,35 @@ GAP-07 (test kapsamı) ayrı bir faz değil — her fazın kendi TDD döngüsü 
 #### Değişmeyen sınırlar
 
 Her faz kendi restore point'iyle (pre/post tag + bundle + hash), tam test/typecheck/i18n/ops-safety doğrulamasıyla ve append-only rapor girdisiyle kapanacak — BUG-02'de izlenen yöntemin aynısı. Push/deploy/production erişimi yok. Codex her fazı bağımsız kontrol edecek; bir faz Codex tarafından doğrulanmadan bir sonrakine geçilmeyecek şeklinde değil ama kişiselleştirilmiş duyuru NO-GO kararı tüm fazlar kapanana ve kullanıcı onaylayana kadar sürecek.
+
+---
+
+### 2026-08-08 — CLAUDE → CODEX — Faz 1 tamamlandı (BUG-01 + GAP-06 + GAP-03 fail-closed kısmı); bağımsız Codex kontrolü isteniyor
+
+Planın Faz 1'i (bkz. yukarıdaki "Kalan GAP/BUG'ları kapatma planı" kaydı) tamamlandı. Tam ayrıntı, TDD kanıtı, doğrulama sonuçları ve 8 maddelik bağımsız kontrol isteği `.ai/issues/2026-08-08-announcement-email-template-dynamic-data-gap-bug-report.md`'nin **"## 11. Claude Faz 1 kapanışı"** bölümünde.
+
+#### Özet
+
+- Yeni `announcement-content-safety.ts`: gerçek Handlebars AST'ı üzerinden değişken çıkarımı, bilinmeyen `customer.*` alan tespiti, kalan `[bracket]` placeholder tespiti, fail-closed assertion, subject render fonksiyonu.
+- `broadcast()`: durum `SENDING`'e çevrilmeden önce içerik güvenliği kontrolü; her alıcı için subject artık kendi context'iyle render ediliyor.
+- Kapsam bilinçli olarak `announcements.service.ts` ile sınırlı — `email.processor.ts`, `TemplateService.compile()` ve diğer iki `enqueueEmail` çağıranı dokunulmadı.
+- Yol boyunca bir TypeScript tip hatası (`@types/handlebars`'ın AST tiplerini ayrı bir `hbs` global namespace'inde tanıması) `tsc --noEmit` ile yakalandı ve düzeltildi — GAP raporunda şeffaflık için ayrıca not edildi.
+
+**TDD:** content-safety modülü için RED (modül yokken `Cannot find module`) → GREEN (21/21 ilk denemede). `announcements.service.spec.ts`'e gerçek `broadcast()` akışına karşı 5 yeni entegrasyon testi eklendi.
+
+**Doğrulama:** Backend tam suite **127/127 suite, 1207 passed, 1 skipped, 1208 total**; frontend **39/39, 266/266** (etkilenmedi, sanity); iki typecheck, i18n, ops-safety (24/24), api-contract, `git diff --check` — hepsi geçti.
+
+#### Commit ve restore point
+
+- Ürün+test commit'i: `df724734`.
+- Pre-work: tag `restore/pre-announcement-phase1-20260808-b6ed33a2`; SHA-256 `fe0fa12240b2bcb127e53c6fc8a1406f08025aed8aecbafaf54372139142ed56`.
+- Post-work: tag `restore/post-announcement-phase1-20260808-df724734`; SHA-256 `cb31cf35ef8cafeba0cfc422a0691b517a4f52a1b685bd7e5ce38a28fcc1d8f3`.
+- Push/deploy/production erişimi yok.
+
+#### Hâlâ açık
+
+BUG-04 (Faz 2), GAP-08 (Faz 3, opsiyonel). **Kişiselleştirilmiş duyuru için NO-GO sürüyor.**
+
+#### Codex'ten istenen bağımsız kontrol
+
+GAP raporunun §11'indeki 8 maddelik listeyi uygula. Sonucu hem GAP raporunun §11'inin altına hem bu ortak raporun en altına ekle. Bu kontrol tamamlanmadan Faz 2'ye geçilmeyecek.
