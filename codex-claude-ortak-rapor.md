@@ -4057,3 +4057,29 @@ Bu kayıt append-only olarak dosyanın en altına eklenmiştir; üstteki tarihse
 #### Codex'ten istenen bağımsız kontrol
 
 GAP raporundaki §10'daki 8 maddelik listeyi uygula (kaynak kod okuması, testlerin gerçekten iddia edilen davranışı ölçtüğünün teyidi, restore point hash bağımsız hesabı, diff kapsamı kontrolü, tam test/typecheck/i18n/ops-safety/api-contract bağımsız çalıştırma). Sonucu hem GAP raporunun §10'unun altına hem bu ortak raporun en altına ekle. Bu kontrol tamamlanmadan BUG-01/BUG-04/GAP-06/07/08 fazlarına geçilmemeli.
+
+---
+
+### 2026-08-08 — CLAUDE — Kalan GAP/BUG'ları kapatma planı (kullanıcı onaylı, faz faz)
+
+Kullanıcı, `.ai/issues/2026-08-08-announcement-email-template-dynamic-data-gap-bug-report.md`'de açık kalan maddelerin (BUG-01, BUG-04, GAP-03 kalanı, GAP-06, GAP-07 kalanı, GAP-08) sırayla, faz faz kapatılmasını istedi. Bu kayıt yalnız planı sabitliyor; her fazın kendi TDD/restore point/doğrulama kaydı ayrıca eklenecek.
+
+#### Planlanan faz sırası
+
+**Faz 1 — Broadcast öncesi içerik güvenliği (BUG-01 + GAP-06 + GAP-03'ün fail-closed kısmı):**
+- Subject'i, gövdenin kullandığı aynı `buildAnnouncementEmailContext()` context'iyle Handlebars üzerinden render et. Kapsam yalnız `announcements.service.ts` içinde kalacak — `email.processor.ts`'in genel `subject || compiled.subject` önceliği ve diğer template'lerin (ticket, sistem) subject akışı **değiştirilmeyecek** (kod taraması: `enqueueEmail` yalnız `customers.service.ts`, `ai-reporting.service.ts` ve `announcements.service.ts`'ten çağrılıyor; ikisi bu değişiklikten etkilenmeyecek).
+- Broadcast öncesi kalan `[bracket]` placeholder taraması (subject + content) — varsa fail-closed reddet.
+- Broadcast öncesi bilinmeyen `{{...}}` Handlebars değişkeni taraması (yalnız tanınan `customer.*`/`brand.*`/`unsubscribe_url` alanları serbest) — varsa fail-closed reddet.
+
+**Faz 2 — BUG-04 (AnnouncementLog ↔ EmailLog bağlantısı ve gerçek durum):**
+- `enqueueEmail(): Promise<void>` → `Promise<string>` (zaten üretilen `draftLog.id`'yi döndürsün).
+- `AnnouncementLog.emailLogId` gerçekten bağlansın.
+- İlk durum `SENT` yerine kuyruğa alındığı anı doğru yansıtan bir durumla (ör. `QUEUED`) başlasın; gerçek `SENT`/`FAILED` ayrımı processor sonucundan gelsin (kesin mekanizma Faz 2 başında araştırılacak — `EmailProcessor`'ın `EmailLog` durumunu nasıl güncellediği incelenip aynı desen `AnnouncementLog`'a uygulanacak).
+
+**Faz 3 — GAP-08 (opsiyonel, düşük öncelik):** `contentMjml` alan adının DTO seviyesinde netleştirilmesi; yalnız yukarıdaki fazlar bittikten sonra, kullanıcı isterse.
+
+GAP-07 (test kapsamı) ayrı bir faz değil — her fazın kendi TDD döngüsü zaten yeni testler ekleyecek.
+
+#### Değişmeyen sınırlar
+
+Her faz kendi restore point'iyle (pre/post tag + bundle + hash), tam test/typecheck/i18n/ops-safety doğrulamasıyla ve append-only rapor girdisiyle kapanacak — BUG-02'de izlenen yöntemin aynısı. Push/deploy/production erişimi yok. Codex her fazı bağımsız kontrol edecek; bir faz Codex tarafından doğrulanmadan bir sonrakine geçilmeyecek şeklinde değil ama kişiselleştirilmiş duyuru NO-GO kararı tüm fazlar kapanana ve kullanıcı onaylayana kadar sürecek.
