@@ -29,25 +29,70 @@ export class GlobalExceptionFilter implements ExceptionFilter {
                 ? exception.getStatus()
                 : HttpStatus.INTERNAL_SERVER_ERROR;
 
+        const isHttpException = exception instanceof HttpException;
         const message =
-            exception instanceof HttpException
+            isHttpException
                 ? exception.getResponse()
-                : (exception as Error).message || 'Internal server error';
+                : 'Internal server error';
 
+        const structuredMessage =
+            typeof message === 'object' && message !== null
+                ? (message as Record<string, unknown>)
+                : null;
+        const responseCode =
+            typeof structuredMessage?.code === 'string' &&
+                /^[A-Z][A-Z0-9_]{1,63}$/.test(structuredMessage.code)
+                ? structuredMessage.code
+                : null;
+        const responseMessageArray =
+            Array.isArray(structuredMessage?.message) &&
+                structuredMessage.message.length > 0 &&
+                structuredMessage.message.every((item) => typeof item === 'string')
+                ? [...structuredMessage.message]
+                : null;
+        const responseMessage =
+            !isHttpException
+                ? 'Internal server error'
+                : typeof structuredMessage?.message === 'string'
+                ? structuredMessage.message
+                : responseMessageArray
+                    ? responseMessageArray
+                : typeof message === 'string'
+                    ? message
+                    : 'Internal server error';
+        const responseError =
+            typeof structuredMessage?.error === 'string'
+                ? structuredMessage.error
+                : null;
+
+        const rawRequestUrl = httpAdapter.getRequestUrl(request);
+        const responsePath =
+            typeof rawRequestUrl === 'string'
+                ? rawRequestUrl.split(/[?#]/, 1)[0] || '/'
+                : '/';
         const responseBody = {
             statusCode: httpStatus,
             timestamp: new Date().toISOString(),
-            path: httpAdapter.getRequestUrl(request),
-            message: typeof message === 'object' ? (message as any).message : message,
-            error: typeof message === 'object' ? (message as any).error : null,
+            path: responsePath,
+            message: responseMessage,
+            error: responseError,
+            ...(responseCode ? { code: responseCode } : {}),
+        };
+        const auditMessage = Array.isArray(responseMessage)
+            ? responseMessage.join('; ')
+            : responseMessage;
+        const sanitizedError = {
+            message: isHttpException
+                ? `HTTP exception (${httpStatus})`
+                : 'Unhandled application error',
         };
 
         // Log the error using the centralized service (persists to AuditLog)
         try {
             await this.errorLogger.logError({
                 action: 'api_exception',
-                message: responseBody.message,
-                error: exception,
+                message: auditMessage,
+                error: sanitizedError,
                 actorId: request.user?.id,
                 entityType: 'API',
                 metadata: {

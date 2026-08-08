@@ -31,9 +31,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 # Playwright/Chromium dependencies for Alpine
 RUN apk add --no-cache \
+    bash \
+    aws-cli \
     openssl \
     fontconfig \
-    postgresql-client \
+    postgresql17-client \
     curl \
     chromium \
     nss \
@@ -70,6 +72,7 @@ COPY --from=builder /app/packages/database/prisma.config.ts ./packages/database/
 COPY --from=builder /app/packages/database/prisma.config.js ./packages/database/
 COPY --from=builder /app/packages/database/index.js /app/packages/database/index.d.ts ./packages/database/
 COPY --from=builder /app/scripts/verify-migration-integrity.mjs ./scripts/verify-migration-integrity.mjs
+COPY --from=builder /app/scripts/backup-db.sh ./scripts/backup-db.sh
 
 # 4. Generate Prisma client in runner (this creates packages/database/client/)
 RUN cd packages/database && prisma generate --schema ./prisma/schema.prisma
@@ -82,7 +85,15 @@ COPY --from=builder /app/apps/backend/src/email/locales ./apps/backend/src/email
 COPY --from=builder /app/apps/backend/scripts/deploy.sh ./apps/backend/scripts/deploy.sh
 
 # Final permissions and port config
-RUN chmod +x ./apps/backend/scripts/deploy.sh
+RUN chmod +x \
+    ./apps/backend/scripts/deploy.sh \
+    ./scripts/backup-db.sh \
+    ./packages/database/scripts/backup.sh && \
+    bash -n ./scripts/backup-db.sh && \
+    bash -n ./packages/database/scripts/backup.sh && \
+    pg_dump --version | grep -E 'PostgreSQL\) 17\.' && \
+    pg_restore --version | grep -E 'PostgreSQL\) 17\.' && \
+    aws --version
 EXPOSE 4000
 ENV PORT=4000
 
