@@ -4356,3 +4356,45 @@ Claude'un `313e5b47` açıklamasına güvenmeden commit kapsamı, önceki/sonrak
 Yerel dev ortamı repodaki kurulu Turbo çalıştırıcısıyla yeniden başlatıldı. Frontend `:3000`, backend `:4000` dinliyor; sandbox dışı localhost kontrolde `/tr/help` kimlik doğrulama yönlendirmesiyle HTTP 307, `/api/v1/health` HTTP 200 döndü. pnpm wrapper çevrimdışı registry imza kontrolünde fail-closed durduğu için doğrulamalar paket indirmeden repodaki kurulu `vitest`, `tsc` ve `scripts/check-i18n.js` ile doğrudan çalıştırıldı.
 
 **Karar: GO — yardım merkezi i18n düzeltmesi kaynak ve test seviyesinde kapalıdır.** Kullanıcı oturumuyla `/tr/help`, `/en/help` ve `/de/help` görsel yenilemesi son kabul kontrolüdür. Push, tag-push, deploy, production/shadow bağlantısı veya veri değişikliği yapılmadı.
+
+---
+
+### 2026-08-08 — CODEX → CLAUDE — Public ana sayfa sadeleştirmesi, CMS nihai kararı ve locale hatası kapanışı
+
+Kullanıcı, Codex'in `.ai/issues/2026-08-08-public-homepage-dynamic-content-CODEX-Frontend-Onerileri.md` analizi ile `CLAUDE Frontend Önerileri.md` karşılaştırmasını değerlendirdikten sonra yeni bir public-site CMS kurulmasını istemedi. Nihai ürün kararı şudur:
+
+- Public ana sayfa mevcut statik `next-intl` katalogları ve kontrollü React bileşeniyle yönetilmeye devam edecek.
+- Yeni Prisma modeli, migration, generic Settings blob'u, admin içerik editörü, taslak/yayın/revizyon/rollback akışı veya yeni CMS izinleri eklenmeyecek.
+- Bugünkü sınırlı içerik ihtiyacı için tam CMS gereksiz teknik borç, test yüzeyi, yetkilendirme ve operasyon yükü oluşturacağı için ertelendi.
+- Gelecekte içerik değişim sıklığı, editör sayısı veya onay/rollback ihtiyacı somut biçimde artarsa konu yeni kapsam kararıyla yeniden açılabilir; mevcut iki analiz belgesi bu olası gelecek fazın referansıdır.
+
+#### Uygulanan düşük riskli public landing değişiklikleri
+
+- Kırık OSKA ve yerel yönetmelik kart bağlantıları üç dil kataloğunda doğru `home.integrations.*` anahtarlarına taşındı.
+- OSKA kartı `https://aluplan.com.tr/solutions/bimx5`, Yerel Yönetmelik kartı `https://aluplan.com.tr/solutions/imar-yonetmeligi-bim-eklentisi` adresine bağlandı.
+- BIMFlex kartı ve `https://aluplan.com.tr/solutions/bimflex` bağlantısı eklendi; içerik TR/EN/DE olarak tanımlandı.
+- Türkiye'ye özel çözümler başlık/açıklaması kartların üzerinde ortalandı ve okunabilirliği artırıldı; kart ikonları sağ üst köşeye taşındı.
+- Yanıltıcı veya doğrulanmamış içerik riski taşıyan Popüler Çözümler, istatistikler ve sektör liderleri/social-proof bölümleri tamamen kaldırıldı.
+- Footer'a `ALUPLAN PROGRAM SİSTEMLERİ` kurumsal adı, “Müşteri Destek Platformu” açıklaması ve `https://aluplan.com.tr/` bağlantısı eklendi.
+- Tasarım/geliştirme kredisi `Designed and developed by Hazar Volga Ekiz` biçiminde, `lang="en"` ve güvenli dış bağlantı nitelikleriyle eklendi.
+- Yanlış tüzel kişilik iddiası oluşturan `Aluplan A.Ş.` telif metninden çıkarıldı; yalnız `© 2025 Tüm hakları saklıdır.` ve EN/DE karşılıkları bırakıldı.
+- Hero başlığı masaüstünde bir kademe küçültüldü (`md:text-8xl` → `md:text-7xl`).
+
+#### Public dil seçici hatası ve çözümü
+
+Public `/tr`, `/login` ve `/help` yüzeylerindeki ortak `LanguageSwitcher`, her dil değişiminde authenticated `PATCH /users/profile` çağrısı yapıyordu. Oturumu olmayan veya süresi dolmuş ziyaretçide bu çağrı 401 → refresh → `common.session_expired` zincirine giriyordu.
+
+Dar çözümde `LanguageSwitcher` varsayılan olarak yalnız locale URL'sini değiştiriyor ve profil API'sine dokunmuyor. Authenticated sidebar ise `persistToProfile` özelliğini açıkça vererek kullanıcının profil dilini kaydetmeye devam ediyor. Bu ayrım iki davranış testiyle kilitlendi.
+
+#### Doğrulama ve kayıt
+
+- Ürün/test commit'i: `ff8ff8a7` (`fix: refine public landing and locale switching`).
+- Dar landing + locale testleri: **9/9**.
+- Tam frontend: **42/42 dosya, 308/308 test**.
+- Frontend typecheck: geçti.
+- i18n bütünlüğü: TR/EN/DE tam.
+- `git diff --check`: temiz.
+- Yerel `GET http://localhost:3000/tr`: HTTP **200**; HTML'de yeni kurumsal footer ve `© 2025 Tüm hakları saklıdır.` doğrulandı.
+- Bağımsız code review: **GO**, Critical/High/Medium = **0/0/0**.
+
+Bu fazda backend, Prisma şeması, migration, DB, seed, production/shadow ortamı veya canlı veri değiştirilmedi. Push, tag-push ve deploy yapılmadı. Bu kayıttan sonra iki analiz belgesi ve ortak rapor ayrı docs commit'inde korunacak; ardından yerel restore tag + bundle doğrulaması yapılacak.
