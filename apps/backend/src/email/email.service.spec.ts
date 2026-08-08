@@ -133,6 +133,29 @@ describe('EmailService', () => {
             expect(mockPrisma.emailLog.create).not.toHaveBeenCalled();
         });
 
+        it('uses ANNOUNCEMENTS preference and skips a master announcement when opted out', async () => {
+            mockPrisma.user.findUnique.mockResolvedValueOnce({ id: 'u-announcement', email: 'user@example.com' });
+            mockPrisma.emailPreference.findUnique
+                .mockResolvedValueOnce(null)
+                .mockResolvedValueOnce({ enabled: false });
+
+            await service.enqueueEmail({
+                ...basePayload,
+                template: 'master-announcement',
+            });
+
+            expect(mockPrisma.emailPreference.findUnique).toHaveBeenCalledWith({
+                where: {
+                    userId_emailType: {
+                        userId: 'u-announcement',
+                        emailType: 'ANNOUNCEMENTS',
+                    },
+                },
+            });
+            expect(mockQueue.add).not.toHaveBeenCalled();
+            expect(mockPrisma.emailLog.create).not.toHaveBeenCalled();
+        });
+
         it('skips enqueue when user has globally unsubscribed', async () => {
             mockPrisma.user.findUnique.mockResolvedValueOnce({ id: 'u-1', email: 'user@example.com' });
             mockPrisma.emailPreference.findUnique
