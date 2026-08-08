@@ -432,3 +432,7 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
   rollback kanıtı gereklidir.
 - Sabah `FIRST-READ.md` bölüm 10'dan başla. Push, tag-push, deploy, production
   DB/R2/SSH yazımı, migration ve seed yasakları aynen sürüyor.
+- Pause restore point: commit `ab2bd04f`, tag
+  `restore/pause-before-release-a13-20260808-ab2bd04f`, complete-history bundle
+  `.private-data/restore-points/pause-before-release-a13-20260808-ab2bd04f.bundle`,
+  SHA-256 `63e8f45bc7f2eb51ae6aae4ec49961598c64225d08130fb0b92d93868633c12d`.

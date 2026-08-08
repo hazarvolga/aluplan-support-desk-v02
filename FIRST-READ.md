@@ -185,3 +185,11 @@ Aktif hedef artık **production release hazırlığıdır**.
 4. A.1.3 için önce yalnız yerel/external-acceptance planını ve gerekli
    kullanıcı onaylarını çıkar; hemen production'a bağlanma veya bucket oluşturma.
 5. Gerçek R2/DB/image kabulünü yerel test GO'su ile karıştırma.
+
+### Ara-verme restore point'i
+
+- Handoff commit: `ab2bd04f` — `docs(release): record pause and morning handoff`.
+- Tag: `restore/pause-before-release-a13-20260808-ab2bd04f`.
+- Bundle: `.private-data/restore-points/pause-before-release-a13-20260808-ab2bd04f.bundle`.
+- Bundle SHA-256: `63e8f45bc7f2eb51ae6aae4ec49961598c64225d08130fb0b92d93868633c12d`.
+- Tag/commit eşitliği ve tam geçmiş bundle doğrulandı; tag push edilmedi.

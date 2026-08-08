@@ -4032,6 +4032,11 @@ Maintenance rule:
   cron/repeatable-job singleton behavior and rollback remain acceptance gates.
 - New sessions must start at `FIRST-READ.md` section 10. No push, tag-push,
   deploy, production DB/R2/SSH write, migration or seed is authorized.
+- Pause handoff was committed as `ab2bd04f`. Verified local restore tag
+  `restore/pause-before-release-a13-20260808-ab2bd04f` points to that commit;
+  complete-history bundle SHA-256 is
+  `63e8f45bc7f2eb51ae6aae4ec49961598c64225d08130fb0b92d93868633c12d`.
+  The tag and bundle remain local and were not pushed.
 - Claude independently re-ran the source, local read-only DB, restore-integrity, targeted/full test, typecheck, i18n and contract checks and returned GO with no contradicted claim or count deviation. Aşama A is therefore closed; work pauses here.
 - Root `FIRST-READ.md` is the shared Codex/Claude account-switch and new-session entry point. It preserves the canonical directory, read order, archive reference, local-only boundaries, Aşama A closure, and Aşama B NO-GO gate.
 ## 2026-08-08 - Announcement email preference BUG-05 closure

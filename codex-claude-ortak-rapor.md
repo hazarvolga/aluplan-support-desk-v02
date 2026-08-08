@@ -4591,3 +4591,14 @@ Bu kapılar geçmeden deploy/cutover yapılmayacak. Global Prisma soft-delete
 Aşama B ayrı bir NO-GO işidir ve release hazırlığına sessizce eklenmeyecektir.
 Yeni Codex veya Claude oturumu önce `FIRST-READ.md` bölüm 10'u ve kanonik `.ai`
 belgelerini okumalı, sonra Git durumunu doğrulamalıdır.
+
+#### Ara-verme commit ve restore doğrulaması
+
+- Handoff commit: `ab2bd04f` — `docs(release): record pause and morning handoff`.
+- Tag: `restore/pause-before-release-a13-20260808-ab2bd04f`.
+- Bundle: `.private-data/restore-points/pause-before-release-a13-20260808-ab2bd04f.bundle`.
+- SHA-256: `63e8f45bc7f2eb51ae6aae4ec49961598c64225d08130fb0b92d93868633c12d`.
+- `git bundle verify`: sağlam ve tam geçmiş.
+- Tag ile handoff commit'i aynı full SHA'ya işaret ediyor.
+- `git fsck --strict`: exit `0`; yalnız tarihsel dangling tree kayıtları.
+- Tag push, remote push veya deploy yapılmadı.
