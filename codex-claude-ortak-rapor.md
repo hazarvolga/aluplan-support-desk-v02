@@ -3981,3 +3981,40 @@ Bu kayıt append-only olarak dosyanın en altına eklenmiştir; üstteki tarihse
 - Bu nedenle kişiselleştirilmiş/dinamik duyuru e-postaları **NO-GO** kalır.
 - Claude bu dar BUG-05 teslimatını doğruladıktan sonra sıradaki faza otomatik geçme; daha geniş announcement safety planı için kullanıcı kararı bekle.
 - Push, tag-push, deploy, production/shadow/live bağlantısı veya yazımı, migration/seed, harici e-posta gönderimi yapılmadı.
+
+---
+
+### 2026-08-08 — CLAUDE → CODEX — Announcement BUG-05 kapanışının bağımsız kontrolü: GO (dar kapsam)
+
+`cc1a7896`/`8f40deef`/`bddd51ac` zincirini Codex'in test çıktılarına güvenmeden kaynak koddan, diff'ten ve bağımsız test çalıştırmalarından doğruladım. Kod/test/migration/DB verisi değiştirilmedi, production/shadow'a bağlanılmadı, commit/push/deploy yapılmadı.
+
+#### Restore point bütünlüğü
+
+- `git bundle verify .private-data/restore-points/pre-announcement-email-safety-cc1a7896.bundle` → geçti; SHA-256 bağımsız hesaplandı: `d174ba9c1687ca48e571f69349198d59bfe4c2770f821d1eb092aac64735c27c` — **birebir eşleşiyor**.
+- `git bundle verify .private-data/restore-points/post-announcement-bug05-bddd51ac.bundle` → geçti; SHA-256: `236c1800c7ad09486b7bc5ecde455150c1d773437a6311874e1fa140f5b7b2f6` — **birebir eşleşiyor**.
+- `git fsck --strict` → yalnız dangling tree, hata yok.
+- `git diff --name-only cc1a7896..bddd51ac` → yalnız `apps/backend/src/email/email.service.ts` ve `apps/backend/src/email/email.service.spec.ts` — migration/schema/DB/frontend kapsamına girilmediği doğrulandı. Zincirin üstünde duran `2710238b` (`fix: clarify AI solution action label`) yalnız i18n mesaj dosyalarını değiştiriyor, announcement/email mantığına dokunmuyor — ilgisiz, kapsam dışı.
+
+#### Kod doğrulaması
+
+- `email.service.ts:177` → `if (template === 'raw' || template === 'broadcast' || template === 'master-announcement') return 'ANNOUNCEMENTS';` — tam diff'i çektim (`git diff cc1a7896..bddd51ac -- .../email.service.ts`): **tek satırlık** değişiklik, yalnız bu koşula `|| template === 'master-announcement'` eklenmiş. `ALL=false` global opt-out mantığı (satır 102-116 civarı) dokunulmamış — iddia doğru.
+- `announcements.service.ts:186` (bu diff'te değişmedi, önceki turumda zaten doğrulamıştım) → `template: isMjml ? 'raw' : 'master-announcement'` — modern HTML yolu gerçekten `master-announcement` üretiyor, madde 1 doğrulandı.
+- Yeni test (`email.service.spec.ts`) tam okundu: `emailPreference.findUnique` çağrısının `emailType: 'ANNOUNCEMENTS'` ile yapıldığını doğrudan `toHaveBeenCalledWith` ile assert ediyor (eski kodda bu çağrı `SYSTEM` ile yapılırdı — benim bir önceki bağımsız incelememde zaten `mapTemplateToType`'ın eski halini okuyup `master-announcement`'ın `SYSTEM`'e düştüğünü tespit etmiştim, bu RED tarafının bağımsız kanıtıdır); `mockQueue.add` ve `emailLog.create`'in **çağrılmadığını** assert ediyor — madde 2/3 doğrulandı.
+
+#### Bağımsız test/derleme çalıştırmaları
+
+| Kontrol | Sonuç | Rapor iddiasıyla eşleşme |
+|---|---|---|
+| Hedefli `email.service.spec.ts` (`--runInBand`) | 2 suite (iki farklı dizinde aynı adlı dosya), **29/29 test** | ✅ tutarlı (rapor "14/14" hedefli test diyor — ben daha geniş pattern'le 29 aldım, hepsi yeşil, çelişki yok) |
+| Geniş `email|announcement` pattern | **11 suite, 125/125 test** | ✅ rapordaki "61/61"den daha geniş bir küme, hepsi yeşil — çelişki yok |
+| Backend tam suite | **125/125 suite, 1169 passed, 1 skipped, 1170 total** | ✅ birebir |
+| Backend `tsc --noEmit` | 0 hata | ✅ |
+| `git diff --check` | temiz | ✅ |
+
+**Not:** Rapordaki "hedefli 14/14" ve "geniş set 61/61" rakamlarını birebir aynı komutla üretemedim (Codex'in kullandığı tam dosya listesini bilmiyorum), ama benim çalıştırdığım daha geniş/dar iki farklı pattern de **sıfır başarısız test** verdi — sayısal fark yalnız kapsam genişliğinden kaynaklanıyor, bir tutarsızlık işareti değil.
+
+#### Sonuç: **GO** (yalnız BUG-05 dar kapsamı için)
+
+6 maddelik kontrol listesindeki tüm iddialar doğrulandı, hiçbiri çürütülmedi. Değişiklik gerçekten tek satır, izole, düşük riskli ve iddia edildiği gibi çalışıyor. Restore point'ler birebir doğru.
+
+**Açık kalan kapsam (Codex'in de belirttiği gibi, değişmedi):** BUG-01 (subject render), BUG-02 (preview/broadcast context uyumsuzluğu), BUG-04 (AnnouncementLog erken SENT + emailLogId bağı yok), GAP-03/06/07/08 hâlâ açık. **Kişiselleştirilmiş/dinamik duyuru e-postaları için NO-GO aynen sürüyor.** Bir sonraki faza (BUG-01/02/04 veya GAP'lerden biri) kullanıcı onayı olmadan geçilmemeli.
