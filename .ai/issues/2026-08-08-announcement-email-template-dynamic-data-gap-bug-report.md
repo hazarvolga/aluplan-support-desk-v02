@@ -618,3 +618,50 @@ Bu kontrol tamamlanmadan Faz 2'ye (BUG-04) geçilmeyecek.
 8. Restore point hash'lerini bağımsız hesapla; diff kapsamının yalnız `apps/backend/src/announcements/` ve `apps/backend/src/email/email.service.ts`(+spec) ile sınırlı olduğunu doğrula.
 
 Bu kontrol tamamlanmadan ve kullanıcı onayı olmadan kişiselleştirilmiş duyuru gönderimine geçilmeyecek. GAP-08 (Faz 3) kullanıcı isterse ayrıca ele alınabilir.
+
+---
+
+## 13. Claude Faz 3 kapanışı (uygulayıcı olarak) — GAP raporundaki son madde, bağımsız Codex kontrolü isteniyor
+
+**Tarih:** 2026-08-08 · **Kapsam:** GAP-08 (opsiyonel/düşük öncelik, kozmetik — `contentMjml` adlandırma netliği).
+
+### Yapılan değişiklikler
+
+1. **Yeni dosya** `apps/backend/src/announcements/announcement-content-format.ts`: `detectAnnouncementContentFormat(content): 'MJML' | 'RICH_HTML'` — daha önce yalnız `broadcast()` içinde satır içi (`content.trim().toLowerCase().startsWith('<mjml>')...`) yapılan tahmini, aynı mantıkla, isimli ve bağımsız test edilebilir bir fonksiyona çıkarıyor.
+2. `announcements.service.ts:broadcast()`: satır içi `isMjml` hesaplaması artık bu fonksiyonu çağırıyor — **davranış değişmedi**, yalnız isimlendirildi.
+3. `findAll()`/`findOne()`: dönen her `Announcement` nesnesine **okuma anında hesaplanan**, DB'de saklanmayan bir `contentFormat` alanı ekleniyor — API tüketicileri (admin arayüzü, ileride başka bir entegrasyon) artık formatı kendileri tahmin etmek zorunda değil.
+4. **Migration yok, DB şeması değişmedi, `contentMjml` alan adı değişmedi** — raporun kendi talimatına ("DB alanı ileride migrate edilmese bile API DTO seviyesinde net isimlendirme") uygun, salt-okunur/hesaplanan bir alan.
+
+### TDD kanıtı
+
+- `announcement-content-format.spec.ts`: modül yokken `Cannot find module` (RED) → 6/6 GREEN ilk denemede (tam `<mjml>` dokümanı, çıplak `<mj-section>` fragmanı, case-insensitivity, düz zengin metin, boş içerik, metin içinde geçen "mjml" kelimesinin yanlış pozitif üretmemesi).
+- `announcements.service.spec.ts`'e eklenen `findAll`/`findOne` testleri RED durumunda gerçek farkı gösterdi: beklenen `contentFormat` alanı yoktu, yalnız ham Prisma satırı dönüyordu. İmplementasyon sonrası GREEN.
+
+### Doğrulama kanıtı
+
+- Backend tam suite: **129/129 suite**, **1230 passed**, **1 skipped**, **1231 total**.
+- Frontend tam suite: **39/39 dosya**, **266/266 test** (bu faz yalnız backend'e dokundu, sanity kontrolü).
+- Backend/frontend `tsc --noEmit`: 0 hata.
+- `pnpm i18n:check`, `pnpm test:ops-safety` (24/24), `pnpm api:verify-frontend-contract`, `git diff --check`: hepsi geçti.
+
+### Commit ve restore point
+
+- Ürün+test commit'i: `e4c2ddc8` — `fix: name and expose announcement content format explicitly (GAP-08)`.
+- Post-work: tag `restore/post-announcement-phase3-20260808-e4c2ddc8`; bundle SHA-256 `6acafc97e8bc065d679469a7d3bbfd32be5c21911a2ea7d1740f83fa2447c01f`.
+- `git bundle verify` + `git fsck --strict`: kritik hata yok.
+- Push, tag-push, deploy yapılmadı; migration/seed yok; production/shadow/canlı bağlantı yok.
+
+### Rapor durumu
+
+Bu, GAP raporundaki **son açık madde**. BUG-01, BUG-02, BUG-04, GAP-03 (fail-closed kısmı), GAP-06, GAP-08 — hepsi yerel olarak kapatıldı. Codex'in raporun 10-11-12-13 numaralı bölümlerindeki bağımsız kontrol taleplerinin hiçbiri henüz gerçekleştirilmedi.
+
+### Codex'ten istenen bağımsız kontrol
+
+1. `detectAnnouncementContentFormat`'ın `broadcast()`'teki eski satır içi mantıkla **birebir aynı** koşulu uyguladığını (davranış değişmediğini) kod karşılaştırmasıyla doğrula.
+2. `findAll()`/`findOne()`'ın `contentFormat`'ı yalnız okuma anında hesapladığını, hiçbir `.create()`/`.update()` çağrısına yeni alan eklemediğini doğrula.
+3. Şema/migration dosyalarının bu commit'te değişmediğini `git diff` ile doğrula.
+4. Yeni testleri bağımsız çalıştır.
+5. Tam backend/frontend suite, typecheck, i18n, ops-safety, api-contract kapılarını bağımsız çalıştır.
+6. Restore point hash'ini bağımsız hesapla.
+
+**Nihai durum:** Üç fazın (§10, §11/12, §13) tamamı Codex tarafından bağımsız doğrulanmadan ve kullanıcı açık onay vermeden kişiselleştirilmiş/dinamik duyuru e-postası gönderimi **NO-GO** olarak kalır.

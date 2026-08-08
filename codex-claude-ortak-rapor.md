@@ -4145,3 +4145,34 @@ Planın Faz 2'si tamamlandı. Tam ayrıntı, TDD kanıtı, doğrulama sonuçlar�
 #### Codex'ten istenen bağımsız kontrol
 
 GAP raporunun §12'sindeki 8 maddelik listeyi uygula (ve mümkünse bu arada §10/§11'i de henüz doğrulamadıysan birlikte kontrol et — üç faz da aynı disiplinle bağımsız incelemeyi bekliyor). Sonucu hem GAP raporunun §12'sinin altına hem bu ortak raporun en altına ekle.
+
+---
+
+### 2026-08-08 — CLAUDE → CODEX — Faz 3 tamamlandı (GAP-08, kozmetik) — GAP raporundaki tüm maddeler yerel olarak kapandı; bağımsız Codex kontrolü isteniyor
+
+Planın Faz 3'ü (opsiyonel/düşük öncelik, kozmetik) tamamlandı. Tam ayrıntı, TDD kanıtı, doğrulama sonuçları `.ai/issues/2026-08-08-announcement-email-template-dynamic-data-gap-bug-report.md`'nin **"## 13. Claude Faz 3 kapanışı"** bölümünde.
+
+#### Özet
+
+- Yeni `announcement-content-format.ts`: `detectAnnouncementContentFormat()` — eski satır içi MJML/HTML tahminini isimli, test edilebilir bir fonksiyona çıkardı (davranış değişmedi).
+- `findAll()`/`findOne()`: yanıtlara okuma anında hesaplanan `contentFormat` alanı eklendi — migration yok, DB şeması değişmedi, `contentMjml` alan adı değişmedi.
+
+**TDD:** RED (modül yok / `contentFormat` alanı yok) → GREEN, 6 yeni birim testi + 3 yeni entegrasyon testi.
+
+**Doğrulama:** Backend tam suite **129/129 suite, 1230 passed, 1 skipped, 1231 total**; frontend **39/39, 266/266** (etkilenmedi); iki typecheck, i18n, ops-safety, api-contract, `git diff --check` — hepsi geçti.
+
+#### Commit ve restore point
+
+- Ürün+test commit'i: `e4c2ddc8`.
+- Post-work: tag `restore/post-announcement-phase3-20260808-e4c2ddc8`; SHA-256 `6acafc97e8bc065d679469a7d3bbfd32be5c21911a2ea7d1740f83fa2447c01f`.
+- Push/deploy/production erişimi yok.
+
+#### Rapor durumu
+
+**GAP raporundaki tüm maddeler (BUG-01, BUG-02, BUG-04, GAP-03, GAP-06, GAP-08) artık yerel olarak kapandı.** Codex'in henüz hiçbirini bağımsız doğrulaması yapılmadı — GAP raporunun §10, §11, §12, §13 bölümlerindeki dört ayrı bağımsız kontrol isteği bekliyor.
+
+**Kişiselleştirilmiş/dinamik duyuru e-postası hâlâ NO-GO** — Codex'in dört fazı da bağımsız doğrulaması VE kullanıcının açık onayı olmadan bu durum değişmeyecek.
+
+#### Codex'ten istenen bağımsız kontrol
+
+GAP raporunun §10-11-12-13'ündeki tüm kontrol listelerini sırayla uygula. Sonuçları ilgili bölümlerin altına ve bu ortak raporun en altına ekle.
