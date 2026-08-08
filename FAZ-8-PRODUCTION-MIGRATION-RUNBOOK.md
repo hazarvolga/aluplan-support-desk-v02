@@ -1,225 +1,299 @@
 # Faz 8 Production Migration Runbook
 
-Durum: **YEREL HAZIRLIK TAMAM, PRODUCTION UYGULAMA YETKİSİ YOK**
+Durum: **NO-GO — YEREL HAZIRLIK SÜRÜYOR, PRODUCTION UYGULAMA YETKİSİ YOK**
 
-Bu runbook yalnız kullanıcı açıkça bakım penceresini ve production uygulamasını onayladığında yürütülür. Hazırlanırken production PostgreSQL/Redis'e bağlanılmadı ve deploy yapılmadı.
+Bu runbook yalnız kullanıcı açıkça salt-okunur canlı envanteri, bakım
+penceresini ve production uygulamasını ayrı ayrı onayladığında yürütülür.
+Runbook’un varlığı push, deploy, migration, seed veya production bağlantısı
+yetkisi vermez.
 
-## Kapsam ve zorunlu sıra
+## 1. Değişmez güvenlik sınırları
 
-Bekleyen migration'lar:
+- Production verisi korunur; doğrulanmamış hiçbir `DROP`, `TRUNCATE`, restore,
+  queue purge veya Redis flush işlemi uygulanmaz.
+- Yeni ve eski backend aynı production PostgreSQL/Redis üzerinde aynı anda
+  çalıştırılmaz. Backend process’i worker ve cron’ları da içerir.
+- Migration planı belgeye yazılmış sabit bir listeden çıkarılmaz. Tek kaynak,
+  release adayındaki kanonik migration manifesti ile production
+  `_prisma_migrations` ledger’ının salt-okunur farkıdır.
+- Secret, connection string, signed URL ve token hiçbir rapora veya Git
+  artifact’ına yazılmaz.
+- Migration öncesi backup yalnız dosya oluştuğu için başarılı sayılmaz;
+  SHA-256, `pg_restore --list` ve ayrı PostgreSQL 17 restore kanıtı gerekir.
+- PostgreSQL backup, production’ın kanonik S3-compatible object storage
+  nesnelerinin yerine geçmez. Uygulamadaki tarihsel local-storage fallback
+  yalnız kurtarma envanteri olarak taranır; aktif storage hedefi sayılmaz.
+- S3 nesne paritesi tek başına yedek değildir. Versioning veya immutable backup
+  ile ayrı restore/canary kanıtı GO kapısıdır.
+- İlk cutover rolling/blue-green değildir: bakım modu, sıfır eski backend ve
+  yalnız bir yeni backend instance kullanılır.
 
-1. `20260314900000_restore_crm_foundation`
-2. `20260806000000_align_schema_parity`
-3. `20260806010000_harden_auth_action_tokens`
+## 2. Release adayı ve kanonik migration kaynağı
 
-Zorunlu sıra: **doğrulanmış yedek → uygulamayı bakım moduna alma → `prisma migrate deploy` → şema/ledger doğrulaması → yeni uygulamayı başlatma**.
+Her prova ve cutover başında aşağıdaki kimlikler birlikte kaydedilir:
 
-Yeni Prisma Client eski production şemasında bulunmayan `crm_accounts.customer_no` alanını seçebildiği için uygulama migration tamamlanmadan başlatılamaz.
+- Git commit SHA,
+- backend ve frontend immutable image digest’i,
+- `pnpm-lock.yaml` SHA-256,
+- iki Dockerfile SHA-256,
+- `packages/database/prisma/migration-checksums.json` SHA-256,
+- `scripts/resolve-production-migration-plan.mjs` çıktısı.
 
-## Coolify başlangıç akışı kapısı
+Mevcut kanonik manifest bu belge yazılırken 56 migration içerir. Bu sayı yalnız
+release adayının yerel durumudur; production’da 56 migration’ın tamamının
+uygulanmış veya belirli son migration’ların pending olduğu varsayılmaz.
 
-Docker imajı `apps/backend/Dockerfile` içindeki `CMD ["./deploy.sh"]` ile başlar. `deploy.sh` migration komutunu uygulamadan önce çalıştırır ve artık migration başarısızlığında `exit 1` ile fail-closed davranır. Shell syntax kontrolü ve disposable PostgreSQL 17 üzerinde migration zinciri doğrulanmıştır; production/staging kabulü ayrıca gereklidir.
+Kanonik zincirin son bölümünde veri veya veri önkoşulu içeren önemli
+migration’lar bulunur:
 
-İlk Faz 8 uygulamasında sıradan bir Coolify redeploy **tek başına yeterli kabul edilmez**. Aşağıdaki kapılar sağlanmadan bakım penceresi açılmaz:
+- `20260806020000_add_faq_provenance_ai_history_permissions`
+- `20260806021000_grant_faq_review_to_existing_reviewers`
+- `20260806022000_align_faq_entry_sources_updated_at_default`
+- `20260807090000_add_support_agent_rbac_contract`
+- `20260807143000_add_product_taxonomy_unique_indexes`
 
-- Yeni imaj/container bağlamında migration komutunu ayrı bir one-shot adım olarak çalıştır, çıkış kodu `0` ve ikinci çalıştırmada “No pending migrations” sonucunu doğrula; sonra backend'i başlat.
-- Coolify secret store'a birbirinden farklı, placeholder olmayan `JWT_SECRET`, `JWT_REFRESH_SECRET` ve `AUTH_ACTION_JWT_SECRET` değerleri uygulama başlatılmadan önce sağlanmış olmalı. Yeni kod eksik/eşit/placeholder secret ile fail-closed açılmaz.
+Bu liste **pending migration listesi değildir**. Yalnız preflight ve etki
+incelemesinde unutulmaması gereken yüksek etkili kanonik tail’dir.
 
-## Yerel ölçüm kanıtı
+## 3. Fail-closed migration planı
 
-Kaynak: secret değerleri temizlenmiş dump; üç ayrı PostgreSQL 17 disposable klon. Her klonda `crm_accounts=807`, `knowledge_pool_embeddings=7745`, `users=1282`. Lock gözlemi 1 ms aralıkla ayrı bağlantıdan yapıldı.
+Planlayıcı şu durumlarda plan üretmeden kapanır:
 
-| Migration | Çalıştırma 1 | Çalıştırma 2 | Çalıştırma 3 | Medyan |
-|---|---:|---:|---:|---:|
-| Foundation | 10.542 ms | 9.453 ms | 8.449 ms | 9.453 ms |
-| Parity | 10.249 ms | 10.201 ms | 9.899 ms | 10.201 ms |
-| Auth action token state | 8.115 ms | 8.419 ms | 8.631 ms | 8.419 ms |
+- migration dosyaları ile checksum manifesti uyuşmuyorsa,
+- production ledger’da kanonik dosyası olmayan bir migration varsa,
+- başarılı migration checksum’u kanonik kaynakla uyuşmuyorsa ve aşağıdaki dar,
+  açıkça onaylanmış tarihsel istisna kullanılmamışsa,
+- `finished_at`/`rolled_back_at` yaşam döngüsü ikisi de boş veya ikisi de doluysa,
+- canlı DB modu açık opt-in olmadan çağrılırsa.
 
-Gözlenen başlıca lock'lar:
-
-- Foundation: `users` ve `customer_profiles` üzerinde `AccessExclusiveLock`; `roles`, `permissions`, `ai_response_cache`, `crm_accounts`, `crm_connections` üzerinde `ShareLock`.
-- Parity: `ai_interactions`, `crm_accounts`, `customer_profiles`, `knowledge_sources`, `users` üzerinde `AccessExclusiveLock`; indeks oluşturulan/denetlenen tablolarda `ShareLock` veya `AccessShareLock`.
-- Auth state: `users` üzerinde kısa süreli `AccessExclusiveLock`.
-- Üç ölçümde de bekleyen (`granted=false`) lock görülmedi.
-
-Bu değerler per-lock süreleri değil, migration wall-clock süresi ve 1 ms örneklemede görülen lock varlığıdır. Yalnız **çatışmasız yerel ölçümdür**; production kesinti garantisi değildir. Canonical eski migration dosyaları değiştirilemez; timeout one-shot bağlantısının URL `options` parametresiyle verilir. Bakım penceresi için 15 dakika ayır; one-shot süreç 30 saniyeyi aşarsa işlemi sonlandır ve uygulamayı başlatma.
-
-## Bakım penceresi öncesi salt-okunur kontroller
-
-Komutlarda gerçek URL ekrana yazılmaz; mevcut secret store üzerinden `DATABASE_URL` sağlanır.
+Yerel/offline ledger dosyasıyla kullanım:
 
 ```bash
-psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "
-SELECT migration_name, finished_at, rolled_back_at
-FROM _prisma_migrations
-WHERE migration_name IN (
-  '20260314900000_restore_crm_foundation',
-  '20260806000000_align_schema_parity',
-  '20260806010000_harden_auth_action_tokens'
-)
-ORDER BY migration_name;"
+node scripts/resolve-production-migration-plan.mjs \
+  --ledger-file .private-data/release/production-ledger.json \
+  --output .private-data/release/production-migration-plan.json
 ```
 
-Beklenen: foundation, parity ve auth-state için tamamlanmış satır yok; üçü pending.
+Ayrıca onaylanmış salt-okunur canlı envanter sırasında, bağlantı bilgisi
+yalnız process environment’tan alınarak kullanılabilir:
 
 ```bash
-psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "
-SELECT pid, now() - xact_start AS age, state, wait_event_type, wait_event
+ALLOW_PRODUCTION_LEDGER_READ=1 \
+  node scripts/resolve-production-migration-plan.mjs \
+  --output .private-data/release/production-migration-plan.json
+```
+
+İkinci komut ancak kullanıcı production salt-okunur bağlantısını ayrıca
+onayladığında çalıştırılır. `DATABASE_URL` ekrana, shell history’ye veya
+rapora yazılmaz. Script bağlantıyı `REPEATABLE READ READ ONLY` transaction ile
+açar ve yalnız migration ledger’ını okur.
+
+`20260426202926_add_proactive_chat` için ADR-011’de kayıtlı
+`manual-psql-fix` ledger marker’ı otomatik kabul edilmez. Production ledger bu
+exact tarihsel satırı içeriyorsa ADR-011 ve canlı satır bağımsız doğrulandıktan
+sonra komuta yalnız şu dar acknowledgement eklenebilir:
+
+```bash
+--acknowledge-marker 20260426202926_add_proactive_chat=manual-psql-fix
+```
+
+Başka migration, başka marker veya rolled-back satır bu istisnadan yararlanamaz.
+Artifact ilgili kaydı `ledgerChecksum: "manual-psql-fix"` ve
+`matchMode: "accepted-marker"` olarak açıkça gösterir; kanonik checksum gibi
+gizlemez. Bu kayıt cutover kararında ayrıca imzalanır.
+
+Plan artifact’ında her migration için ad, kanonik checksum, uygulanmış
+kayıtlarda gerçek `ledgerChecksum`/`matchMode` ve yalnız bilgilendirici
+`DDL`/`DML`/`DML+DDL` sınıfı bulunur. Artifact ayrıca ledger digest’i, capture
+zamanı ve canlı modda secret içermeyen hash’lenmiş hedef fingerprint’i taşır.
+Offline ledger dosyasının SHA-256’sı kaydedilir; offline artifact tek başına
+production GO kanıtı değildir. SQL sınıflandırması güvenlik incelemesinin
+yerine geçmez.
+
+## 4. Bakım penceresi öncesi salt-okunur preflight
+
+Bu bölüm production’a bağlanma yetkisi değildir. Tüm sorgular ayrıca onaylı
+salt-okunur oturumda, secret değerleri yazdırmadan çalıştırılır.
+
+### 4.1 Platform ve ledger
+
+```sql
+SELECT version();
+SELECT extname, extversion FROM pg_extension WHERE extname IN ('vector', 'pg_stat_statements');
+
+SELECT migration_name, checksum, started_at, finished_at, rolled_back_at
+FROM _prisma_migrations
+ORDER BY started_at, migration_name;
+```
+
+İptal kriterleri:
+
+- PostgreSQL major sürümü prova edilen PG17 hedefinden farklı,
+- bilinmeyen migration,
+- açıkça acknowledge edilmemiş checksum drift,
+- `finished_at`/`rolled_back_at` alanları ikisi de boş veya ikisi de dolu olan
+  migration denemesi,
+- kanonik manifest/ledger planlayıcısının non-zero çıkması.
+
+### 4.2 Uzun transaction ve kilit riski
+
+```sql
+SELECT pid,
+       now() - xact_start AS age,
+       state,
+       wait_event_type,
+       wait_event,
+       backend_type
 FROM pg_stat_activity
 WHERE datname = current_database()
   AND xact_start IS NOT NULL
   AND pid <> pg_backend_pid()
-ORDER BY xact_start;"
+ORDER BY xact_start;
 ```
 
-İptal kriteri: 30 saniyeden eski yazan transaction, bilinmeyen DDL, bakım dışı import/sync/re-index işi veya doğrulanmamış yedek.
+İptal kriteri: 30 saniyeden eski yazan transaction, bilinmeyen DDL, aktif
+import/sync/re-index veya bakım dışı uzun sorgu.
 
-Ön veri sayıları kaydedilir:
+### 4.3 SUPPORT_AGENT preflight
 
-```bash
-psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "
-SELECT 'crm_accounts' AS object, count(*) FROM crm_accounts
-UNION ALL
-SELECT 'knowledge_pool_embeddings', count(*) FROM knowledge_pool_embeddings
-UNION ALL
-SELECT 'users', count(*) FROM users;"
+```sql
+SELECT id, name
+FROM roles
+WHERE UPPER(REPLACE(BTRIM(name), '-', '_')) = 'SUPPORT_AGENT';
+
+SELECT permission_row.name
+FROM role_permissions role_permission
+JOIN roles role_row ON role_row.id = role_permission.role_id
+JOIN permissions permission_row ON permission_row.id = role_permission.permission_id
+WHERE role_row.name = 'SUPPORT_AGENT'
+ORDER BY permission_row.name;
 ```
 
-## Uygulama adımları — yalnız açık kullanıcı onayından sonra
+İptal kriterleri:
 
-Önce gerçek adları salt-okunur komutla çöz ve kaydet:
+- `SUPPORT_AGENT` ile aynı normalize değere sahip farklı adlı rol,
+- mevcut `SUPPORT_AGENT` rolünde onaylı kanonik 16 izin dışında izin,
+- sonucu açıklanmamış rol/izin drift’i.
 
-```bash
-docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
+### 4.4 Ürün taksonomisi duplicate preflight
+
+```sql
+SELECT LOWER(BTRIM(name)) AS normalized_name, COUNT(*) AS duplicate_count
+FROM products
+WHERE deleted_at IS NULL AND is_active = TRUE
+GROUP BY LOWER(BTRIM(name))
+HAVING COUNT(*) > 1;
+
+SELECT product_id,
+       LOWER(BTRIM(name)) AS normalized_name,
+       COUNT(*) AS duplicate_count
+FROM product_categories
+WHERE deleted_at IS NULL AND is_active = TRUE
+GROUP BY product_id, LOWER(BTRIM(name))
+HAVING COUNT(*) > 1;
 ```
 
-Operatör aşağıdaki değişkenleri gerçek, tekil hedeflerle tanımlar; boş veya belirsiz hedefle devam edilmez:
+Beklenen iki sorguda da sıfır satırdır. Duplicate bulunursa otomatik silme,
+merge veya rename yapılmaz; migration iptal edilir ve ayrı ürün/veri kararı
+alınır.
 
-```bash
-export ALUPLAN_BACKEND_CONTAINER='coolify-backend-container-name'
-export ALUPLAN_DATABASE_CONTAINER='coolify-postgres-container-name'
-export ALUPLAN_RELEASE_IMAGE='exact-release-image@sha256:digest'
-export ALUPLAN_DOCKER_NETWORK='exact-coolify-network-name'
-export ALUPLAN_BACKUP_DIR='/root/aluplan-backups/faz8-YYYYMMDD-HHMM'
-mkdir -p "$ALUPLAN_BACKUP_DIR" && chmod 700 "$ALUPLAN_BACKUP_DIR"
+### 4.5 Veri, RAG, queue ve storage baz çizgisi
 
-export ALUPLAN_RELEASE_ENV_FILE="$ALUPLAN_BACKUP_DIR/release.env"
-umask 077
-cleanup_release_env() {
-  if [ -n "${ALUPLAN_RELEASE_ENV_FILE:-}" ] && [ -f "$ALUPLAN_RELEASE_ENV_FILE" ]; then
-    shred -u "$ALUPLAN_RELEASE_ENV_FILE"
-  fi
-}
-trap cleanup_release_env EXIT INT TERM
-docker inspect "$ALUPLAN_BACKEND_CONTAINER" \
-  --format '{{range .Config.Env}}{{println .}}{{end}}' > "$ALUPLAN_RELEASE_ENV_FILE"
-```
+Bakım öncesi en az şunlar kaydedilir:
 
-1. Coolify bakım sayfasını aç; yeni yazmaları durdur. Backend/worker/cron/RAG/CRM süreçlerini durdur ve `docker ps` ile uygulama konteynerinin çalışmadığını doğrula. PostgreSQL konteynerini durdurma.
-2. Native-format yedek al; dosya adı ve SHA-256 kaydet:
+- kritik business-table satır sayıları ve schema/data fingerprint’leri,
+- beş embedding ailesinde `embedding_version`, `embedding_dim`, satır sayısı
+  ve `vector_dims(embedding) != embedding_dim` sayısı,
+- dokuz BullMQ queue’nun waiting/active/delayed/failed/paused sayıları ile
+  active job ID’leri,
+- repeatable job listesi, Redis persistence ve eviction policy,
+- attachment, knowledge source ve branding DB key’leri ile kanonik S3-compatible
+  object manifesti; local upload volume yalnız tarihsel fallback kurtarma
+  envanteri olarak ayrıca raporlanır,
+- S3 versioning/immutable backup durumu ve ayrı restore/canary kanıtı,
+- `FAILED_STORAGE_UPLOAD_%` işaretli kayıtlar.
 
-```bash
-docker exec "$ALUPLAN_DATABASE_CONTAINER" sh -lc \
-  'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc --no-owner --no-privileges' \
-  > "$ALUPLAN_BACKUP_DIR/production-pre-faz8.dump"
-chmod 600 "$ALUPLAN_BACKUP_DIR/production-pre-faz8.dump"
-sha256sum "$ALUPLAN_BACKUP_DIR/production-pre-faz8.dump" \
-  > "$ALUPLAN_BACKUP_DIR/production-pre-faz8.dump.sha256"
-sha256sum -c "$ALUPLAN_BACKUP_DIR/production-pre-faz8.dump.sha256"
-docker exec -i "$ALUPLAN_DATABASE_CONTAINER" pg_restore --list \
-  < "$ALUPLAN_BACKUP_DIR/production-pre-faz8.dump" >/dev/null
-```
+Queue dashboard yalnız dört queue gösterdiği için tek başına kanıt değildir.
 
-Yedek ayrı bir PostgreSQL 17 disposable hedefe restore edilip `pg_restore` exit `0`, tablo sayıları ve `_prisma_migrations` okunabilirliği doğrulanmadan migration'a geçilmez. Ham dump geliştirme klonu olarak kullanılmaz:
+## 5. Bakım penceresi GO kapıları
 
-```bash
-export ALUPLAN_RESTORE_CONTAINER='aluplan-faz8-restore-check'
-docker run -d --rm --name "$ALUPLAN_RESTORE_CONTAINER" \
-  -e POSTGRES_USER=restorecheck -e POSTGRES_PASSWORD='local-disposable-only' \
-  -e POSTGRES_DB=restorecheck pgvector/pgvector:pg17
-until docker exec "$ALUPLAN_RESTORE_CONTAINER" pg_isready -U restorecheck -d restorecheck; do sleep 1; done
-docker exec -i "$ALUPLAN_RESTORE_CONTAINER" pg_restore \
-  -U restorecheck -d restorecheck --no-owner --no-privileges \
-  < "$ALUPLAN_BACKUP_DIR/production-pre-faz8.dump"
-docker exec "$ALUPLAN_RESTORE_CONTAINER" psql -U restorecheck -d restorecheck \
-  -v ON_ERROR_STOP=1 -c 'SELECT count(*) AS migration_rows FROM _prisma_migrations; SELECT count(*) AS users FROM users;'
-docker stop "$ALUPLAN_RESTORE_CONTAINER"
-```
+Aşağıdakilerden biri eksikse bakım başlatılmaz:
 
-3. Yeni release imajında one-shot migration çalıştır:
+1. Exact release SHA ve backend/frontend image digest’leri sabit.
+2. Güncel migration planı üretildi ve tüm pending migration SQL’leri tek tek
+   incelendi.
+3. Güncel production-derived PG17 klonda aynı plan iki kez prova edildi;
+   ikinci çalıştırmada pending sıfır.
+4. Exact eski production image, post-migration klonda rollback uyumluluğu
+   gösterdi.
+5. Doğrulanmış external backup + ayrı PG17 restore mevcut.
+6. DB ↔ S3 object parity’de eksik nesne sıfır; versioning veya immutable backup
+   ile ayrı restore/canary kanıtı mevcut. Local fallback envanteri ayrı
+   uzlaştırılmış.
+7. Dokuz queue’nun active iş sayısı sıfır ve resume planı kayıtlı.
+8. Worker/cron maintenance boot A.2 güvenlik sözleşmesi testli.
+9. İzole staging aynı immutable image digest’leriyle kritik journey’leri,
+   RAG kabulünü ve image rollback’i geçti.
+10. Kullanıcı bakım penceresini ve production uygulamasını açıkça onayladı.
 
-```bash
-docker run --rm --name aluplan-faz8-migrate \
-  --network "$ALUPLAN_DOCKER_NETWORK" \
-  --env-file "$ALUPLAN_RELEASE_ENV_FILE" \
-  --entrypoint sh "$ALUPLAN_RELEASE_IMAGE" -lc '
-    cd /app
-    MIGRATION_DATABASE_URL=$(node -e '\''
-      const url = new URL(process.env.DATABASE_URL);
-      url.searchParams.set("options", "-c lock_timeout=5s -c statement_timeout=300s");
-      process.stdout.write(url.toString());
-    '\'')
-    DATABASE_URL="$MIGRATION_DATABASE_URL" npx prisma migrate deploy \
-      --schema ./packages/database/prisma/schema.prisma \
-      --config ./packages/database/prisma.config.js
-  '
-```
+## 6. Uygulama sırası — yalnız açık onaydan sonra
 
-Beklenen: üç migration başarıyla uygulanır ve komut exit code `0` döner.
+1. Bakım sayfasını aç ve tüm write ingress’i kapat.
+2. Queue producer’larını durdur; aktif işleri sıfıra indir.
+3. Tüm eski backend replica’larını durdur ve gerçekten sıfır olduklarını
+   doğrula. PostgreSQL ve Redis volume’larını silme/yeniden oluşturma.
+4. `pg_dump -Fc --no-owner --no-privileges` ile mode `0600` backup al.
+5. SHA-256 doğrula, `pg_restore --list` çalıştır ve ayrı PG17+pgvector
+   container’a restore et.
+6. Restore hedefinde ledger, kritik tablo sayıları, FK doğrulaması ve
+   fingerprint’leri kontrol et.
+7. Exact release image ile one-shot `prisma migrate deploy` çalıştır; lock ve
+   statement timeout uygula.
+8. Aynı migration komutunu ikinci kez çalıştır; pending sıfır olmalı.
+9. Plan artifact’ındaki tüm pending migration’ların ledger’da
+   `finished=true, rolled_back=false` olduğunu doğrula.
+10. Pre/post business fingerprint farklarını migration bazında açıkla;
+    açıklanamayan kayıp veya değişimde uygulamayı başlatma.
+11. Yalnız bir yeni backend instance başlat. Worker/cron A.2 kapısı olmadan
+    bu adıma gelinmez.
+12. DB, Redis, storage, auth, queue, mail/CRM/AI readiness smoke’larını yap.
+13. Frontend’i exact digest ile başlat; iç kabul geçmeden trafiği açma.
 
-`PGOPTIONS` kullanılmaz: Prisma migration motorunun bu shell değişkenini
-taşımadığı yerel kilit testinde doğrulanmıştır. URL `options` parametresi ile
-`users` üzerinde doğrulanmış `AccessExclusiveLock` altında migration komutu
-exit `1` ile **5.946 saniyede** kesilmiş ve uygulama başlatılmamıştır. Bu kanıt
-disposable PostgreSQL 17 klonunda üretilmiştir; canlı sistemde test edilmemiştir.
+## 7. Manual backup/restore doğrulama sözleşmesi
 
-4. Aynı komutu ikinci kez çalıştır. Beklenen: `No pending migrations to apply.`
-5. Aşağıdaki son kontroller geçmeden uygulamayı başlatma.
-6. Backend'i başlat, health check yeşil olduktan sonra frontend/worker trafiğini aç.
-7. One-shot ve health doğrulaması tamamlanınca `cleanup_release_env; trap - EXIT INT TERM` çalıştır. Hata, CTRL-C veya TERM durumunda `trap` aynı geçici secret dosyasını otomatik kaldırır.
+Mevcut otomatik DR/backup scriptleri Faz A.1.2/A.1.3 tamamlanana kadar
+production kanıtı sayılmaz. Geçici olarak yalnız aşağıdaki operator sözleşmesi
+kabul edilir:
 
-`deploy.sh` kapısı ayrıca aşağıdaki gibi kontrol edilir; migration komutu hatalı bir URL ile başlatıldığında süreç non-zero çıkmalı ve NestJS başlamamalıdır:
+- custom-format dump,
+- `--no-owner --no-privileges`,
+- dosya mode `0600`,
+- SHA-256 sidecar,
+- `pg_restore --list` exit `0`,
+- ayrı PG17 restore exit `0`,
+- restore sonrası ledger, kritik sayılar ve fingerprint doğrulaması,
+- dump + checksum’un production host dışında doğrulanmış dış kopyası.
 
-```bash
-bash -n apps/backend/scripts/deploy.sh
-```
+Signed backup URL’leri ve secret değerleri rapora yazılmaz. Yalnız artifact
+adı, boyutu, SHA-256 ve doğrulama zamanı kaydedilir.
 
-## Son doğrulama
+## 8. One-shot migration sözleşmesi
 
-```bash
-psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "
-SELECT migration_name,
-       finished_at IS NOT NULL AS finished,
-       rolled_back_at IS NOT NULL AS rolled_back
-FROM _prisma_migrations
-WHERE migration_name IN (
-  '20260314900000_restore_crm_foundation',
-  '20260806000000_align_schema_parity',
-  '20260806010000_harden_auth_action_tokens'
-)
-ORDER BY migration_name;"
-```
+One-shot container:
 
-Beklenen: üç satır, üçünde `finished=true`, `rolled_back=false`.
+- exact immutable release image kullanır,
+- production Docker ağına yalnız bakım penceresinde katılır,
+- secret store’dan ephemeral env alır,
+- `lock_timeout=5s`, `statement_timeout=300s` uygular,
+- migration file integrity kontrolünü migration’dan önce ve sonra çalıştırır,
+- non-zero durumda backend’i başlatmaz,
+- aynı komut ikinci kez çalıştırıldığında pending sıfır üretir.
 
-```bash
-psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "
-SELECT
-  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='crm_accounts' AND column_name='customer_no') AS customer_no,
-  EXISTS (SELECT 1 FROM pg_type t JOIN pg_enum e ON e.enumtypid=t.oid WHERE t.typname='AgentStatus' AND e.enumlabel='OFFLINE') AS agent_offline,
-  EXISTS (SELECT 1 FROM pg_type WHERE typname='AnnouncementChannel') AS announcement_channel,
-  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='email_verification_jti_hash') AS email_verification_state,
-  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='email_verification_sent_at') AS email_verification_cooldown,
-  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='password_reset_jti_hash') AS password_reset_state,
-  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='password_reset_sent_at') AS password_reset_cooldown,
-  EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='session_version' AND data_type='integer' AND is_nullable='NO') AS durable_session_version,
-  (SELECT count(*) = 2 FROM information_schema.columns
-   WHERE table_schema='public' AND table_name='users'
-     AND column_name IN ('email_verification_jti_hash','password_reset_jti_hash')
-     AND data_type='character varying' AND character_maximum_length=64 AND is_nullable='YES') AS auth_state_shape;"
-```
+Uygulamanın normal `deploy.sh` başlangıcı bu fail-closed davranışı korur; fakat
+ilk büyük cutover’da migration’ın normal app boot içinde tesadüfen çalışmasına
+güvenilmez.
 
-Beklenen: dokuz değer de `true`.
+## 9. Son doğrulama
 
 Release checkout/container içinde:
 
@@ -231,18 +305,51 @@ pnpm exec prisma migrate status \
   --config packages/database/prisma.config.js
 ```
 
-Beklenen: checksum doğrulaması geçer ve migration zinciri günceldir.
+Ek olarak:
 
-Ön veri sayılarıyla son sayıları karşılaştır. Migration'lar DML içermediği için bu üç tabloda kayıt kaybı beklenmez.
+- production migration planı `pending=[]` göstermeli,
+- kanonik/ledger checksum drift’i sıfır olmalı; varsa tek tarihsel
+  `accepted-marker` kaydı açıkça görülmeli ve ayrıca onaylanmalı,
+- unresolved/unknown migration sıfır olmalı,
+- pre/post business farkları açıklanmış olmalı,
+- dokuz queue ve repeatable-job tekilliği doğrulanmalı,
+- S3 object canary read ile versioning/immutable backup restore canary geçmeli,
+- RAG kabul seti exact image üzerinde geçmeli,
+- backend/frontend health ve kritik kullanıcı journey’leri geçmeli.
 
-## İptal ve rollback
+## 10. İptal ve rollback
 
-- Migration transaction içindeyken hata alırsa `BEGIN/COMMIT` sınırı otomatik rollback sağlar. Enjekte edilen hata testlerinde foundation, parity ve auth-state sonrası kataloglar referans klonla sıfır fark verdi.
-- Migration 5 saniye lock timeout'a düşerse, one-shot süreç 30 saniyeyi aşarsa veya beklenmeyen SQL/constraint hatası verirse **uygulamayı başlatma**. One-shot süreci sonlandır, logları ve backup SHA-256 değerini sakla, önceki uygulama imajını migration öncesi additive şemaya karşı yeniden başlat veya forward-fix hazırla.
-- Commit sonrasında veritabanında ters DDL çalıştırmak varsayılan rollback değildir. Değişiklikler additive ve eski uygulama tarafından tolere edilir; uygulama imajı geri alınır, yeni kolon/tip/indexler yerinde bırakılır ve forward-fix hazırlanır.
-- `ALTER TYPE ... ADD VALUE` güvenli biçimde geri alınamaz. `OFFLINE` enum değerini kaldırmaya çalışma.
-- Kolon/index/type drop komutları veri ve bağımlılık riski taşıdığı için bu runbook otomatik ters migration önermiyor.
+### Migration commit edilmeden önce
 
-## Secret rotasyonu sonrası
+Migration transaction’ı abort edilir. Ledger değişmediyse exact eski image
+yeniden başlatılır. Backup restore edilmez.
 
-Canlı anahtarlar kullanıcı tarafından rotate edildikten sonra yeni bir production dump alınır, hemen sanitize edilir, beş sanitize kontrolü doğrulanır ve yalnız sanitize edilmiş yeni artefakt disposable klon kaynağı yapılır. Ham dump `RAW-DO-NOT-CLONE` altında kalır veya kullanıcı onayıyla güvenli biçimde kaldırılır.
+### Migration commit edildi, trafik açılmadı
+
+Yeni image durdurulur. Yalnız production-derived klonda post-migration schema
+ile uyumluluğu kanıtlanmış exact eski image başlatılır. Otomatik ters DDL
+çalıştırılmaz; additive schema yerinde kalır ve forward-fix hazırlanır.
+
+### Trafik açıldıktan sonra
+
+Öncelik image rollback veya forward-fix’tir. DB restore backup sonrasındaki
+gerçek kullanıcı verisini kaybettirebilir; açık RPO/reconciliation kararı
+olmadan yapılmaz. DB restore zorunluysa PostgreSQL, S3 object state, tarihsel
+local-fallback recovery state ve Redis queue state aynı mantıksal ana getirilir.
+Yalnız DB restore etmek kabul edilmez.
+
+## 11. Açık yerel fazlar
+
+- **A.1.1:** ledger-driven migration planı ve bu runbook — bu dosyanın mevcut
+  kapsamı.
+- **A.1.2:** fail-closed, checksum’lı custom-format backup scripti.
+- **A.1.3:** kalıcı artifact üreten gerçek PG17 restore drill’i.
+- **A.1.4:** local/CI PostgreSQL 17 hizalaması; mevcut PG16 volume doğrudan
+  PG17 image ile açılmayacak, dump/restore ve yeni volume kullanılacak.
+- **A.1.5:** frozen dependency, security bağımlı staging, webhook/health ve
+  immutable image kapıları.
+- **A.2:** worker/cron maintenance boot; job’u tüketip erken `return` eden sahte
+  kapatma kabul edilmeyecek.
+
+Bu fazların tamamı bağımsız test/review ve ayrıca kullanıcı GO’su almadan
+production salt-okunur envanterden cutover aşamasına ilerlenmez.

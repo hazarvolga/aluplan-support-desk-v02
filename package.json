@@ -16,6 +16,7 @@
         "db:update:migration-manifest": "node scripts/verify-migration-integrity.mjs --write-manifest",
         "db:verify:migration-files": "node scripts/verify-migration-integrity.mjs --files-only",
         "db:verify:migrations": "node scripts/verify-migration-integrity.mjs",
+        "db:plan:production-migrations": "node scripts/resolve-production-migration-plan.mjs",
         "db:verify:schema-parity": "node scripts/verify-schema-parity.mjs",
         "db:compare:data": "node scripts/compare-database-data.mjs",
         "db:compare:schema": "node scripts/compare-database-schema.mjs",
@@ -24,7 +25,7 @@
         "rag:maintenance": "pnpm --filter @aluplan/backend rag:maintenance",
         "i18n:check": "pnpm --filter @aluplan/frontend i18n:check",
         "spec:verify": "node scripts/verify-specs.mjs",
-        "test:ops-safety": "node --test scripts/verify-migration-integrity.test.mjs scripts/production-boot-safety.test.mjs scripts/verify-rbac-contract.test.mjs scripts/verify-frontend-api-contract.test.mjs",
+        "test:ops-safety": "node --test scripts/verify-migration-integrity.test.mjs scripts/resolve-production-migration-plan.test.mjs scripts/production-boot-safety.test.mjs scripts/verify-rbac-contract.test.mjs scripts/verify-frontend-api-contract.test.mjs",
         "api:verify-frontend-contract": "node scripts/verify-frontend-api-contract.mjs",
         "rbac:verify-contract": "node scripts/verify-rbac-contract.mjs",
         "rbac:verify-database": "node scripts/verify-rbac-contract.mjs --database"
