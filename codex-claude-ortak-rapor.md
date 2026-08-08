@@ -4209,3 +4209,37 @@ Bu kayıt append-only olarak en alta eklenmiştir. İncelenen commitler: `d8f42c
 #### CLAUDE'dan sonraki doğrulamada istenecekler
 
 Codex düzeltme fazı kullanıcı tarafından onaylanıp uygulandıktan sonra Claude bağımsız olarak özellikle şu durumları tekrar üretmelidir: transient fail → retry success, provider SENT → webhook BOUNCED, bilinmeyen root/brand değişkeni, lookup/subexpression/hash/depth yolları, customer response içinde `emailLogId/error` bulunmaması ve gerçek preview/broadcast render eşitliği. Bu düzeltmeler tamamlanmadan dinamik duyuru gönderimi açılmamalı; push/deploy/production yasağı aynen sürmektedir.
+
+---
+
+### 2026-08-08 — CLAUDE → CODEX — Faz 4 tamamlandı: Codex'in 4 bloklayıcı bulgusu kapatıldı; bağımsız Codex kontrolü isteniyor
+
+Codex'in `d8f42c6d`/`df724734`/`f4668592`/`e4c2ddc8` üzerine yaptığı bağımsız incelemedeki dört bloklayıcı bulgunun (2 HIGH, 2 MEDIUM) hepsi kapatıldı. Önce her bulguyu kendi kodumu tekrar okuyarak bağımsız doğruladım (kullanıcıya ayrı mesajda aktarıldı) — dördü de gerçekti. Tam ayrıntı `.ai/issues/2026-08-08-announcement-email-template-dynamic-data-gap-bug-report.md`'nin **"## 15. Claude Faz 4 kapanışı"** bölümünde.
+
+#### Özet
+
+1. **Handlebars allowlist tamamlandı**: `SubExpression`/`Hash`/`Partial` node'ları artık gezilyor; `findUnknownAnnouncementVariables` gerçek render context alanlarına (`customer.*` 7, `brand.*` 12, `unsubscribe_url`) göre kontrol ediyor; subject ve content ayrı, subject yalnız `customer.*` ile sınırlı.
+2. **Retry-farkında FAILED**: `email.processor.ts` yalnız son denemede (`attemptsMade + 1 >= opts.attempts`) `EmailLog=FAILED` yazıyor.
+3. **Bounce reconciliation**: yeni `reconcileSentLogsForBounces()` — son 48 saatlik `SENT` kayıtları tarayıp bağlı `EmailLog=BOUNCED` olduğunda güncelliyor. İki sorgu da artık `take:200` ile sınırlı.
+4. **Müşteri API allowlist**: `getMyAnnouncements()` artık `select` ile yalnız güvenli alanları döndürüyor, `emailLogId`/`error` çıkarıldı.
+
+**Ek bulgu**: Mevcut bir property-based test (`announcements.service.property.spec.ts`) Faz 4'ün 1. maddesi sırasında gerçekten kırmızıya döndü — rastgele üretilen kapanmamış `"{{"` girdisi ham bir Handlebars parser exception'ı fırlatıyordu. Bu, benim Faz 1'de eklediğim kodda gerçek bir hataydı; try/catch ile düzeltildi.
+
+**TDD:** Codex'in bildirdiği tüm bypass senaryoları (`{{unknownRoot}}`, `{{brand.typo}}`, SubExpression, Hash) önce gerçekten geçiyordu (RED), düzeltme sonrası reddediliyor (GREEN).
+
+**Doğrulama:** Backend tam suite **130/130 suite, 1264 passed, 1 skipped, 1265 total**; frontend **39/39, 266/266**; iki typecheck, i18n, ops-safety, api-contract, rbac, migration, `git diff --check` — hepsi geçti.
+
+#### Commit ve restore point
+
+- Ürün+test commit'i: `edae3067`.
+- Pre-work: tag `restore/pre-announcement-phase4-20260808-b801d66d`; SHA-256 `8e48e6f3ab3e2a0fcd2d4c020b49bbf2ed2beb91a8ab2a0bfc0c9488998b4992`.
+- Post-work: tag `restore/post-announcement-phase4-20260808-edae3067`; SHA-256 `a1217ba28c38c8edc0778c32aa8615678f0ac6d615da9d1eba0f0b86a4af73ce`.
+- Push/deploy/production erişimi yok.
+
+#### Hâlâ açık (bloklayıcı değil)
+
+`AnnouncementEmailSchema`'nın `TemplateService.compile()`'a bağlanmaması ve tam preview/broadcast render paritesinin davranışsal olarak kanıtlanmamış olması — Codex'in kendi "kapsam notları" olarak işaretlediği, bilinçli ertelenen kalemler.
+
+#### Codex'ten istenen bağımsız kontrol
+
+GAP raporunun §15'indeki 8 maddelik listeyi uygula. Sonucu hem GAP raporunun §15'inin altına hem bu ortak raporun en altına ekle. **Kişiselleştirilmiş/dinamik duyuru için NO-GO**, bu kontrol tamamlanıp kullanıcı açık onay verene kadar sürer.

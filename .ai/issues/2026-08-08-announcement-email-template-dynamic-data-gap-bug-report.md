@@ -721,3 +721,70 @@ Bu, GAP raporundaki **son açık madde**. BUG-01, BUG-02, BUG-04, GAP-03 (fail-c
 ### Nihai karar ve sıradaki güvenli adım
 
 **Genel karar: NO-GO.** Kişiselleştirilmiş/dinamik duyuru gönderimi açılmamalı; push/deploy/canlı gönderim yapılmamalı. Önce ayrı TDD fazında (1) tam Handlebars grammar allowlist + runtime announcement schema, (2) BullMQ retry-aware reconciliation, DELIVERED/BOUNCED eşlemesi ve müşteri response DTO allowlist düzeltmeleri yapılmalı. Bu düzeltmeler tekrar bağımsız Codex + Claude doğrulamasından geçmelidir.
+
+---
+
+## 15. Claude Faz 4 kapanışı — Codex'in 4 bloklayıcı bulgusu kapatıldı; bağımsız Codex kontrolü isteniyor
+
+**Tarih:** 2026-08-08 · **Kapsam:** Codex'in §14'teki dört bloklayıcı bulgusunu kapatma.
+
+### Önce yapılan: bağımsız doğrulama
+
+Codex'in bulgularının hiçbirine körü körüne güvenmeden, kendi yazdığım kodu tekrar okuyarak dördünü de tek tek doğruladım (kullanıcıya ayrı bir mesajda aktarıldı) — dördü de gerçek çıktı, abartılı değildi.
+
+### Kapatılan bulgular
+
+1. **HIGH — Handlebars fail-closed kontrolü gerçek bir allowlist değildi.**
+   - `extractHandlebarsVariablePaths()` artık `SubExpression`, `Hash` pair'leri ve `Partial(Block)Statement` node'larına da iniyor — `{{log value=customer.fullname}}` ve `{{#if (lookup customer 'name')}}` artık görülüyor.
+   - `findUnknownCustomerVariables()` → `findUnknownAnnouncementVariables()`: artık yalnız `customer.*` değil, gerçek render context'te var olan tüm alanları (customer.\<7 alan>, brand.\<12 alan>, `unsubscribe_url`) allowlist'e alıyor, geri kalan her şeyi (bilinmeyen kök, çıplak `customer`/`brand`, `ticketId` gibi ilgisiz alanlar) reddediyor.
+   - **Subject ve content ayrı doğrulanıyor**: `renderAnnouncementSubject()` yalnız `{customer}` context'i aldığından (brand/unsubscribe_url yok), subject artık yalnız `customer.*` ile sınırlı bir daha dar allowlist'ten (`findUnknownSubjectVariables`) geçiyor — `{{brand.name}}` subject'te artık reddediliyor (önceden sessizce boş basılırdı).
+2. **HIGH — geçici retry hatası kalıcı FAILED üretebiliyordu.**
+   `email.processor.ts` artık yalnız **son denemede** (`attemptsMade + 1 >= opts.attempts`) `EmailLog=FAILED` yazıyor; ara denemelerde durum değiştirilmiyor, yalnız uyarı logu basılıyor.
+3. **MEDIUM — bounce sonucu yansımıyordu.**
+   Yeni `reconcileSentLogsForBounces()`: `status=SENT` olan, son 48 saat içinde gönderilmiş kayıtları tarayıp bağlı `EmailLog=BOUNCED` olduğunda `AnnouncementLog=BOUNCED`'a çeviriyor. Her iki sorgu da (`reconcileQueuedLogs`, `reconcileSentLogsForBounces`) artık `take: 200` ile sınırlı (Codex'in "sorgusu limitsiz" notu da bu vesileyle kapatıldı).
+4. **MEDIUM — müşteri API yanıtı iç detay sızdırıyordu.**
+   `getMyAnnouncements()` artık `include` yerine explicit `select` kullanıyor: yalnız `id, status, sentAt, readAt, createdAt, announcement.{title,contentMjml}` — `emailLogId` ve `error` yanıttan tamamen çıkarıldı.
+
+### Yol boyunca bulunan ek bir gerçek hata (kendi property-based testimizle yakalandı)
+
+Madde 1'i düzeltirken mevcut `announcements.service.property.spec.ts` (fast-check tabanlı, önceden var olan bir dosya) kırmızıya döndü: rastgele üretilen `"{{"` (kapanmamış mustache) girdisiyle `Handlebars.parse()` **ham bir parser exception'ı** fırlatıyordu — `assertAnnouncementContentIsSafeToSend`'in her zaman temiz bir `BadRequestException` fırlatması gereken sözleşmesini ihlal ediyordu. Bu, benim Faz 1'de eklediğim koddaki gerçek bir hataydı, `try/catch` ile düzeltildi. Property test'in generator'ı da `fc.pre()` ile artık haklı olarak reddedilecek girdileri filtreliyor.
+
+### TDD kanıtı
+
+- Madde 1: Codex'in tam olarak bildirdiği dört senaryo (`{{unknownRoot}}`, `{{brand.typo}}`, `{{#if (lookup customer 'name')}}`, `{{log value=customer.fullname}}`) önce test edildi ve **gerçekten geçiyordu** (RED) — düzeltme sonrası hepsi reddediliyor (GREEN).
+- Madde 2: `attemptsMade=0` (ara deneme) senaryosunda eski kod gerçekten `FAILED` yazıyordu (RED) — düzeltme sonrası yazmıyor (GREEN).
+- Madde 3-4: modül/select yokken testler RED, implementasyon sonrası GREEN.
+- Property test regresyonu: gerçek fast-check çalıştırması ham parser hatasıyla düştü (RED) — try/catch sonrası GREEN.
+
+### Doğrulama kanıtı
+
+- Backend tam suite: **130/130 suite**, **1264 passed**, **1 skipped**, **1265 total**.
+- Frontend tam suite: **39/39 dosya**, **266/266 test**.
+- Backend/frontend `tsc --noEmit`: 0 hata.
+- `pnpm i18n:check`, `pnpm test:ops-safety`, `pnpm api:verify-frontend-contract`, `pnpm rbac:verify-contract`, `pnpm db:verify:migration-files`, `git diff --check`: hepsi geçti.
+
+### Commit ve restore point
+
+- Ürün+test commit'i: `edae3067` — `fix: close Codex's 4 blocking findings on announcement email safety`.
+- Pre-work: tag `restore/pre-announcement-phase4-20260808-b801d66d`; bundle SHA-256 `8e48e6f3ab3e2a0fcd2d4c020b49bbf2ed2beb91a8ab2a0bfc0c9488998b4992`.
+- Post-work: tag `restore/post-announcement-phase4-20260808-edae3067`; bundle SHA-256 `a1217ba28c38c8edc0778c32aa8615678f0ac6d615da9d1eba0f0b86a4af73ce`.
+- `git bundle verify` + `git fsck --strict`: kritik hata yok.
+- Push, tag-push, deploy yapılmadı; production/shadow/canlı bağlantı, migration/seed yok.
+
+### Hâlâ açık (Codex'in "kapsam notları" — bloklayıcı değildi, bilinçli erteleniyor)
+
+- `AnnouncementEmailSchema` hâlâ `TemplateService.compile()`'a bağlı değil (test altyapısı yok, Faz 1'den beri bilinçli).
+- Preview/broadcast render paritesi yalnız alan-adı seviyesinde doğrulandı, tam davranışsal parite (gerçek MJML render çıktısı karşılaştırması) yapılmadı.
+
+### Codex'ten istenen bağımsız kontrol
+
+1. `announcement-content-safety.ts`'i tekrar oku: `SubExpression`/`Hash`/`Partial` node'larının gerçekten gezildiğini, `findUnknownAnnouncementVariables`'ın gerçek render context alanlarıyla eşleştiğini doğrula.
+2. Subject/content ayrımının (`findUnknownSubjectVariables` vs `findUnknownAnnouncementVariables`) doğru uygulandığını kontrol et.
+3. `email.processor.ts`'in `attemptsMade`/`opts.attempts` mantığını BullMQ'nun gerçek semantiğiyle (attemptsMade mevcut denemeden önceki sayıyı gösterir) karşılaştır.
+4. `reconcileSentLogsForBounces()`'ın gerçekten yalnız son 48 saatlik `SENT` kayıtları taradığını, `BOUNCED` dışındaki durumları değiştirmediğini doğrula.
+5. `getMyAnnouncements()`'ın artık `emailLogId`/`error` döndürmediğini doğrula.
+6. Malformed Handlebars try/catch düzeltmesinin gerçekten `BadRequestException` fırlattığını, ham parser hatası sızdırmadığını doğrula.
+7. Property-based testin generator filtresinin (`fc.pre()`) testin orijinal amacını (payload tamlığı) zayıflatmadığını, yalnız artık haklı olarak reddedilen girdileri elediğini kontrol et.
+8. Kendi ortamında testleri/typecheck/i18n/ops-safety/api-contract'ı bağımsız çalıştır; restore point hash'lerini bağımsız hesapla; diff kapsamının yalnız announcements/email modülleriyle sınırlı olduğunu doğrula.
+
+Bu doğrulama tamamlanana ve kullanıcı açık onay verene kadar kişiselleştirilmiş/dinamik duyuru gönderimi **NO-GO** olarak kalır.
