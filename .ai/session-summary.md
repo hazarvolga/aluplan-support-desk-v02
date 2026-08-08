@@ -4010,6 +4010,28 @@ Maintenance rule:
 - Existing Cloudflare R2 application bucket `aluplan-support-desk` (`402` objects, `37.42 GB` observed) was not written, moved, renamed or deleted. `aluplancoolify` is unrelated. Proposed DB-only bucket `aluplan-support-desk-db-backups` is not yet created/configured.
 - Verified restore point: `restore/post-release-a12-20260808-64c5d2bc`; bundle SHA-256 `a6b1f98e8828d3a6ec9b5f01e2887408eb42832d777699eb3aba9d147b67c0cd`.
 - Production remains NO-GO until A.1.3 exact-image, real Cloudflare R2 round-trip and disposable PG17+pgvector restore evidence. No live DB/R2/SSH action, migration, seed, push, tag-push or deploy occurred.
+
+## 2026-08-08 - Pause and morning handoff
+
+- Work paused after the verified A.1.2 local closure; no additional product
+  code, live system action or external mutation was started.
+- Last product/tooling commit is `64c5d2bc`; the preceding release-doc
+  checkpoint is `46ec376c`. A.1.1 migration planning and A.1.2 backup
+  hardening are locally complete, but production remains NO-GO.
+- Final evidence carried forward: backend `132/132` suites (`1311 passed`,
+  `1 skipped`), frontend `42/42` files (`308/308`), backup `44/44`, ops
+  `87/87`, typechecks, i18n, API/RBAC and migration `56/56`; independent
+  TDD/code/security reviews GO with C/H/M `0/0/0`.
+- Existing Cloudflare R2 `aluplan-support-desk` application data (`402`
+  objects / `37.42 GB` observed) remains untouched. `aluplancoolify` is
+  unrelated. Proposed `aluplan-support-desk-db-backups` is not created or
+  configured.
+- Next phase A.1.3 must prove the exact backend image, conditional R2
+  round-trip and a disposable PG17+pgvector restore before any cutover.
+  Production ledger, credential rotation, object parity, all nine queues,
+  cron/repeatable-job singleton behavior and rollback remain acceptance gates.
+- New sessions must start at `FIRST-READ.md` section 10. No push, tag-push,
+  deploy, production DB/R2/SSH write, migration or seed is authorized.
 - Claude independently re-ran the source, local read-only DB, restore-integrity, targeted/full test, typecheck, i18n and contract checks and returned GO with no contradicted claim or count deviation. Aşama A is therefore closed; work pauses here.
 - Root `FIRST-READ.md` is the shared Codex/Claude account-switch and new-session entry point. It preserves the canonical directory, read order, archive reference, local-only boundaries, Aşama A closure, and Aşama B NO-GO gate.
 ## 2026-08-08 - Announcement email preference BUG-05 closure

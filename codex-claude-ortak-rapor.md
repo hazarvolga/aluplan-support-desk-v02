@@ -4543,3 +4543,51 @@ erişimi veya yazımı, migration, seed, push, tag-push ve deploy yapılmadı.
 Claude'dan istenen sonraki bağımsız kontrol: `64c5d2bc` kapsamını ve yukarıdaki
 test sayılarını kaynak koddan doğrulamak; ancak gerçek R2/DB/image kabulünü bu
 yerel GO ile karıştırmamak ve A.1.3 başlamadan önce kullanıcı onayını beklemek.
+
+---
+
+### 2026-08-08 — CODEX → CLAUDE — Ara verme ve sabah devam checkpoint'i
+
+Kullanıcı yorgun olduğu için çalışma güvenli sınırda durduruldu. Bu kayıt yeni
+bir production GO değildir ve A.1.3'ü başlatmaz.
+
+#### Tamamlanan durum
+
+- A.1.1 ledger-driven migration planı: `8fbdc0b1`.
+- A.1.2 fail-closed backup hardening: `64c5d2bc`.
+- A.1.2 dokümantasyon checkpoint'i: `46ec376c`.
+- Son kanıt: backend `132/132` suite (`1311 passed`, `1 skipped`), frontend
+  `42/42` dosya (`308/308`), backup `44/44`, ops `87/87`, typecheck/i18n,
+  API contract `182/233 missing=0 raw-network=0`, RBAC `12 rol/19 izin`,
+  migration `56/56`. TDD/code/security review GO; C/H/M `0/0/0`.
+
+#### Korunan veri ve değişmez sınırlar
+
+- R2 `aluplan-support-desk` uygulama bucket'ındaki gözlenen `402` nesne /
+  `37.42 GB` veriye dokunulmadı. Taşıma, silme, rename veya write yapılmadı.
+- `aluplancoolify` kapsam dışıdır.
+- Ayrı DB backup hedefi önerisi `aluplan-support-desk-db-backups`; henüz
+  oluşturulmadı, credential üretilmedi ve yapılandırılmadı.
+- Production PostgreSQL parolası daha önce Coolify UI çıktısında görüldüğü için
+  release öncesi rotate edilmelidir; secret değeri hiçbir belgeye yazılmadı.
+- Push, tag-push, deploy, production DB/R2/SSH yazımı, migration ve seed yasağı
+  aynen devam ediyor.
+
+#### Neden hâlâ NO-GO ve sabah hangi sırayla devam edilecek
+
+Yerel kod/test güveni yüksektir; eksik olan gerçek deploy artifact'i ve veri
+kurtarma kanıtıdır. Sabah yalnız A.1.3 planıyla devam edilecek:
+
+1. Exact backend Docker image build ve runtime smoke.
+2. Kullanıcı onayı sonrasında ayrı DB-only Cloudflare R2 hedefinde conditional
+   upload/download/hash canary; mevcut uygulama bucket'ı backup hedefi yapılmaz.
+3. Güncel custom dump'ın izole PostgreSQL 17 + pgvector ortama restore edilmesi.
+4. Migration planı, ikinci migrate no-op, tablo/kritik iş verisi/RAG ve dosya
+   referanslarının pre/post karşılaştırılması.
+5. Dokuz BullMQ queue, repeatable jobs ve cron singleton/overlap kanıtı.
+6. S3 object parity, credential rotasyonu, immutable image ve rollback provası.
+
+Bu kapılar geçmeden deploy/cutover yapılmayacak. Global Prisma soft-delete
+Aşama B ayrı bir NO-GO işidir ve release hazırlığına sessizce eklenmeyecektir.
+Yeni Codex veya Claude oturumu önce `FIRST-READ.md` bölüm 10'u ve kanonik `.ai`
+belgelerini okumalı, sonra Git durumunu doğrulamalıdır.

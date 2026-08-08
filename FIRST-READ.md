@@ -129,3 +129,59 @@ Yeni oturum ilk okumasından sonra şu dört noktayı açıkça teyit et:
 ```text
 Kök dizindeki FIRST-READ.md dosyasını tamamen oku, belirtilen proje hafızası ve Git kontrollerini uygula; mevcut durumu özetle ve benden açık onay almadan kod, commit, push, deploy veya canlı sistem işlemi yapma.
 ```
+
+## 10. 2026-08-08 ara verme checkpoint'i — sabah buradan devam et
+
+Bu bölüm, yukarıdaki tarihsel Review Center bilgisinden daha günceldir.
+Aktif hedef artık **production release hazırlığıdır**.
+
+### Tamamlanan son iki release fazı
+
+- **A.1.1** `8fbdc0b1`: production migration planı sabit varsayımlardan
+  çıkarılıp kanonik migration dosyaları/checksum manifesti ile
+  `_prisma_migrations` ledger farkından türetilen fail-closed yapıya taşındı.
+- **A.1.2** `64c5d2bc`: explicit opt-in, PostgreSQL 17 custom-format dump,
+  checksum, archive doğrulaması, private path/lock/symlink/ownership koruması,
+  S3 no-clobber ve READY-last sözleşmesine sahip backup tooling tamamlandı.
+- A.1.2 dokümantasyon checkpoint'i: `46ec376c`.
+- Son yerel doğrulama: backend `132/132` suite (`1311 passed`, `1 skipped`),
+  frontend `42/42` dosya (`308/308`), backup `44/44`, ops `87/87`, typecheck,
+  i18n, API/RBAC ve migration `56/56` temiz. TDD/code/security review GO;
+  Critical/High/Medium `0/0/0`.
+
+### Veri ve canlı sistem sınırı
+
+- Cloudflare R2 `aluplan-support-desk`, uygulamanın mevcut dosya bucket'ıdır.
+  Gözlenen `402` nesne / `37.42 GB` veri taşınmadı, silinmedi, yeniden
+  adlandırılmadı veya yazılmadı.
+- `aluplancoolify` bu proje için kapsam dışıdır.
+- Önerilen ayrı DB backup bucket adı `aluplan-support-desk-db-backups`;
+  henüz oluşturulmadı, credential üretilmedi ve bağlantı kurulmadı.
+- Daha önce Coolify UI çıktısında görünen production PostgreSQL parolası
+  ifşa edilmiş kabul edilir. Değeri hiçbir belgeye yazma; release öncesi
+  kontrollü rotasyon ve tüm bağımlı bağlantıların doğrulanması zorunludur.
+- Production/canlı DB, R2 veya SSH üzerinde bu checkpoint'te işlem yapılmadı.
+
+### Güncel karar ve açık kapılar
+
+- Kod kalitesi ve yerel test güveni yüksek olsa da genel production kararı
+  hâlâ **NO-GO**.
+- Sıradaki faz **A.1.3**: exact backend image build/smoke, kullanıcı onayıyla
+  ayrı DB-only Cloudflare R2 hedefinde conditional upload/download/hash canary
+  ve izole PostgreSQL 17 + pgvector restore tatbikatı.
+- Restore drill'de migration planı, ikinci migrate çalışmasının no-op olması,
+  tablo/kritik iş verisi/RAG dağılımı ve dosya referansları doğrulanmalı.
+- Cutover öncesinde dokuz BullMQ kuyruğu, repeatable jobs ve cron tekilliği;
+  eski/yeni instance overlap yasağı; S3 object parity; rollback adımları ve
+  PostgreSQL credential rotasyonu kanıtlanmalı.
+- Global Prisma soft-delete **Aşama B** ayrı NO-GO işidir; release hazırlığına
+  sessizce dahil edilmez.
+
+### Sabah ilk güvenli adım
+
+1. Bu dosyayı ve bölüm 3'teki kanonik belgeleri yeniden oku.
+2. `git status --short`, branch ve son commit'i doğrula; temizliği varsayma.
+3. Push/deploy/canlı yazma yasağını teyit et.
+4. A.1.3 için önce yalnız yerel/external-acceptance planını ve gerekli
+   kullanıcı onaylarını çıkar; hemen production'a bağlanma veya bucket oluşturma.
+5. Gerçek R2/DB/image kabulünü yerel test GO'su ile karıştırma.

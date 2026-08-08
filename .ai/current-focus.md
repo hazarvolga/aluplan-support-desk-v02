@@ -411,3 +411,24 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Mevcut R2 `aluplan-support-desk` uygulama bucket'ındaki `402` nesne / `37.42 GB` veri değişmedi. `aluplancoolify` kapsam dışı. Ayrı DB backup hedefi önerisi `aluplan-support-desk-db-backups`; henüz oluşturulmadı.
 - Restore: `restore/post-release-a12-20260808-64c5d2bc`; bundle SHA-256 `a6b1f98e8828d3a6ec9b5f01e2887408eb42832d777699eb3aba9d147b67c0cd`.
 - Production hâlâ NO-GO. Sıradaki güvenli faz A.1.3: exact image + gerçek Cloudflare R2 conditional round-trip + disposable PG17/pgvector restore drill. Canlı erişim/yazım, migration/seed, push/tag-push/deploy yok.
+
+## Pause Checkpoint - 2026-08-08 gece / sabah devam
+
+- Kullanıcı yorgun olduğu için çalışma güvenli checkpoint'te durduruldu. Yeni
+  ürün geliştirmesi, production bağlantısı veya dış sistem mutasyonu başlatılmadı.
+- Güncel yerel HEAD bu kayıt öncesinde `46ec376c`; son ürün/tooling commit'i
+  `64c5d2bc`. A.1.1 ve A.1.2 yerel olarak kapalı, production genel GO değildir.
+- Yerel güven: backend `132/132` suite (`1311 passed`, `1 skipped`), frontend
+  `42/42` dosya (`308/308`), backup `44/44`, ops `87/87`, typecheck/i18n,
+  API/RBAC ve migration `56/56`; TDD/code/security GO, C/H/M `0/0/0`.
+- Mevcut `aluplan-support-desk` R2 uygulama bucket'ı (`402` nesne / `37.42 GB`)
+  dokunulmadan korunuyor. `aluplancoolify` kapsam dışı. Önerilen
+  `aluplan-support-desk-db-backups` henüz oluşturulmadı veya yapılandırılmadı.
+- Sıradaki tek aktif release işi A.1.3'tür: exact image smoke, ayrı DB-only R2
+  conditional round-trip ve disposable PG17+pgvector restore drill. Bunlar
+  tamamlanmadan deploy/cutover yok.
+- Release öncesi ayrıca production PostgreSQL credential rotasyonu, canlı
+  ledger salt-okunur planı, object parity, dokuz queue/cron tekilliği ve
+  rollback kanıtı gereklidir.
+- Sabah `FIRST-READ.md` bölüm 10'dan başla. Push, tag-push, deploy, production
+  DB/R2/SSH yazımı, migration ve seed yasakları aynen sürüyor.
