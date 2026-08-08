@@ -205,6 +205,48 @@ describe('EmailService', () => {
                 expect.objectContaining({ action: 'email_enqueue_failed' }),
             );
         });
+
+        // GAP report BUG-04: callers (AnnouncementsService.broadcast) need the
+        // created EmailLog id to link their own record to the real delivery
+        // outcome, and need to be able to tell "genuinely queued" apart from
+        // "silently skipped" instead of assuming every resolved call means SENT.
+        describe('return value (BUG-04 linkage contract)', () => {
+            it('resolves with the created EmailLog id on a successful enqueue', async () => {
+                const result = await service.enqueueEmail(basePayload);
+                expect(result).toBe('log-1');
+            });
+
+            it('resolves with null when skipping a reserved test recipient', async () => {
+                const previousNodeEnv = process.env.NODE_ENV;
+                process.env.NODE_ENV = 'production';
+                try {
+                    const result = await service.enqueueEmail({ ...basePayload, to: 'admin@example.com' });
+                    expect(result).toBeNull();
+                } finally {
+                    process.env.NODE_ENV = previousNodeEnv;
+                }
+            });
+
+            it('resolves with null when the user has opted out of the email type', async () => {
+                mockPrisma.user.findUnique.mockResolvedValueOnce({ id: 'u-1', email: 'user@example.com' });
+                mockPrisma.emailPreference.findUnique
+                    .mockResolvedValueOnce(null)
+                    .mockResolvedValueOnce({ enabled: false });
+
+                const result = await service.enqueueEmail(basePayload);
+                expect(result).toBeNull();
+            });
+
+            it('resolves with null when the user has globally unsubscribed', async () => {
+                mockPrisma.user.findUnique.mockResolvedValueOnce({ id: 'u-1', email: 'user@example.com' });
+                mockPrisma.emailPreference.findUnique
+                    .mockResolvedValueOnce({ enabled: false })
+                    .mockResolvedValueOnce(null);
+
+                const result = await service.enqueueEmail(basePayload);
+                expect(result).toBeNull();
+            });
+        });
     });
 
     // ─── cancelEmail ─────────────────────────────────────────────────────────

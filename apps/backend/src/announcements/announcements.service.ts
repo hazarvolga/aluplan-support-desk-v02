@@ -199,13 +199,19 @@ export class AnnouncementsService {
                         contentHtml: isMjml ? undefined : content,
                         customer: customerContext,
                     },
-                }).then(async () => {
-                    // In a perfect world, we'd link the emailLogId here, 
-                    // but enqueueEmail is async and EmailProcessor updates the status.
-                    // We'll update the annLog status to SENT for now
+                }).then(async (emailLogId) => {
+                    // enqueueEmail() only confirms the job reached the queue,
+                    // not that it was delivered — EmailProcessor decides the
+                    // real SENT/FAILED outcome later. AnnouncementLogReconciliationService
+                    // reads that outcome via emailLogId and updates this row.
+                    // A null id means the send was skipped before a queue job
+                    // ever existed (opted out / blocked recipient) — that is
+                    // not a delivery failure, so it gets its own status.
                     await this.prisma.announcementLog.update({
                         where: { id: annLog.id },
-                        data: { status: 'SENT', sentAt: new Date() }
+                        data: emailLogId
+                            ? { status: 'QUEUED', emailLogId }
+                            : { status: 'SKIPPED', error: 'Recipient opted out or is a blocked/reserved address' },
                     });
                 }).catch(async (err) => {
                     await this.prisma.announcementLog.update({

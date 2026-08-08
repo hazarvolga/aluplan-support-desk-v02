@@ -36,7 +36,10 @@ function buildPrismaMock() {
 
 function buildEmailMock() {
     return {
-        enqueueEmail: jest.fn().mockResolvedValue(undefined),
+        // Default: a real enqueue, matching EmailService.enqueueEmail's
+        // contract of resolving with the created EmailLog id. Tests that
+        // exercise the "skipped" (null) or "throws" paths override this.
+        enqueueEmail: jest.fn().mockResolvedValue('email-log-1'),
         cancelEmail: jest.fn().mockResolvedValue(undefined),
     };
 }
@@ -552,5 +555,90 @@ describe('AnnouncementsService — broadcast subject rendering and content safet
         expect(email.enqueueEmail).toHaveBeenCalledWith(
             expect.objectContaining({ subject: 'Sistem Bakım Duyurusu' }),
         );
+    });
+});
+
+// ---------------------------------------------------------------------------
+// broadcast — AnnouncementLog reflects real enqueue outcome (GAP report BUG-04)
+// ---------------------------------------------------------------------------
+
+describe('AnnouncementsService — broadcast AnnouncementLog status accuracy', () => {
+    let prisma: any;
+    let email: any;
+    let service: AnnouncementsService;
+
+    beforeEach(async () => {
+        prisma = buildPrismaMock();
+        email = buildEmailMock();
+        service = await buildService(prisma, email, buildGatewayMock());
+
+        prisma.announcement.findUnique.mockResolvedValue({
+            id: 'ann-1',
+            title: 'T',
+            subject: 'Static subject',
+            contentMjml: '<mj-text>Static content</mj-text>',
+            targetCriteria: { industries: ['x'] },
+            type: 'BROADCAST',
+            status: 'DRAFT',
+            createdBy: 'u',
+            sentAt: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+        prisma.customerProfile.findMany.mockResolvedValue([{
+            id: 'cust-1',
+            userId: 'user-1',
+            firstName: 'Ada',
+            lastName: 'Lovelace',
+            companyName: 'Analytical Engines Ltd',
+            customerNo: 'CUST-001',
+            user: { id: 'user-1', email: 'ada@example.com' },
+        }]);
+        prisma.announcementLog.create.mockResolvedValue({ id: 'log-1', readAt: null });
+        prisma.announcementLog.update.mockResolvedValue({});
+        prisma.announcement.update.mockResolvedValue({});
+    });
+
+    it('marks the log QUEUED (not SENT) and links emailLogId when enqueueEmail resolves with an id', async () => {
+        email.enqueueEmail.mockResolvedValue('real-email-log-id');
+
+        await service.broadcast('ann-1');
+
+        expect(prisma.announcementLog.update).toHaveBeenCalledWith({
+            where: { id: 'log-1' },
+            data: { status: 'QUEUED', emailLogId: 'real-email-log-id' },
+        });
+        // The old behavior (marking SENT the instant enqueue resolved,
+        // before any real delivery happened) must not reappear.
+        expect(prisma.announcementLog.update).not.toHaveBeenCalledWith(
+            expect.objectContaining({ data: expect.objectContaining({ status: 'SENT' }) }),
+        );
+    });
+
+    it('marks the log SKIPPED (not SENT) when enqueueEmail resolves with null (opted out / blocked)', async () => {
+        email.enqueueEmail.mockResolvedValue(null);
+
+        await service.broadcast('ann-1');
+
+        expect(prisma.announcementLog.update).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: { id: 'log-1' },
+                data: expect.objectContaining({ status: 'SKIPPED' }),
+            }),
+        );
+        expect(prisma.announcementLog.update).not.toHaveBeenCalledWith(
+            expect.objectContaining({ data: expect.objectContaining({ status: 'SENT' }) }),
+        );
+    });
+
+    it('still marks the log FAILED when enqueueEmail throws', async () => {
+        email.enqueueEmail.mockRejectedValue(new Error('Queue unavailable'));
+
+        await service.broadcast('ann-1');
+
+        expect(prisma.announcementLog.update).toHaveBeenCalledWith({
+            where: { id: 'log-1' },
+            data: { status: 'FAILED', error: 'Queue unavailable' },
+        });
     });
 });
