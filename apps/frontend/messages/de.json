@@ -3480,7 +3480,7 @@
         "subject_label": "E-Mail-Betreffzeile",
         "subject_placeholder": "Betreff, der dem Kunden angezeigt wird",
         "content_label": "Rich-Text-Inhalt",
-        "default_content": "<p>Hallo {{customer.name}}!</p><p>Hier kommt der Inhalt der Ankündigung...</p>",
+        "default_content": "<p>Hallo {{customer.firstName}}!</p><p>Hier kommt der Inhalt der Ankündigung...</p>",
         "preview": "Vorschau",
         "save_draft": "Entwurf protokollieren"
       },

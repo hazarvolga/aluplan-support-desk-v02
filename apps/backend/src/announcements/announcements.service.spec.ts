@@ -382,3 +382,79 @@ describe('AnnouncementsService — getMyAnnouncements', () => {
         );
     });
 });
+
+// ---------------------------------------------------------------------------
+// broadcast — customer email context parity (GAP report BUG-02)
+// ---------------------------------------------------------------------------
+
+describe('AnnouncementsService — broadcast customer context', () => {
+    let prisma: any;
+    let email: any;
+    let service: AnnouncementsService;
+
+    beforeEach(async () => {
+        prisma = buildPrismaMock();
+        email = buildEmailMock();
+        service = await buildService(prisma, email, buildGatewayMock());
+
+        prisma.announcement.findUnique.mockResolvedValue({
+            id: 'ann-1',
+            title: 'T',
+            subject: 'S',
+            contentMjml: '<mj-text>Hello</mj-text>',
+            targetCriteria: { industries: ['x'] },
+            type: 'BROADCAST',
+            status: 'DRAFT',
+            createdBy: 'u',
+            sentAt: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+        prisma.customerProfile.findMany.mockResolvedValue([{
+            id: 'cust-1',
+            userId: 'user-1',
+            firstName: 'Ada',
+            lastName: 'Lovelace',
+            companyName: 'Analytical Engines Ltd',
+            customerNo: 'CUST-001',
+            industry: 'x',
+            contractStatus: 'ACTIVE',
+            tags: [],
+            user: { id: 'user-1', email: 'ada@example.com' },
+        }]);
+        prisma.announcementLog.create.mockResolvedValue({ id: 'log-1', readAt: null });
+        prisma.announcementLog.update.mockResolvedValue({});
+        prisma.announcement.update.mockResolvedValue({});
+    });
+
+    it('sends the canonical announcement customer context, not the raw CustomerProfile row', async () => {
+        await service.broadcast('ann-1');
+
+        expect(email.enqueueEmail).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({
+                    customer: {
+                        firstName: 'Ada',
+                        lastName: 'Lovelace',
+                        fullName: 'Ada Lovelace',
+                        companyName: 'Analytical Engines Ltd',
+                        customerNo: 'CUST-001',
+                        email: 'ada@example.com',
+                        userEmail: 'ada@example.com',
+                    },
+                }),
+            }),
+        );
+    });
+
+    it('never leaks internal CustomerProfile fields (industry, contractStatus, tags, id) into the email context', async () => {
+        await service.broadcast('ann-1');
+
+        const call = email.enqueueEmail.mock.calls[0][0];
+        expect(call.data.customer).not.toHaveProperty('industry');
+        expect(call.data.customer).not.toHaveProperty('contractStatus');
+        expect(call.data.customer).not.toHaveProperty('tags');
+        expect(call.data.customer).not.toHaveProperty('id');
+        expect(call.data.customer).not.toHaveProperty('userId');
+    });
+});

@@ -3480,7 +3480,7 @@
         "subject_label": "Email Subject Line",
         "subject_placeholder": "Subject that will appear to customer",
         "content_label": "Rich Text Content",
-        "default_content": "<p>Hello [customer.name]!</p><p>Announcement content will go here...</p>",
+        "default_content": "<p>Hello {{customer.firstName}}!</p><p>Announcement content will go here...</p>",
         "preview": "Preview",
         "save_draft": "Protocol Draft"
       },

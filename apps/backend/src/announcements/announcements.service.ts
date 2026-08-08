@@ -4,6 +4,7 @@ import { EmailService } from '../email/email.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { CreateAnnouncementDto, UpdateAnnouncementDto, TargetCriteriaDto } from './dto/announcement.dto';
 import { Prisma, AnnouncementLog } from '@aluplan/database';
+import { buildAnnouncementEmailContext } from './announcement-email-context';
 
 @Injectable()
 export class AnnouncementsService {
@@ -189,7 +190,7 @@ export class AnnouncementsService {
                     data: {
                         mjml: isMjml ? content : undefined,
                         contentHtml: isMjml ? undefined : content,
-                        customer: target,
+                        customer: buildAnnouncementEmailContext(target),
                     },
                 }).then(async () => {
                     // In a perfect world, we'd link the emailLogId here, 

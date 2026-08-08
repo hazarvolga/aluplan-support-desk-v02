@@ -24,6 +24,21 @@ import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 
 import DOMPurify from 'dompurify';
 
+// Mirrors the backend canonical announcement email context
+// (apps/backend/src/announcements/announcement-email-context.ts).
+// Preview must send the exact same `customer.*` field names the real
+// broadcast sends, or a template that looks correct here can render blank
+// for real recipients. Locked by src/lib/announcement-preview-context.spec.ts.
+const PREVIEW_CUSTOMER_CONTEXT = {
+    firstName: 'Örnek',
+    lastName: 'Müşteri',
+    fullName: 'Örnek Müşteri',
+    companyName: 'Örnek A.Ş.',
+    customerNo: 'CUST-000',
+    email: 'ornek@aluplan.com',
+    userEmail: 'ornek@aluplan.com',
+};
+
 export default function AnnouncementsPage() {
     const t = useTranslations('admin.announcements');
     const locale = useLocale();
@@ -151,7 +166,7 @@ export default function AnnouncementsPage() {
             // For now let's send it as is, and we will update the backend to handle it
             const res = await api.email.previewTemplate('master-announcement', {
                 contentHtml: contentOverride || contentHtml,
-                customer: { first_name: t('audience.persons'), full_name: t('audience.persons'), email: 'ornek@aluplan.com' }
+                customer: PREVIEW_CUSTOMER_CONTEXT,
             });
             if (res.success && res.html) {
                 setPreviewHtml(res.html);
@@ -181,7 +196,7 @@ export default function AnnouncementsPage() {
             }
             const res = await api.email.previewTemplate('master-announcement', {
                 contentHtml: htmlContent,
-                customer: { name: t('audience.persons'), email: 'ornek@aluplan.com' }
+                customer: PREVIEW_CUSTOMER_CONTEXT,
             });
             if (res.success && res.html) {
                 setTemplatePreviewHtml(res.html);
