@@ -665,3 +665,59 @@ Bu, GAP raporundaki **son açık madde**. BUG-01, BUG-02, BUG-04, GAP-03 (fail-c
 6. Restore point hash'ini bağımsız hesapla.
 
 **Nihai durum:** Üç fazın (§10, §11/12, §13) tamamı Codex tarafından bağımsız doğrulanmadan ve kullanıcı açık onay vermeden kişiselleştirilmiş/dinamik duyuru e-postası gönderimi **NO-GO** olarak kalır.
+
+---
+
+## 14. CODEX bağımsız doğrulaması — kısmi GO, genel NO-GO
+
+**Tarih:** 2026-08-08
+
+**İncelenen commitler:** `d8f42c6d`, `df724734`, `f4668592`, `e4c2ddc8`
+
+**Yöntem:** Claude kapanış iddialarına güvenmeden kaynak kod, çağrı zinciri, test içeriği, tek-seferlik salt-okunur davranış deneyleri, Git diff/tag/bundle ve yerel kalite kapıları yeniden kontrol edildi. Ürün kodu, DB, migration ve canlı sistem değiştirilmedi.
+
+### Commit bazlı karar
+
+| Commit / kapsam | Karar | Gerekçe |
+|---|---|---|
+| `d8f42c6d` — BUG-02 context alan paritesi | **GO (dar kapsam)** | Broadcast ham `CustomerProfile` yerine yedi alanlı kanonik customer context gönderiyor; iki frontend preview çağrısı aynı alan kümesini kullanıyor; eski alan adları kaldırılmış. |
+| `df724734` — BUG-01/GAP-03/GAP-06 | **NO-GO** | Customer subject render ve temel bracket kontrolü çalışıyor; ancak iddia edilen fail-closed Handlebars allowlist tam değil ve runtime Zod sözleşmesi render zincirine bağlı değil. |
+| `f4668592` — BUG-04 log/delivery bağı | **NO-GO** | `enqueueEmail()` id/null sözleşmesi ve ilk `QUEUED/SKIPPED/FAILED` ayrımı doğru; reconciliation retry ve webhook durum modelini yanlış terminalleştirebiliyor ve müşteri yanıtına iç hata alanlarını taşıyor. |
+| `e4c2ddc8` — GAP-08 content format | **GO, bloklayıcı olmayan notlarla** | Alan salt-okunur ve additive; migration yok. Detector bazı geçerli MJML başlangıçlarını tanımıyor ve create/update yanıtlarıyla Swagger sözleşmesi tam simetrik değil. |
+
+### Bloklayıcı bulgular
+
+1. **HIGH — Handlebars güvenlik kontrolü gerçek bir fail-closed allowlist değil.**
+
+   `announcement-content-safety.ts:35-76,83-88` yalnız doğrudan `MustacheStatement`/`BlockStatement` path'lerini ve yalnız metinsel `customer.` önekini kontrol ediyor. `SubExpression`, hash argümanları, partial, parent-depth/scope ve slash biçimleri kapsanmıyor. `{{unknownRoot}}`, `{{brand.typo}}`, `{{#if (lookup customer 'name')}}...{{/if}}` ve `{{log value=customer.name}}` yerel davranış deneyinde kabul edildi. Böylece bilinmeyen değişkenler sessizce boş basılabilir. Mevcut testler bu kenarları kapsamıyor.
+2. **HIGH — Geçici worker hatası kalıcı yanlış `AnnouncementLog=FAILED` üretebilir.**
+
+   `email.processor.ts:134-158` her başarısız attempt'te `EmailLog=FAILED` yazıp BullMQ retry için tekrar throw ediyor. Cron `announcement-log-reconciliation.service.ts:33-63` içinde yalnız `AnnouncementLog=QUEUED` kayıtlarını seçip ilk `FAILED` sonucunu terminalleştiriyor. Sonraki retry başarılı olup `EmailLog=SENT` olsa bile announcement log artık taranmadığından yanlış `FAILED` kalır.
+3. **MEDIUM — Bounce/delivery sonucu announcement loguna doğru yansımıyor.**
+
+   Processor provider kabulünde `EmailLog=SENT` yazar; webhook daha sonra `DELIVERED` veya `BOUNCED` yapabilir (`email.controller.ts:106-131`). Reconciliation yalnız `SENT/FAILED` ele alıyor ve `AnnouncementLog=SENT` olduktan sonra tekrar taramıyor. Bounce olmuş ileti kalıcı olarak SENT görünebilir.
+4. **MEDIUM — Müşteri API yanıtı iç e-posta takip ayrıntılarını açıyor.**
+
+   Broadcast `emailLogId` kaydediyor, cron ham provider/SMTP `error` metnini `AnnouncementLog.error` alanına kopyalıyor. `getMyAnnouncements()` Prisma satırının tamamını döndürdüğü için müşteri yanıtında iç UUID ve altyapı hata ayrıntısı bulunabilir (`announcements.service.ts:294-308`). Müşteri yanıtı explicit select/DTO allowlist kullanmalı.
+
+### Kapsam notları
+
+- `AnnouncementEmailSchema` tanımlı fakat `TemplateService.compile()` hâlâ soft `BaseEmailSchema.safeParse()` kullanıyor; GAP-03 runtime doğrulama kısmı kapalı değildir.
+- Subject renderer yalnız `{customer}` context'i alıyor. Güvenlik kontrolünün izin verdiği `{{brand.name}}` subject deneyi `""` üretti. Subject için desteklenen değişken sözleşmesi açıkça daraltılmalı veya gerçek brand/unsubscribe context'iyle aynı renderer kullanılmalı.
+- Preview iki akışta da `master-announcement` kullanırken broadcast MJML için `raw`, HTML için `master-announcement` seçiyor. Alan-adı paritesi doğrulandı; genel preview/broadcast render paritesi henüz davranışsal olarak kanıtlanmadı.
+- Reconciliation sorgusu limitsiz ve kayıt başına bir `EmailLog` sorgusu yapıyor; dağıtık kilit/overlap koruması ve koşullu terminal update yok. Bu, düzeltme fazında pagination/batch ve retry-aware durum modeliyle ele alınmalı.
+- `detectAnnouncementContentFormat()` `<mjml lang="tr">`, BOM/XML-comment önekli geçerli MJML'i `RICH_HTML` sınıflayabilir. Bu GAP-08 için bloklayıcı değildir ancak regresyon testi eklenmelidir.
+
+### Bağımsız doğrulama çıktıları
+
+- Odak backend: **7/7 suite, 110/110 test**.
+- Odak frontend preview: **1/1 dosya, 4/4 test**.
+- Tam backend: **129/129 suite, 1230 passed, 1 skipped, 0 failed**.
+- Tam frontend: **39/39 dosya, 266/266 test**.
+- Backend/frontend typecheck, i18n TR/EN/DE, operations safety **24/24**, frontend API contract `182/233 missing=0 raw-network=0`, RBAC `roles=12 permissions=19`, migration manifest **56/56** ve `git diff --check`: geçti.
+- Dört post/pre restore bundle hash'i rapordaki değerlerle birebir eşleşti; altı bundle için `git bundle verify` geçti; tag dereference değerleri doğru commitlere çözülüyor.
+- Dört ürün commit'inde migration/schema/DB/production dosyası yok.
+
+### Nihai karar ve sıradaki güvenli adım
+
+**Genel karar: NO-GO.** Kişiselleştirilmiş/dinamik duyuru gönderimi açılmamalı; push/deploy/canlı gönderim yapılmamalı. Önce ayrı TDD fazında (1) tam Handlebars grammar allowlist + runtime announcement schema, (2) BullMQ retry-aware reconciliation, DELIVERED/BOUNCED eşlemesi ve müşteri response DTO allowlist düzeltmeleri yapılmalı. Bu düzeltmeler tekrar bağımsız Codex + Claude doğrulamasından geçmelidir.

@@ -2,6 +2,13 @@
 
 ## Active Work
 
+- 2026-08-08 announcement email phases §10-13 received an independent Codex review:
+  - `d8f42c6d` BUG-02 customer-field parity is GO in its narrow scope; `e4c2ddc8` content-format exposure is additive and GO with non-blocking detector/API-documentation caveats.
+  - `df724734` is NO-GO because the Handlebars visitor is not a complete fail-closed allowlist and `AnnouncementEmailSchema` is not enforced at runtime.
+  - `f4668592` is NO-GO because reconciliation can terminalize a transient retry failure, misses DELIVERED/BOUNCED webhook outcomes, and exposes internal `emailLogId/error` fields through the customer announcement response.
+  - Independent local gates passed: backend 129/129 suites (1230 passed, 1 skipped), frontend 39/39 files (266 passed), both typechecks, i18n, ops-safety 24/24, API/RBAC/migration contracts, restore bundle hashes/verification, and diff hygiene.
+  - Personalized/dynamic announcement sending remains NO-GO. Next authorized implementation must be a separate TDD phase for a complete Handlebars grammar allowlist/runtime schema plus retry-aware delivery reconciliation and customer response DTO minimization. No push/deploy/live work.
+
 - 2026-08-08 announcement email safety BUG-05 is closed locally:
   - Modern `master-announcement` messages now use the `ANNOUNCEMENTS` preference category instead of the `SYSTEM` fallback.
   - A behavioral regression test proves that a registered recipient with `ANNOUNCEMENTS=false` produces neither a BullMQ job nor an `EmailLog` row.

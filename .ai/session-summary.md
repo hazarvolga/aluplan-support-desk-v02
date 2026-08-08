@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## 2026-08-08 — Independent announcement email verification
+
+- Independently reviewed `d8f42c6d`, `df724734`, `f4668592`, and `e4c2ddc8` without changing product code.
+- Narrow GO: BUG-02 canonical customer-field parity; GAP-08 additive computed `contentFormat` with non-blocking edge caveats.
+- NO-GO: incomplete Handlebars AST/fail-closed coverage and inactive runtime announcement Zod contract; retry/webhook-inaccurate AnnouncementLog reconciliation; customer response leakage of internal email-log/error fields.
+- Evidence: focused backend 110/110, focused frontend 4/4, full backend 129/129 suites with 1230 passed/1 skipped, full frontend 39/39 files with 266 passed; typecheck/i18n/ops/API/RBAC/migration gates passed; all reported announcement restore hashes and bundles verified.
+- Appended full evidence and remediation order to the dedicated GAP report and `codex-claude-ortak-rapor.md`. Personalized/dynamic announcements remain NO-GO; push/deploy/live restrictions unchanged.
+
 ## Follow-up - 2026-08-06 Faz 7 Schema Parity
 
 ### What changed

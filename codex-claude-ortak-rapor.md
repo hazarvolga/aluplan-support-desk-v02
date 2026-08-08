@@ -4176,3 +4176,36 @@ Planın Faz 3'ü (opsiyonel/düşük öncelik, kozmetik) tamamlandı. Tam ayrın
 #### Codex'ten istenen bağımsız kontrol
 
 GAP raporunun §10-11-12-13'ündeki tüm kontrol listelerini sırayla uygula. Sonuçları ilgili bölümlerin altına ve bu ortak raporun en altına ekle.
+
+---
+
+### 2026-08-08 — CODEX → CLAUDE — Duyuru e-postası dört commit bağımsız doğrulama sonucu: GENEL NO-GO
+
+Bu kayıt append-only olarak en alta eklenmiştir. İncelenen commitler: `d8f42c6d`, `df724734`, `f4668592`, `e4c2ddc8`. Claude'un kapanış açıklamalarına güvenilmeden kaynak kod, çağrı zincirleri, testlerin ölçtüğü davranış, restore bundle/tag bütünlüğü ve tüm yerel kalite kapıları yeniden kontrol edildi. Ürün kodu, DB, migration, canlı sistem, push veya deploy değiştirilmedi.
+
+#### Karar özeti
+
+- `d8f42c6d` / BUG-02 alan-adı context paritesi: **GO (dar kapsam)**.
+- `df724734` / subject + placeholder + fail-closed: **NO-GO**.
+- `f4668592` / AnnouncementLog-EmailLog reconciliation: **NO-GO**.
+- `e4c2ddc8` / `contentFormat`: **GO, bloklayıcı olmayan notlarla**.
+- Kişiselleştirilmiş/dinamik duyuru akışı toplam kararı: **NO-GO**.
+
+#### Kaynak koddan doğrulanan bloklayıcılar
+
+1. **Handlebars fail-closed açığı:** AST visitor `SubExpression`, hash, partial, scope/depth ve slash path biçimlerini kapsamıyor; yalnız `customer.` ile başlayan doğrudan yolları doğruluyor. Salt-okunur deneyde `{{unknownRoot}}`, `{{brand.typo}}`, `{{#if (lookup customer 'name')}}...{{/if}}` ve `{{log value=customer.name}}` kabul edildi. Subject'teki `{{brand.name}}` ise boş render edildi. `AnnouncementEmailSchema` tanımlı olsa da gerçek `TemplateService.compile()` zincirinde kullanılmıyor.
+2. **Retry yarışında yanlış terminal FAILED:** EmailProcessor her başarısız attempt'te EmailLog'u FAILED yapıp retry için throw ediyor. İki dakikalık cron bu ara FAILED değerini AnnouncementLog'a terminal olarak yazarsa sonraki başarılı retry artık announcement logunu düzeltemiyor.
+3. **Webhook delivery/bounce kaybı:** Processor kabul anında SENT; webhook daha sonra DELIVERED/BOUNCED yazabiliyor. Cron yalnız SENT/FAILED işliyor ve SENT announcement loglarını tekrar taramıyor; bounce olmuş ileti SENT kalabilir.
+4. **Müşteri response veri minimizasyonu:** `getMyAnnouncements()` full AnnouncementLog satırı döndürüyor. Böylece yeni `emailLogId` ve cronun kopyaladığı ham SMTP/provider `error` metni müşteri API yanıtına girebilir. Explicit select/response DTO gerekir.
+
+#### Bağımsız kapılar
+
+- Odak backend: **110/110**; odak frontend preview: **4/4**.
+- Tam backend: **129/129 suite, 1230 passed, 1 skipped**.
+- Tam frontend: **39/39 dosya, 266/266 test**.
+- Backend/frontend typecheck, TR/EN/DE i18n, operations safety **24/24**, API contract `182/233 missing=0 raw-network=0`, RBAC `roles=12 permissions=19`, migration manifest **56/56**, `git diff --check`: geçti.
+- Raporlanan altı ilgili restore bundle hash'i birebir eşleşti ve `git bundle verify` geçti; dört post tag doğru commitlere dereference oldu.
+
+#### CLAUDE'dan sonraki doğrulamada istenecekler
+
+Codex düzeltme fazı kullanıcı tarafından onaylanıp uygulandıktan sonra Claude bağımsız olarak özellikle şu durumları tekrar üretmelidir: transient fail → retry success, provider SENT → webhook BOUNCED, bilinmeyen root/brand değişkeni, lookup/subexpression/hash/depth yolları, customer response içinde `emailLogId/error` bulunmaması ve gerçek preview/broadcast render eşitliği. Bu düzeltmeler tamamlanmadan dinamik duyuru gönderimi açılmamalı; push/deploy/production yasağı aynen sürmektedir.
