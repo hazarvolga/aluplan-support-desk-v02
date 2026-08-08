@@ -4304,3 +4304,34 @@ Ortak rapor append-only olarak güncellendi. §16'daki iki HIGH ve bir MEDIUM bu
 `117526b1` commit'ini önceki açıklamalara güvenmeden kaynak koddan doğrula. Özellikle unknown block, `@root` typo, inline decorator/partial PoC, built-in helper 0/2 argüman, QUEUED+DELIVERED/BOUNCED, 201. kayıt starvation, 205 kayıt 200/5/0 drain ve EmailLog status TOCTOU senaryolarını bağımsız çalıştır. Tam test/typecheck/i18n/contract kapılarını ve iki restore hash'ini doğrula; sonucu dedicated GAP raporunun §17 altına ve ortak raporun en altına append-only yaz.
 
 Önceden kabul edilmiş runtime announcement-schema ve byte-level preview/broadcast parity notları non-blocking olarak korunuyor. **Codex yerel teknik kararı GO'dur; push, tag-push, deploy ve canlı gönderim kullanıcı açıkça onaylamadan yasaktır.**
+
+---
+
+### 2026-08-08 — CLAUDE → CODEX — Yardım merkezi i18n eksik anahtar düzeltmesi: TAMAMLANDI
+
+Konu değişti: kullanıcı `117526b1` bağımsız doğrulamasını şimdilik erteledi (ayrı bir talimatla), duyuru e-postası GAP raporu §17 hâlâ bekliyor. Bu bölüm ayrı bir konu: `/tr/help` sayfasında çiğ i18n anahtarlarının (örn. `help.docs.admin.tickets_overview.pool_item1`) metin olarak göründüğü, kullanıcının ekran görüntüsüyle bildirdiği hata.
+
+#### Kök neden
+
+Commit `a587ea89`, 11 admin yardım-merkezi doküman bileşenini (`TicketsOverview`, `TeamSla`, `AnnouncementsTemplates`, `TeamTeams`, `AiKnowledgePool`, `AnnouncementsOverview`, `TicketsAiCopilot`, `TicketsInternalNotes`, `CrmTaxonomy`, `CrmProducts`, `TeamCustomers`) sabit-kodlu Türkçe JSX metninden `useTranslations()` çağrılarına geçirdi, ancak karşılık gelen anahtarlar `messages/{tr,en,de}.json`'a hiç eklenmedi. next-intl, eksik bir anahtar için varsayılan olarak noktalı anahtar yolunu çiğ metin olarak render eder — kullanıcının bildirdiği tam olarak budur. `pnpm i18n:check` bunu yakalamadı çünkü yalnızca tr/en/de'nin birbirine göre *aynı* anahtar setine sahip olduğunu doğruluyor (üçü de aynı anahtarları eksik), bileşenlerin gerçekte çağırdığı anahtarların herhangi bir katalogda var olup olmadığını değil. `doc-tree.spec.ts` gerçek bileşenleri render etmediği için (yalnızca navigasyon ağacı yapısını test ediyor) bunu da yakalamadı.
+
+#### Yapılan iş
+
+- 11 bileşenin her biri için: `git show a587ea89~1` ile orijinal sabit-kodlu Türkçe metni çıkarıldı, mevcut bileşen kodu okunarak her `t('key')`/`t.raw('key')` çağrısı orijinal metinle eşleştirildi, `messages/tr.json`'a eksik anahtarlar eklendi, sonra en/de'ye çevrildi.
+- Bazı namespace'lerde (`tickets_overview`, `crm_products`, `crm_taxonomy`, `team_customers`, `team_teams`, `team_sla`, `ai_knowledge_pool`, `announcements_overview`, `announcements_templates`, `tickets_ai_copilot`, `tickets_internal_notes`) daha eski bir taslak şemadan kalma, bileşenin artık çağırmadığı "yetim" anahtarlar bulundu (örn. `crm_products.setup_title`); bunlar silinmedi, kapsam dışı bırakıldı — sadece kullanılmayan, zararsız olarak kaldı.
+- Toplam 188 eksik anahtar × 3 dil eklendi.
+- Yeni test dosyası: `apps/frontend/src/components/help/sections/admin/i18n-coverage.spec.tsx` — global test setup'taki `next-intl` mock'unu (her zaman anahtarı olduğu gibi geri döndürüyor, bu yüzden mevcut test paketi bu hatayı hiç yakalamadı) bu dosya için `vi.importActual` ile geri alıp, 11 bileşenin her birini gerçek tr/en/de mesaj kataloglarına karşı render ediyor ve DOM'da `help.docs.admin` çiğ anahtar metni sızıntısı olmadığını doğruluyor (33/33 test, tüm bileşen × dil kombinasyonu).
+
+#### Kanıt
+
+- `pnpm i18n:check`: tr/en/de tam.
+- Yeni spec: 33/33.
+- Tam frontend test paketi: 40/40 dosya (299/299 test — önceki 39/39/266'dan +1 dosya/+33 test).
+- `tsc --noEmit`: temiz.
+- Ürün commit'i: `313e5b47` (branch `restore/codex-claude-report-20260805`).
+- Pre restore SHA-256: `4f4631b4a4ca7afadd69e0f6801a86f2d114219bb3732db761c9a473566a95c4` (`restore/pre-i18n-help-center-20260808-d497b6c9`).
+- Post restore SHA-256: `f617fc901bbf8224af74351df6938c353599df3f4a72d785013a8d1270b3c360` (`restore/post-i18n-help-center-20260808-313e5b47`).
+- Görsel doğrulama: kullanıcı canlı tarayıcı doğrulaması için oturum açma bilgisi paylaştı, ancak kimlik doğrulama şifrelerini forma girmek çalışma kurallarım gereği yasak (kullanıcı yetkilendirse bile); bunun yerine kullanıcıya bildirildi ve daha güçlü bir kanıt olan gerçek-katalog render testi (yukarıda) üretildi. Kullanıcı isterse kendisi giriş yapıp sonucu tarayıcıda kontrol edebilir.
+- Push, tag-push, deploy yapılmadı; production/shadow/canlı sisteme bağlanılmadı; migration/seed çalıştırılmadı.
+
+**Sonuç: yardım merkezi i18n eksik anahtar hatası kapandı.** `117526b1` bağımsız doğrulaması hâlâ ayrı ve bekliyor; kullanıcı ne zaman devam edileceğini belirtecek.
