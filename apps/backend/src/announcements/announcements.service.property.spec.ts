@@ -4,6 +4,26 @@ import { AnnouncementsService } from './announcements.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { assertAnnouncementContentIsSafeToSend } from './announcement-content-safety';
+
+/**
+ * As of the Phase 1/4 content-safety hardening, broadcast() intentionally
+ * rejects content that isn't valid Handlebars syntax, contains an unknown
+ * `{{...}}` variable, or still has a leftover `[Placeholder]` -- see
+ * announcement-content-safety.ts. This property is about the shape of the
+ * ANNOUNCEMENT_RECEIVED payload for content that actually reaches
+ * broadcast()'s notification step, so arbitrary fast-check strings that
+ * would legitimately be rejected before that point are filtered out here
+ * rather than asserted against.
+ */
+function isSafeToBroadcast(subject: string, contentMjml: string): boolean {
+    try {
+        assertAnnouncementContentIsSafeToSend(subject, contentMjml);
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -206,6 +226,10 @@ describe('AnnouncementsService — Property 4: ANNOUNCEMENT_RECEIVED payload com
                 fc.string({ minLength: 1, maxLength: 200 }),  // title
                 fc.string({ minLength: 0, maxLength: 2000 }), // contentMjml (arbitrary content)
                 async (title, contentMjml) => {
+                    // fakeAnnouncement() always uses the fixed subject 'Test Subject',
+                    // so only contentMjml needs to pass the safety check here.
+                    fc.pre(isSafeToBroadcast('Test Subject', contentMjml));
+
                     const { mock: prismaMock } = buildPrismaMock();
                     const emailMock = buildEmailMock();
                     const { mock: gatewayMock, calls } = buildGatewayMock();

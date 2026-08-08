@@ -301,7 +301,18 @@ export class AnnouncementsService {
                     orderBy: { sentAt: 'desc' },
                     skip: (page - 1) * limit,
                     take: limit,
-                    include: { announcement: { select: { title: true, contentMjml: true } } },
+                    // Explicit allowlist: emailLogId (internal EmailLog UUID)
+                    // and error (raw SMTP/provider failure text) are
+                    // operational details, not something a customer's own
+                    // "my announcements" response should ever expose.
+                    select: {
+                        id: true,
+                        status: true,
+                        sentAt: true,
+                        readAt: true,
+                        createdAt: true,
+                        announcement: { select: { title: true, contentMjml: true } },
+                    },
                 }),
                 this.prisma.announcementLog.count({ where: { customerId: customer.id } }),
             ]);

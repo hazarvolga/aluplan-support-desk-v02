@@ -419,7 +419,7 @@ describe('AnnouncementsService — getMyAnnouncements', () => {
         );
     });
 
-    it('includes announcement title and contentMjml in the query', async () => {
+    it('includes announcement title and contentMjml via an explicit select', async () => {
         prisma.customerProfile.findUnique.mockResolvedValue({ id: customerId, userId });
         prisma.announcementLog.findMany.mockResolvedValue([]);
         prisma.announcementLog.count.mockResolvedValue(0);
@@ -428,9 +428,49 @@ describe('AnnouncementsService — getMyAnnouncements', () => {
 
         expect(prisma.announcementLog.findMany).toHaveBeenCalledWith(
             expect.objectContaining({
-                include: { announcement: { select: { title: true, contentMjml: true } } },
+                select: expect.objectContaining({
+                    announcement: { select: { title: true, contentMjml: true } },
+                }),
             }),
         );
+    });
+
+    // Codex independent review (2026-08-08): the query had no select
+    // allowlist, so Prisma returned every scalar column on AnnouncementLog —
+    // including emailLogId (an internal EmailLog UUID) and error (raw
+    // SMTP/provider failure text) — straight to the CUSTOMER-facing
+    // `GET /announcements/my` response.
+    describe('customer response field allowlist (Codex finding, MEDIUM)', () => {
+        it('does not request emailLogId or error from the database', async () => {
+            prisma.customerProfile.findUnique.mockResolvedValue({ id: customerId, userId });
+            prisma.announcementLog.findMany.mockResolvedValue([]);
+            prisma.announcementLog.count.mockResolvedValue(0);
+
+            await service.getMyAnnouncements(userId);
+
+            const call = prisma.announcementLog.findMany.mock.calls[0][0];
+            expect(call.select).not.toHaveProperty('emailLogId');
+            expect(call.select).not.toHaveProperty('error');
+            expect(call).not.toHaveProperty('include');
+        });
+
+        it('only selects the fields a customer legitimately needs to see', async () => {
+            prisma.customerProfile.findUnique.mockResolvedValue({ id: customerId, userId });
+            prisma.announcementLog.findMany.mockResolvedValue([]);
+            prisma.announcementLog.count.mockResolvedValue(0);
+
+            await service.getMyAnnouncements(userId);
+
+            const call = prisma.announcementLog.findMany.mock.calls[0][0];
+            expect(call.select).toEqual({
+                id: true,
+                status: true,
+                sentAt: true,
+                readAt: true,
+                createdAt: true,
+                announcement: { select: { title: true, contentMjml: true } },
+            });
+        });
     });
 });
 
