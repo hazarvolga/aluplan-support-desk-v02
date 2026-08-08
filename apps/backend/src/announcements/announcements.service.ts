@@ -5,6 +5,7 @@ import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { CreateAnnouncementDto, UpdateAnnouncementDto, TargetCriteriaDto } from './dto/announcement.dto';
 import { Prisma, AnnouncementLog } from '@aluplan/database';
 import { buildAnnouncementEmailContext } from './announcement-email-context';
+import { assertAnnouncementContentIsSafeToSend, renderAnnouncementSubject } from './announcement-content-safety';
 
 @Injectable()
 export class AnnouncementsService {
@@ -118,6 +119,11 @@ export class AnnouncementsService {
             throw new Error('Announcement already sent or sending');
         }
 
+        // Fail closed on unresolved [placeholder] text or unsupported {{...}}
+        // variables before touching any state — nothing is sent, nothing is
+        // marked SENDING, if the content isn't safe to personalize.
+        assertAnnouncementContentIsSafeToSend(announcement.subject, announcement.contentMjml || '');
+
         // Update status to SENDING
         await this.prisma.announcement.update({
             where: { id },
@@ -182,15 +188,16 @@ export class AnnouncementsService {
                 // Use master-announcement template for new HTML content, 'raw' for old raw MJML content
                 const content = announcement.contentMjml || '';
                 const isMjml = content.trim().toLowerCase().startsWith('<mjml>') || content.trim().toLowerCase().startsWith('<mj-');
+                const customerContext = buildAnnouncementEmailContext(target);
 
                 await this.emailService.enqueueEmail({
                     template: isMjml ? 'raw' : 'master-announcement',
                     to: target.user.email,
-                    subject: announcement.subject,
+                    subject: renderAnnouncementSubject(announcement.subject, customerContext),
                     data: {
                         mjml: isMjml ? content : undefined,
                         contentHtml: isMjml ? undefined : content,
-                        customer: buildAnnouncementEmailContext(target),
+                        customer: customerContext,
                     },
                 }).then(async () => {
                     // In a perfect world, we'd link the emailLogId here, 

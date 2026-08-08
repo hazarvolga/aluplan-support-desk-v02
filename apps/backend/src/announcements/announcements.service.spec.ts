@@ -458,3 +458,99 @@ describe('AnnouncementsService — broadcast customer context', () => {
         expect(call.data.customer).not.toHaveProperty('userId');
     });
 });
+
+// ---------------------------------------------------------------------------
+// broadcast — subject rendering and fail-closed content safety
+// (GAP report BUG-01 / GAP-06 / GAP-03 unknown-variable check)
+// ---------------------------------------------------------------------------
+
+describe('AnnouncementsService — broadcast subject rendering and content safety', () => {
+    let prisma: any;
+    let email: any;
+    let service: AnnouncementsService;
+
+    function mockAnnouncement(overrides: Partial<{ subject: string; contentMjml: string }>) {
+        prisma.announcement.findUnique.mockResolvedValue({
+            id: 'ann-1',
+            title: 'T',
+            subject: overrides.subject ?? 'Static subject',
+            contentMjml: overrides.contentMjml ?? '<mj-text>Static content</mj-text>',
+            targetCriteria: { industries: ['x'] },
+            type: 'BROADCAST',
+            status: 'DRAFT',
+            createdBy: 'u',
+            sentAt: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+    }
+
+    beforeEach(async () => {
+        prisma = buildPrismaMock();
+        email = buildEmailMock();
+        service = await buildService(prisma, email, buildGatewayMock());
+
+        prisma.customerProfile.findMany.mockResolvedValue([{
+            id: 'cust-1',
+            userId: 'user-1',
+            firstName: 'Ada',
+            lastName: 'Lovelace',
+            companyName: 'Analytical Engines Ltd',
+            customerNo: 'CUST-001',
+            industry: 'x',
+            contractStatus: 'ACTIVE',
+            tags: [],
+            user: { id: 'user-1', email: 'ada@example.com' },
+        }]);
+        prisma.announcementLog.create.mockResolvedValue({ id: 'log-1', readAt: null });
+        prisma.announcementLog.update.mockResolvedValue({});
+        prisma.announcement.update.mockResolvedValue({});
+    });
+
+    it('renders {{customer.*}} variables in the subject per recipient (BUG-01)', async () => {
+        mockAnnouncement({ subject: 'Merhaba {{customer.firstName}}, ürün güncellemesi' });
+
+        await service.broadcast('ann-1');
+
+        expect(email.enqueueEmail).toHaveBeenCalledWith(
+            expect.objectContaining({ subject: 'Merhaba Ada, ürün güncellemesi' }),
+        );
+    });
+
+    it('rejects broadcast when the content has a leftover [placeholder] and never enqueues or changes status (GAP-06)', async () => {
+        mockAnnouncement({ contentMjml: '<mj-text>Tahmini Yayın: [Tarih]</mj-text>' });
+
+        await expect(service.broadcast('ann-1')).rejects.toThrow();
+
+        expect(email.enqueueEmail).not.toHaveBeenCalled();
+        expect(prisma.announcement.update).not.toHaveBeenCalled();
+        expect(prisma.customerProfile.findMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects broadcast when the subject has a leftover [placeholder] (GAP-06)', async () => {
+        mockAnnouncement({ subject: 'Yakında: [Özellik Adı]' });
+
+        await expect(service.broadcast('ann-1')).rejects.toThrow();
+        expect(email.enqueueEmail).not.toHaveBeenCalled();
+    });
+
+    it('rejects broadcast when the content references an unknown customer variable (GAP-03)', async () => {
+        mockAnnouncement({ contentMjml: '<mj-text>Merhaba {{customer.fullname}}</mj-text>' });
+
+        await expect(service.broadcast('ann-1')).rejects.toThrow();
+        expect(email.enqueueEmail).not.toHaveBeenCalled();
+    });
+
+    it('allows a known customer variable and a static subject through unchanged', async () => {
+        mockAnnouncement({
+            subject: 'Sistem Bakım Duyurusu',
+            contentMjml: '<mj-text>Sayın {{customer.companyName}}</mj-text>',
+        });
+
+        await service.broadcast('ann-1');
+
+        expect(email.enqueueEmail).toHaveBeenCalledWith(
+            expect.objectContaining({ subject: 'Sistem Bakım Duyurusu' }),
+        );
+    });
+});
