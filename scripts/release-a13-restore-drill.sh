@@ -385,6 +385,7 @@ run_backend() {
     local name="$1" env_file="$2" output_file="$3" command_status; shift 3
     command_status=0
     (ulimit -f "${max_job_output_blocks}"; run_timed "${docker_bin}" run --rm --name "${name}" \
+        --platform linux/amd64 \
         --network "${network_name}" --label "${run_label}" \
         --memory 2g --cpus 2 --pids-limit 512 \
         --read-only --tmpfs /tmp:rw,noexec,nosuid,size=256m \

@@ -145,6 +145,7 @@ test("restore drill uses an internal network and never publishes a host port", a
   assert.match(commands, /network create .*--internal/);
   assert.match(commands, /volume create/);
   assert.match(commands, /run -d .*--network/);
+  assert.match(commands, /run --rm --name aluplan-a13-fp-raw-\S+ --platform linux\/amd64/);
   assert.doesNotMatch(commands, /(^|\s)(-p|--publish)(\s|=)/m);
   assert.match(commands, /pg_restore .*--exit-on-error/);
   assert.match(commands, /pg_restore .*--single-transaction/);
