@@ -69,6 +69,22 @@ case "$1 $2" in
     if [ -f "$(resource_file container "$last")" ]; then
       printf '%s\\n' "\${A13_RUN_ID}"
     else
+      if [ "\${A13_FAKE_DOCKER_DESKTOP_MISSING:-0}" = 1 ]; then
+        printf 'error: no such object: %s\\n' "$last" >&2
+        exit 1
+      fi
+      if [ "\${A13_FAKE_DOCKER_DESKTOP_MISSING:-0}" = wrong-id ]; then
+        printf 'error: no such object: %s\\n' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" >&2
+        exit 1
+      fi
+      if [ "\${A13_FAKE_DOCKER_DESKTOP_MISSING:-0}" = suffix ]; then
+        printf 'error: no such object: %s extra\\n' "$last" >&2
+        exit 1
+      fi
+      if [ "\${A13_FAKE_DOCKER_DESKTOP_MISSING:-0}" = daemon-error ]; then
+        printf 'Cannot connect to the Docker daemon at unix:///var/run/docker.sock\\n' >&2
+        exit 1
+      fi
       printf 'Error: No such object: %s\\n' "$last" >&2
       exit 1
     fi

@@ -152,6 +152,33 @@ test("restore drill uses an internal network and never publishes a host port", a
   assert.match(commands, /pg_restore .*--no-privileges/);
 });
 
+test("restore drill accepts Docker Desktop's exact lowercase missing-container proof", async () => {
+  const harness = await createA13Harness();
+  const result = runRestore(harness, {
+    A13_FAKE_DOCKER_DESKTOP_MISSING: "1",
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(await commandLog(harness), /network create|volume create|run -d/);
+  assert.match(result.stdout, /local evidence complete/i);
+});
+
+for (const scenario of ["wrong-id", "suffix", "daemon-error"]) {
+  test(`restore drill rejects non-exact Docker Desktop absence proof: ${scenario}`, async () => {
+    const harness = await createA13Harness();
+    const result = runRestore(harness, {
+      A13_FAKE_DOCKER_DESKTOP_MISSING: scenario,
+    });
+
+    assert.notEqual(result.status, 0);
+    assert.doesNotMatch(await commandLog(harness), /network create|volume create|run -d/);
+    await assert.rejects(
+      readFile(path.join(harness.evidenceRoot, "a13-test-run", "LOCAL-A13.json")),
+      /ENOENT/,
+    );
+  });
+}
+
 test("restore drill fails closed when Docker inspection becomes unavailable during cleanup", async () => {
   const harness = await createA13Harness();
   const result = runRestore(harness, {

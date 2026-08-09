@@ -270,6 +270,7 @@ inspect_label() {
         container)
             grep -Fqx "Error: No such object: ${reference}" "${error_file}" \
                 || grep -Fqx "Error response from daemon: No such container: ${reference}" "${error_file}" \
+                || grep -Fqx "error: no such object: ${reference}" "${error_file}" \
                 || { rm -f "${error_file}"; return 1; } ;;
         network)
             grep -Fqx "Error: No such network: ${reference}" "${error_file}" \
