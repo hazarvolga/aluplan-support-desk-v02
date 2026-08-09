@@ -449,6 +449,7 @@ test("backend image requires immutable Git revision and carries only runtime A.1
   );
   assert.match(dockerfile, /migrate-once\.sh/);
   assert.match(dockerfile, /capture-release-fingerprints\.mjs/);
+  assert.match(dockerfile, /release-fingerprint-rbac\.mjs/);
   assert.match(dockerfile, /verify-schema-parity\.mjs/);
   assert.match(dockerfile, /verify-rbac-database\.mjs/);
   assert.doesNotMatch(dockerfile, /COPY[^\n]*release-a13-restore-drill\.sh/);
@@ -531,6 +532,39 @@ test("fingerprint capture is read-only, redacted, and preserves RBAC plus empty-
   assert.match(source, /attachments/);
   assert.match(source, /knowledge_sources/);
   assert.doesNotMatch(source, /console\.log\([^)]*(DATABASE_URL|connectionString)/);
+});
+
+test("fingerprint capture never overlaps queries on the same PostgreSQL client", async () => {
+  const { queryRbacRows } = await import("./release-fingerprint-rbac.mjs");
+  const calls = [];
+  const warnings = [];
+  let inFlight = 0;
+  let maxInFlight = 0;
+  const client = {
+    async query(sql) {
+      const stage = sql.includes("FROM public.role_permissions")
+        ? "assignments"
+        : sql.includes("FROM public.permissions")
+          ? "permissions"
+          : "roles";
+      calls.push(stage);
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      if (inFlight > 1) warnings.push("overlapping query");
+      await new Promise((resolve) => setImmediate(resolve));
+      inFlight -= 1;
+      return { rows: [{ stage }] };
+    },
+  };
+
+  const result = await queryRbacRows(client);
+
+  assert.equal(maxInFlight, 1);
+  assert.deepEqual(calls, ["roles", "permissions", "assignments"]);
+  assert.deepEqual(warnings, []);
+  assert.deepEqual(result.roles.rows, [{ stage: "roles" }]);
+  assert.deepEqual(result.permissions.rows, [{ stage: "permissions" }]);
+  assert.deepEqual(result.assignments.rows, [{ stage: "assignments" }]);
 });
 
 test("runtime RBAC verification is read-only and production-image safe", async () => {

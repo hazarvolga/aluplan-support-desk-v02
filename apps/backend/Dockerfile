@@ -77,6 +77,7 @@ COPY --from=builder /app/packages/database/index.js /app/packages/database/index
 COPY --from=builder /app/scripts/verify-migration-integrity.mjs ./scripts/verify-migration-integrity.mjs
 COPY --from=builder /app/scripts/backup-db.sh ./scripts/backup-db.sh
 COPY --from=builder /app/scripts/capture-release-fingerprints.mjs ./scripts/capture-release-fingerprints.mjs
+COPY --from=builder /app/scripts/release-fingerprint-rbac.mjs ./scripts/release-fingerprint-rbac.mjs
 COPY --from=builder /app/scripts/verify-schema-parity.mjs ./scripts/verify-schema-parity.mjs
 COPY --from=builder /app/scripts/verify-rbac-database.mjs ./scripts/verify-rbac-database.mjs
 
