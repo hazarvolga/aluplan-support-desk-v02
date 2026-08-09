@@ -436,3 +436,17 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
   `restore/pause-before-release-a13-20260808-ab2bd04f`, complete-history bundle
   `.private-data/restore-points/pause-before-release-a13-20260808-ab2bd04f.bundle`,
   SHA-256 `63e8f45bc7f2eb51ae6aae4ec49961598c64225d08130fb0b92d93868633c12d`.
+
+## Active Focus - 2026-08-09 Production Release Faz A.1.3 Local Evidence
+
+- A.1.3 exact backend image ve disposable PostgreSQL 17 + pgvector restore/migration tatbikatı yerelde tamamlandı; bu sonuç production GO değildir.
+- Güncel kanonik yerel HEAD `ca26caa1` (`fix(release): serialize fingerprint queries`). Exact linux/amd64 backend image digest'i `sha256:74a4fac812a84082184c8d42a41473f08a235ed772cc615cfcfd316f7299f6ac` ve commit/revision bağı doğrulandı.
+- Sanitized production-derived PG17 custom dump SHA-256 `544260dd42453b6510433e27de0ef19e03e3e08793923af8c699fb27a98f1ff7`, boyut `138028808`, mode `0600`; yalnız disposable kaynaklarda kullanıldı.
+- Restore öncesi baseline/candidate digest'i aynıydı. İlk turda beklenen sekiz migration uygulandı; ikinci tur `No pending migrations to apply` verdi. Post-round-1 ve post-round-2 digest'i `dd63895628fa0961bd4602c3c662d5e24d67f0fb433bca69abe3cae85e071fae` olarak birebir aynı.
+- Kanıt: `canonicalRbac=true`, `schemaParity=true`, `roundTwoNoOp=true`, invalid constraint/index `0/0`, cleanup `clean`, `LOCAL-A13` complete ve bütün artifactlerde `productionGo:false`.
+- Disposable container/network/volume label filtresiyle tekrar sorgulandı; kalan kaynak yok. Mevcut yerel PostgreSQL/Redis containerları değiştirilmedi.
+- Gerçek drill iki fail-closed uyumluluk borcu yakalayıp kapattı: Docker Desktop lowercase missing-object kanıtları ve Apple Silicon üzerinde amd64 backend job platform pin'i. Son olarak tek `pg.Client` üzerindeki eşzamanlı RBAC sorguları seri hale getirildi; stderr uyarısının JSON evidence'ı bozması engellendi.
+- Son doğrulama: A.1.3 safety `52/52`, geniş operations-safety `151/151`; TDD/code/security review GO, Critical/High/Medium `0/0/0`.
+- Güncel restore point: tag `restore/post-release-a13-fingerprint-20260809-ca26caa1`; bundle `.private-data/restore-points/post-release-a13-fingerprint-20260809-ca26caa1.bundle`, SHA-256 `dca8524a59d61525bf6f20b5fd4eeda739d5486c5d47356634699fb185280034`.
+- Açık release kapıları: ayrı DB-only Cloudflare R2 hedefinde conditional round-trip/restore canary, production ledger salt-okunur planı, PostgreSQL credential rotasyonu, application-object parity, dokuz queue/cron tekilliği, maintenance/cutover ve rollback provası. Mevcut `aluplan-support-desk` application bucket'ına dokunma.
+- Push, tag-push, deploy, production DB/R2/SSH erişimi veya yazımı, migration ve seed yapılmadı; yasaklar sürüyor.

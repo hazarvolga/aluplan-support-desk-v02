@@ -4602,3 +4602,44 @@ belgelerini okumalı, sonra Git durumunu doğrulamalıdır.
 - Tag ile handoff commit'i aynı full SHA'ya işaret ediyor.
 - `git fsck --strict`: exit `0`; yalnız tarihsel dangling tree kayıtları.
 - Tag push, remote push veya deploy yapılmadı.
+
+---
+
+### 2026-08-09 — CODEX → CLAUDE — A.1.3 exact-image ve disposable PG17 restore kanıtı tamamlandı
+
+Bu kayıt yalnız yerel release kanıtını kapatır; **production hâlâ NO-GO**.
+
+#### Tamamlanan yerel kanıt zinciri
+
+- Nihai tooling commit'i `ca26caa1` (`fix(release): serialize fingerprint queries`).
+- Exact linux/amd64 backend image digest'i `sha256:74a4fac812a84082184c8d42a41473f08a235ed772cc615cfcfd316f7299f6ac`; image revision, Dockerfile, lockfile, migration manifesti ve restore-script bağları exact-image evidence ile doğrulandı.
+- Restore girdisi yalnız sanitized production-derived PostgreSQL 17 custom dump'tır: SHA-256 `544260dd42453b6510433e27de0ef19e03e3e08793923af8c699fb27a98f1ff7`, boyut `138028808`, mode `0600`. Raw production dump kullanılmadı.
+- Baseline ve candidate-pre fingerprint digest'i aynıydı: `bc877f170f70334f16d38363378552dafcced92db0a9a6229aea4a59888dc092`.
+- İlk migration turu beklenen sekiz pending migration'ı uyguladı. İkinci tur açıkça `No pending migrations to apply` verdi.
+- Candidate post-round-1 ve post-round-2 digest'i birebir aynıydı: `dd63895628fa0961bd4602c3c662d5e24d67f0fb433bca69abe3cae85e071fae`.
+- `parity.json`: business/RAG/object-reference/sequence/RBAC-baseline/schema-baseline stabil, `canonicalRbac=true`, `schemaParity=true`, `roundTwoNoOp=true`.
+- Invalid constraint/index sayısı her aşamada `0/0`. `cleanup.json` clean ve `LOCAL-A13.json` complete; bütün üst seviye kanıtlar `productionGo:false` taşır.
+- Tatbikat sonrası label bazlı read-only Docker sorgusunda disposable container, network veya volume kalmadı. Mevcut yerel PostgreSQL/Redis containerlarına dokunulmadı.
+
+#### Gerçek tatbikatta bulunan ve kapatılan uyumluluk sorunları
+
+- Docker Desktop'ın lowercase missing-object mesajları yalnız exact immutable ID/name eşleşmesiyle kabul edildi; wrong-ID, suffix ve daemon-error senaryoları fail-closed kaldı.
+- Apple Silicon üzerinde bütün backend evidence işleri `--platform linux/amd64` ile exact image mimarisine sabitlendi.
+- Tek node-postgres `Client` üzerindeki RBAC sorgularının `Promise.all` ile üst üste binmesi gerçek drill'de deprecation uyarısı üretip birleşik JSON evidence'ı bozuyordu. Sorgular side-effect-free helper içinde `roles -> permissions -> assignments` sırasına alındı; davranış testi `maxInFlight=1` ve sonuç sözleşmesini doğruluyor.
+- Nihai test: A.1.3 safety `52/52`, geniş operations-safety `151/151`; TDD, code review ve security review GO, Critical/High/Medium `0/0/0`.
+
+#### Commit ve restore point
+
+- Commit: `ca26caa1194352e0eabadb589c1e7694c0c430ca`.
+- Tag: `restore/post-release-a13-fingerprint-20260809-ca26caa1`.
+- Bundle: `.private-data/restore-points/post-release-a13-fingerprint-20260809-ca26caa1.bundle`.
+- Bundle SHA-256: `dca8524a59d61525bf6f20b5fd4eeda739d5486c5d47356634699fb185280034`; complete-history bundle verify geçti.
+- Private image/restore kanıtları `.private-data/release-evidence/` altındadır ve Git'e alınmamıştır.
+
+#### Açık release kapıları ve değişmez sınır
+
+- Cloudflare R2 üzerinde DB-backup conditional upload/download/hash/restore canary henüz yapılmadı; ayrı DB-only bucket oluşturulmadı. Mevcut `aluplan-support-desk` uygulama bucket'ındaki verilere dokunulmadı ve bu bucket backup hedefi yapılmayacak.
+- Production GO öncesi hâlâ zorunlu: production ledger salt-okunur planı, PostgreSQL credential rotasyonu, DB ile S3/local object-reference paritesi, dokuz BullMQ queue ve cron/repeatable-job tekilliği, maintenance/cutover ve rollback provası.
+- Production DB/R2/SSH erişimi veya yazımı, canlı migration/seed, push, tag-push, deploy ve publish yapılmadı. Bu yasaklar aynen sürüyor.
+
+Claude'dan sonraki bağımsız doğrulamada istenen: `ca26caa1` commit'ini ve bu yerel evidence özetini kaynak/kanıt dosyalarından doğrulamak; **yerel A.1.3 GO ile production GO'yu karıştırmamak** ve R2/live kapıları için kullanıcıdan ayrıca açık onay beklemek.

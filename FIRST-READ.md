@@ -193,3 +193,16 @@ Aktif hedef artık **production release hazırlığıdır**.
 - Bundle: `.private-data/restore-points/pause-before-release-a13-20260808-ab2bd04f.bundle`.
 - Bundle SHA-256: `63e8f45bc7f2eb51ae6aae4ec49961598c64225d08130fb0b92d93868633c12d`.
 - Tag/commit eşitliği ve tam geçmiş bundle doğrulandı; tag push edilmedi.
+
+## 11. 2026-08-09 A.1.3 yerel kanıt checkpoint'i — buradan devam et
+
+Bu bölüm, bölüm 10'daki “A.1.3 henüz başlamadı” durumunun yerini alır.
+
+- Güncel yerel release tooling HEAD'i `ca26caa1`'dir.
+- Exact linux/amd64 backend image smoke ve sanitized production-derived dump ile disposable PostgreSQL 17 + pgvector restore/migration tatbikatı başarıyla tamamlandı.
+- Migration ilk turunda beklenen sekiz migration uygulandı; ikinci tur açıkça no-op oldu. Baseline/candidate-pre ve post-round-1/post-round-2 pariteleri doğrulandı; RBAC/schema/integrity kapıları geçti ve disposable kaynaklar temizlendi.
+- Bu kanıtların tamamı `productionGo:false` taşır. **Production hâlâ NO-GO**.
+- Güncel restore tag'i `restore/post-release-a13-fingerprint-20260809-ca26caa1`; bundle SHA-256 `dca8524a59d61525bf6f20b5fd4eeda739d5486c5d47356634699fb185280034`.
+- Sıradaki güvenli release adımı ayrı DB-only Cloudflare R2 hedefinde conditional upload/download/hash ve restore canary planıdır. Mevcut `aluplan-support-desk` uygulama bucket'ı backup hedefi yapılmayacak ve içindeki veriye dokunulmayacaktır.
+- Sonraki production kapıları: salt-okunur canlı ledger planı, PostgreSQL credential rotasyonu, DB-object parity, dokuz queue/cron tekilliği, maintenance/cutover ve rollback provasıdır.
+- Push, tag-push, deploy, production DB/R2/SSH erişimi-yazımı, migration ve seed yasakları aynen sürmektedir.

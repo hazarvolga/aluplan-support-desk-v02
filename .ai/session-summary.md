@@ -4039,6 +4039,36 @@ Maintenance rule:
   The tag and bundle remain local and were not pushed.
 - Claude independently re-ran the source, local read-only DB, restore-integrity, targeted/full test, typecheck, i18n and contract checks and returned GO with no contradicted claim or count deviation. Aşama A is therefore closed; work pauses here.
 - Root `FIRST-READ.md` is the shared Codex/Claude account-switch and new-session entry point. It preserves the canonical directory, read order, archive reference, local-only boundaries, Aşama A closure, and Aşama B NO-GO gate.
+
+## 2026-08-09 - Production Release A.1.3 exact-image and disposable restore evidence
+
+### Outcome
+
+- Local-only exact-image and disposable PG17+pgvector restore evidence is complete. Production remains NO-GO.
+- Final tooling commit: `ca26caa1` (`fix(release): serialize fingerprint queries`). Exact amd64 image: `sha256:74a4fac812a84082184c8d42a41473f08a235ed772cc615cfcfd316f7299f6ac`.
+- The input was the existing sanitized production-derived PG17 custom archive, SHA-256 `544260dd42453b6510433e27de0ef19e03e3e08793923af8c699fb27a98f1ff7`, `138028808` bytes, mode `0600`. Raw production dumps were not used.
+- Baseline and candidate-pre fingerprints were identical. Migration round 1 applied the eight expected pending migrations; round 2 reported no pending migrations. Candidate post-round-1 and post-round-2 fingerprints were identical.
+- Final parity evidence records business/RAG/object-reference/sequence/RBAC-baseline/schema-baseline stability, canonical RBAC, schema parity, a true round-two no-op, zero invalid constraints/indexes, clean disposable resource teardown, and `productionGo:false`.
+
+### Fail-closed findings closed during the drill
+
+- Docker Desktop lowercase missing-object messages are accepted only as exact immutable-ID/name matches; wrong ID, suffix and daemon-error cases remain rejected.
+- All backend evidence jobs explicitly run as `linux/amd64` on Apple Silicon.
+- RBAC fingerprint reads no longer overlap queries on one node-postgres `Client`; a side-effect-free helper and behavior test prove `maxInFlight=1` and deterministic roles -> permissions -> assignments order.
+- Every source change received TDD, code review and security review closure with Critical/High/Medium `0/0/0`.
+
+### Verification and recovery
+
+- A.1.3 safety: `52/52`; broad operations-safety: `151/151`; Node syntax and diff hygiene passed.
+- Restore tag: `restore/post-release-a13-fingerprint-20260809-ca26caa1`.
+- Complete-history bundle: `.private-data/restore-points/post-release-a13-fingerprint-20260809-ca26caa1.bundle`; SHA-256 `dca8524a59d61525bf6f20b5fd4eeda739d5486c5d47356634699fb185280034`.
+- Private exact-image/restore evidence is under `.private-data/release-evidence/` and is intentionally not committed.
+
+### Remaining release boundary
+
+- No Cloudflare R2 backup round-trip was performed and no DB-only backup bucket was created. Existing `aluplan-support-desk` application objects were untouched.
+- Still required before any production GO: dedicated DB-backup R2 conditional upload/download/hash/restore canary; read-only live migration ledger plan; production PostgreSQL credential rotation; full DB-to-S3/local object-reference parity; all nine BullMQ queues plus cron/repeatable-job singleton checks; approved maintenance/cutover and rollback rehearsal.
+- No production DB/R2/SSH access or write, migration, seed, push, tag-push, deploy or publish occurred.
 ## 2026-08-08 - Announcement email preference BUG-05 closure
 
 - Captured and independently verified the announcement dynamic-data GAP/BUG report in `.ai/issues/2026-08-08-announcement-email-template-dynamic-data-gap-bug-report.md`; docs baseline commit is `cc1a7896`.
