@@ -134,6 +134,22 @@ case "$1 $2" in
     ;;
   'inspect '*)
     if [ -f "$A13_FAKE_STATE_DIR/container-created" ]; then exit 0; fi
+    if [ "$scenario" = docker-desktop-missing ]; then
+      printf 'error: no such object: %s\\n' "$2" >&2
+      exit 1
+    fi
+    if [ "$scenario" = docker-desktop-wrong-id ]; then
+      printf 'error: no such object: %s\\n' "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" >&2
+      exit 1
+    fi
+    if [ "$scenario" = docker-desktop-suffix ]; then
+      printf 'error: no such object: %s extra\\n' "$2" >&2
+      exit 1
+    fi
+    if [ "$scenario" = docker-desktop-daemon-error ]; then
+      printf 'Cannot connect to the Docker daemon at unix:///var/run/docker.sock\\n' >&2
+      exit 1
+    fi
     printf 'Error: No such object: %s\\n' "$2" >&2
     exit 1
     ;;
@@ -290,6 +306,34 @@ test("exact-image smoke publishes evidence only after successful owned cleanup",
   assert.match(log, new RegExp(`docker inspect ${smokeContainerId}`));
   assert.equal(await readyExists(harness), true);
 });
+
+test("exact-image smoke accepts Docker Desktop's exact lowercase removal proof", async () => {
+  const harness = await createImageHarness();
+  const result = runImageSmoke(harness, "docker-desktop-missing");
+  const log = await logOf(harness);
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(log, new RegExp(`docker rm -f ${smokeContainerId}`));
+  assert.match(log, new RegExp(`docker inspect ${smokeContainerId}`));
+  assert.equal(await readyExists(harness), true);
+});
+
+for (const scenario of [
+  "docker-desktop-wrong-id",
+  "docker-desktop-suffix",
+  "docker-desktop-daemon-error",
+]) {
+  test(`exact-image smoke rejects non-exact Docker Desktop proof: ${scenario}`, async () => {
+    const harness = await createImageHarness();
+    const result = runImageSmoke(harness, scenario);
+    const log = await logOf(harness);
+
+    assert.notEqual(result.status, 0);
+    assert.match(log, new RegExp(`docker rm -f ${smokeContainerId}`));
+    assert.match(log, new RegExp(`docker inspect ${smokeContainerId}`));
+    assert.equal(await readyExists(harness), false);
+  });
+}
 
 test("exact-image smoke rejects an immutable Git context above its size budget", async () => {
   const harness = await createImageHarness();

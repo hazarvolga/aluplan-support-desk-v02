@@ -271,6 +271,7 @@ if run_control "${docker_bin}" inspect "${smoke_container_id}" >/dev/null 2>"${r
 fi
 grep -Fqx "Error: No such object: ${smoke_container_id}" "${remove_error}" \
     || grep -Fqx "Error response from daemon: No such container: ${smoke_container_id}" "${remove_error}" \
+    || grep -Fqx "error: no such object: ${smoke_container_id}" "${remove_error}" \
     || fail 'Unable to prove exact-image smoke container removal.'
 rm -f -- "${remove_error}"
 smoke_container_created=0
