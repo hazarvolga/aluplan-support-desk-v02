@@ -1,45 +1,32 @@
-name: Disaster Recovery Drill
+name: Disaster Recovery Safety Contract (not restore evidence)
 
 on:
   schedule:
-    - cron: '0 3 1 */3 *' # Every 3 months (quarterly)
-  workflow_dispatch: # Manual trigger
+    - cron: '0 3 1 */3 *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  dr-drill:
-    name: Quarterly DR Drill
+  safety-contract:
+    name: A.1.3 fail-closed contract tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Environment
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client curl
-
-      - name: Run DR Drill Script
-        env:
-          BACKUP_URL: ${{ secrets.DR_BACKUP_URL }}
-        run: |
-          chmod +x scripts/dr-drill.sh
-          ./scripts/dr-drill.sh "$BACKUP_URL" || true
-
-      - name: Upload DR Report
-        if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          name: dr-drill-report
-          path: /tmp/dr-report.txt
+          persist-credentials: false
 
-      - name: Notify Slack
-        if: always()
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+
+      - name: Verify A.1.3 safety contract
+        run: node --test scripts/release-a13-safety.test.mjs
+
+      - name: Clarify evidence boundary
         run: |
-          if [ -f /tmp/dr-report.txt ]; then
-            REPORT=$(cat /tmp/dr-report.txt | sed 's/"/\\"/g')
-            curl -X POST "$SLACK_WEBHOOK" \
-              -H "Content-Type: application/json" \
-              -d "{\"text\":\"📋 DR Drill Report\\n$REPORT\"}"
-          fi
+          echo 'This workflow validates code safety only.'
+          echo 'It is not restore evidence and cannot authorize production deployment.'

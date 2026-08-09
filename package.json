@@ -22,10 +22,12 @@
     "db:compare:schema": "node scripts/compare-database-schema.mjs",
     "db:audit:migration-effects": "node scripts/audit-migration-effects.mjs",
     "db:measure:migration-locks": "node scripts/measure-migration-locks.mjs",
+    "release:a13:image-smoke": "bash scripts/release-a13-exact-image-smoke.sh",
+    "release:a13:restore-drill": "bash scripts/release-a13-restore-drill.sh",
     "rag:maintenance": "pnpm --filter @aluplan/backend rag:maintenance",
     "i18n:check": "pnpm --filter @aluplan/frontend i18n:check",
     "spec:verify": "node scripts/verify-specs.mjs",
-    "test:ops-safety": "node --test scripts/verify-migration-integrity.test.mjs scripts/resolve-production-migration-plan.test.mjs scripts/backup-safety.test.mjs scripts/production-boot-safety.test.mjs scripts/verify-rbac-contract.test.mjs scripts/verify-frontend-api-contract.test.mjs",
+    "test:ops-safety": "node --test scripts/verify-migration-integrity.test.mjs scripts/resolve-production-migration-plan.test.mjs scripts/backup-safety.test.mjs scripts/release-a13-safety.test.mjs scripts/release-a13-image-smoke.test.mjs scripts/production-boot-safety.test.mjs scripts/verify-rbac-contract.test.mjs scripts/verify-frontend-api-contract.test.mjs",
     "api:verify-frontend-contract": "node scripts/verify-frontend-api-contract.mjs",
     "rbac:verify-contract": "node scripts/verify-rbac-contract.mjs",
     "rbac:verify-database": "node scripts/verify-rbac-contract.mjs --database"

@@ -27,15 +27,16 @@ const result = spawnSync(
         cwd: process.cwd(),
         encoding: 'utf8',
         env: process.env,
+        timeout: 60_000,
+        maxBuffer: 4 * 1024 * 1024,
     },
 );
 
 if (result.error) {
-    throw new Error(`Unable to start Prisma schema parity diff: ${result.error.message}`);
+    throw new Error('Unable to complete Prisma schema parity diff');
 }
 
 if (result.status !== 0) {
-    if (result.stderr) process.stderr.write(result.stderr);
     throw new Error('Prisma schema parity diff failed');
 }
 

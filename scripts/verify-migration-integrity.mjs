@@ -280,14 +280,23 @@ async function main() {
 
     const client = new Client({
         connectionString: process.env.DATABASE_URL,
+        connectionTimeoutMillis: 10_000,
+        query_timeout: 35_000,
     });
 
     await client.connect();
+    let transactionStarted = false;
     try {
+        await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+        transactionStarted = true;
+        await client.query("SET LOCAL statement_timeout = '30s'");
         const ledgerRows = await loadLedger(client);
         verifyLedger(fileChecksums, ledgerRows);
         await verifyRequiredRelations(client);
     } finally {
+        if (transactionStarted) {
+            await client.query('ROLLBACK').catch(() => undefined);
+        }
         await client.end();
     }
 

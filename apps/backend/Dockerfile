@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:20.20.2-alpine3.23@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS base
 RUN apk add --no-cache openssl fontconfig
 RUN npm install -g pnpm@9.15.4
 
@@ -26,7 +26,10 @@ RUN pnpm install --frozen-lockfile && \
     NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/database db:generate && \
     NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/backend build
 
-FROM node:20-alpine AS runner
+FROM node:20.20.2-alpine3.23@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS runner
+ARG VCS_REF
+RUN printf '%s' "${VCS_REF}" | grep -Eq '^[0-9a-f]{40}$'
+LABEL org.opencontainers.image.revision="${VCS_REF}"
 WORKDIR /app
 ENV NODE_ENV=production
 # Playwright/Chromium dependencies for Alpine
@@ -73,6 +76,9 @@ COPY --from=builder /app/packages/database/prisma.config.js ./packages/database/
 COPY --from=builder /app/packages/database/index.js /app/packages/database/index.d.ts ./packages/database/
 COPY --from=builder /app/scripts/verify-migration-integrity.mjs ./scripts/verify-migration-integrity.mjs
 COPY --from=builder /app/scripts/backup-db.sh ./scripts/backup-db.sh
+COPY --from=builder /app/scripts/capture-release-fingerprints.mjs ./scripts/capture-release-fingerprints.mjs
+COPY --from=builder /app/scripts/verify-schema-parity.mjs ./scripts/verify-schema-parity.mjs
+COPY --from=builder /app/scripts/verify-rbac-database.mjs ./scripts/verify-rbac-database.mjs
 
 # 4. Generate Prisma client in runner (this creates packages/database/client/)
 RUN cd packages/database && prisma generate --schema ./prisma/schema.prisma
@@ -83,10 +89,12 @@ COPY --from=builder /app/apps/backend/src/email/templates ./apps/backend/src/ema
 COPY --from=builder /app/apps/backend/src/email/locales ./apps/backend/src/email/locales
 
 COPY --from=builder /app/apps/backend/scripts/deploy.sh ./apps/backend/scripts/deploy.sh
+COPY --from=builder /app/apps/backend/scripts/migrate-once.sh ./apps/backend/scripts/migrate-once.sh
 
 # Final permissions and port config
 RUN chmod +x \
     ./apps/backend/scripts/deploy.sh \
+    ./apps/backend/scripts/migrate-once.sh \
     ./scripts/backup-db.sh \
     ./packages/database/scripts/backup.sh && \
     bash -n ./scripts/backup-db.sh && \

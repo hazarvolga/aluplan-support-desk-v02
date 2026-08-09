@@ -15,3 +15,10 @@ packages/database/client
 packages/database/generated
 packages/database/scripts/production-sync.js
 extracted_users.json
+.private-data/
+*.dump
+*.backup
+*.sql.gz
+credentials.json
+*.pem
+*.key

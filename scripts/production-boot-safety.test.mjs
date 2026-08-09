@@ -8,6 +8,10 @@ const deployScript = await readFile(
     new URL('../apps/backend/scripts/deploy.sh', import.meta.url),
     'utf8',
 );
+const migrateOnceScript = await readFile(
+    new URL('../apps/backend/scripts/migrate-once.sh', import.meta.url),
+    'utf8',
+);
 const backendDockerfile = await readFile(
     new URL('../apps/backend/Dockerfile', import.meta.url),
     'utf8',
@@ -73,12 +77,13 @@ test('normal production boot does not run recovery, seed, or role-repair scripts
     );
     assert.match(
         deployScript,
-        /if ! DATABASE_URL="\$MIGRATION_DATABASE_URL" prisma migrate deploy[\s\S]*?exit 1[\s\S]*?fi/,
+        /if ! \.\/apps\/backend\/scripts\/migrate-once\.sh; then[\s\S]*?exit 1[\s\S]*?fi/,
     );
     assert.match(
-        deployScript,
-        /verify-migration-integrity\.mjs --files-only[\s\S]*?prisma migrate deploy[\s\S]*?verify-migration-integrity\.mjs[\s\S]*?Starting application/,
+        migrateOnceScript,
+        /verify-migration-integrity\.mjs --files-only[\s\S]*?prisma migrate deploy[\s\S]*?verify-migration-integrity\.mjs/,
     );
+    assert.match(deployScript, /migrate-once\.sh[\s\S]*?Starting application/);
     assert.doesNotMatch(
         deployScript,
         /_prisma_migrations|manual-psql-fix|CREATE TABLE|ALTER TABLE|UPDATE /,
@@ -89,6 +94,15 @@ test('normal production boot does not run recovery, seed, or role-repair scripts
         encoding: 'utf8',
     });
     assert.equal(syntaxCheck.status, 0, syntaxCheck.stderr);
+    const migrationSyntaxCheck = spawnSync(
+        'sh',
+        ['-n', 'apps/backend/scripts/migrate-once.sh'],
+        {
+            cwd: new URL('..', import.meta.url),
+            encoding: 'utf8',
+        },
+    );
+    assert.equal(migrationSyntaxCheck.status, 0, migrationSyntaxCheck.stderr);
     assert.equal(typeof rootPackage.dependencies.pg, 'string');
     assert.equal(rootPackage.devDependencies.pg, undefined);
     assert.notEqual(
@@ -96,6 +110,23 @@ test('normal production boot does not run recovery, seed, or role-repair scripts
         0,
         'canonical deploy script must remain executable outside Docker',
     );
+});
+
+test('migration entrypoint rejects malformed database URLs without leaking their contents', () => {
+    const sentinel = 'A13-MALFORMED-URL-SENTINEL-DO-NOT-LOG';
+    const result = spawnSync('sh', ['apps/backend/scripts/migrate-once.sh'], {
+        cwd: new URL('..', import.meta.url),
+        encoding: 'utf8',
+        env: {
+            ...process.env,
+            DATABASE_URL: `not-a-postgres-url-${sentinel}`,
+        },
+        timeout: 30_000,
+    });
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /DATABASE_URL is invalid/);
+    assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, new RegExp(sentinel));
 });
 
 test('manual production synchronization is explicit, fail-closed, and credential-safe', () => {
@@ -245,4 +276,10 @@ test('sensitive maintenance and local data files stay out of Docker build contex
         /^packages\/database\/scripts\/production-sync\.js$/m,
     );
     assert.match(dockerIgnore, /^extracted_users\.json$/m);
+    assert.match(dockerIgnore, /^\.private-data\/$/m);
+    assert.match(dockerIgnore, /^\*\.dump$/m);
+    assert.match(dockerIgnore, /^\*\.backup$/m);
+    assert.match(dockerIgnore, /^credentials\.json$/m);
+    assert.match(dockerIgnore, /^\*\.pem$/m);
+    assert.match(dockerIgnore, /^\*\.key$/m);
 });
