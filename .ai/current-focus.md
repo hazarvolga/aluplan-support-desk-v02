@@ -472,3 +472,12 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - SharePoint version history `1.0` / 488 byte olarak görüldü. Dosya izinlerinde anonymous sharing linki yok; site Owners/Members/Visitors grupları ve site owner dışında doğrudan grant görülmedi.
 - Bu kanıt DEV şifreli offsite round-trip kapısını kapatır; production key custody/escrow, otomasyon kimliği, retention ve gerçek restore tatbikatı henüz kapalıdır. Production hâlâ NO-GO.
 - Canlı PostgreSQL, canlı `aluplan-support-desk` R2 bucket'ı ve mevcut `ALUPLAN DESTEK PLATFORMU 2026` SharePoint sitesi okunmadı/değiştirilmedi. Push, tag-push, deploy, migration ve seed yapılmadı.
+
+## Active Focus - 2026-08-10 DEV Object-Manifest Dry Run
+
+- Yalnız `aluplan-support-desk-db-backups-dev` bucket'ı, mevcut bucket-scoped DEV credential ile salt-okunur listelendi. Sonuç tam olarak bir sentetik canary nesnesi / `106` byte; canlı application bucket'ına erişilmedi.
+- Normalize DEV manifesti `.private-data/release-evidence/r2-manifest-dev/object-manifest.json` altında mode `0600`; SHA-256 `fc2041066e4bd4fa35fae0c0570ee13d51bc9a7166fcd68cff3215c1f7b51798`.
+- Aynı nesnenin `HEAD` sonucu ile manifestteki size ve ETag birebir eşleşti. `GetBucketVersioning` çağrısı DEV credential kapsamında `AccessDenied` döndürdü; versioning durumu varsayılmadı ve recovery gate olarak kabul edilmedi.
+- Object manifest age ile client-side şifrelendi; 689 byte ciphertext SHA-256 `113b4cd4a70e5548a0dce1352bf97553111247a0e9957486ddc5f524fd59064b`. Yalnız yeni SharePoint DEV `Manifests` kütüphanesine yüklendi.
+- SharePoint'ten indirilen ciphertext hash'i eşleşti; decryption sonrası JSON kaynak manifestle byte-for-byte aynıydı. Bu DEV object-manifest + encrypted offsite round-trip provasıdır, production inventory/kopya değildir.
+- Sıradaki güvenli kapı production key custody/escrow kararı ve canlı bucket için ayrı salt-okunur inventory yetkisinin kullanıcı onayıdır. Production hâlâ NO-GO; canlı veriye erişim/yazım yok.

@@ -4049,6 +4049,14 @@ Maintenance rule:
 - Verified SharePoint version `1.0` and no anonymous sharing link on the canary. Existing production DB/R2/application SharePoint data remained untouched.
 - This is a DEV encrypted round-trip acceptance only. Production remains NO-GO pending organizational key escrow/recovery, automation identity, retention, read-only live inventories, maintenance/cutover and rollback gates.
 
+## 2026-08-10 - DEV object-manifest and encrypted offsite round-trip
+
+- Read-only listed only `aluplan-support-desk-db-backups-dev`: one synthetic canary object, 106 bytes. HEAD size/ETag matched the normalized private manifest.
+- Manifest SHA-256 is `fc2041066e4bd4fa35fae0c0570ee13d51bc9a7166fcd68cff3215c1f7b51798`, stored mode `0600` under `.private-data/release-evidence/r2-manifest-dev/`.
+- Bucket versioning visibility returned `AccessDenied`; no versioning claim was made and versioning remains excluded from recovery acceptance.
+- Encrypted the manifest client-side, uploaded the 689-byte ciphertext to the new SharePoint DEV `Manifests` library, downloaded it, matched SHA-256 `113b4cd4a70e5548a0dce1352bf97553111247a0e9957486ddc5f524fd59064b`, decrypted it and proved exact byte equality with the source JSON.
+- No production bucket, database, deploy or production copy was touched. Next authorization gate is organizational key custody plus a separately approved read-only live inventory credential.
+
 ## 2026-08-09 - Production Release A.1.3 exact-image and disposable restore evidence
 
 ### Outcome

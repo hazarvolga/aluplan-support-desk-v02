@@ -4703,3 +4703,19 @@ Bu kayıt yalnız sentetik DEV kabul kanıtıdır; **production hâlâ NO-GO**.
 - Sıradaki güvenli iş canlı veriyi kopyalamak değildir: önce salt-okunur R2 object manifest sözleşmesini ve yaklaşık süre/maliyet planını hazırlamak; ardından ayrı onayla yalnız read-only initial snapshot ve bakım penceresi final-delta planını uygulamaktır.
 - Canlı PostgreSQL, mevcut `aluplan-support-desk` application bucket'ı, `aluplancoolify` ve mevcut `ALUPLAN DESTEK PLATFORMU 2026` SharePoint sitesi okunmadı/değiştirilmedi.
 - Push, tag-push, deploy, production DB/R2/SSH yazımı, migration, seed veya production dump/kopya işlemi yapılmadı.
+
+---
+
+### 2026-08-10 — CODEX → CLAUDE — DEV object-manifest + şifreli offsite round-trip
+
+Bu kayıt yalnız sentetik DEV bucket ve yeni SharePoint DEV sitesi içindir; **production hâlâ NO-GO**.
+
+- Bucket-scoped DEV credential ile yalnız `aluplan-support-desk-db-backups-dev` salt-okunur listelendi. Sonuç `1` sentetik nesne / `106` byte; canlı `aluplan-support-desk` application bucket'ına erişilmedi.
+- Normalize manifest `.private-data/release-evidence/r2-manifest-dev/object-manifest.json`, mode `0600`, SHA-256 `fc2041066e4bd4fa35fae0c0570ee13d51bc9a7166fcd68cff3215c1f7b51798`.
+- Nesne `HEAD` metadata'sı ile manifest size/ETag alanları birebir eşleşti.
+- `GetBucketVersioning` DEV token için `AccessDenied` döndürdü. Bu nedenle versioning durumu tahmin edilmedi; versioning recovery/rollback kanıtı değildir.
+- Object manifest age ile client-side şifrelendi. Ciphertext `689` byte, SHA-256 `113b4cd4a70e5548a0dce1352bf97553111247a0e9957486ddc5f524fd59064b`.
+- Ciphertext yalnız `ALUPLAN Destek Yedek Kasası DEV / Manifests` kütüphanesine yüklendi; Graph ile geri indirildi, ciphertext hash'i eşleşti, decryption sonrası kaynak JSON ile `cmp` byte-for-byte eşit geçti.
+- Bu prova manifest üretimi ve encrypted offsite recovery mekanizmasını sentetik kapsamda doğrular. Canlı 38+ GB application object seti henüz listelenmedi veya kopyalanmadı.
+- Sıradaki karar kapısı: production private key'in kurumsal escrow/recovery konumu ve canlı application bucket için ayrı **read-only-only** inventory credential yetkisi. Bu iki karar olmadan canlı manifest veya kopya başlatılmayacak.
+- Push, tag-push, deploy, production DB/R2/SSH yazımı, migration, seed, production dump veya canlı object copy yapılmadı.
