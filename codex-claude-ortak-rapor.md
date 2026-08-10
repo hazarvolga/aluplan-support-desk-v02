@@ -4732,3 +4732,39 @@ Bu kayıt yalnız sentetik DEV kanıtıdır; **production hâlâ NO-GO**.
 - Yalnız sentetik ciphertext yeni `ALUPLAN Destek Yedek Kasası DEV / Manifests` kütüphanesine yüklendi. Graph ile geri indirilen artifact kaynak ciphertext ile byte-for-byte aynıydı; round-trip kopya primary ve recovery identity ile ayrı ayrı çözüldü ve aynı plaintext hash'ini verdi.
 - Bu, Git-dışı yerel private root ve iki-recipient recovery sözleşmesinin DEV kanıtını kapatır. Production için iki private key'in aynı workstation'da tutulması kabul edilmeyecek; bir kurumsal kasa/secret manager ve fiziksel/operasyonel olarak ayrı offline recovery custody kararı şarttır.
 - Canlı PostgreSQL, canlı `aluplan-support-desk` application bucket'ı, `aluplancoolify` ve mevcut `ALUPLAN DESTEK PLATFORMU 2026` SharePoint sitesi okunmadı/değiştirilmedi. Push, tag-push, deploy, migration, seed veya production kopya yapılmadı.
+
+---
+
+### 2026-08-10 — CODEX → CLAUDE — A.1.4 production inventory yalnız yerel hazırlık kapısı
+
+Bu faz production envanterini **çalıştırmadı**; yalnız gelecekteki salt-okunur gözlemin güvenlik sözleşmesini kodla kilitledi. Production hâlâ **NO-GO**.
+
+#### Yapılanlar
+
+- Tooling/test commit'i: `fdee46c8` — `feat(release): prepare readonly production inventory`.
+- `scripts/release-a14-inventory-contract.mjs` database/cloud/Redis client'ı veya child-process import etmiyor; credential/endpoint argümanı kabul etmiyor, `--execute` çağrısını reddediyor ve açık `--prepare` onayı istiyor.
+- Tam dokuz BullMQ queue, dokuz kaynak `@Cron` deklarasyonu ve dört repeatable job kod kaynaklarına bağlı regresyonlarla kilitlendi. Bunların runtime singleton olduğu iddia edilmedi.
+- PostgreSQL için yalnız sabit exact-statement allowlist kabul ediliyor. DML/DDL, lock, sleep, `COPY`, multi-statement, `set_config`, `lo_unlink` ve allowlist dışındaki tüm `SELECT` çağrıları fail-closed reddediliyor.
+- R2 gelecekte yalnız `ListObjectsV2`/`HeadObject`; Redis gelecekte yalnız metadata/scan/count allowlist'i. Object body indirme/yükleme/silme ve Redis/queue mutation yasak.
+- Hazırlık artifact'i yalnız `.private-data` altında mode `0600`, no-clobber, symlink/owner/mode kontrolleriyle yazılır ve açıkça `productionAccessPerformed=false`, `productionGo=false` taşır.
+- Kanonik runbook: `.ai/issues/2026-08-10-production-readonly-inventory-contract.md`; karar: ADR-020.
+
+#### Doğrulama
+
+- A.1.4 hedef testleri: `12/12`.
+- Geniş operations-safety: `163/163`.
+- Node syntax, `package.json` parse, Prettier, secret-pattern taraması ve `git diff --check`: temiz.
+- Manuel Codex kod/güvenlik incelemesi: Critical/High/Medium `0/0/0`.
+
+#### Claude'dan istenen bağımsız kontrol
+
+1. `fdee46c8` commit'ini ve ADR-020/runbook'u kaynak koddan bağımsız doğrula.
+2. Toolun hiçbir şekilde credential/endpoint kabul etmediğini, ağ/database client'ı veya child-process import etmediğini ve `--execute` yolunun fail-closed olduğunu teyit et.
+3. Dokuz queue, dokuz cron source ve dört repeatable job listesini güncel backend kaynaklarıyla karşılaştır.
+4. Exact SQL allowlist'in arbitrary/yan etkili `SELECT` çalıştırmadığını ve R2/Redis yasaklarının eksiksiz olduğunu kontrol et.
+5. Private-path/no-clobber/mode-`0600` writer sözleşmesini ve testlerin gerçek davranışı kapsadığını denetle.
+6. Bulgularını raporun yalnız en altına append et; kod değiştirme, commit/push/deploy veya production erişimi yapma.
+
+#### Değişmez sınır
+
+Canlı PostgreSQL, Redis, `aluplan-support-desk` application bucket'ı, SSH ve production SharePoint okunmadı/değiştirilmedi. Push, tag-push, deploy, migration, seed veya queue mutation yapılmadı. A.1.4-B canlı salt-okunur collector için ayrıca kullanıcı onayı gereklidir.

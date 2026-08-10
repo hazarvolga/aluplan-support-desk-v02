@@ -39,6 +39,8 @@ Aluplan Support Desk is an AI-assisted ticket system for Allplan/BIM support wor
 - Root Markdown, imported agent blocks, and duplicated AGENTS/CLAUDE content may be stale.
 - Uncommitted changes currently mix product RAG edits with tooling/spec/agent noise.
 - Legacy `General` knowledge sources can still appear behind new categorized PDF sources and should be watched during acceptance testing.
+- Production release remains NO-GO despite successful local A.1.3 restore evidence and DEV R2/SharePoint canaries. A.1.4 now has an offline, network-incapable inventory contract, but no live PostgreSQL/R2/Redis inventory has been authorized or collected.
+- Production age key custody is unresolved: keeping both DEV recovery identities on one Mac is acceptable only for DEV evidence, not production disaster recovery.
 
 ## Do Not Assume
 
@@ -47,3 +49,4 @@ Aluplan Support Desk is an AI-assisted ticket system for Allplan/BIM support wor
 - Do not assume AI must answer before a customer can create a ticket.
 - Do not change high-blast-radius AI symbols without Graphify/GitNexus context when available.
 - Do not commit `.agents`, `.kiro`, or generated tool context together with product-code fixes unless explicitly requested.
+- Do not treat A.1.4 preparation artifacts or DEV backup canaries as live production evidence or deploy authorization. Live read-only inventory requires a separate user approval and least-privilege credentials.

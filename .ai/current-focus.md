@@ -490,3 +490,14 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Ciphertext yalnız yeni SharePoint DEV `Manifests` kütüphanesine yüklendi, Graph üzerinden geri indirildi ve kaynak ciphertext ile byte-for-byte eşleşti. SharePoint round-trip kopyası da her iki identity ile ayrı ayrı çözüldü ve aynı plaintext hash'ini üretti.
 - Bu kanıt yerel Git-dışı saklamanın DEV için çalıştığını ve iki bağımsız kurtarma anahtarı sözleşmesini doğrular. Production için iki özel anahtarın aynı bilgisayarda tutulması yeterli değildir; en az birinin kurumsal kasa/secret manager ve diğerinin ayrı offline custody konumu belirlenmeden production key üretimi yapılmayacak.
 - Canlı PostgreSQL, canlı application R2 bucket'ı ve mevcut production SharePoint sitesi okunmadı/değiştirilmedi. Production hâlâ NO-GO; push, deploy, migration ve seed yapılmadı.
+
+## Active Focus - 2026-08-10 A.1.4 Production Inventory Offline Preparation
+
+- A.1.4 yalnız yerel hazırlık kapısı tamamlandı; tooling/test commit'i `fdee46c8` (`feat(release): prepare readonly production inventory`). Bu faz hiçbir production bağlantısı kurmaz.
+- `scripts/release-a14-inventory-contract.mjs` credential veya endpoint argümanı kabul etmez, database/cloud/Redis client'ı ve child-process import etmez, `--execute` çağrısını fail-closed reddeder ve yalnız açık `--prepare` onayıyla çalışır.
+- Dokuz BullMQ queue, dokuz kaynak `@Cron` deklarasyonu, dört repeatable job, exact PostgreSQL statement allowlist'i ve R2/Redis salt-okunur eylem allowlistleri kodla kilitlendi. Runtime singleton henüz doğrulanmış sayılmaz.
+- PostgreSQL sorgu sözleşmesi arbitrary `SELECT` çalıştırmaz; yalnız sabit allowlistteki statement'lar kabul edilir. DML/DDL, lock, sleep, `COPY`, multi-statement ve yan etkili fonksiyonlar reddedilir.
+- Plan yalnız Git-dışı `.private-data` altında, mode `0600`, no-clobber ve symlink/ownership/mode kontrolleriyle yazılır. Plan daima `productionAccessPerformed=false`, `productionGo=false` ve ayrı kullanıcı onayı gerektiren sonraki kapıyı taşır.
+- Doğrulama: A.1.4 hedefi `12/12`, geniş operations-safety `163/163`, syntax, JSON parse, Prettier, secret taraması ve `git diff --check` temiz. Manuel kod/güvenlik incelemesinde Critical/High/Medium `0/0/0`.
+- Sıradaki güvenli kapı A.1.4-B için ayrı kullanıcı kararıdır: yalnız kısa ömürlü least-privilege credentiallarla salt-okunur production ledger/R2 metadata/Redis-BullMQ inventory collector. Bu onay verilmeden canlı credential oluşturulmayacak veya production erişimi yapılmayacak.
+- Canlı PostgreSQL, `aluplan-support-desk` application bucket'ı, Redis, SSH ve mevcut production SharePoint sitesi okunmadı/değiştirilmedi. Push, tag-push, deploy, migration ve seed yapılmadı; production hâlâ NO-GO.

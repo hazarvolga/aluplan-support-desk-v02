@@ -4066,6 +4066,14 @@ Maintenance rule:
 - No private key or recipient value was printed, committed, or uploaded. Local-only dual custody is accepted for DEV evidence, not production recovery. Production keys require separate organizational and offline custody locations.
 - No live database, live application bucket, production SharePoint site, deploy, migration, seed, push or production copy was touched. Production remains NO-GO.
 
+## 2026-08-10 - A.1.4 offline production inventory preparation
+
+- Added a network-incapable production-inventory preparation contract in commit `fdee46c8`. It accepts no credentials/endpoints, rejects `--execute`, requires explicit `--prepare`, and writes only private no-clobber mode-`0600` evidence.
+- Locked the exact nine BullMQ queues, nine source cron declarations, four repeatable jobs, PostgreSQL statement allowlist, and R2/Redis read-operation allowlists. Runtime singleton and live parity remain intentionally unverified.
+- Closed a fail-closed SQL review finding by replacing broad `SELECT` acceptance with an exact statement allowlist; side-effect functions such as `set_config` and `lo_unlink` are regression-tested as rejected.
+- Verification passed: A.1.4 `12/12`, broad operations safety `163/163`, syntax/format/JSON/secret/diff checks. Manual code/security review found no Critical/High/Medium issue.
+- No production PostgreSQL, Redis, R2, SSH, migration, seed, queue mutation, push or deploy occurred. Production remains NO-GO. The next phase requires separate user approval for A.1.4-B live read-only inventory access.
+
 ## 2026-08-09 - Production Release A.1.3 exact-image and disposable restore evidence
 
 ### Outcome
