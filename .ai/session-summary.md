@@ -4069,6 +4069,21 @@ Maintenance rule:
 - No Cloudflare R2 backup round-trip was performed and no DB-only backup bucket was created. Existing `aluplan-support-desk` application objects were untouched.
 - Still required before any production GO: dedicated DB-backup R2 conditional upload/download/hash/restore canary; read-only live migration ledger plan; production PostgreSQL credential rotation; full DB-to-S3/local object-reference parity; all nine BullMQ queues plus cron/repeatable-job singleton checks; approved maintenance/cutover and rollback rehearsal.
 - No production DB/R2/SSH access or write, migration, seed, push, tag-push, deploy or publish occurred.
+
+## 2026-08-10 DEV R2 and SharePoint offsite acceptance
+
+### Completed external DEV evidence
+
+- Created the isolated Cloudflare R2 bucket `aluplan-support-desk-db-backups-dev`; the live application bucket remained untouched.
+- Created a 30-day Object Read & Write credential scoped to that bucket only. Its values remain untracked under `.private-data` with mode `0600` and were not printed or documented.
+- Uploaded a 106-byte synthetic canary with `If-None-Match: *`, verified HEAD metadata, downloaded it, matched SHA-256 on both copies, and proved a repeat conditional upload is rejected.
+- Created the separate non-group SharePoint site `ALUPLAN Destek Yedek Kasası DEV` at `/sites/aluplan-destek-backups-dev`, Turkish locale, Istanbul time zone and 100 GB site quota. External sharing is organization-only.
+- Created empty `Database Backups`, `Object Storage Snapshots`, and `Manifests` libraries. Existing `ALUPLAN DESTEK PLATFORMU 2026` was not modified.
+
+### Boundary and next action
+
+- No production dump or live R2 object was copied. R2 returned no object `VersionId`, so the release design still requires immutable unique keys plus an independent encrypted SharePoint copy.
+- Next: define client-side encryption/key custody, run an encrypted synthetic SharePoint round-trip, then produce a read-only live object manifest and staged initial/delta-copy plan. Production remains NO-GO.
 ## 2026-08-08 - Announcement email preference BUG-05 closure
 
 - Captured and independently verified the announcement dynamic-data GAP/BUG report in `.ai/issues/2026-08-08-announcement-email-template-dynamic-data-gap-bug-report.md`; docs baseline commit is `cc1a7896`.

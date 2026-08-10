@@ -450,3 +450,15 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Güncel restore point: tag `restore/post-release-a13-fingerprint-20260809-ca26caa1`; bundle `.private-data/restore-points/post-release-a13-fingerprint-20260809-ca26caa1.bundle`, SHA-256 `dca8524a59d61525bf6f20b5fd4eeda739d5486c5d47356634699fb185280034`.
 - Açık release kapıları: ayrı DB-only Cloudflare R2 hedefinde conditional round-trip/restore canary, production ledger salt-okunur planı, PostgreSQL credential rotasyonu, application-object parity, dokuz queue/cron tekilliği, maintenance/cutover ve rollback provası. Mevcut `aluplan-support-desk` application bucket'ına dokunma.
 - Push, tag-push, deploy, production DB/R2/SSH erişimi veya yazımı, migration ve seed yapılmadı; yasaklar sürüyor.
+
+## Active Focus - 2026-08-10 DEV Offsite Backup Acceptance
+
+- Yalnız DEV kabulü için ayrı Cloudflare R2 bucket'ı `aluplan-support-desk-db-backups-dev` oluşturuldu. Mevcut canlı `aluplan-support-desk` application bucket'ı ve `aluplancoolify` değiştirilmedi.
+- 30 gün süreli R2 kimliği yalnız yeni DEV bucket'ta Object Read & Write kapsamıyla oluşturuldu. Secret değerleri belgeye/Git'e yazılmadı; kimlik dosyası `.private-data/release-credentials/r2-dev-canary.env` altında mode `0600` tutuluyor.
+- 106 byte sentetik canary `canary/2026-08-10/b3abc01c3aedfb84/canary.txt` anahtarına no-clobber koşuluyla yüklendi. HEAD metadata, geri indirme ve iki taraflı SHA-256 `b3abc01c3aedfb8438f02bba41625db33a21ba3ac232854bc3cabb0a0d0e1fbf` eşleşti; aynı anahtara ikinci koşullu yükleme beklendiği gibi reddedildi.
+- R2 HEAD yanıtında `VersionId` yoktu. Bu nedenle versioning geri dönüş kanıtı sayılmıyor; benzersiz/no-overwrite anahtarlar ve bağımsız Microsoft kopyası zorunlu kalıyor.
+- Microsoft SharePoint'te mevcut `ALUPLAN DESTEK PLATFORMU 2026` sitesine dokunulmadan, Microsoft 365 Group oluşturmayan ayrı `ALUPLAN Destek Yedek Kasası DEV` sitesi oluşturuldu: `/sites/aluplan-destek-backups-dev`, Türkçe, `(UTC+03:00) Istanbul`, 100 GB site kotası.
+- Yeni DEV site dış paylaşımı `Only people in your organization` olarak doğrulandı. `Database Backups`, `Object Storage Snapshots` ve `Manifests` adlı üç boş document library oluşturuldu.
+- SharePoint admin salt-okunur envanteri `293.15 GB used of 1.85 TB` gösterdi. Bu kapasite kanıtıdır; Microsoft'a production verisi veya canlı R2 nesnesi henüz kopyalanmadı.
+- Sıradaki güvenli iş: client-side encryption ve key-custody sözleşmesini belirlemek; SharePoint'e yalnız sentetik şifreli canary yükleyip geri indirme/hash doğrulaması yapmak; ardından canlı R2 için yalnız salt-okunur object manifest ve maliyet/süre planı çıkarmak.
+- Production hâlâ NO-GO. Canlı DB dump, canlı R2 kopyası, production credential rotasyonu, push, tag-push, deploy, migration ve seed yapılmadı.

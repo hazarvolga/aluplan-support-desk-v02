@@ -4643,3 +4643,35 @@ Bu kayıt yalnız yerel release kanıtını kapatır; **production hâlâ NO-GO*
 - Production DB/R2/SSH erişimi veya yazımı, canlı migration/seed, push, tag-push, deploy ve publish yapılmadı. Bu yasaklar aynen sürüyor.
 
 Claude'dan sonraki bağımsız doğrulamada istenen: `ca26caa1` commit'ini ve bu yerel evidence özetini kaynak/kanıt dosyalarından doğrulamak; **yerel A.1.3 GO ile production GO'yu karıştırmamak** ve R2/live kapıları için kullanıcıdan ayrıca açık onay beklemek.
+
+---
+
+### 2026-08-10 — CODEX → CLAUDE — DEV R2 round-trip ve bağımsız SharePoint yedek kasası
+
+Bu kayıt yalnız DEV dış-servis kabul kanıtıdır; **production hâlâ NO-GO**.
+
+#### Cloudflare R2 DEV kabulü
+
+- Ayrı `aluplan-support-desk-db-backups-dev` bucket'ı oluşturuldu. Canlı application bucket'ı `aluplan-support-desk` ve kapsam dışı `aluplancoolify` değiştirilmedi.
+- 30 günlük token yalnız yeni DEV bucket'ında Object Read & Write kapsamıyla oluşturuldu. Secret değerleri ekrana/rapora/Git'e yazılmadı; untracked private credential dosyası mode `0600`.
+- 106 byte sentetik canary benzersiz anahtara `If-None-Match: *` ile yüklendi. HEAD metadata ve geri indirilen dosyanın SHA-256 değeri yerel kaynakla aynıydı: `b3abc01c3aedfb8438f02bba41625db33a21ba3ac232854bc3cabb0a0d0e1fbf`.
+- Aynı anahtara ikinci koşullu yükleme reddedildi; no-clobber sözleşmesi gerçek Cloudflare R2 üzerinde kanıtlandı.
+- HEAD yanıtı `VersionId: null` verdi. R2 versioning bir kurtarma kapısı kabul edilmiyor; immutable unique-key ve bağımsız Microsoft kopyası şart.
+
+#### Microsoft SharePoint DEV kabulü
+
+- Tenant envanteri salt-okunur olarak `293.15 GB used of 1.85 TB` gösterdi.
+- Mevcut `ALUPLAN DESTEK PLATFORMU 2026` sitesine hiçbir değişiklik yapılmadı.
+- Ayrı, Microsoft 365 Group oluşturmayan Team Site oluşturuldu: `ALUPLAN Destek Yedek Kasası DEV`, `/sites/aluplan-destek-backups-dev`, Türkçe, `(UTC+03:00) Istanbul`, 100 GB site kotası.
+- External sharing `Only people in your organization` olarak doğrulandı.
+- Üç boş library oluşturuldu: `Database Backups`, `Object Storage Snapshots`, `Manifests`.
+- SharePoint'e production dump veya canlı R2 nesnesi yüklenmedi.
+
+#### Sıradaki doğrulama ve sınır
+
+1. Client-side encryption ve key-custody sözleşmesi belirlenecek.
+2. SharePoint'te yalnız sentetik şifreli upload/download/hash canary yapılacak.
+3. Canlı application bucket'ı için yalnız salt-okunur key/size/ETag/last-modified manifesti ve yaklaşık transfer süresi/maliyeti çıkarılacak.
+4. Canlı sistem çalışırken initial read-only snapshot planı, bakım penceresinde yazmalar durduktan sonra final delta planı uygulanacak; mevcut R2 nesneleri taşınmayacak veya silinmeyecek.
+
+Push, tag-push, deploy, production DB/SSH yazımı, canlı migration/seed, production dump alma veya canlı R2 nesnelerini kopyalama bu turda yapılmadı.
