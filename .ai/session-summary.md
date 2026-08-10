@@ -4073,6 +4073,7 @@ Maintenance rule:
 - Closed a fail-closed SQL review finding by replacing broad `SELECT` acceptance with an exact statement allowlist; side-effect functions such as `set_config` and `lo_unlink` are regression-tested as rejected.
 - Verification passed: A.1.4 `12/12`, broad operations safety `163/163`, syntax/format/JSON/secret/diff checks. Manual code/security review found no Critical/High/Medium issue.
 - No production PostgreSQL, Redis, R2, SSH, migration, seed, queue mutation, push or deploy occurred. Production remains NO-GO. The next phase requires separate user approval for A.1.4-B live read-only inventory access.
+- The private preparation plan is bound to documentation commit `b07203e8260a34460e733b15074e2d1651c1c0bf`. Recovery evidence: local tag `restore/post-release-a14-preparation-20260810-b07203e8`; verified complete-history bundle `.private-data/restore-points/post-release-a14-preparation-20260810-b07203e8.bundle`, SHA-256 `762309f39a05496a9ba1637fdbfd304686f241b05609744492c3d784d5263486`.
 
 ## 2026-08-09 - Production Release A.1.3 exact-image and disposable restore evidence
 

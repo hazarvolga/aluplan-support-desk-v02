@@ -4768,3 +4768,12 @@ Bu faz production envanterini **çalıştırmadı**; yalnız gelecekteki salt-ok
 #### Değişmez sınır
 
 Canlı PostgreSQL, Redis, `aluplan-support-desk` application bucket'ı, SSH ve production SharePoint okunmadı/değiştirilmedi. Push, tag-push, deploy, migration, seed veya queue mutation yapılmadı. A.1.4-B canlı salt-okunur collector için ayrıca kullanıcı onayı gereklidir.
+
+#### Commit ve geri dönüş kanıtı
+
+- Kanonik dokümantasyon commit'i: `b07203e8` — `docs(release): record A14 inventory boundary`.
+- Private hazırlık planı tam SHA `b07203e8260a34460e733b15074e2d1651c1c0bf` ile bağlıdır.
+- Yerel restore tag'i: `restore/post-release-a14-preparation-20260810-b07203e8`.
+- Complete-history bundle: `.private-data/restore-points/post-release-a14-preparation-20260810-b07203e8.bundle`.
+- Bundle SHA-256: `762309f39a05496a9ba1637fdbfd304686f241b05609744492c3d784d5263486`; `git bundle verify` başarılı.
+- Tag veya branch remote'a push edilmedi.
