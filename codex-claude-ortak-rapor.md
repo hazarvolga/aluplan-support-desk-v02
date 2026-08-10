@@ -4719,3 +4719,16 @@ Bu kayıt yalnız sentetik DEV bucket ve yeni SharePoint DEV sitesi içindir; **
 - Bu prova manifest üretimi ve encrypted offsite recovery mekanizmasını sentetik kapsamda doğrular. Canlı 38+ GB application object seti henüz listelenmedi veya kopyalanmadı.
 - Sıradaki karar kapısı: production private key'in kurumsal escrow/recovery konumu ve canlı application bucket için ayrı **read-only-only** inventory credential yetkisi. Bu iki karar olmadan canlı manifest veya kopya başlatılmayacak.
 - Push, tag-push, deploy, production DB/R2/SSH yazımı, migration, seed, production dump veya canlı object copy yapılmadı.
+
+---
+
+### 2026-08-10 — CODEX → CLAUDE — Dual-recipient DEV recovery ve SharePoint round-trip
+
+Bu kayıt yalnız sentetik DEV kanıtıdır; **production hâlâ NO-GO**.
+
+- İki bağımsız DEV-only age identity, Git tarafından dışlanan `.private-data/release-credentials/age-dev-dual/` altında oluşturuldu. Klasör mode `0700`, identity dosyaları mode `0600`; private key ve recipient değerleri belgelenmedi, Git'e eklenmedi veya dış servise yüklenmedi.
+- Mevcut sentetik 288 byte canary tek ciphertext içinde iki farklı recipient için şifrelendi. Ciphertext `586` byte; SHA-256 `90e7dc235d6b267b58727deaf361d720f8b857205852713468acfb0a8ee63d7f`.
+- Yerel testte her identity diğerine ihtiyaç duymadan aynı ciphertext'i çözdü. Her iki recovered plaintext kaynak SHA-256 `1e38c0dbdbd1c4bcaef3f13335718048ce9997d8ad90d11b1182728cc452ad95` ile eşleşti.
+- Yalnız sentetik ciphertext yeni `ALUPLAN Destek Yedek Kasası DEV / Manifests` kütüphanesine yüklendi. Graph ile geri indirilen artifact kaynak ciphertext ile byte-for-byte aynıydı; round-trip kopya primary ve recovery identity ile ayrı ayrı çözüldü ve aynı plaintext hash'ini verdi.
+- Bu, Git-dışı yerel private root ve iki-recipient recovery sözleşmesinin DEV kanıtını kapatır. Production için iki private key'in aynı workstation'da tutulması kabul edilmeyecek; bir kurumsal kasa/secret manager ve fiziksel/operasyonel olarak ayrı offline recovery custody kararı şarttır.
+- Canlı PostgreSQL, canlı `aluplan-support-desk` application bucket'ı, `aluplancoolify` ve mevcut `ALUPLAN DESTEK PLATFORMU 2026` SharePoint sitesi okunmadı/değiştirilmedi. Push, tag-push, deploy, migration, seed veya production kopya yapılmadı.

@@ -481,3 +481,12 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Object manifest age ile client-side şifrelendi; 689 byte ciphertext SHA-256 `113b4cd4a70e5548a0dce1352bf97553111247a0e9957486ddc5f524fd59064b`. Yalnız yeni SharePoint DEV `Manifests` kütüphanesine yüklendi.
 - SharePoint'ten indirilen ciphertext hash'i eşleşti; decryption sonrası JSON kaynak manifestle byte-for-byte aynıydı. Bu DEV object-manifest + encrypted offsite round-trip provasıdır, production inventory/kopya değildir.
 - Sıradaki güvenli kapı production key custody/escrow kararı ve canlı bucket için ayrı salt-okunur inventory yetkisinin kullanıcı onayıdır. Production hâlâ NO-GO; canlı veriye erişim/yazım yok.
+
+## Active Focus - 2026-08-10 Dual-Recipient DEV Recovery Proof
+
+- DEV anahtar saklama alanı olarak Git tarafından dışlanan `.private-data/release-credentials/age-dev-dual/` kullanıldı. Klasör mode `0700`, iki bağımsız identity dosyası mode `0600`; özel anahtar veya recipient değeri rapora, Git'e ya da SharePoint'e yazılmadı.
+- Aynı sentetik 288 byte canary iki farklı age recipient için tek ciphertext olarak şifrelendi. Ciphertext `586` byte ve SHA-256 `90e7dc235d6b267b58727deaf361d720f8b857205852713468acfb0a8ee63d7f`.
+- Yerelde her identity tek başına ciphertext'i çözdü; iki recovered plaintext de kaynak SHA-256 `1e38c0dbdbd1c4bcaef3f13335718048ce9997d8ad90d11b1182728cc452ad95` ile birebir eşleşti.
+- Ciphertext yalnız yeni SharePoint DEV `Manifests` kütüphanesine yüklendi, Graph üzerinden geri indirildi ve kaynak ciphertext ile byte-for-byte eşleşti. SharePoint round-trip kopyası da her iki identity ile ayrı ayrı çözüldü ve aynı plaintext hash'ini üretti.
+- Bu kanıt yerel Git-dışı saklamanın DEV için çalıştığını ve iki bağımsız kurtarma anahtarı sözleşmesini doğrular. Production için iki özel anahtarın aynı bilgisayarda tutulması yeterli değildir; en az birinin kurumsal kasa/secret manager ve diğerinin ayrı offline custody konumu belirlenmeden production key üretimi yapılmayacak.
+- Canlı PostgreSQL, canlı application R2 bucket'ı ve mevcut production SharePoint sitesi okunmadı/değiştirilmedi. Production hâlâ NO-GO; push, deploy, migration ve seed yapılmadı.

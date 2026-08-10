@@ -4057,6 +4057,15 @@ Maintenance rule:
 - Encrypted the manifest client-side, uploaded the 689-byte ciphertext to the new SharePoint DEV `Manifests` library, downloaded it, matched SHA-256 `113b4cd4a70e5548a0dce1352bf97553111247a0e9957486ddc5f524fd59064b`, decrypted it and proved exact byte equality with the source JSON.
 - No production bucket, database, deploy or production copy was touched. Next authorization gate is organizational key custody plus a separately approved read-only live inventory credential.
 
+## 2026-08-10 - Dual-recipient DEV recovery and SharePoint round-trip
+
+- Created two independent DEV-only age identities under the Git-ignored private root. Directory permissions are `0700`; identities and all recovered artifacts are `0600`.
+- Encrypted the existing synthetic canary once for both recipients. The 586-byte ciphertext SHA-256 is `90e7dc235d6b267b58727deaf361d720f8b857205852713468acfb0a8ee63d7f`.
+- Proved locally that either identity alone recovers the exact original plaintext SHA-256 `1e38c0dbdbd1c4bcaef3f13335718048ce9997d8ad90d11b1182728cc452ad95`.
+- Uploaded only the synthetic ciphertext to the new SharePoint DEV `Manifests` library, downloaded it through Graph, proved ciphertext byte equality, and independently decrypted the round-trip copy with both identities.
+- No private key or recipient value was printed, committed, or uploaded. Local-only dual custody is accepted for DEV evidence, not production recovery. Production keys require separate organizational and offline custody locations.
+- No live database, live application bucket, production SharePoint site, deploy, migration, seed, push or production copy was touched. Production remains NO-GO.
+
 ## 2026-08-09 - Production Release A.1.3 exact-image and disposable restore evidence
 
 ### Outcome
