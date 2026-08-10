@@ -4040,6 +4040,15 @@ Maintenance rule:
 - Claude independently re-ran the source, local read-only DB, restore-integrity, targeted/full test, typecheck, i18n and contract checks and returned GO with no contradicted claim or count deviation. Aşama A is therefore closed; work pauses here.
 - Root `FIRST-READ.md` is the shared Codex/Claude account-switch and new-session entry point. It preserves the canonical directory, read order, archive reference, local-only boundaries, Aşama A closure, and Aşama B NO-GO gate.
 
+## 2026-08-10 - Encrypted SharePoint DEV acceptance
+
+- Pinned the official `age v1.3.1` darwin/arm64 release under `.private-data/tools`; its archive matched the publisher SHA-256 `01120ea2cbf0463d4c6bd767f99f3271bbed1cdc8a9aa718a76ba1fe4f01998b`.
+- Generated a DEV-only age identity under `.private-data/release-credentials` with mode `0600`. The private identity was never uploaded, committed, printed or documented.
+- Encrypted a 288-byte synthetic canary, uploaded only the 488-byte ciphertext and a non-secret JSON manifest to the new SharePoint DEV site's `Manifests` library.
+- Downloaded the ciphertext back through Microsoft Graph. Ciphertext SHA-256 `65f66f049c8b31315c27a7fd0f2456fe59c455e067cd08ac08861ef9c10aac25` matched exactly; age decryption succeeded and recovered plaintext SHA-256 `1e38c0dbdbd1c4bcaef3f13335718048ce9997d8ad90d11b1182728cc452ad95` matched the source.
+- Verified SharePoint version `1.0` and no anonymous sharing link on the canary. Existing production DB/R2/application SharePoint data remained untouched.
+- This is a DEV encrypted round-trip acceptance only. Production remains NO-GO pending organizational key escrow/recovery, automation identity, retention, read-only live inventories, maintenance/cutover and rollback gates.
+
 ## 2026-08-09 - Production Release A.1.3 exact-image and disposable restore evidence
 
 ### Outcome

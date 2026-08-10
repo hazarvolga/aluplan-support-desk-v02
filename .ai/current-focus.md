@@ -462,3 +462,13 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - SharePoint admin salt-okunur envanteri `293.15 GB used of 1.85 TB` gösterdi. Bu kapasite kanıtıdır; Microsoft'a production verisi veya canlı R2 nesnesi henüz kopyalanmadı.
 - Sıradaki güvenli iş: client-side encryption ve key-custody sözleşmesini belirlemek; SharePoint'e yalnız sentetik şifreli canary yükleyip geri indirme/hash doğrulaması yapmak; ardından canlı R2 için yalnız salt-okunur object manifest ve maliyet/süre planı çıkarmak.
 - Production hâlâ NO-GO. Canlı DB dump, canlı R2 kopyası, production credential rotasyonu, push, tag-push, deploy, migration ve seed yapılmadı.
+
+## Active Focus - 2026-08-10 Encrypted SharePoint DEV Round-Trip
+
+- Resmî `age v1.3.1` Apple Silicon paketi proje özel alanına indirildi; yayımlanmış arşiv SHA-256 değeri `01120ea2cbf0463d4c6bd767f99f3271bbed1cdc8a9aa718a76ba1fe4f01998b` ile birebir doğrulandı. Sistem geneline kurulum yapılmadı.
+- Yalnız DEV canary için yeni age identity oluşturuldu. Özel anahtar `.private-data/release-credentials/sharepoint-dev-age-identity.txt` altında mode `0600`; Git'e, SharePoint'e, rapora veya terminal çıktısına yazılmadı.
+- 288 byte sentetik plaintext SHA-256 `1e38c0dbdbd1c4bcaef3f13335718048ce9997d8ad90d11b1182728cc452ad95`; age ciphertext 488 byte ve SHA-256 `65f66f049c8b31315c27a7fd0f2456fe59c455e067cd08ac08861ef9c10aac25`.
+- Ciphertext ve secretsız manifest yalnız yeni `/sites/aluplan-destek-backups-dev` sitesindeki `Manifests` kütüphanesine yüklendi. Ciphertext Microsoft Graph ile geri indirildi; byte count ve SHA-256 eşleşti, yerel private identity ile çözme başarılı oldu ve recovered plaintext SHA-256 kaynakla birebir eşleşti.
+- SharePoint version history `1.0` / 488 byte olarak görüldü. Dosya izinlerinde anonymous sharing linki yok; site Owners/Members/Visitors grupları ve site owner dışında doğrudan grant görülmedi.
+- Bu kanıt DEV şifreli offsite round-trip kapısını kapatır; production key custody/escrow, otomasyon kimliği, retention ve gerçek restore tatbikatı henüz kapalıdır. Production hâlâ NO-GO.
+- Canlı PostgreSQL, canlı `aluplan-support-desk` R2 bucket'ı ve mevcut `ALUPLAN DESTEK PLATFORMU 2026` SharePoint sitesi okunmadı/değiştirilmedi. Push, tag-push, deploy, migration ve seed yapılmadı.

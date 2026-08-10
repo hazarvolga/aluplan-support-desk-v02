@@ -4675,3 +4675,31 @@ Bu kayıt yalnız DEV dış-servis kabul kanıtıdır; **production hâlâ NO-GO
 4. Canlı sistem çalışırken initial read-only snapshot planı, bakım penceresinde yazmalar durduktan sonra final delta planı uygulanacak; mevcut R2 nesneleri taşınmayacak veya silinmeyecek.
 
 Push, tag-push, deploy, production DB/SSH yazımı, canlı migration/seed, production dump alma veya canlı R2 nesnelerini kopyalama bu turda yapılmadı.
+
+---
+
+### 2026-08-10 — CODEX → CLAUDE — SharePoint DEV client-side encryption round-trip doğrulandı
+
+Bu kayıt yalnız sentetik DEV kabul kanıtıdır; **production hâlâ NO-GO**.
+
+#### Şifreleme ve anahtar sınırı
+
+- Resmî `age v1.3.1` darwin/arm64 paketi yalnız `.private-data/tools` altına indirildi. Yayım arşivi SHA-256 değeri `01120ea2cbf0463d4c6bd767f99f3271bbed1cdc8a9aa718a76ba1fe4f01998b` ile doğrulandı; sistem geneline kurulum yapılmadı.
+- DEV-only identity `.private-data/release-credentials/sharepoint-dev-age-identity.txt` altında mode `0600` tutuluyor. Private key SharePoint'e/Git'e yüklenmedi, rapora veya terminal çıktısına yazılmadı.
+- Üretim verisi içermeyen 288 byte canary plaintext SHA-256: `1e38c0dbdbd1c4bcaef3f13335718048ce9997d8ad90d11b1182728cc452ad95`.
+- Şifreli age artifact 488 byte; SHA-256: `65f66f049c8b31315c27a7fd0f2456fe59c455e067cd08ac08861ef9c10aac25`.
+
+#### Gerçek SharePoint DEV round-trip
+
+- Yalnız yeni `ALUPLAN Destek Yedek Kasası DEV` sitesinin `Manifests` kütüphanesine `sharepoint-dev-canary.txt.age` ve secretsız `sharepoint-dev-canary.manifest.json` yüklendi.
+- Ciphertext Microsoft Graph üzerinden geri indirildi. Boyut `488` ve SHA-256 değeri yerel ciphertext ile birebir eşleşti.
+- Geri indirilen ciphertext yalnız yerel mode-`0600` identity ile çözüldü. Recovered plaintext boyutu `288` ve SHA-256 değeri kaynak canary ile birebir eşleşti.
+- SharePoint dosya sürümü `1.0` / `488` byte olarak doğrulandı. Permission envanterinde anonymous link yoktu; yalnız site Owners/Members/Visitors grupları ve site owner grantleri görüldü.
+- JSON manifest tarayıcı önizlemesinde `productionData=false`, `liveDatabaseAccessed=false`, `liveObjectStorageAccessed=false` sözleşmesini taşıyor.
+
+#### Kalan sınır ve sonraki güvenli adım
+
+- Bu tur client-side encryption + upload/download/decrypt/hash DEV kapısını kapatır; production için kurumsal key custody/escrow ve recovery, least-privilege automation identity, retention ve büyük artifact/chunk kabulü hâlâ eksiktir.
+- Sıradaki güvenli iş canlı veriyi kopyalamak değildir: önce salt-okunur R2 object manifest sözleşmesini ve yaklaşık süre/maliyet planını hazırlamak; ardından ayrı onayla yalnız read-only initial snapshot ve bakım penceresi final-delta planını uygulamaktır.
+- Canlı PostgreSQL, mevcut `aluplan-support-desk` application bucket'ı, `aluplancoolify` ve mevcut `ALUPLAN DESTEK PLATFORMU 2026` SharePoint sitesi okunmadı/değiştirilmedi.
+- Push, tag-push, deploy, production DB/R2/SSH yazımı, migration, seed veya production dump/kopya işlemi yapılmadı.
