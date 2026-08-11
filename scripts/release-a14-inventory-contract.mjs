@@ -6,9 +6,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectDirectory = path.resolve(scriptDirectory, "..");
 const privateRoot = path.join(projectDirectory, ".private-data");
+const evidenceRoot = path.join(privateRoot, "release-evidence");
 const defaultOutputPath = path.join(
-  privateRoot,
-  "release-evidence/a14-production-inventory/preparation-plan.json",
+  evidenceRoot,
+  "a14-production-inventory/preparation-plan.json",
 );
 
 export const APPROVED_QUEUE_NAMES = Object.freeze([
@@ -55,6 +56,8 @@ export const QUEUE_SOURCE_ANCHORS = Object.freeze([
   {
     name: "proactive-chat",
     sourceFiles: [
+      "apps/backend/src/notifications/notifications.module.ts",
+      "apps/backend/src/proactive-chat/proactive-chat.module.ts",
       "apps/backend/src/proactive-chat/proactive-chat.constants.ts",
     ],
   },
@@ -199,17 +202,27 @@ export const READ_ONLY_OPERATIONS = Object.freeze([
   },
 ]);
 
+export const APPROVED_POSTGRES_STATEMENTS = Object.freeze([
+  "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY",
+  "SET LOCAL statement_timeout = 30000",
+  'SELECT migration_name, checksum, started_at, finished_at, rolled_back_at FROM "_prisma_migrations" ORDER BY started_at ASC',
+  "ROLLBACK",
+  "SELECT current_database() AS database_name, current_setting('server_version') AS server_version, pg_is_in_recovery() AS is_replica",
+  "SELECT extname, extversion FROM pg_extension WHERE extname IN ('vector', 'pgcrypto') ORDER BY extname",
+  "SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE url LIKE 'FAILED_STORAGE_UPLOAD_%') AS failed_storage FROM attachments",
+  "SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE file_path IS NOT NULL) AS with_storage_key FROM knowledge_sources",
+  "SELECT COUNT(*) AS branding_logo_settings FROM settings WHERE key = 'branding.logo_url'",
+]);
+
 const FORBIDDEN_SQL =
-  /\b(?:ALTER|ANALYZE|CALL|COMMENT|COPY|CREATE|DEALLOCATE|DELETE|DO|DROP|EXECUTE|GRANT|INSERT|LISTEN|LOCK|MERGE|NOTIFY|PREPARE|REASSIGN|REFRESH|REINDEX|RESET|REVOKE|SECURITY|SETVAL|TRUNCATE|UNLISTEN|UPDATE|VACUUM)\b|\bFOR\s+(?:NO\s+KEY\s+UPDATE|UPDATE|SHARE|KEY\s+SHARE)\b|\bINTO\s+(?:TEMP|TEMPORARY|UNLOGGED|[a-z_"])|\bPG_(?:ADVISORY|CANCEL_BACKEND|LOG_BACKEND_MEMORY_CONTEXTS|RELOAD_CONF|ROTATE_LOGFILE|SLEEP|TERMINATE_BACKEND)\s*\(|\bNEXTVAL\s*\(/i;
+  /\b(?:ALTER|ANALYZE|CALL|COMMENT|COPY|CREATE|DEALLOCATE|DELETE|DO|DROP|EXECUTE|GRANT|INSERT|LISTEN|LOCK|MERGE|NOTIFY|PREPARE|REASSIGN|REFRESH|REINDEX|RESET|REVOKE|SECURITY|SETVAL|TRUNCATE|UNLISTEN|UPDATE|VACUUM)\b|\bFOR\s+(?:NO\s+KEY\s+UPDATE|UPDATE|SHARE|KEY\s+SHARE)\b|\bINTO\s+(?:TEMP|TEMPORARY|UNLOGGED|[a-z_"])|\b(?:DBLINK|LO_IMPORT|LO_UNLINK|PG_(?:ADVISORY|CANCEL_BACKEND|LOG_BACKEND_MEMORY_CONTEXTS|LS_DIR|READ_FILE|RELOAD_CONF|ROTATE_LOGFILE|SLEEP|TERMINATE_BACKEND)|QUERY_TO_XML|SET_CONFIG)\s*\(|\bNEXTVAL\s*\(/i;
 
 function normalizeSql(sql) {
   return sql.trim().replace(/;$/, "");
 }
 
 const APPROVED_SQL_STATEMENTS = new Set(
-  READ_ONLY_OPERATIONS.filter(
-    (operation) => operation.transport === "postgres",
-  ).flatMap((operation) => operation.statements.map(normalizeSql)),
+  APPROVED_POSTGRES_STATEMENTS.map(normalizeSql),
 );
 
 function sha256(value) {
@@ -245,11 +258,11 @@ export function assertPrivateEvidencePath(outputPath) {
   }
   const resolved = path.resolve(projectDirectory, outputPath);
   if (
-    resolved === privateRoot ||
-    !resolved.startsWith(`${privateRoot}${path.sep}`)
+    resolved === evidenceRoot ||
+    !resolved.startsWith(`${evidenceRoot}${path.sep}`)
   ) {
     throw new Error(
-      "Inventory evidence must stay under the git-ignored .private-data directory",
+      "Inventory evidence must stay under the git-ignored .private-data/release-evidence directory",
     );
   }
   return resolved;
@@ -259,8 +272,15 @@ export function buildInventoryPreparationPlan({ gitSha, generatedAt }) {
   if (!/^[0-9a-f]{40}$/.test(gitSha ?? "")) {
     throw new Error("Preparation plan requires an exact 40-character Git SHA");
   }
-  if (Number.isNaN(Date.parse(generatedAt))) {
-    throw new Error("Preparation plan requires a valid generatedAt timestamp");
+  if (
+    typeof generatedAt !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(generatedAt) ||
+    Number.isNaN(Date.parse(generatedAt)) ||
+    new Date(generatedAt).toISOString() !== generatedAt
+  ) {
+    throw new Error(
+      "Preparation plan requires a canonical UTC ISO-8601 generatedAt timestamp",
+    );
   }
   const operationContracts = READ_ONLY_OPERATIONS.map((operation) => ({
     id: operation.id,
