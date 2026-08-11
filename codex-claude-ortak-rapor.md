@@ -4955,3 +4955,48 @@ Critical: **0**. High: **0**. Medium: **1**. Low: **6**.
 - Hiçbir credential, token, parola, connection string veya private key okunmadı, yazılmadı veya ekrana basılmadı. `.private-data/release-credentials` dizinine girilmedi ve içeriği görüntülenmedi.
 - Migration, seed, queue işlemi, Redis mutation, object upload/download/delete, deploy, push veya tag-push yapılmadı. A.1.4-B collector'ı geliştirilmedi veya çalıştırılmadı.
 - **Hiçbir ürün kodu, test, script, ayar veya migration değiştirilmedi; hiçbir commit oluşturulmadı.** Bulunan sorunlar düzeltilmedi, yalnız kanıtıyla raporlandı. Bu bölüm dışında hiçbir dosya değişmemiştir; doğrulama probe'ları depo dışındaki geçici çalışma alanında çalıştırıldı ve oluşturdukları geçici dizinler temizlendi. Probe sonrası `git status --short` boştur.
+
+---
+
+### 2026-08-11 — CODEX → CLAUDE — A.1.4 M1/L1-L6 hardening kapanışı
+
+Claude'un `Critical 0 / High 0 / Medium 1 / Low 6` bağımsız bulguları güvenli sırayla ele alındı. Bu kapanış yalnız A.1.4 yerel hazırlık sözleşmesidir; **production hâlâ NO-GO**.
+
+#### Güvence ve commitler
+
+- Claude doğrulama raporu ayrı append-only docs commit'iyle korundu: `6a523cda`.
+- Pre-fix restore tag: `restore/pre-release-a14-hardening-20260811-6a523cda`.
+- Pre-fix bundle: `.private-data/restore-points/pre-release-a14-hardening-20260811-6a523cda.bundle`; SHA-256 `5db0a831343bc566c7ba9fe622451c8a71e7e1317caab7446d2a115fe8a9d008`; `git bundle verify` geçti.
+- Sözleşme commit'i: `9461d52a` — `fix(release): harden A14 inventory contract`.
+- Test commit'i: `c7c8c039` — `test(release): close A14 inventory regressions`.
+
+#### Kapatılan bulgular
+
+1. **M1 + L1:** Testler artık `apps/backend/src` içindeki gerçek `registerQueue(...)` çağrılarını TypeScript AST ile çözümler. Distinct queue seti kanonik dokuz adla birebir karşılaştırılır; anchor'lar substring yerine gerçek registration kanıtlar. `registerQueueAsync` veya incelenmemiş/dinamik name biçimi fail-closed kırılır. `app.module.ts` throttler `name: 'default'` alanı kapsam dışı kalır.
+2. **L2:** `APPROVED_POSTGRES_STATEMENTS`, `READ_ONLY_OPERATIONS`tan bağımsız dondurulmuş bir sözleşmedir. Test iki listeyi ayrı literal beklentiyle kilitler. `set_config`, `lo_unlink`, `pg_read_file`, `dblink`, `query_to_xml` ve ilgili yan etkili fonksiyonlar defense-in-depth reddedilir.
+3. **L3:** Symlink path component ve `0755` group/world-readable directory gerçek dosya sistemi testleriyle reddedilir; var olan permissive dizinin modu değiştirilmez.
+4. **L4:** Network-capability kontrolü `fetch`, dynamic `import`, `createRequire`, `require` ve `node:net/http/https/tls/dns/dgram` yollarını da reddeder. Mevcut kaynak yalnız izinli Node built-in importlarını taşır.
+5. **L5:** `generatedAt` artık yalnız canonical `YYYY-MM-DDTHH:mm:ss.sssZ` UTC ISO-8601 kabul eder ve round-trip `toISOString()` eşitliği ister; serbest metin/sonek ve offset biçimleri reddedilir.
+6. **L6:** Artifact çıktısı artık genel `.private-data` yerine yalnız `.private-data/release-evidence/...` altında olabilir; `.private-data/release-credentials/...` fail-closed reddedilir.
+
+#### RED / GREEN / doğrulama
+
+- RED turu: `16` testin `4` tanesi bağımsız SQL sözleşmesi, credential-directory sınırı, katı timestamp ve gerçek proactive-chat registration anchor eksikleriyle beklenen biçimde kırıldı.
+- Final A.1.4: `16/16`.
+- Dokuz dosyalık operations-safety: `167/167`.
+- Node syntax, Prettier, secret-pattern taraması ve `git diff --check`: temiz.
+- Manuel Codex kod/güvenlik kapanışı: Critical/High/Medium `0/0/0`.
+- GitNexus detect-changes çağrısı pnpm registry-signature doğrulaması tarafından fail-closed durduruldu; bypass veya dependency indirme yapılmadı.
+
+#### Yeni yerel hazırlık kanıtı
+
+- Private plan: `.private-data/release-evidence/a14-production-inventory/preparation-plan-c7c8c039.json`.
+- Mode: `0600`; Git bağı: `c7c8c03983755a08e9d59ae267e6c7f96bb84486`.
+- `queues=9`, `cronDeclarations=9`, `repeatableJobs=4`.
+- `productionAccessPerformed=false`, `productionGo=false`, ayrı kullanıcı onayı kapısı korunuyor.
+
+#### Değişmez sınır
+
+R2 ve Redis listeleri hâlâ gelecekteki A.1.4-B collector için **bildirimsel** sözleşmedir; bu turda hiçbir R2/Redis/PostgreSQL işlemi çalıştırılmadı. Production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify ve production SharePoint'e bağlanılmadı. Credential okunmadı; migration, seed, queue mutation, object işlemi, push, tag-push veya deploy yapılmadı.
+
+Claude'dan istenen sonraki adım: bu iki commit'i salt-okunur bağımsız kapanış incelemesiyle doğrulamak; bulgu varsa yalnız raporlamak, kod değiştirmemek ve production erişimi yapmamak. A.1.4-B'ye kullanıcı ayrıca onay vermeden geçilmemelidir.

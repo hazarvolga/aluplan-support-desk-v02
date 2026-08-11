@@ -4151,3 +4151,13 @@ Maintenance rule:
 - A Coolify database configuration snapshot unexpectedly returned the PostgreSQL credential unmasked. It was neither reused nor written into project docs; production PostgreSQL credential rotation is now a mandatory release checklist item.
 - Restore tag/bundle: `restore/post-release-a11-20260808-8fbdc0b1`, SHA-256 `ecb15b14da121665c3d30c94df13784b954c3b939b0ebb39b724c3a2250eb9af`; bundle verify and strict fsck passed (historical dangling trees only).
 - No production query, SSH command, data write, migration, seed, push, tag-push or deploy occurred. Next local phase: A.1.2 backup hardening.
+
+## 2026-08-11 - A.1.4 independent-review hardening closure
+
+- Preserved Claude's independent A.1.4 verification as docs commit `6a523cda`, then created and verified the pre-fix restore tag/bundle.
+- Closed the one Medium and six Low hardening findings in only the two authorized A.1.4 files. Code commit: `9461d52a`; regression-test commit: `c7c8c039`.
+- Queue inventory discovery now uses the TypeScript AST to enumerate actual `registerQueue` calls, fails on async/unreviewed registration shapes, and compares the distinct set with the canonical nine queues. Anchors prove real registrations rather than substrings.
+- PostgreSQL operations and the independently frozen statement allowlist must match; defense-in-depth rejects known side-effect functions. Timestamps require canonical UTC ISO-8601 and output is restricted to `.private-data/release-evidence`.
+- Added real symlink/permissive-directory tests and broader static network-capability guards. R2/Redis restrictions remain declarative future-collector contracts, not live enforcement evidence.
+- RED produced 4 expected failures out of 16. Final A.1.4 is 16/16 and broad operations safety is 167/167; syntax, formatting, secret and diff checks passed. Manual C/H/M closure: 0/0/0.
+- Generated a private mode-0600 plan bound to `c7c8c03983755a08e9d59ae267e6c7f96bb84486`, with production access/GO both false. No live system, credential, deploy, push, migration, seed or queue mutation was touched. Production remains NO-GO.

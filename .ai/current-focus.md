@@ -502,3 +502,13 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Sıradaki güvenli kapı A.1.4-B için ayrı kullanıcı kararıdır: yalnız kısa ömürlü least-privilege credentiallarla salt-okunur production ledger/R2 metadata/Redis-BullMQ inventory collector. Bu onay verilmeden canlı credential oluşturulmayacak veya production erişimi yapılmayacak.
 - Canlı PostgreSQL, `aluplan-support-desk` application bucket'ı, Redis, SSH ve mevcut production SharePoint sitesi okunmadı/değiştirilmedi. Push, tag-push, deploy, migration ve seed yapılmadı; production hâlâ NO-GO.
 - Yerel hazırlık planı kanonik dokümantasyon commit'i `b07203e8260a34460e733b15074e2d1651c1c0bf` ile bağlıdır. Restore tag'i `restore/post-release-a14-preparation-20260810-b07203e8`; tam-geçmiş bundle `.private-data/restore-points/post-release-a14-preparation-20260810-b07203e8.bundle`, SHA-256 `762309f39a05496a9ba1637fdbfd304686f241b05609744492c3d784d5263486`; `git bundle verify` geçti.
+
+## Active Focus - 2026-08-11 A.1.4 Independent Review Hardening Closure
+
+- Claude'un append-only bağımsız doğrulaması `6a523cda` docs commit'iyle korundu. Doğrulama A.1.4 yerel GO kararını teyit etti ve `Critical 0 / High 0 / Medium 1 / Low 6` hardening açığı bildirdi.
+- Pre-fix restore tag'i `restore/pre-release-a14-hardening-20260811-6a523cda`; bundle `.private-data/restore-points/pre-release-a14-hardening-20260811-6a523cda.bundle`, SHA-256 `5db0a831343bc566c7ba9fe622451c8a71e7e1317caab7446d2a115fe8a9d008`; verify geçti.
+- Kod commit'i `9461d52a` bağımsız PostgreSQL statement sözleşmesi, katı UTC ISO-8601 timestamp ve yalnız `.private-data/release-evidence` çıktı sınırını ekledi. Test commit'i `c7c8c039` TypeScript AST tabanlı BullMQ queue drift/anchor keşfi, symlink/permissive-directory ve genişletilmiş network-capability regresyonlarını ekledi.
+- M1 ve L1-L6 kapandı. R2/Redis allowlistleri bu fazda hâlâ yalnız A.1.4-B için bildirimsel sözleşmedir; canlı uygulanabilir kısıt veya production kanıtı değildir.
+- RED: `16` testin `4` tanesi beklenen sözleşme açıklarında kırıldı. GREEN/final: A.1.4 `16/16`, geniş operations-safety `167/167`; syntax, Prettier, secret scan ve diff hygiene temiz. Manuel kapanış incelemesi `Critical/High/Medium 0/0/0`.
+- Yeni private plan `.private-data/release-evidence/a14-production-inventory/preparation-plan-c7c8c039.json`, mode `0600`, commit `c7c8c03983755a08e9d59ae267e6c7f96bb84486` ile bağlı; `productionAccessPerformed=false`, `productionGo=false`.
+- GitNexus detect-changes denendi ancak pnpm registry-signature doğrulaması fail-closed durdurdu; bypass uygulanmadı. Canlı PostgreSQL/R2/Redis/SSH/SharePoint erişimi, push, deploy, migration, seed veya queue mutation yapılmadı. Production NO-GO sürüyor.
