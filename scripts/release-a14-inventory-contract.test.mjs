@@ -19,8 +19,10 @@ import {
   APPROVED_CRON_DECLARATIONS,
   APPROVED_QUEUE_NAMES,
   APPROVED_REPEATABLE_JOBS,
+  IN_PROCESS_INTERVAL_JOBS,
   QUEUE_SOURCE_ANCHORS,
   READ_ONLY_OPERATIONS,
+  assertNoForbiddenSqlPrimitives,
   assertPrivateEvidencePath,
   assertReadOnlySql,
   buildInventoryPreparationPlan,
@@ -53,14 +55,26 @@ function extractRegisteredQueueNames(source) {
     ts.ScriptKind.TS,
   );
   function visit(node) {
-    if (
-      ts.isCallExpression(node) &&
-      ts.isPropertyAccessExpression(node.expression) &&
-      ts.isIdentifier(node.expression.expression) &&
-      node.expression.name.text.startsWith("registerQueue")
-    ) {
+    if (ts.isCallExpression(node)) {
+      const calleeText = node.expression.getText(sourceFile);
+      if (!calleeText.includes("registerQueue")) {
+        ts.forEachChild(node, visit);
+        return;
+      }
+      let registrationMethod;
+      if (ts.isIdentifier(node.expression)) {
+        registrationMethod = node.expression.text;
+      } else if (ts.isPropertyAccessExpression(node.expression)) {
+        registrationMethod = node.expression.name.text;
+      } else if (
+        ts.isElementAccessExpression(node.expression) &&
+        node.expression.argumentExpression &&
+        ts.isStringLiteral(node.expression.argumentExpression)
+      ) {
+        registrationMethod = node.expression.argumentExpression.text;
+      }
       assert.equal(
-        node.expression.name.text,
+        registrationMethod,
         "registerQueue",
         "Async or unknown queue registration requires an explicit inventory parser update",
       );
@@ -100,12 +114,116 @@ function extractRegisteredQueueNames(source) {
   return names;
 }
 
+function extractRepeatableJobIds(source) {
+  const jobIds = [];
+  const sourceFile = ts.createSourceFile(
+    "repeatable-source.ts",
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  function visit(node) {
+    if (ts.isObjectLiteralExpression(node)) {
+      const repeatProperty = node.properties.find(
+        (property) =>
+          ts.isPropertyAssignment(property) &&
+          ((ts.isIdentifier(property.name) &&
+            property.name.text === "repeat") ||
+            (ts.isStringLiteral(property.name) &&
+              property.name.text === "repeat")),
+      );
+      if (repeatProperty) {
+        const jobIdProperty = node.properties.find(
+          (property) =>
+            ts.isPropertyAssignment(property) &&
+            ((ts.isIdentifier(property.name) &&
+              property.name.text === "jobId") ||
+              (ts.isStringLiteral(property.name) &&
+                property.name.text === "jobId")),
+        );
+        assert.ok(
+          jobIdProperty &&
+            ts.isPropertyAssignment(jobIdProperty) &&
+            ts.isStringLiteral(jobIdProperty.initializer),
+          "Every repeatable job must declare a reviewed literal jobId",
+        );
+        jobIds.push(jobIdProperty.initializer.text);
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+  return jobIds;
+}
+
+function evaluateStaticNumber(node) {
+  if (ts.isNumericLiteral(node)) return Number(node.text);
+  if (ts.isParenthesizedExpression(node)) {
+    return evaluateStaticNumber(node.expression);
+  }
+  if (ts.isBinaryExpression(node)) {
+    const left = evaluateStaticNumber(node.left);
+    const right = evaluateStaticNumber(node.right);
+    if (node.operatorToken.kind === ts.SyntaxKind.AsteriskToken) {
+      return left * right;
+    }
+  }
+  assert.fail("Every interval delay must be a reviewed static number");
+}
+
+function extractInProcessSchedulingDeclarations(source) {
+  const declarations = [];
+  const sourceFile = ts.createSourceFile(
+    "scheduler-source.ts",
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const reviewedPrimitives = new Set([
+    "setInterval",
+    "Interval",
+    "Timeout",
+    "addCronJob",
+  ]);
+  function visit(node) {
+    if (ts.isCallExpression(node)) {
+      let callName;
+      if (ts.isIdentifier(node.expression)) {
+        callName = node.expression.text;
+      } else if (ts.isPropertyAccessExpression(node.expression)) {
+        callName = node.expression.name.text;
+      } else if (
+        ts.isElementAccessExpression(node.expression) &&
+        node.expression.argumentExpression &&
+        ts.isStringLiteral(node.expression.argumentExpression)
+      ) {
+        callName = node.expression.argumentExpression.text;
+      }
+      if (callName && reviewedPrimitives.has(callName)) {
+        const delayArgumentIndex = callName === "setInterval" ? 1 : 0;
+        declarations.push({
+          schedulingPrimitive: callName,
+          intervalMilliseconds:
+            callName === "addCronJob"
+              ? null
+              : evaluateStaticNumber(node.arguments[delayArgumentIndex]),
+        });
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+  return declarations;
+}
+
 function assertNetworkIncapableSource(source) {
   assert.doesNotMatch(source, /from ["'](?:pg|ioredis|bullmq|@aws-sdk)/);
   assert.doesNotMatch(source, /node:child_process/);
   assert.doesNotMatch(
     source,
-    /\bfetch\s*\(|\bimport\s*\(|\bcreateRequire\b|\brequire\s*\(|node:(?:net|http|https|tls|dns|dgram)/,
+    /\bfetch\b|\bglobalThis\s*\[|\bFunction\b|\bimport\s*\(|\bcreateRequire\b|\brequire\s*\(|node:(?:net|http|https|tls|dns|dgram|worker_threads|inspector)/,
   );
   assert.doesNotMatch(source, /\.connect\(|\.query\(|spawn(?:Sync)?\(/);
 }
@@ -138,6 +256,107 @@ test("locks the complete nine-queue production inventory surface", () => {
     "proactive-chat",
     "sla-processing",
   ]);
+});
+
+test("records every in-process interval without claiming runtime singleton", () => {
+  const plan = buildInventoryPreparationPlan({
+    gitSha: "0123456789abcdef0123456789abcdef01234567",
+    generatedAt: "2026-08-10T15:00:00.000Z",
+  });
+
+  assert.deepEqual(plan.inProcessIntervalJobs, [
+    {
+      id: "stalled-job-recovery",
+      sourceFile:
+        "apps/backend/src/queue-dashboard/stalled-job-recovery.service.ts",
+      schedulingPrimitive: "setInterval",
+      intervalMilliseconds: 300000,
+      affectedQueues: [
+        "ai-query-processing",
+        "email",
+        "crm-sync",
+        "document-parsing",
+      ],
+      mutatesQueue: true,
+      runtimeSingletonVerified: false,
+    },
+    {
+      id: "prisma-pool-metrics",
+      sourceFile: "apps/backend/src/prisma/prisma.service.ts",
+      schedulingPrimitive: "setInterval",
+      intervalMilliseconds: 10000,
+      affectedQueues: [],
+      mutatesQueue: false,
+      runtimeSingletonVerified: false,
+    },
+  ]);
+});
+
+test("discovers every reviewed in-process scheduling primitive", () => {
+  const source = `
+    setInterval(() => work(), 1000);
+    @Interval(1000)
+    runOnInterval() {}
+    @Timeout(500)
+    runOnce() {}
+    schedulerRegistry.addCronJob('job', cronJob);
+  `;
+  assert.deepEqual(extractInProcessSchedulingDeclarations(source), [
+    { schedulingPrimitive: "setInterval", intervalMilliseconds: 1000 },
+    { schedulingPrimitive: "Interval", intervalMilliseconds: 1000 },
+    { schedulingPrimitive: "Timeout", intervalMilliseconds: 500 },
+    { schedulingPrimitive: "addCronJob", intervalMilliseconds: null },
+  ]);
+});
+
+test("fails closed for every registerQueue callee shape", () => {
+  assert.deepEqual(
+    extractRegisteredQueueNames(
+      "Bull.Module.registerQueue({ name: 'nested-queue' })",
+    ),
+    ["nested-queue"],
+  );
+  assert.deepEqual(
+    extractRegisteredQueueNames("registerQueue({ name: 'direct-queue' })"),
+    ["direct-queue"],
+  );
+  assert.deepEqual(
+    extractRegisteredQueueNames(
+      "BullModule['registerQueue']({ name: 'element-queue' })",
+    ),
+    ["element-queue"],
+  );
+  assert.throws(
+    () =>
+      extractRegisteredQueueNames(
+        "BullModule['registerQueueAsync']({ name: 'async-queue' })",
+      ),
+    /explicit inventory parser update/i,
+  );
+});
+
+test("discovers repeatable jobs from the repeat option, not a jobId suffix", () => {
+  const source = `
+    await queue.add('nightly', {}, {
+      repeat: { pattern: '0 2 * * *' },
+      jobId: 'nightly-schedule',
+    });
+  `;
+  assert.deepEqual(extractRepeatableJobIds(source), ["nightly-schedule"]);
+  assert.throws(
+    () =>
+      extractRepeatableJobIds(
+        "queue.add('missing', {}, { repeat: { pattern: '* * * * *' } })",
+      ),
+    /literal jobId/i,
+  );
+  assert.throws(
+    () =>
+      extractRepeatableJobIds(
+        "queue.add('dynamic', {}, { repeat: { pattern }, jobId })",
+      ),
+    /literal jobId/i,
+  );
 });
 
 test("records every source cron and known repeatable job without claiming runtime singleton", () => {
@@ -195,6 +414,19 @@ test("rejects SQL writes, locks, sleeps, copy and multi-statement payloads", () 
   ];
   for (const sql of forbidden) {
     assert.throws(() => assertReadOnlySql(sql), /read-only SQL allowlist/i);
+  }
+});
+
+test("keeps the SQL primitive denylist complete as a second defense", async () => {
+  for (const sql of [
+    "SELECT lo_export(1, '/tmp/out')",
+    "SELECT pg_read_binary_file('/tmp/out')",
+    "SELECT pg_stat_file('/tmp/out')",
+  ]) {
+    assert.throws(
+      () => assertNoForbiddenSqlPrimitives(sql),
+      /read-only SQL allowlist/i,
+    );
   }
 });
 
@@ -258,6 +490,8 @@ test("preparation plan is explicit about local-only evidence and manual approval
   assert.equal(plan.queues.length, 9);
   assert.equal(plan.cronDeclarations.length, 9);
   assert.equal(plan.repeatableJobs.length, 4);
+  assert.equal(plan.schemaVersion, 2);
+  assert.equal(plan.inProcessIntervalJobs.length, 2);
   assert.deepEqual(plan.forbiddenActions, [
     "database-write",
     "object-download",
@@ -390,26 +624,42 @@ test("queue, cron and repeatable declarations remain anchored to current source"
       path.join(projectDirectory, repeatable.sourceFile),
       "utf8",
     );
-    assert.ok(source.includes(repeatable.jobId));
+    assert.ok(extractRepeatableJobIds(source).includes(repeatable.jobId));
+  }
+  for (const intervalJob of IN_PROCESS_INTERVAL_JOBS) {
+    const source = await readFile(
+      path.join(projectDirectory, intervalJob.sourceFile),
+      "utf8",
+    );
+    assert.ok(
+      extractInProcessSchedulingDeclarations(source).some(
+        (declaration) =>
+          declaration.schedulingPrimitive === intervalJob.schedulingPrimitive &&
+          declaration.intervalMilliseconds === intervalJob.intervalMilliseconds,
+      ),
+    );
   }
 });
 
-test("discovers no uncontracted queue, cron or repeatable job", async () => {
+test("discovers no uncontracted queue, cron, repeatable or in-process job", async () => {
   const sourceRoot = path.join(projectDirectory, "apps/backend/src");
   const sourceFiles = await listProductionTypeScriptFiles(sourceRoot);
   const queueNames = [];
   const cronFiles = [];
   const repeatableJobIds = [];
+  const inProcessIntervalJobs = [];
   for (const sourceFile of sourceFiles) {
     const source = await readFile(sourceFile, "utf8");
     queueNames.push(...extractRegisteredQueueNames(source));
     for (const _match of source.matchAll(/@Cron\s*\(/g)) {
       cronFiles.push(path.relative(projectDirectory, sourceFile));
     }
-    for (const match of source.matchAll(
-      /jobId\s*:\s*["']([^"']+-repeatable)["']/g,
-    )) {
-      repeatableJobIds.push(match[1]);
+    repeatableJobIds.push(...extractRepeatableJobIds(source));
+    for (const declaration of extractInProcessSchedulingDeclarations(source)) {
+      inProcessIntervalJobs.push({
+        sourceFile: path.relative(projectDirectory, sourceFile),
+        ...declaration,
+      });
     }
   }
   assert.deepEqual(
@@ -423,6 +673,24 @@ test("discovers no uncontracted queue, cron or repeatable job", async () => {
   assert.deepEqual(
     repeatableJobIds.sort(),
     APPROVED_REPEATABLE_JOBS.map((job) => job.jobId).sort(),
+  );
+  assert.deepEqual(
+    inProcessIntervalJobs.sort((left, right) =>
+      `${left.sourceFile}:${left.schedulingPrimitive}`.localeCompare(
+        `${right.sourceFile}:${right.schedulingPrimitive}`,
+      ),
+    ),
+    IN_PROCESS_INTERVAL_JOBS.map(
+      ({ sourceFile, schedulingPrimitive, intervalMilliseconds }) => ({
+        sourceFile,
+        schedulingPrimitive,
+        intervalMilliseconds,
+      }),
+    ).sort((left, right) =>
+      `${left.sourceFile}:${left.schedulingPrimitive}`.localeCompare(
+        `${right.sourceFile}:${right.schedulingPrimitive}`,
+      ),
+    ),
   );
 });
 
@@ -441,6 +709,11 @@ test("network capability guard rejects import-less and dynamic clients", () => {
     'import { createRequire } from "node:module"',
     'import net from "node:net"',
     'const https = require("node:https")',
+    "const f = fetch; f('https://example.invalid')",
+    'globalThis["fe" + "tch"]("https://example.invalid")',
+    'import worker from "node:worker_threads"',
+    'import inspector from "node:inspector"',
+    'new (Function)("return fetch")()',
   ];
   for (const source of forbiddenSources) {
     assert.throws(() => assertNetworkIncapableSource(source));
