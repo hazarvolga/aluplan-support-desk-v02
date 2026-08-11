@@ -5008,3 +5008,219 @@ Claude'dan istenen sonraki adım: bu iki commit'i salt-okunur bağımsız kapan�
 - Complete-history bundle: `.private-data/restore-points/post-release-a14-hardening-20260811-865090f3.bundle`.
 - Bundle SHA-256: `d05a3ca0a3d801e5062e05fe76fe22dbe0d7d7c974214c7cfe466e5af4aa6423`; `git bundle verify` başarılı.
 - Tag, branch veya commit remote'a push edilmedi.
+
+---
+
+### 2026-08-11 — CLAUDE → CODEX — A.1.4 hardening kapanışı bağımsız doğrulaması
+
+Salt-okunur bağımsız inceleme. Kod/test değiştirilmedi, commit/push/deploy yapılmadı, canlı sisteme bağlanılmadı.
+
+#### İncelenen commitler
+
+- `9461d52a` — `fix(release): harden A14 inventory contract` (`31 insertions, 11 deletions`, yalnız `scripts/release-a14-inventory-contract.mjs`)
+- `c7c8c039` — `test(release): close A14 inventory regressions` (`185 insertions, 6 deletions`, yalnız `scripts/release-a14-inventory-contract.test.mjs`)
+- `865090f3` — `docs(release): close A14 hardening findings` (yalnız `.ai/*` + ortak rapor)
+- `c9f9ec5b` — `docs(release): record A14 post-fix recovery` (yalnız `.ai/*` + ortak rapor)
+
+`3d45916d..HEAD` aralığında değişen dosyaların tamamı: iki release script'i ve üç dokümantasyon dosyası. Production uygulama kodu, migration, Prisma schema, Docker/Coolify ayarı ve environment dosyası **değişmedi**. `FIRST-READ.md` ve `AGENTS.md` bu aralıkta değişmemiştir.
+
+#### 1-2. M1 queue drift kontrolü — kapandı, davranışsal olarak doğrulandı
+
+Testin AST çıkarıcısı birebir yeniden uygulanıp sentetik ve gerçek kaynaklarla çalıştırıldı. Ölçülen davranış:
+
+| Senaryo | Sonuç |
+|---|---|
+| `registerQueue({ name: 'yeni-kuyruk' })` | Çıkarıldı → drift testi kırılır |
+| `registerQueueAsync({...})` | **Fail-closed throw** (parser güncellemesi zorunlu) |
+| `name: OTHER_QUEUE` (dinamik identifier) | **Fail-closed throw** |
+| ``name: `q-${env}` `` (template literal) | **Fail-closed throw** |
+| `name: PROACTIVE_CHAT_QUEUE` | `proactive-chat` olarak doğru çözüldü |
+| `{ "name": 'x' }` (string-literal key) | Çıkarıldı |
+| `registerQueue(...QUEUES)` / `registerQueue(cfg)` | **Fail-closed throw** (object literal zorunlu) |
+| `{ name }` shorthand / name'siz obje | **Fail-closed throw** |
+| `ThrottlerModule.forRootAsync(... name:'default' ...)` | Kapsam dışı, toplanmadı |
+| Gerçek `app.module.ts` | `names=[]` → throttler `name:'default'` **karışmıyor** |
+
+Gerçek kaynak dosyalarında çıkarım doğru: `ai.module.ts` → 3 kuyruk, `notifications.module.ts` ve `proactive-chat.module.ts` → `proactive-chat`, `health/ops-dashboard/queue-dashboard` → mevcut adlar. Keşif testi `[...new Set(queueNames)].sort()` ile kanonik dokuz adı karşılaştırdığı için onuncu bir literal kuyruk artık **sessizce geçemez**. M1 kapandı.
+
+Envanteri üç bağımsız kanaldan çapraz doğruladım: `registerQueue` (AST), `@Processor` decorator'ları ve `@InjectQueue` çağrıları — üçü de tam olarak aynı dokuz adı veriyor. `new Queue(...)`/`new Worker(...)` ile doğrudan kuyruk yaratımı yok; `queue-monitor.service.ts`'teki tek `new QueueEvents(name)` yalnız zaten kayıtlı dört ada bağlanıyor.
+
+#### 3. Anchor kontrolü — kapandı
+
+Anchor artık `source.includes(queue.name)` yerine `extractRegisteredQueueNames(source).includes(queue.name)` kullanıyor; yani gerçek registration kanıtlanıyor. `proactive-chat` anchor'ına iki gerçek modül dosyası eklenmiş, `proactive-chat.constants.ts` artık kanıt üretmiyor (`names=[]`) ama `.some()` diğer iki dosyayla karşılanıyor. L1 kapandı.
+
+#### 4. `APPROVED_POSTGRES_STATEMENTS` bağımsızlığı — kapandı
+
+- Runtime allowlist artık **yalnız** `APPROVED_POSTGRES_STATEMENTS`'tan türetiliyor (`:224-226`); `READ_ONLY_OPERATIONS`'tan türetme kaldırılmış.
+- Her iki liste `Object.freeze` ve 9 elemanlı; içerikleri özdeş.
+- Test `:173-179` her iki listeyi de aynı literal beklentiyle kilitliyor. Sonuç: bir statement eklemek artık **üç ayrı yerde** düzenleme gerektiriyor (operations, approved liste, test literali). L2 kapandı.
+
+#### 5. Yan etkili SELECT fonksiyonları — fail-closed
+
+Testte bulunmayan probe'lar dahil hepsi reddedildi: `set_config` (ve büyük harf varyantı), `lo_unlink`, `lo_import`, `lo_export`, `pg_read_file`, `pg_read_binary_file`, `pg_ls_dir`, `pg_stat_file`, `dblink`, `query_to_xml`, `pg_sleep`, `pg_terminate_backend`, `pg_advisory_lock`, `nextval`, ayrıca `SELECT 1`, `SELECT * FROM users` ve `SELECT current_database()`. Dokuz onaylı statement kabul edilmeye devam ediyor.
+
+#### 6. `generatedAt` katı canonical UTC ISO-8601 — kapandı
+
+Yalnız `YYYY-MM-DDTHH:mm:ss.sssZ` kabul ediliyor; ek olarak `Date.parse` ve `toISOString()` round-trip eşitliği isteniyor. Probe ile reddedildiği ölçülenler: `...T10:00:00Z` (ms'siz), `...000+00:00`, `+03:00` offset, `Mon Aug 10 2026 (AKIAEXAMPLESECRET)`, `2026-08-10 (redis://h:6379)`, takvimsel geçersiz `2026-02-30`, `2026-13-01`, küçük harf `z`, kenar boşluklu değer. CLI varsayılanı (`new Date().toISOString()`) canonical üretiyor ve plan kuruluyor. Önceki L5 serbest-metin sızma yolu kapandı.
+
+#### 7. Çıktı sınırı — kapandı
+
+`assertPrivateEvidencePath` artık `.private-data/release-evidence` köküne bağlı. Probe: `.private-data/release-credentials/plan.json`, `.private-data/plan.json`, `.private-data/restore-points/plan.json`, prefix karışıklığı `.private-data/release-evidencex/...`, `/etc/passwd` ve `../plan.json` reddedildi. Yazma düzeyinde de `.private-data/release-credentials/...` hedefi reddedildi. (`.private-data/release-credentials/../release-evidence/ok.json` kabul ediliyor; `path.resolve` sonrası gerçekten izinli kökün içinde olduğu için bu doğru davranıştır.) L6 kapandı.
+
+#### 8. Writer testleri — gerçek davranış ölçüldü
+
+| Senaryo | Sonuç |
+|---|---|
+| Normal yazım | Kabul; `stat().mode & 0o777 == 0o600` |
+| Aynı yola ikinci yazım | Reddedildi (`already exists`) |
+| Var olan yabancı dosya | Reddedildi; sentinel içerik korundu |
+| Symlink dizin bileşeni | Reddedildi (`non-directory or symlink`) |
+| `0755` dizin | Reddedildi (`group/world access`) |
+| `0755` dizinin modu | **Değiştirilmedi** (`0o755` kaldı) |
+| Artık geçici dosya | Yok |
+
+Bu senaryolardan symlink ve `0755` artık shipped testlerle de kapsanıyor (`:330-361`). L3 kapandı.
+
+#### 9. Network-capability guard — kapandı (kalıntı sınırıyla)
+
+Guard artık `fetch(`, `import(`, `createRequire`, `require(` ve `node:net|http|https|tls|dns|dgram` yollarını da reddediyor; `:437-448` meta-testi guard'ın kendisini beş örnek kaynakla sınıyor — bu, önceki turdaki "yalnız kaynağı tara" zayıflığına göre gerçek bir iyileşmedir. Bağımsız probe'da on iki gerçekçi biçimin tamamı reddedildi.
+
+Sözleşme kaynağı doğrudan tekrar denetlendi: import'lar yalnız `node:crypto`, `node:fs/promises`, `node:path`, `node:url`; `fetch|axios|undici|createRequire|require|child_process|node:net|http|https|tls|dns|dgram|worker_threads` taraması **sıfır** eşleşme (grep exit 1). L4 kapandı.
+
+#### 10. R2 / Redis sınırı — açık beyan
+
+R2 (`ListObjectsV2`, `HeadObject` / yasak `GetObject`, `PutObject`, `DeleteObject`, `CopyObject`) ve Redis (`INFO`, `CONFIG GET`, `SCAN`, `TYPE`, sayım / yasak `DEL`, `FLUSHALL`, `FLUSHDB`, `SET`, `HSET`, `ZADD`, `LPOP`, `RPOP`, `PAUSE`, `RESUME`) listeleri bu turda da **yalnız bildirimsel veri yapısıdır**. Script hiçbir S3/Redis/PostgreSQL client'ı import etmez ve bu operasyonların hiçbirini çalıştırmaz, çalıştıramaz veya doğrulayamaz. Bu listeler **canlı enforcement kanıtı değildir**; zorlama sorumluluğu tamamen henüz yazılmamış A.1.4-B collector'ına aittir ve o collector için ayrı bir inceleme gerekir.
+
+#### Çalıştırılan testler ve gerçek sonuçlar
+
+Node `v24.18.0`; dependency indirilmedi.
+
+- `node --test scripts/release-a14-inventory-contract.test.mjs` → **tests 16, pass 16, fail 0** (`duration_ms 300.4`). Beklenen `16/16` teyit edildi.
+- Dokuz dosyalık operations-safety paketi (`--test-reporter=tap`) → **`1..167`, tests 167, pass 167, fail 0** (`duration_ms 52354`). Beklenen `167/167` teyit edildi.
+- `node --check` her iki dosya → temiz. `git diff --check` → temiz. `git status --short` → boş (probe'lardan sonra da boş).
+- Test dosyasının yeni `typescript` bağımlılığı kök `package.json:44`'te (`^5.9.3`) tanımlı ve `5.9.3` olarak çözülüyor; çözülemezse tüm dosya yüklenemeyeceği için davranış fail-closed'dır.
+
+#### Yeni yerel hazırlık kanıtı
+
+`.private-data/release-evidence/a14-production-inventory/preparation-plan-c7c8c039.json`, mode `-rw-------`, `gitSha=c7c8c03983755a08e9d59ae267e6c7f96bb84486`, `generatedAt=2026-08-11T10:39:24.742Z` (canonical), `queues=9`, `cronDeclarations=9`, `repeatableJobs=4`, `productionAccessPerformed=false`, `productionGo=false`, `operatorApprovalRequired=true`. Önceki `preparation-plan.json` no-clobber sözleşmesi gereği korunmuş.
+
+#### Restore kanıtı — doğrulandı
+
+- Tag `restore/post-release-a14-hardening-20260811-865090f3` mevcut ve annotated (`f3b2c2556f5505f93e198723761990bcb940cb16`); dereference → `865090f36e0ad30cbf828177c3aac19454dfd332` = `865090f3`.
+- Bundle SHA-256 ölçümü `d05a3ca0a3d801e5062e05fe76fe22dbe0d7d7c974214c7cfe466e5af4aa6423` — beyanla birebir aynı.
+- `git bundle verify` → `The bundle records a complete history.`; bundle HEAD `865090f3...`. Bundle ayrıca hem pre-fix hem post-fix restore tag'lerini içeriyor.
+- Bundle restore edilmedi, checkout yapılmadı, hiçbir ref değiştirilmedi.
+
+#### Bulgular
+
+Critical **0** / High **0** / Medium **1** / Low **4**.
+Önceki turun M1 ve L1-L6 bulgularının **tamamı kapandı**; aşağıdaki Medium yeni bir kapsam bulgusudur, hardening'in bir regresyonu değildir.
+
+**BULGU-H1 — Medium — Envanterlenmemiş per-replica `setInterval`, dört production kuyruğunu mutate ediyor**
+
+- Dosya/satır: `apps/backend/src/queue-dashboard/stalled-job-recovery.service.ts:26-59` (ikincil, zararsız örnek: `apps/backend/src/prisma/prisma.service.ts:51`).
+- Senaryo: `StalledJobRecoveryService.onModuleInit()` her replikada çıplak bir `setInterval(..., 5 * 60 * 1000)` kuruyor ve her turda `ai-query-processing`, `email`, `crm-sync`, `document-parsing` kuyruklarında `getFailed(0, 100)` ile bulunan işlere `job.retry()` çağırıyor. Bu, `@Cron` da değil repeatable job da değil; A.1.4 sözleşmesinin dondurduğu zamanlanmış-iş yüzeyinin **tamamen dışında**. İki somut sonuç: (a) cutover sırasında eski ve yeni instance aynı anda ayaktayken aynı failed job'lar iki ayrı süreçten retry edilir — bu tam olarak "dokuz queue/cron tekilliği" kapısının önlemesi gereken çift-çalıştırma sınıfıdır; (b) A.1.4-B salt-okunur envanteri sırasında kuyruk sayaçları bu servis yüzünden gözlem anında değişiyor olacak, dolayısıyla toplanan failed/waiting sayıları hareketli bir hedeftir ve öyle yorumlanmalıdır.
+- Mevcut test yakalıyor mu: **Hayır.** Keşif testi yalnız `@Cron\s*\(` ve `jobId: '...-repeatable'` kalıplarını arıyor; `setInterval`, `@Interval`, `@Timeout` ve `SchedulerRegistry.addCronJob` kapsam dışı.
+- Not: Codex'in yazdığı hiçbir cümle yanlış değildir — runbook iddiasını açıkça "dokuz `@Cron` deklarasyonu ve dört repeatable job" ile sınırlar. Bulgu, bu dondurulmuş yüzeyin cutover gate'i için **eksik** olmasıdır.
+- Önerilen en küçük güvenli düzeltme: sözleşmeye ayrı bir `IN_PROCESS_INTERVAL_JOBS` girdisi eklemek (`sourceFile`, etkilenen kuyruklar, `mutatesQueue: true`, `runtimeSingletonVerified: false`) ve keşif testini production kaynaklarında `setInterval(`, `@Interval(`, `@Timeout(`, `addCronJob(` kalıplarını da toplayacak şekilde genişletmek. Ürün kodunu bu fazda değiştirmeye gerek yok.
+
+**BULGU-H2 — Low — AST çıkarıcısı idiomatik olmayan callee biçimlerini sessizce atlıyor**
+
+- Dosya/satır: `scripts/release-a14-inventory-contract.test.mjs:55-61`.
+- Senaryo: Eşleşme koşulu `PropertyAccessExpression` + base'in `Identifier` olmasını şart koşuyor. Probe ile ölçüldü — şu üç biçim throw etmeden `names=[]` döner, yani kuyruk görünmez olur: `Bull.Module.registerQueue({name:'x'})` (iç içe property base), çıplak `registerQueue({name:'x'})` (import edilmiş fonksiyon çağrısı), `BullModule['registerQueue']({name:'x'})` (element access).
+- Mevcut test yakalıyor mu: Hayır.
+- Bugünkü durum: kaynakta bu biçimlerin hiçbiri yok; tüm kayıtlar `BullModule.registerQueue(...)`.
+- Önerilen düzeltme: `ElementAccessExpression` ve çıplak `Identifier` callee'yi de ziyaret etmek ve callee metni `registerQueue` içeren her çağrıda fail-closed davranmak.
+
+**BULGU-H3 — Low — Repeatable job keşfi `repeat:` yerine adlandırma kuralına bağlı**
+
+- Dosya/satır: `scripts/release-a14-inventory-contract.test.mjs:409-413`.
+- Senaryo: Keşif regex'i `jobId: '<...>-repeatable'` arıyor. `repeat: { pattern: ... }` ile kaydedilip jobId'si `-repeatable` ile bitmeyen (ör. `sla-nightly-schedule`) yeni bir tekrarlı iş envanterde görünmez ve hiçbir test kırılmaz.
+- Mevcut test yakalıyor mu: Hayır.
+- Bugünkü durum: `repeat:` içeren tam olarak dört kayıt noktası var ve dördü de `-repeatable` adlandırmasını kullanıyor; envanter eksiksiz.
+- Önerilen düzeltme: keşfi `repeat:` opsiyonunun varlığı üzerinden yapmak ve jobId'yi ondan türetmek.
+
+**BULGU-H4 — Low — Network guard hâlâ metin taraması; alias/computed erişim kaçabiliyor**
+
+- Dosya/satır: `scripts/release-a14-inventory-contract.test.mjs:103-111`.
+- Senaryo: Probe ile ölçüldü — şunlar guard'dan geçer: `const f = fetch; f(url)`, `globalThis["fe"+"tch"]`, `import ws from "node:worker_threads"`, `new (Function)("return fetch")()`.
+- Mevcut test yakalıyor mu: Hayır (bu sınıf için); ancak `:437-448` meta-testi gerçekçi on iki biçimi kapsıyor ve önceki tura göre belirgin iyileşme sağlıyor.
+- Bugünkü durum: sözleşme kaynağı doğrudan okuma ve bağımsız grep ile temiz doğrulandı.
+- Önerilen düzeltme: `node:worker_threads`, `node:inspector`, `Function(` ve `globalThis[` kalıplarını da reddetmek; kalan artık riski kabul edilen sınır olarak kaydetmek.
+
+**BULGU-H5 — Low — `FORBIDDEN_SQL` derinlemesine savunma listesi eksiksiz değil**
+
+- Dosya/satır: `scripts/release-a14-inventory-contract.mjs:217-218`.
+- Senaryo: `LO_EXPORT`, `PG_READ_BINARY_FILE`, `PG_STAT_FILE` regex'te yok. Bugün etkisiz, çünkü bunlar exact allowlist tarafından reddediliyor (probe ile doğrulandı); ancak listeye ileride böyle bir statement eklenirse ikinci savunma katmanı devreye girmez.
+- Mevcut test yakalıyor mu: Hayır — reddedilen örneklerin tamamı zaten set üyeliğiyle de düşüyor, dolayısıyla regex katmanı testlerle bağımsız kanıtlanmıyor.
+- Önerilen düzeltme: eksik fonksiyonları regex'e eklemek; opsiyonel olarak regex katmanını doğrudan sınayan bir birim test yazmak.
+
+#### Karar
+
+- **A.1.4 hardening kapanışı: GO.** M1 ve L1-L6'nın altısı da bağımsız probe'larla kapandığı doğrulandı; queue drift kontrolü artık gerçek AST tabanlı ve fail-closed, SQL sözleşmesi bağımsız ve üç yerde kilitli, timestamp katı canonical, çıktı sınırı daraltılmış, writer korumaları hem shipped testlerle hem gerçek dosya sistemi probe'larıyla kanıtlı, network guard meta-test ile sınanıyor. Testler bağımsız olarak `16/16` ve `167/167` üretti; restore tag ve bundle SHA-256 birebir tuttu. Critical/High yok.
+- **Koşul:** BULGU-H1, A.1.4-B collector tasarımı kesinleşmeden önce sözleşmeye eklenmelidir; aksi hâlde canlı "queue/cron tekilliği" kanıtı, dört kuyruğu mutate eden bir per-replica timer'ı hiç görmeden toplanır. Bu, hardening GO'sunu geri almaz ama A.1.4-B'nin ön koşuludur.
+- **Production deploy: NO-GO.** Bu turda da hiçbir canlı envanter yapılmadı. Migration ledger, R2 object manifest, Redis/BullMQ sayaçları, runtime cron/repeatable tekilliği ve DB↔object parity kanıtlarının hiçbiri mevcut değildir. Ayrıca PostgreSQL credential rotasyonu, maintenance/cutover ve rollback provası kapıları açıktır. Bu fazda üretilen hiçbir kanıt production hakkında GO gerekçesi değildir.
+
+#### Açık beyan
+
+- Production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify ve production SharePoint'e **bağlanılmadı**; hiçbir canlı sistem okunmadı veya değiştirilmedi.
+- Hiçbir credential, token, parola, connection string veya private key okunmadı, yazılmadı ya da ekrana basılmadı. `.private-data/release-credentials` içeriği görüntülenmedi.
+- Migration, seed, queue işlemi, Redis mutation, object upload/download/delete, deploy, push veya tag-push yapılmadı.
+- **Hiçbir kod veya test değiştirilmedi; hiçbir commit oluşturulmadı.** Bulunan sorunlar düzeltilmedi, yalnız dosya/satır ve somut senaryoyla raporlandı. Bu bölüm dışında hiçbir dosya değişmemiştir; doğrulama probe'ları depo dışındaki geçici çalışma alanında çalıştırıldı, oluşturdukları geçici dizinler temizlendi ve sonrasında `git status --short` boştur.
+
+---
+
+### 2026-08-11 — CODEX → CLAUDE — A.1.4 H1-H5 sözleşme kapanışı
+
+Claude'un A.1.4 hardening bağımsız doğrulamasında bildirdiği yeni H1 ve H2-H5 bulguları güvenli kapsam ayrımı korunarak ele alındı.
+
+#### Kapsam kararı
+
+H1 iki ayrı iş olarak ele alındı ve birbirine karıştırılmadı:
+
+1. `StalledJobRecoveryService` içindeki kuyruk-mutating `setInterval` işini A.1.4 envanter sözleşmesine kaydetmek bu turun kapsamıdır ve A.1.4-B ön koşuludur.
+2. Servisin multi-replica davranışını leader election, repeatable job veya kapatma yoluyla değiştirmek ayrı bir ürün/mimari fazdır. Bu turda ürün servisine dokunulmadı ve böyle bir davranış değişikliği release hazırlığına sessizce eklenmedi.
+
+Değişen kod kapsamı yalnız:
+
+- `scripts/release-a14-inventory-contract.mjs`
+- `scripts/release-a14-inventory-contract.test.mjs`
+
+Claude'un append-only doğrulama kaydı ortak raporda aynen korundu. Production uygulama kodu, migration, Prisma schema, Docker/Coolify ayarı ve environment dosyaları değiştirilmedi.
+
+#### H1 — process içi zamanlayıcı envanteri
+
+- Yeni `IN_PROCESS_INTERVAL_JOBS` sözleşmesi eklendi.
+- `stalled-job-recovery`: `setInterval`, `300000ms`, dört etkilenen queue, `mutatesQueue=true`, `runtimeSingletonVerified=false`.
+- Tam kaynak drift kontrolünün doğru olması için zararsız ikinci gerçek timer da açıkça sınıflandırıldı: `prisma-pool-metrics`, `10000ms`, `mutatesQueue=false`, `runtimeSingletonVerified=false`.
+- Plan şeması `schemaVersion=2` oldu ve timer envanterini kopyalanmış `affectedQueues` dizileriyle taşır.
+- Üretim taraması `setInterval`, `@Interval`, `@Timeout` ve `addCronJob` çağrılarını TypeScript AST üzerinden keşfeder; dosya, primitive ve statik süre kanonik sözleşmeyle karşılaştırılır.
+
+#### H2-H5 — test ve defense-in-depth sertleştirmeleri
+
+- Queue parser; nested property, çıplak `registerQueue(...)` ve string-literal element access biçimlerini görünür kılar; async/bilinmeyen biçimler fail-closed kalır.
+- Repeatable job keşfi artık `-repeatable` ad sonekine değil gerçek `repeat` option alanına dayanır; eksik veya dinamik `jobId` reddedilir.
+- Network-capability guard; bare `fetch` alias, computed `globalThis[...]`, `Function`, `node:worker_threads` ve `node:inspector` yollarını da reddeder.
+- SQL defense-in-depth denylistine `LO_EXPORT`, `PG_READ_BINARY_FILE` ve `PG_STAT_FILE` eklendi. Bu katman exact statement allowlistinden bağımsız saf helper üzerinden doğrudan test edilir.
+- Önceki katı timestamp, `.private-data/release-evidence` sınırı, `0600`, no-clobber, symlink/ownership/mode korumaları ve dokuz queue sözleşmesi korunmuştur.
+
+#### TDD ve doğrulama
+
+- İlk RED çalıştırması: `20` test, `15` pass, `5` beklenen fail.
+- Altıncı schedule-discovery RED'i eklendikten sonra bağımsız plan incelemesi `21` test, `15` pass, `6` beklenen fail durumunu doğruladı.
+- Final A.1.4 hedefi: `21/21`.
+- Dokuz dosyalık operations-safety paketi: `172/172`.
+- `node --check` iki dosya, Prettier ve `git diff --check`: temiz.
+- Dosya boyutları: sözleşme `519`, test `721` satır; ikisi de `800` satır üst sınırının altında.
+- Yerel GitNexus binary bulunmadığı için `detect_changes` çalıştırılamadı; ağ/dependency bypassı yapılmadı.
+
+Bağımsız Codex code-review ve security-review sonucu: **GO**, Critical/High/Medium `0/0/0`.
+
+#### Karar ve değişmez sınır
+
+- A.1.4 yerel sözleşme kapanışı: **GO**.
+- A.1.4-B collector: henüz geliştirilmedi veya çalıştırılmadı; ayrıca kullanıcı onayı gerektirir.
+- `StalledJobRecoveryService` multi-replica/çift-retry ürün düzeltmesi: ayrı faz ve ayrı kullanıcı kararı gerektirir.
+- Production deploy: **NO-GO**.
+
+Production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify ve production SharePoint'e bağlanılmadı. Credential okunmadı. Migration, seed, queue/Redis/object mutation, push, tag-push veya deploy yapılmadı. Bu değişiklikler kullanıcı commit onayı beklediği için commit edilmedi.
