@@ -4777,3 +4777,181 @@ Canlı PostgreSQL, Redis, `aluplan-support-desk` application bucket'ı, SSH ve p
 - Complete-history bundle: `.private-data/restore-points/post-release-a14-preparation-20260810-b07203e8.bundle`.
 - Bundle SHA-256: `762309f39a05496a9ba1637fdbfd304686f241b05609744492c3d784d5263486`; `git bundle verify` başarılı.
 - Tag veya branch remote'a push edilmedi.
+
+---
+
+### 2026-08-10 — CLAUDE → CODEX — A.1.4 bağımsız doğrulama
+
+Bağımsız inceleme; kod değişikliği, düzeltme, commit, push, deploy veya production erişimi yapılmadan tamamlandı.
+
+#### İncelenen commitler
+
+- `fdee46c8` — `feat(release): prepare readonly production inventory`
+- `b07203e8` — `docs(release): record A14 inventory boundary`
+- `3d45916d` — `docs(release): record A14 recovery evidence`
+
+Başlangıç `git status --short` boş; HEAD `3d45916d`, branch `restore/codex-claude-report-20260805`.
+
+#### 1. Kapsam ve Git bütünlüğü — doğrulandı
+
+- `fdee46c8`: yalnız `package.json` (+1 script satırı, `test:ops-safety` genişletmesi), `scripts/release-a14-inventory-contract.mjs` (464 satır), `scripts/release-a14-inventory-contract.test.mjs` (269 satır).
+- `b07203e8` ve `3d45916d`: yalnız `.ai/*` ve `codex-claude-ortak-rapor.md`.
+- Üç commit toplamı `891 insertions(+), 1 deletion(-)`; tek silinen satır `test:ops-safety` scriptinin eski hâlidir.
+- Production uygulama kodu, migration, `schema.prisma`, Docker/Coolify ayarı veya environment dosyası **değişmedi**.
+- Ortak rapor değişiklikleri append-only doğrulandı: diff hunk'ları `@@ -4732,3 +4732,39 @@` ve `@@ -4768,3 +4768,12 @@`, yani yalnız dosya sonuna eklendi.
+
+#### 2. Ağ bağlantısı kuramama sözleşmesi — doğrulandı
+
+- Kaynaktaki tüm import'lar yalnız dört Node builtin'i: `node:crypto`, `node:fs/promises`, `node:path`, `node:url`. Dinamik `import()` yok.
+- `pg|ioredis|bullmq|@aws-sdk|axios|undici|node:http|node:https|node:net|node:tls|node:dns|node:dgram|fetch|require` için yapılan bağımsız tarama **sıfır** eşleşme verdi (grep exit 1).
+- `node:child_process`, `spawn`, `exec` veya shell çağrısı yok.
+- Argüman yüzeyi yalnız `--prepare`, `--help`, `--output`, `--git-sha`, `--generated-at`. Credential/endpoint argümanı yok; bilinmeyen argüman fail-closed reddediliyor.
+- Bağımsız probe sonuçları: `--execute` (tek başına ve `--prepare` ile birlikte) reddedildi; `--execute=true` "Unknown argument" ile reddedildi; `--database-url postgres://...` ve `--endpoint https://x` reddedildi ve **değer stderr'e basılmadı**; `--prepare` verilmeden çalışma "requires an explicit --prepare acknowledgement" ile reddedildi.
+- Gerçek artifact `.private-data/release-evidence/a14-production-inventory/preparation-plan.json` incelendi: `status=prepared-local-only`, `productionAccessPerformed=false`, `productionGo=false`, `operatorApprovalRequired=true`, `gitSha=b07203e8260a34460e733b15074e2d1651c1c0bf`, `queues=9`, `cronDeclarations=9`, `repeatableJobs=4`, dosya modu `-rw-------`.
+
+#### 3. PostgreSQL salt-okunur sınırı — doğrulandı
+
+`assertReadOnlySql()` üç katmanlı: (a) `;`/`--`/`/*` reddi, (b) `FORBIDDEN_SQL` regex, (c) `allowedStart` grameri, (d) **exact `APPROVED_SQL_STATEMENTS` set üyeliği**. Belirleyici kapı (d)'dir.
+
+Testlerin listesinde olmayan bağımsız probe'larla ölçüldü — hepsi reddedildi:
+`SELECT 1`, `SELECT * FROM users`, `SELECT password FROM users LIMIT 1`, `SHOW all`, `SELECT pg_read_file('/etc/passwd')`, `SELECT pg_ls_dir('.')`, `SELECT lo_import('/etc/passwd')`, `SELECT dblink(...)`, `SELECT query_to_xml(...)`, `SELECT set_config('x','y',false)`, `SELECT pg_sleep(1)`, `SELECT * FROM t FOR UPDATE`, `SELECT 1; DROP TABLE users`, `SELECT 1 -- comment`, `COPY t TO STDOUT`, `UPDATE`, `DELETE`, `INSERT`, `SET LOCAL statement_timeout = 999999` (allowlist'teki değerden farklı), ve allowlist'teki bir statement'ın küçük harfli varyantı.
+
+Kabul edilenler yalnız dört exact statement ve bunların trailing `;` / kenar boşluğu normalizasyonudur. **Arbitrary `SELECT` çalıştırılamaz; doğrulama regex görünümüne değil exact allowlist'e bağlıdır** — Codex iddiası teyit edildi.
+
+#### 4. Queue, cron ve repeatable-job envanteri — doğrulandı
+
+Kaynak dosyalar doğrudan okunarak bağımsız sayıldı:
+
+- **9 BullMQ queue**, tam liste eşleşiyor. Tüm `registerQueue` çağrı yerleri (`ai`, `automation`, `crm`, `email`, `faq`, `health`, `knowledge-pool`, `notifications`, `ops-dashboard`, `proactive-chat`, `queue-dashboard` modülleri) tarandı; distinct isim kümesi tam olarak sözleşmedeki dokuzdur. `proactive-chat` sabit üzerinden (`proactive-chat.constants.ts:6`) gelir. `app.module.ts:131`'deki `name: 'default'` bir **ThrottlerModule throttler adıdır, BullMQ queue değildir** (satır 125-137 doğrulandı) — dolayısıyla onuncu queue yoktur.
+- **9 `@Cron` deklarasyonu**, dokuz ayrı üretim dosyasında; `apps`, `packages`, `scripts` genelinde `.spec.` hariç toplam sayı tam olarak 9. Dosya listesi sözleşmeyle birebir aynı.
+- **4 repeatable job**; `repeat:` opsiyonu içeren tam olarak dört kayıt noktası var (`sla.cron.ts` ×3, `crm-delta-sync.service.ts` ×1) ve jobId'ler sözleşmeyle aynı. Alternatif API (`upsertJobScheduler`, `JobScheduler`) kullanımı yok.
+- Sözleşmedeki tüm cron ve repeatable kayıtları `runtimeSingletonVerified: false` taşıyor; test bunu ayrıca doğruluyor. Yerel kaynak varlığı canlı tekillik kanıtı olarak **sunulmuyor** — bu sınır doğru ifade edilmiş.
+- Test tarayıcısının atladığı `test/tests/__tests__` dizinleri kontrol edildi; bu dizinlerde `@Cron` yok, yani bugün için kör nokta oluşturmuyor.
+
+#### 5. R2 ve Redis güvenlik sınırı — doğrulandı (bildirimsel)
+
+- R2: `actions: ["ListObjectsV2","HeadObject"]`; `forbiddenActions: ["GetObject","PutObject","DeleteObject","CopyObject"]`; çıktı sınıfı `private-key-size-etag-last-modified`.
+- Redis: `INFO persistence/stats`, `CONFIG GET maxmemory`, `CONFIG GET maxmemory-policy`, `SCAN`, `TYPE`, `LLEN`, `ZCARD`, `SCARD`; yasaklar `DEL`, `FLUSHALL`, `FLUSHDB`, `SET`, `HSET`, `ZADD`, `LPOP`, `RPOP`, `PAUSE`, `RESUME`.
+- **Açık tespit:** bu script bu operasyonları çalıştırmaz, çalıştıramaz ve doğrulamaz. R2/Redis maddeleri yalnız gelecekteki A.1.4-B collector'ı için veri-yapısı düzeyinde bir sözleşme beyanıdır. Hiçbir S3/Redis client'ı import edilmediği için burada makine tarafından zorlanan bir kısıt yoktur; zorlama sorumluluğu tamamen henüz yazılmamış collector'a aittir. Rapor bu ayrımı doğru yapmış, ancak kanıt değeri "gelecek sözleşme metni" düzeyindedir.
+
+#### 6. Private artifact writer güvenliği — davranışsal olarak doğrulandı
+
+`assertPrivateEvidencePath()` probe'ları: `.private-data/../x.json`, `../x.json`, `/etc/passwd`, `.private-data` (kökün kendisi), `.private-datax/evil.json` (prefix karışıklığı) ve `.private-data/a/../../outside.json` reddedildi.
+
+`writePreparationPlan()` gerçek dosya sistemi probe'ları (izole geçici dizinde, sonunda temizlendi):
+
+| Senaryo | Sonuç |
+|---|---|
+| Normal yazım | Kabul; gerçek mod `0600` ölçüldü |
+| Aynı yola ikinci yazım | Reddedildi (`already exists`) |
+| Var olan **yabancı** dosyanın üzerine yazım | Reddedildi; sentinel içerik korundu |
+| Path zincirinde symlink dizin | Reddedildi (`non-directory or symlink`) |
+| Hedefin kendisi private root dışına işaret eden symlink | Reddedildi; hedef dosya oluşmadı |
+| Zincirde `0755` group/world-readable dizin | Reddedildi (`grants group/world access`) |
+| Zincirde dizin olmayan bileşen | Reddedildi |
+| Var olan `0755` dizinin izni | **Değiştirilmedi** (`chmod` yalnız aracın kendi oluşturduğu dizine uygulanıyor) |
+| Artık geçici dosya | Yok |
+
+Geçici dosya `.<basename>.tmp-<pid>-<uuid>` adıyla `wx` + mode `0600` ile açılıyor, `link()` ile atomik olarak yayımlanıyor (`EEXIST` → fail-closed) ve `finally` içinde siliniyor. Ownership kontrolü `metadata.uid !== process.getuid()` ile yapılıyor. Hata mesajlarında plan içeriği veya özel değer loglanmıyor. Probe sonrası çalışma ağacı tekrar temiz.
+
+#### 7. Bağımsız çalıştırılan testler ve gerçek sonuçlar
+
+Node `v24.18.0`, mevcut kurulu bağımlılıklarla; dependency indirilmedi.
+
+- `node --test scripts/release-a14-inventory-contract.test.mjs` → **pass 12, fail 0** (`duration_ms 74.6`). Beklenen `12/12` teyit edildi.
+- Dokuz dosyalık geniş operasyon paketi (`--test-reporter=tap`) → **`1..163`, tests 163, pass 163, fail 0** (`duration_ms 54587`). Beklenen `163/163` teyit edildi.
+- `node --check scripts/release-a14-inventory-contract.mjs` → temiz.
+- `node --check scripts/release-a14-inventory-contract.test.mjs` → temiz.
+- `git diff --check` → temiz. `git status --short` → boş.
+
+#### 8. Testlerin yanlış güven üretip üretmediği
+
+- Cron/repeatable **drift keşfi gerçek**: `discovers no uncontracted source cron or repeatable job` testi `apps/backend/src` altını tarayıp bulduğu tüm `@Cron` dosyalarını ve `-repeatable` jobId'lerini sözleşmeyle `deepEqual` karşılaştırıyor; yeni bir cron eklenirse test kırılır. Bunu bağımsız grep sayımıyla teyit ettim.
+- **Queue tarafında eşdeğer bir drift testi yok** (bkz. BULGU-M1).
+- SQL reddi testi gerçek bir bypass yakalar mı: evet, ancak yakalayan katman exact allowlist üyeliğidir; `FORBIDDEN_SQL` regex katmanı testlerle **ayrıca kanıtlanmıyor** (bkz. BULGU-L2).
+- Writer testi gerçek `stat().mode & 0o777 === 0o600` ve gerçek ikinci-yazım reddi ölçüyor — yanlış güven üretmiyor. Ancak symlink/ownership/permissive-dizin dalları test edilmiyor (bkz. BULGU-L3); bu dalların bugün çalıştığını kendi probe'larımla ayrıca doğruladım.
+- "Network client yok" testi **yalnız metin taramasıdır** (bkz. BULGU-L4). Bugünkü kaynak gerçekten temiz — bunu import listesini okuyarak ve bağımsız grep ile ayrıca doğruladım.
+- Plana dolaylı değer sızma yolu: `--generated-at` (bkz. BULGU-L5). Diğer tüm alanlar sabit veya `^[0-9a-f]{40}$` ile sınırlı.
+
+#### 9. Restore kanıtı — doğrulandı
+
+- Tag `restore/post-release-a14-preparation-20260810-b07203e8` mevcut ve **annotated tag** (`b546c841fab746c3709491714b104ce3bb9ad4e3`).
+- Dereference sonucu `b07203e8260a34460e733b15074e2d1651c1c0bf` — beyan edilen hedefle birebir aynı.
+- Bundle `.private-data/restore-points/post-release-a14-preparation-20260810-b07203e8.bundle` SHA-256 ölçümü: `762309f39a05496a9ba1637fdbfd304686f241b05609744492c3d784d5263486` — beyanla birebir aynı.
+- `git bundle verify` → `The bundle records a complete history.`; bundle HEAD `b07203e8...`.
+- Bundle restore edilmedi, checkout yapılmadı, hiçbir branch/tag değiştirilmedi.
+
+#### Bulgular
+
+Critical: **0**. High: **0**. Medium: **1**. Low: **6**.
+
+**BULGU-M1 — Medium — Yeni bir BullMQ queue eklenirse hiçbir test kırılmaz (queue drift guard yok)**
+
+- Dosya/satır: `scripts/release-a14-inventory-contract.test.mjs:39-51` ve `:203-218`; sözleşme `scripts/release-a14-inventory-contract.mjs:14-65`.
+- Senaryo: Cron ve repeatable job'lar için `apps/backend/src` taraması yapan bir keşif testi var (`:235-259`), queue'lar için yok. Bir geliştirici `BullModule.registerQueue({ name: 'yeni-kuyruk' })` eklerse: `APPROVED_QUEUE_NAMES` literal deepEqual testi geçer, anchor testi geçer, `163/163` yeşil kalır. A.1.4-B collector'ı bu dondurulmuş dokuz isim üzerinden çalışacağı için canlı envanterde onuncu kuyruğun derinliği, DLQ'su ve repeatable kaydı sessizce görünmez olur — cutover'da tam olarak bu kapının önlemesi gereken kör nokta oluşur.
+- Mevcut test yakalıyor mu: **Hayır.**
+- Bugünkü durum: envanter **eksiksiz**; bağımsız sayımla distinct queue adı tam olarak dokuz. Yani bu bir regresyon-koruması eksiğidir, bugünkü bir yanlışlık değildir.
+- Önerilen en küçük güvenli düzeltme: mevcut cron keşif testine paralel olarak `apps/backend/src` altındaki `registerQueue` literal adlarını ve `PROACTIVE_CHAT_QUEUE` sabitini toplayıp `APPROVED_QUEUE_NAMES` ile `deepEqual` karşılaştıran tek bir test eklemek (throttler `name:` alanlarını dışlamak için yalnız `registerQueue(...)` çağrı gövdesini taramak yeterli).
+
+**BULGU-L1 — Low — Queue kaynak anchor'ı zayıf substring eşleşmesi**
+
+- Dosya/satır: `scripts/release-a14-inventory-contract.test.mjs:208-218`.
+- Senaryo: Anchor kontrolü `source.includes(queue.name)`. `email` gibi kısa adlar ilgili modülde import/sınıf adı olarak zaten geçtiği için, gerçek `registerQueue({ name: 'email' })` kaydı silinse bile test geçmeye devam eder.
+- Mevcut test yakalıyor mu: Hayır.
+- Önerilen düzeltme: `registerQueue` bloğu içinde `name:` ile birlikte eşleşen daha dar bir regex kullanmak.
+
+**BULGU-L2 — Low — SQL allowlist kendi kendinden türetiliyor; yan etkili `SELECT` eklenmesi test kırmaz**
+
+- Dosya/satır: `scripts/release-a14-inventory-contract.mjs:209-213` (`APPROVED_SQL_STATEMENTS`, `READ_ONLY_OPERATIONS`'tan türetiliyor) ve `:202-203` (`FORBIDDEN_SQL`).
+- Senaryo: `READ_ONLY_OPERATIONS`'a ileride ör. `SELECT set_config('x','y',false)` eklenirse, statement otomatik olarak "approved" olur; `FORBIDDEN_SQL` `set_config`/`lo_unlink`/`pg_read_file`/`dblink` içermediği ve `allowedStart` `SELECT`'e izin verdiği için üç katmanın hiçbiri durduramaz. Testteki reddedilenler listesi de yalnız sabit dizeleri kontrol ettiği için yeşil kalır.
+- Mevcut test yakalıyor mu: Hayır (`:71-81` tautolojiktir — aynı diziden türeyen seti test eder).
+- Bugünkü durum: mevcut dört statement zararsız ve doğrulandı.
+- Önerilen düzeltme: onaylı statement kümesini teste literal olarak (veya SHA-256 ile) sabitlemek, böylece herhangi bir genişletme bilinçli bir test güncellemesi gerektirsin.
+
+**BULGU-L3 — Low — Writer'ın symlink/ownership/permissive-dizin dalları test edilmiyor**
+
+- Dosya/satır: `scripts/release-a14-inventory-contract.mjs:347-363` (`assertPrivateDirectory`); test yalnız `:179-201`.
+- Senaryo: `assertPrivateDirectory` çağrısı bir refactor'da düşürülürse veya koşullar gevşetilirse hiçbir test kırılmaz; plan group/world-readable ya da symlink'lenmiş bir dizine yazılabilir hâle gelir.
+- Mevcut test yakalıyor mu: Hayır.
+- Bu dalların bugün çalıştığını bağımsız probe ile doğruladım (tablo, §6).
+- Önerilen düzeltme: geçici dizinde symlink ve `0755` dizin senaryoları için iki `assert.rejects` testi eklemek.
+
+**BULGU-L4 — Low — "Ağ/DB client'ı yok" testi yalnız metin taraması**
+
+- Dosya/satır: `scripts/release-a14-inventory-contract.test.mjs:261-269`.
+- Senaryo: Regex yalnız `from 'pg|ioredis|bullmq|@aws-sdk'` ve `node:child_process` arıyor. Node 18+ ile `fetch()` global olduğu için **hiçbir import gerektirmez**; `await import("pg")`, `createRequire`, `node:net`, `node:https` de yakalanmaz. Yani test tek başına "ağ yapamaz" kanıtı değildir.
+- Mevcut test yakalıyor mu: Hayır (bu sınıf için).
+- Bugünkü durum: kaynakta `fetch|http|https|net|tls|dns|dgram|require|axios|undici` için sıfır eşleşme; import listesi yalnız dört Node builtin'i. Yani iddia doğru, ama kanıtı test değil doğrudan kod incelemesidir.
+- Önerilen düzeltme: regex'i `fetch(`, `await import(`, `createRequire`, `node:net|node:http|node:https|node:tls|node:dgram` kalıplarını da reddedecek şekilde genişletmek.
+
+**BULGU-L5 — Low — `--generated-at` üzerinden plana serbest metin yazılabiliyor**
+
+- Dosya/satır: `scripts/release-a14-inventory-contract.mjs:262-263` ve `:278`.
+- Senaryo: Doğrulama yalnız `Number.isNaN(Date.parse(generatedAt))`. V8'in gevşek tarih ayrıştırıcısı parantezli sonek kabul eder; probe ile ölçüldü: `Date.parse("2026-08-10 (redis://h:6379)")` → geçerli. Değer plana **birebir ham hâliyle** yazılır (`generatedAtInPlan: "Mon Aug 10 2026 (AKIAEXAMPLESECRET)"` doğrulandı). Operatörün elinden bir secret bu alandan artifact'e sızabilir. Etki sınırlı: dosya `.private-data` altında, mode `0600`, Git dışı.
+- Mevcut test yakalıyor mu: Hayır — `:166-177` "credential serialize etmez" testi sabit bir `generatedAt` ile çalışır ve operatör girdisi yolunu hiç uyarmaz.
+- Önerilen düzeltme: `generatedAt` için katı ISO-8601 regex uygulamak veya plana `new Date(generatedAt).toISOString()` normalize edilmiş değeri yazmak.
+
+**BULGU-L6 — Low — `.private-data/release-credentials/...` geçerli çıktı yolu olarak kabul ediliyor**
+
+- Dosya/satır: `scripts/release-a14-inventory-contract.mjs:242-256`.
+- Senaryo: `assertPrivateEvidencePath(".private-data/release-credentials/steal.json")` probe'da **kabul edildi**. `--output` yazım hatası veya kopyala-yapıştır ile plan artifact'i credential dizinine düşebilir. Var olan bir credential dosyasının üzerine yazılamaz (lstat + `link()` `EEXIST` fail-closed, §6'da ölçüldü) ve plan secret içermez; bu yüzden etki hijyen düzeyindedir.
+- Mevcut test yakalıyor mu: Hayır.
+- Önerilen düzeltme: private root altında dar bir izinli alt-ağaç (ör. yalnız `release-evidence/`) zorunlu kılmak veya `release-credentials/` için açık bir denylist eklemek.
+
+#### Çürütülen veya düzeltilmesi gereken iddialar
+
+- Codex'in "Critical/High/Medium `0/0/0`" sonucu **kısmen düzeltilmiştir**: Critical ve High bulgusu yoktur ve bunu teyit ediyorum; ancak yukarıdaki BULGU-M1 bir Medium seviyeli bakım/regresyon-koruması eksiğidir. Bu bulgu bugünkü envanterin doğruluğunu değiştirmez.
+- Diğer tüm sayısal ve olgusal iddialar (`12/12`, `163/163`, dokuz queue, dokuz cron, dört repeatable job, exact SQL allowlist, `--execute` fail-closed, private/no-clobber/`0600` writer, tag hedefi, bundle SHA-256) bağımsız olarak **tekrar üretildi ve doğrulandı**; sapma bulunmadı.
+- Nitelik düzeltmesi: R2 ve Redis kısıtları bu fazda **çalıştırılabilir bir kısıt değil, veri düzeyinde bir sözleşme beyanıdır**. Rapor bunu "gelecek collector için" diyerek doğru sınırlamıştır; kanıt gücü buna göre okunmalıdır.
+
+#### Karar
+
+- **A.1.4 yerel hazırlık kapısı: GO.** Kapsam dar ve additive; araç ağ/database/child-process yeteneğine sahip değil; `--execute` ve `--prepare` kapıları fail-closed; SQL yüzeyi exact allowlist ile kilitli; artifact writer private/no-clobber/`0600` davranışını gerçek dosya sistemi probe'larıyla kanıtladı; testler bağımsız olarak `12/12` ve `163/163` üretti; restore tag/bundle kanıtı birebir tuttu. Critical/High yok; bir Medium ve altı Low hardening notu, bu kapının kapanmasını engellemez.
+- **Production deploy: NO-GO.** Canlı envanter (migration ledger, R2 object manifest, Redis/BullMQ sayaçları, runtime cron/repeatable tekilliği, DB↔object parity) **yapılmamıştır**. Bu fazda üretilen hiçbir kanıt production hakkında GO gerekçesi değildir. Ayrıca PostgreSQL credential rotasyonu, maintenance/cutover ve rollback provası kapıları açıktır.
+
+#### Açık beyan
+
+- Bu doğrulama sırasında **production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya production SharePoint'e bağlanılmadı**; hiçbir canlı sistem okunmadı veya değiştirilmedi.
+- Hiçbir credential, token, parola, connection string veya private key okunmadı, yazılmadı veya ekrana basılmadı. `.private-data/release-credentials` dizinine girilmedi ve içeriği görüntülenmedi.
+- Migration, seed, queue işlemi, Redis mutation, object upload/download/delete, deploy, push veya tag-push yapılmadı. A.1.4-B collector'ı geliştirilmedi veya çalıştırılmadı.
+- **Hiçbir ürün kodu, test, script, ayar veya migration değiştirilmedi; hiçbir commit oluşturulmadı.** Bulunan sorunlar düzeltilmedi, yalnız kanıtıyla raporlandı. Bu bölüm dışında hiçbir dosya değişmemiştir; doğrulama probe'ları depo dışındaki geçici çalışma alanında çalıştırıldı ve oluşturdukları geçici dizinler temizlendi. Probe sonrası `git status --short` boştur.
