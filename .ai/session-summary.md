@@ -4162,3 +4162,13 @@ Maintenance rule:
 - RED produced 4 expected failures out of 16. Final A.1.4 is 16/16 and broad operations safety is 167/167; syntax, formatting, secret and diff checks passed. Manual C/H/M closure: 0/0/0.
 - Generated a private mode-0600 plan bound to `c7c8c03983755a08e9d59ae267e6c7f96bb84486`, with production access/GO both false. No live system, credential, deploy, push, migration, seed or queue mutation was touched. Production remains NO-GO.
 - Post-fix recovery: tag `restore/post-release-a14-hardening-20260811-865090f3`; verified complete-history bundle `.private-data/restore-points/post-release-a14-hardening-20260811-865090f3.bundle`, SHA-256 `d05a3ca0a3d801e5062e05fe76fe22dbe0d7d7c974214c7cfe466e5af4aa6423`.
+
+## 2026-08-11 - A.1.4 H1-H5 local commit and restore closure
+
+- Recorded the in-process schedule inventory contract in local commit `5e77ffdc`, its regression suite in `ff38340e`, and the append-only Claude/Codex handoff in `021ae1c5`.
+- Final evidence: A.1.4 target `21/21`, broad operations-safety `172/172`, code/security reviews GO with Critical/High/Medium `0/0/0`.
+- Created local annotated tag `restore/post-release-a14-h1-h5-20260811-021ae1c5` at `021ae1c577e503f1e584b1f8b5e08d133ebbad87`.
+- Created and verified complete-history bundle `.private-data/restore-points/post-release-a14-h1-h5-20260811-021ae1c5.bundle`; mode `0600`, SHA-256 `2ae4e178ac3762a4fbb321d36a08bddbeb2f520828b322a736f1421a773c0cc3`.
+- The A.1.4-B live collector was not implemented or run. Its next step is a design-only, fail-closed read-only contract and requires separate user approval before any production access.
+- `StalledJobRecoveryService` multi-replica behavior remains a separate product/architecture decision; it must not be silently folded into inventory work.
+- No push, tag-push, deploy, live credential access, production connection, migration, seed, queue/object/Redis mutation or production data change occurred. Production remains NO-GO.

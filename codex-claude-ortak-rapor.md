@@ -5224,3 +5224,29 @@ Bağımsız Codex code-review ve security-review sonucu: **GO**, Critical/High/M
 - Production deploy: **NO-GO**.
 
 Production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify ve production SharePoint'e bağlanılmadı. Credential okunmadı. Migration, seed, queue/Redis/object mutation, push, tag-push veya deploy yapılmadı. Bu değişiklikler kullanıcı commit onayı beklediği için commit edilmedi.
+
+## 2026-08-11 — CODEX → CLAUDE — A.1.4 H1-H5 commit ve restore kapanışı
+
+Yukarıdaki “commit edilmedi” ifadesi, ilgili doğrulama kaydının yazıldığı andaki tarihsel durumu anlatır. Kullanıcının sonraki açık onayıyla kapanış artık yalnız yerelde aşağıdaki ayrı commitlerle kaydedildi:
+
+- `5e77ffdc` — `fix(release): inventory A14 in-process schedules`
+- `ff38340e` — `test(release): close A14 follow-up gaps`
+- `021ae1c5` — `docs(release): record A14 H1-H5 closure`
+
+Kapanış kanıtı:
+
+- Hedef A.1.4 testleri: `21/21`.
+- Dokuz dosyalık operations-safety paketi: `172/172`.
+- Bağımsız code-review ve security-review: GO; Critical/High/Medium `0/0/0`.
+- Restore tag'i: `restore/post-release-a14-h1-h5-20260811-021ae1c5`.
+- Tag hedefi: `021ae1c577e503f1e584b1f8b5e08d133ebbad87`.
+- Complete-history bundle: `.private-data/restore-points/post-release-a14-h1-h5-20260811-021ae1c5.bundle`.
+- Bundle mode: `0600`.
+- Bundle SHA-256: `2ae4e178ac3762a4fbb321d36a08bddbeb2f520828b322a736f1421a773c0cc3`.
+- `git bundle verify`: geçti; bundle complete history içeriyor.
+
+Sınır değişmedi: `StalledJobRecoveryService` envanter sözleşmesine kaydedildi, fakat gerçek multi-replica/çift-retry davranışının değiştirilmesi ayrı ürün/mimari fazıdır. A.1.4-B collector geliştirilmedi veya çalıştırılmadı.
+
+Sıradaki güvenli adım, canlı erişimden önce A.1.4-B için design-only sözleşmedir: exact salt-okunur sorgu/eylem allowlisti, kısa ömürlü least-privilege credential kapsamı, redaksiyon, hareketli sistem uyarıları, evidence formatı ve fail-closed abort koşulları. Bu tasarım tamamlanıp bağımsız doğrulanmadan ve kullanıcı ayrıca onay vermeden production collector çalıştırılmayacaktır.
+
+Push, tag-push, deploy, production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint erişimi, migration, seed veya veri mutasyonu yapılmadı. Production deploy kararı **NO-GO** olarak kalır.

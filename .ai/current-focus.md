@@ -513,3 +513,12 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Yeni private plan `.private-data/release-evidence/a14-production-inventory/preparation-plan-c7c8c039.json`, mode `0600`, commit `c7c8c03983755a08e9d59ae267e6c7f96bb84486` ile bağlı; `productionAccessPerformed=false`, `productionGo=false`.
 - GitNexus detect-changes denendi ancak pnpm registry-signature doğrulaması fail-closed durdurdu; bypass uygulanmadı. Canlı PostgreSQL/R2/Redis/SSH/SharePoint erişimi, push, deploy, migration, seed veya queue mutation yapılmadı. Production NO-GO sürüyor.
 - Post-fix restore tag'i `restore/post-release-a14-hardening-20260811-865090f3`; complete-history bundle `.private-data/restore-points/post-release-a14-hardening-20260811-865090f3.bundle`, SHA-256 `d05a3ca0a3d801e5062e05fe76fe22dbe0d7d7c974214c7cfe466e5af4aa6423`; `git bundle verify` geçti.
+
+## Active Focus - 2026-08-11 A.1.4 H1-H5 Commit and Recovery Closure
+
+- A.1.4 H1-H5 kapanışı üç ayrı yerel commit ile kaydedildi: sözleşme `5e77ffdc`, regresyon testleri `ff38340e`, append-only ortak rapor `021ae1c5`.
+- Final hedef test `21/21`, dokuz dosyalık operations-safety paketi `172/172`; bağımsız code-review ve security-review sonucu GO, Critical/High/Medium `0/0/0`.
+- Restore tag'i `restore/post-release-a14-h1-h5-20260811-021ae1c5`; doğrulanmış complete-history bundle `.private-data/restore-points/post-release-a14-h1-h5-20260811-021ae1c5.bundle`, mode `0600`, SHA-256 `2ae4e178ac3762a4fbb321d36a08bddbeb2f520828b322a736f1421a773c0cc3`.
+- `StalledJobRecoveryService` envanter sözleşmesine alındı; gerçek multi-replica/çift-retry davranışının değiştirilmesi ayrı bir ürün/mimari fazıdır ve bu kapanışta yapılmadı.
+- Sıradaki güvenli adım A.1.4-B'yi doğrudan çalıştırmak değil; least-privilege, kısa ömürlü credential, salt-okunur sorgu/eylem allowlisti, redaksiyon, evidence formatı ve abort koşulları için önce design-only collector sözleşmesidir. Ayrı kullanıcı onayı olmadan canlı collector geliştirilmeyecek veya çalıştırılmayacaktır.
+- Push, tag-push, deploy, production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint erişimi, migration, seed veya veri mutasyonu yapılmadı. Production NO-GO sürüyor.
