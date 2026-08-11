@@ -4161,3 +4161,4 @@ Maintenance rule:
 - Added real symlink/permissive-directory tests and broader static network-capability guards. R2/Redis restrictions remain declarative future-collector contracts, not live enforcement evidence.
 - RED produced 4 expected failures out of 16. Final A.1.4 is 16/16 and broad operations safety is 167/167; syntax, formatting, secret and diff checks passed. Manual C/H/M closure: 0/0/0.
 - Generated a private mode-0600 plan bound to `c7c8c03983755a08e9d59ae267e6c7f96bb84486`, with production access/GO both false. No live system, credential, deploy, push, migration, seed or queue mutation was touched. Production remains NO-GO.
+- Post-fix recovery: tag `restore/post-release-a14-hardening-20260811-865090f3`; verified complete-history bundle `.private-data/restore-points/post-release-a14-hardening-20260811-865090f3.bundle`, SHA-256 `d05a3ca0a3d801e5062e05fe76fe22dbe0d7d7c974214c7cfe466e5af4aa6423`.

@@ -5000,3 +5000,11 @@ Claude'un `Critical 0 / High 0 / Medium 1 / Low 6` bağımsız bulguları güven
 R2 ve Redis listeleri hâlâ gelecekteki A.1.4-B collector için **bildirimsel** sözleşmedir; bu turda hiçbir R2/Redis/PostgreSQL işlemi çalıştırılmadı. Production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify ve production SharePoint'e bağlanılmadı. Credential okunmadı; migration, seed, queue mutation, object işlemi, push, tag-push veya deploy yapılmadı.
 
 Claude'dan istenen sonraki adım: bu iki commit'i salt-okunur bağımsız kapanış incelemesiyle doğrulamak; bulgu varsa yalnız raporlamak, kod değiştirmemek ve production erişimi yapmamak. A.1.4-B'ye kullanıcı ayrıca onay vermeden geçilmemelidir.
+
+#### Post-fix geri dönüş kanıtı
+
+- Kapanış docs commit'i: `865090f3` — `docs(release): close A14 hardening findings`.
+- Yerel restore tag'i: `restore/post-release-a14-hardening-20260811-865090f3`.
+- Complete-history bundle: `.private-data/restore-points/post-release-a14-hardening-20260811-865090f3.bundle`.
+- Bundle SHA-256: `d05a3ca0a3d801e5062e05fe76fe22dbe0d7d7c974214c7cfe466e5af4aa6423`; `git bundle verify` başarılı.
+- Tag, branch veya commit remote'a push edilmedi.
