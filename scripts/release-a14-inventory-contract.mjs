@@ -134,6 +134,33 @@ export const APPROVED_REPEATABLE_JOBS = Object.freeze([
   },
 ]);
 
+export const IN_PROCESS_INTERVAL_JOBS = Object.freeze([
+  {
+    id: "stalled-job-recovery",
+    sourceFile:
+      "apps/backend/src/queue-dashboard/stalled-job-recovery.service.ts",
+    schedulingPrimitive: "setInterval",
+    intervalMilliseconds: 5 * 60 * 1000,
+    affectedQueues: Object.freeze([
+      "ai-query-processing",
+      "email",
+      "crm-sync",
+      "document-parsing",
+    ]),
+    mutatesQueue: true,
+    runtimeSingletonVerified: false,
+  },
+  {
+    id: "prisma-pool-metrics",
+    sourceFile: "apps/backend/src/prisma/prisma.service.ts",
+    schedulingPrimitive: "setInterval",
+    intervalMilliseconds: 10_000,
+    affectedQueues: Object.freeze([]),
+    mutatesQueue: false,
+    runtimeSingletonVerified: false,
+  },
+]);
+
 export const READ_ONLY_OPERATIONS = Object.freeze([
   {
     id: "postgres-migration-ledger",
@@ -215,7 +242,7 @@ export const APPROVED_POSTGRES_STATEMENTS = Object.freeze([
 ]);
 
 const FORBIDDEN_SQL =
-  /\b(?:ALTER|ANALYZE|CALL|COMMENT|COPY|CREATE|DEALLOCATE|DELETE|DO|DROP|EXECUTE|GRANT|INSERT|LISTEN|LOCK|MERGE|NOTIFY|PREPARE|REASSIGN|REFRESH|REINDEX|RESET|REVOKE|SECURITY|SETVAL|TRUNCATE|UNLISTEN|UPDATE|VACUUM)\b|\bFOR\s+(?:NO\s+KEY\s+UPDATE|UPDATE|SHARE|KEY\s+SHARE)\b|\bINTO\s+(?:TEMP|TEMPORARY|UNLOGGED|[a-z_"])|\b(?:DBLINK|LO_IMPORT|LO_UNLINK|PG_(?:ADVISORY|CANCEL_BACKEND|LOG_BACKEND_MEMORY_CONTEXTS|LS_DIR|READ_FILE|RELOAD_CONF|ROTATE_LOGFILE|SLEEP|TERMINATE_BACKEND)|QUERY_TO_XML|SET_CONFIG)\s*\(|\bNEXTVAL\s*\(/i;
+  /\b(?:ALTER|ANALYZE|CALL|COMMENT|COPY|CREATE|DEALLOCATE|DELETE|DO|DROP|EXECUTE|GRANT|INSERT|LISTEN|LOCK|MERGE|NOTIFY|PREPARE|REASSIGN|REFRESH|REINDEX|RESET|REVOKE|SECURITY|SETVAL|TRUNCATE|UNLISTEN|UPDATE|VACUUM)\b|\bFOR\s+(?:NO\s+KEY\s+UPDATE|UPDATE|SHARE|KEY\s+SHARE)\b|\bINTO\s+(?:TEMP|TEMPORARY|UNLOGGED|[a-z_"])|\b(?:DBLINK|LO_EXPORT|LO_IMPORT|LO_UNLINK|PG_(?:ADVISORY|CANCEL_BACKEND|LOG_BACKEND_MEMORY_CONTEXTS|LS_DIR|READ_BINARY_FILE|READ_FILE|RELOAD_CONF|ROTATE_LOGFILE|SLEEP|STAT_FILE|TERMINATE_BACKEND)|QUERY_TO_XML|SET_CONFIG)\s*\(|\bNEXTVAL\s*\(/i;
 
 function normalizeSql(sql) {
   return sql.trim().replace(/;$/, "");
@@ -234,13 +261,10 @@ export function assertReadOnlySql(sql) {
     throw new Error("Read-only SQL allowlist requires a non-empty string");
   }
   const normalized = normalizeSql(sql);
-  if (
-    normalized.includes(";") ||
-    /--|\/\*/.test(normalized) ||
-    FORBIDDEN_SQL.test(normalized)
-  ) {
+  if (normalized.includes(";") || /--|\/\*/.test(normalized)) {
     throw new Error("Statement is outside the read-only SQL allowlist");
   }
+  assertNoForbiddenSqlPrimitives(normalized);
   const allowedStart =
     /^(?:SELECT\b|SHOW\b|SET\s+LOCAL\s+(?:statement_timeout|lock_timeout)\s*=\s*\d+\b|BEGIN\s+TRANSACTION\s+ISOLATION\s+LEVEL\s+REPEATABLE\s+READ\s+READ\s+ONLY$|ROLLBACK$)/i;
   if (!allowedStart.test(normalized)) {
@@ -250,6 +274,13 @@ export function assertReadOnlySql(sql) {
     throw new Error("Statement is outside the read-only SQL allowlist");
   }
   return normalized;
+}
+
+export function assertNoForbiddenSqlPrimitives(sql) {
+  if (typeof sql !== "string" || FORBIDDEN_SQL.test(sql)) {
+    throw new Error("Statement is outside the read-only SQL allowlist");
+  }
+  return sql;
 }
 
 export function assertPrivateEvidencePath(outputPath) {
@@ -289,7 +320,7 @@ export function buildInventoryPreparationPlan({ gitSha, generatedAt }) {
     contractSha256: sha256(JSON.stringify(operation)),
   }));
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     status: "prepared-local-only",
     productionAccessPerformed: false,
     productionGo: false,
@@ -301,6 +332,10 @@ export function buildInventoryPreparationPlan({ gitSha, generatedAt }) {
       ...cron,
     })),
     repeatableJobs: APPROVED_REPEATABLE_JOBS.map((job) => ({ ...job })),
+    inProcessIntervalJobs: IN_PROCESS_INTERVAL_JOBS.map((job) => ({
+      ...job,
+      affectedQueues: [...job.affectedQueues],
+    })),
     operationContracts,
     requiredFutureCredentialScopes: [
       "postgres-select-only-or-enforced-read-only-transaction",
