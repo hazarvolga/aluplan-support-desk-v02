@@ -5847,6 +5847,47 @@ Critical **0** / High **0** / Medium **2** / Low **2**.
 - Bu tur yalnız dokümantasyon incelemesidir. Production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya SharePoint'e **bağlanılmadı**.
 - Hiçbir credential, token, secret veya connection string okunmadı, yazılmadı ya da ekrana basılmadı.
 - Migration, seed, deploy, push, tag-push, queue/Redis/object/DB mutation veya object body upload/download/delete yapılmadı.
+
+## 2026-08-12 — CODEX — B1 gece planı restore point kanıtı
+
+A.1.4-B1 gece gözlem ve deploy kapıları dokümantasyon planı commit'lendi ve
+yerel restore point kanıtı oluşturuldu.
+
+Commit:
+
+- `869e1f38a37033eb9b64f8c12b09b94f14880012` —
+  `docs(release): close A14B B1 night observation and deploy gates plan`
+
+Restore point:
+
+- Tag: `restore/post-release-a14b-b1-night-gates-20260812-869e1f38`
+- Tag türü: annotated
+- Tag object: `04fb516cb097889c4c5ea41d9845c996d9ab03a5`
+- Peeled target commit: `869e1f38a37033eb9b64f8c12b09b94f14880012`
+
+Bundle:
+
+- Path:
+  `.private-data/restore-points/post-release-a14b-b1-night-gates-20260812-869e1f38.bundle`
+- SHA-256:
+  `3bc8da35eab7792349b813ddcf11eaa7d374bc1965ab896b31fdaf6a2587495f`
+- Mode: `0600`
+- `git bundle verify`: PASS; complete history recorded.
+
+Karar:
+
+- B1 gece gözlem/deploy kapıları planı commit'lenmiş, bağımsız doğrulanmış ve
+  restore point'i kanıtlanmış olarak kapandı.
+- Credential provisioning: **NO-GO**.
+- B1 concrete transports: **NO-GO**.
+- B1 live observation: **NO-GO**.
+- Runtime-topology/SSH/Coolify erişimi: **NO-GO**.
+- Production deploy: **NO-GO**.
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret okunmadı veya yazılmadı.
+Object body upload/download/delete, migration, seed, queue/Redis/DB mutation,
+push, tag-push veya deploy yapılmadı.
 - **Hiçbir kod geliştirilmedi, hiçbir dosya değiştirilmedi, hiçbir commit oluşturulmadı.** Bulunan bulgular düzeltilmedi, yalnız dosya/bölüm ve somut senaryoyla raporlandı. Bu bölüm dışında hiçbir dosya değişmemiştir; `git status --short` incelemeden önceki dört dosyayı (Codex'e ait, önceden var olan) aynen gösteriyor.
 
 ## 2026-08-12 — CODEX — A.1.4-B1 preflight bağımsız doğrulama bulguları kapanışı

@@ -4222,3 +4222,7 @@ Maintenance rule:
 - Recommended sequence: credential plan → explicit B1 read-only observation approval → B1 observation result → backup/restore/rollback gate → final deploy GO/NO-GO → explicit `deploy et` approval.
 - Because production tickets/uploads can continue, exact DB↔R2 parity should be attempted in a low-traffic/night window and treated as moving-target if before/after digests drift.
 - No live system access, credential operation, mutation, push, tag-push or deploy occurred.
+- Commit: `869e1f38` — `docs(release): close A14B B1 night observation and deploy gates plan`.
+- Recovery evidence: annotated tag `restore/post-release-a14b-b1-night-gates-20260812-869e1f38`, tag object `04fb516cb097889c4c5ea41d9845c996d9ab03a5`, peeled commit `869e1f38a37033eb9b64f8c12b09b94f14880012`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-night-gates-20260812-869e1f38.bundle`, mode `0600`, SHA-256 `3bc8da35eab7792349b813ddcf11eaa7d374bc1965ab896b31fdaf6a2587495f`.
+- B1 concrete transports, credential provisioning, live observation, runtime-topology/SSH/Coolify and production deploy remain **NO-GO** pending separate explicit approval.

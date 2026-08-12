@@ -573,3 +573,7 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Varsayılan ilk B1 temel gözlem PostgreSQL/R2/Redis metadata ile sınırlıdır. SSH/Coolify runtime-topology kapsam dışında tutulur; gerekiyorsa ayrı açık onay ve komut seti gerekir.
 - B1 observation ve olası deploy düşük trafik/gece penceresine bırakılmalıdır; canlı bilet/upload hareketi DB↔R2 exact parity'yi moving target yapabilir.
 - Bu turda canlı sistem erişimi, credential işlemi, migration, seed, queue/object/Redis/DB mutation, push, tag-push veya deploy yapılmadı.
+- B1 gece planı commit'lendi: `869e1f38` — `docs(release): close A14B B1 night observation and deploy gates plan`.
+- Restore evidence: annotated tag `restore/post-release-a14b-b1-night-gates-20260812-869e1f38`, tag object `04fb516cb097889c4c5ea41d9845c996d9ab03a5`, peeled commit `869e1f38a37033eb9b64f8c12b09b94f14880012`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-night-gates-20260812-869e1f38.bundle`, mode `0600`, SHA-256 `3bc8da35eab7792349b813ddcf11eaa7d374bc1965ab896b31fdaf6a2587495f`; `git bundle verify` geçti.
+- Credential provisioning, B1 concrete transports, B1 live observation, runtime-topology/SSH/Coolify erişimi ve production deploy hâlâ ayrı açık kullanıcı onayı gerektiren **NO-GO** kapılardır.
