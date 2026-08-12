@@ -4203,3 +4203,10 @@ Maintenance rule:
 - B0-3 is closed with an annotated restore tag: `restore/post-release-a14b-b0-hardening-20260812-219d1142`; tag object `2d5ab23b383a4e9b50e833660344a7f0737c6047`, peeled commit `219d11428a96da7fdb6737e076a1f9ba946fe79b`.
 - Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b0-hardening-20260812-219d1142.bundle`, mode `0600`, SHA-256 `bbbb9a9636208ca2b81dab0a9ddd1f02c884825d587bb2b8101ad0bdf191554e`; `git bundle verify` passed.
 - A.1.4-B0 B0-1 through B0-7 are now committed and recovery-recorded for local/offline hardening. No live access, credential operation, deploy, migration, seed, queue/object/Redis mutation, push or tag-push occurred. B1/live observation and production deploy remain NO-GO.
+
+## 2026-08-12 - A.1.4-B1 live observation preflight
+
+- Added docs-only preflight plan: `.ai/issues/2026-08-12-a14b-b1-live-observation-preflight.md`.
+- The plan freezes the next safe gate before any live read: distinct short-lived read-only credentials, exact PostgreSQL/R2/Redis operation scopes, private evidence location, bounded before/after observation, DB↔R2 parity classes, runtime moving-target semantics and explicit GO/NO-GO conditions.
+- No concrete transport, credential provisioning or live observation was implemented or run. Production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify and SharePoint remain untouched.
+- Production deploy remains **NO-GO**. B1 live observation requires a separate explicit user approval and should preferably run during a low-traffic or maintenance window because active tickets/uploads can make exact parity a moving target.

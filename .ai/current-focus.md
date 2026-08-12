@@ -553,3 +553,11 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - B0-3 kapandı: çalışma commit'i `219d1142` olarak kaydedildi ve yeni restore point annotated tag ile oluşturuldu: `restore/post-release-a14b-b0-hardening-20260812-219d1142`. Tag object `2d5ab23b383a4e9b50e833660344a7f0737c6047`, peeled hedef commit `219d11428a96da7fdb6737e076a1f9ba946fe79b`.
 - Complete-history bundle `.private-data/restore-points/post-release-a14b-b0-hardening-20260812-219d1142.bundle`, mode `0600`, SHA-256 `bbbb9a9636208ca2b81dab0a9ddd1f02c884825d587bb2b8101ad0bdf191554e`; `git bundle verify` geçti ve tag type `tag` olarak doğrulandı.
 - A.1.4-B0 B0-1 üzerinden B0-7 dahil local/offline hardening artık commit'lenmiş ve doğrulanmış restore point ile kapalıdır. Production/live observation, B1 concrete transports, credential provisioning ve deploy **NO-GO** kalır.
+
+## Active Focus - 2026-08-12 A.1.4-B1 Live Observation Preflight
+
+- B0 kapanışı sonrasındaki ilk güvenli adım olarak docs-only preflight belgesi eklendi: `.ai/issues/2026-08-12-a14b-b1-live-observation-preflight.md`.
+- Bu belge canlıya bağlanma veya collector çalıştırma yetkisi vermez; yalnız B1 canlı salt-okunur observation öncesi credential, evidence, bounded observation, DB↔R2 parity, Redis/BullMQ exact-known-key ve NO-GO kapılarını kilitler.
+- B1 için geçerli sınır: concrete transports, credential provisioning, live observation ve production deploy hâlâ **NO-GO**. Ayrı açık kullanıcı onayı olmadan PostgreSQL/R2/Redis/SSH/Coolify/SharePoint erişimi yapılmayacak.
+- Canlı sistemde bilet ve dosya hareketi devam ettiği için exact parity iddiası ancak düşük trafik/bakım penceresinde, before/after snapshotlar stable olduğunda değerlendirilecektir. Moving-target veya DB-referenced-missing-R2 sonucu `ready:false`, `productionGo:false` diagnostic artifact olarak kalmalıdır.
+- Bu turda kod, test, migration, seed, deploy, push, tag-push, credential, production connection veya object/Redis/DB mutation yapılmadı.
