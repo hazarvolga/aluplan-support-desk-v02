@@ -5682,3 +5682,33 @@ Codex'in bu tur için yaptığı tüm olgusal ve sayısal iddialar bağımsız o
 - Hiçbir credential, token, secret veya connection string okunmadı, yazılmadı ya da ekrana basılmadı. `.private-data/release-credentials` dizinine girilmedi.
 - Object body indirilmedi/yüklenmedi/silinmedi; migration, seed, queue, Redis veya database mutasyonu yapılmadı.
 - **Hiçbir kod veya test değiştirilmedi; hiçbir commit, push, tag-push veya deploy yapılmadı.** Bu bölüm dışında hiçbir dosya değişmemiştir. Probe'ların oluşturduğu geçici kanıt dizinleri (`probe-missing`, `probe-drift`, `probe-rawscan`, `probe-eexist`, `probe-tmp-naming`) ve `/tmp` altındaki bir yardımcı probe dosyası silindi; doğrulama sonunda `git status --short` yalnız incelenen (Codex'e ait, önceden var olan) dokuz dosyayı gösteriyor, başka hiçbir değişiklik yoktur.
+
+## 2026-08-12 — CODEX — A.1.4-B0 B0-3 annotated restore point kapanışı
+
+Claude'un bağımsız GO kararından sonra B0-3 kapatıldı: B0-1 ve Low hardening çalışması yerel commit'e alındı, yeni restore point bu kez **annotated tag** olarak oluşturuldu ve complete-history bundle doğrulandı.
+
+### Commit
+
+- Commit: `219d1142` — `fix(release): close A14B B0-1 and low hardening findings`.
+- Tam commit: `219d11428a96da7fdb6737e076a1f9ba946fe79b`.
+- Commit edilen dosyalar: `.ai/current-focus.md`, `.ai/session-summary.md`, `codex-claude-ortak-rapor.md`, `scripts/a14b/orchestrator.mjs`, `scripts/a14b/postgres-adapter.mjs`, `scripts/a14b/publisher.mjs`, `scripts/release-a14b-adapters.test.mjs`, `scripts/release-a14b-contracts.test.mjs`, `scripts/release-a14b-evidence.test.mjs`.
+
+### Annotated restore point
+
+- Restore tag: `restore/post-release-a14b-b0-hardening-20260812-219d1142`.
+- `git cat-file -t restore/post-release-a14b-b0-hardening-20260812-219d1142` → `tag`; yani tag annotated olarak doğrulandı, lightweight değildir.
+- Tag object: `2d5ab23b383a4e9b50e833660344a7f0737c6047`.
+- Peeled tag hedef commit'i: `219d11428a96da7fdb6737e076a1f9ba946fe79b`.
+
+### Bundle
+
+- Bundle: `.private-data/restore-points/post-release-a14b-b0-hardening-20260812-219d1142.bundle`.
+- Mode: `0600`.
+- SHA-256: `bbbb9a9636208ca2b81dab0a9ddd1f02c884825d587bb2b8101ad0bdf191554e`.
+- `git bundle verify`: geçti; bundle complete history içeriyor.
+
+### Kapanış kararı
+
+- **B0-3 kapandı.** A.1.4-B0 B0-1 üzerinden B0-7 dahil local/offline hardening artık commit'lenmiş, bağımsız doğrulanmış ve annotated restore point + verified complete-history bundle ile kayıt altına alınmıştır.
+- B1 concrete transports, credential provisioning, live observation ve production deploy hâlâ **NO-GO**.
+- Production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya SharePoint'e bağlanılmadı. Credential/token/secret okunmadı veya yazılmadı. Object body upload/download/delete, migration, seed, queue/Redis/DB mutation, push, tag-push veya deploy yapılmadı.
