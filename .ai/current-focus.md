@@ -565,3 +565,11 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - B1 preflight restore point annotated tag olarak oluşturuldu: `restore/post-release-a14b-b1-preflight-20260812-454f6693`. Tag object `d067d68fa4b405712d6a07c9cbdfc4d183ef561c`; peeled hedef commit `454f6693c37f312313f55d75cf070c05df83bfa7`.
 - Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-preflight-20260812-454f6693.bundle`, mode `0600`, SHA-256 `c708dbeb8feefa56be3807504694ae24b126401e3c294a12ab7e3757db18aeee`; `git bundle verify` geçti.
 - B1 concrete transports, credential provisioning, live observation, runtime-topology/SSH/Coolify erişimi ve production deploy hâlâ ayrı açık kullanıcı onayı gerektiren **NO-GO** kapılardır. Canlı gözlem yapılacaksa düşük trafik/gece penceresi tercih edilmelidir.
+
+## Active Focus - 2026-08-12 B1 Night Observation and Deploy Gates
+
+- Bu gece için güvenli operasyon sırası docs-only olarak kilitlendi: `.ai/issues/2026-08-12-a14b-b1-night-observation-and-deploy-gates.md`.
+- Plan deploy'u otomatik hedef yapmaz; sıralama credential hazırlık kararı → ayrı açık B1 live read-only observation onayı → observation GO/NO-GO → backup/restore/rollback hızlı kapısı → final deploy GO/NO-GO → ayrı açık `deploy et` onayıdır.
+- Varsayılan ilk B1 temel gözlem PostgreSQL/R2/Redis metadata ile sınırlıdır. SSH/Coolify runtime-topology kapsam dışında tutulur; gerekiyorsa ayrı açık onay ve komut seti gerekir.
+- B1 observation ve olası deploy düşük trafik/gece penceresine bırakılmalıdır; canlı bilet/upload hareketi DB↔R2 exact parity'yi moving target yapabilir.
+- Bu turda canlı sistem erişimi, credential işlemi, migration, seed, queue/object/Redis/DB mutation, push, tag-push veya deploy yapılmadı.

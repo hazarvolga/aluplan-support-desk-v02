@@ -4214,3 +4214,11 @@ Maintenance rule:
 - Recovery evidence: annotated tag `restore/post-release-a14b-b1-preflight-20260812-454f6693`, tag object `d067d68fa4b405712d6a07c9cbdfc4d183ef561c`, peeled commit `454f6693c37f312313f55d75cf070c05df83bfa7`.
 - Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-preflight-20260812-454f6693.bundle`, mode `0600`, SHA-256 `c708dbeb8feefa56be3807504694ae24b126401e3c294a12ab7e3757db18aeee`.
 - Push, tag-push, deploy, production connection, credential read/write, migration, seed and queue/object/Redis/DB mutation did not occur.
+
+## 2026-08-12 - B1 night observation and deploy gates
+
+- Added docs-only night plan: `.ai/issues/2026-08-12-a14b-b1-night-observation-and-deploy-gates.md`.
+- The plan separates credential preparation, B1 live read-only observation, runtime-topology access and deploy into distinct approvals. General B1 observation does not include SSH/Coolify runtime topology, and no wording grants deploy.
+- Recommended sequence: credential plan → explicit B1 read-only observation approval → B1 observation result → backup/restore/rollback gate → final deploy GO/NO-GO → explicit `deploy et` approval.
+- Because production tickets/uploads can continue, exact DB↔R2 parity should be attempted in a low-traffic/night window and treated as moving-target if before/after digests drift.
+- No live system access, credential operation, mutation, push, tag-push or deploy occurred.
