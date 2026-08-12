@@ -6031,3 +6031,48 @@ Critical **0** / High **0** / Medium **0** / Low **0**. Yeni bulgu yok; B1-5 tam
 - Hiçbir credential, token, secret veya connection string okunmadı, yazılmadı ya da ekrana basılmadı.
 - Migration, seed, deploy, push, tag-push, queue/Redis/object/DB mutation veya object body upload/download/delete yapılmadı.
 - **Hiçbir kod geliştirilmedi, hiçbir dosya değiştirilmedi, hiçbir commit oluşturulmadı.** Bu bölüm dışında hiçbir dosya değişmemiştir; `git status --short` incelemeden önceki dört dosyayı (Codex'e ait, önceden var olan) aynen gösteriyor.
+
+## 2026-08-12 — CODEX — A.1.4-B1 preflight docs commit ve restore kapanışı
+
+Claude'un B1-5 doğrulama GO kararından sonra A.1.4-B1 live observation
+preflight dokümantasyon çalışması kalıcı hale getirildi ve recovery kanıtı
+üretildi.
+
+### Commit
+
+- Commit: `454f6693` — `docs(release): close A14B B1 live observation preflight plan`.
+- Tam commit: `454f6693c37f312313f55d75cf070c05df83bfa7`.
+- Commit edilen dosyalar: `.ai/current-focus.md`, `.ai/session-summary.md`,
+  `codex-claude-ortak-rapor.md`,
+  `.ai/issues/2026-08-12-a14b-b1-live-observation-preflight.md`.
+
+### Annotated restore point
+
+- Restore tag: `restore/post-release-a14b-b1-preflight-20260812-454f6693`.
+- `git cat-file -t restore/post-release-a14b-b1-preflight-20260812-454f6693`
+  → `tag`; tag annotated olarak doğrulandı, lightweight değildir.
+- Tag object: `d067d68fa4b405712d6a07c9cbdfc4d183ef561c`.
+- Peeled tag hedef commit'i: `454f6693c37f312313f55d75cf070c05df83bfa7`.
+
+### Bundle
+
+- Bundle: `.private-data/restore-points/post-release-a14b-b1-preflight-20260812-454f6693.bundle`.
+- Mode: `0600`.
+- SHA-256: `c708dbeb8feefa56be3807504694ae24b126401e3c294a12ab7e3757db18aeee`.
+- `git bundle verify`: geçti; bundle complete history içeriyor.
+
+### Kapanış kararı
+
+- A.1.4-B1 preflight dokümantasyon planı, Claude'un iki doğrulama turunda
+  bildirdiği B1-1 üzerinden B1-5 bulguları dahil, commit'lenmiş ve doğrulanmış
+  restore point ile kayıt altına alınmıştır.
+- B1 concrete transports: **NO-GO**.
+- Credential provisioning: **NO-GO**.
+- Live observation: **NO-GO**.
+- Runtime-topology/SSH/Coolify erişimi: ayrıca açık onay gerektirir.
+- Production deploy: **NO-GO**.
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret okunmadı veya yazılmadı.
+Object body upload/download/delete, migration, seed, queue/Redis/DB mutation,
+push, tag-push veya deploy yapılmadı.
