@@ -4182,3 +4182,12 @@ Maintenance rule:
 - Final security re-review returned GO for design-only closure with C/H/M `0/0/0`. Independent planning agreed that the next phase must remain offline TDD/implementation, not live access.
 - Cloudflare R2 Object Read includes object-body read; the narrow target is an action-scoped child credential for `ListObjectsV2` and `HeadObject`, with the parent secret outside the collector. Redis discovery defaults to exact known keys; BullMQ getters/Lua and fallback SCAN are outside the default contract.
 - No production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint access, credential operation, object body read, migration, seed, queue/object/Redis mutation, push or deploy occurred. Production and live A.1.4-B remain NO-GO.
+
+## 2026-08-12 - A.1.4-B0 offline collector core
+
+- Implemented a local-only, import-safe modular collector core under `scripts/a14b/`; it contains no production client construction, endpoint, credential provisioning or CLI execution path.
+- Added fail-closed PostgreSQL, R2 and Redis adapter contracts, fixed-order double observation, reference classification, closed evidence generation and private atomic evidence publishing.
+- Final focused verification: `21/21`; coverage `%96.81` lines, `%82.53` branches, `%96.47` functions. Broad operations-safety: `193/193`. Syntax, formatting and diff hygiene passed.
+- Independent code and security reviews both returned GO with Critical/High/Medium `0/0/0` for the offline core only.
+- Local code/test/tooling commit was created: `f6982564` (`feat(release): add A14B offline collector core`). Restore tag and bundle will be produced after the documentation closure commit.
+- No live system, credential, database, object store, Redis, SSH, Coolify or SharePoint access occurred. No push, deploy, migration, seed or data mutation occurred. Production and B1 live observation remain NO-GO.

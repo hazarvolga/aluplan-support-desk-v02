@@ -531,3 +531,13 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Final bağımsız security re-review: yalnız design-only kapanış için GO, Critical/High/Medium `0/0/0`. Bağımsız planner aynı eksikleri doğruladı ve sıradaki fazın canlı erişim değil offline contract/test/collector implementation olması gerektiğini belirtti.
 - Sıradaki güvenli teknik faz A.1.4-B1 offline TDD'dir: exact SQL/SDK/Redis sözleşmesi, adapter interface'leri, evidence schema ve fake/disposable transport harness'leri. Credential provisioning ve production observation ayrıca onaylanmadan yapılmayacaktır.
 - `StalledJobRecoveryService` multi-replica ürün davranışı bu faza dahil değildir. Production deploy ve A.1.4-B canlı observation NO-GO olarak kalır.
+
+## Active Focus - 2026-08-12 A.1.4-B0 Offline Collector Core
+
+- A.1.4-B0 yalnız yerel, import-safe ve network-capability içermeyen collector çekirdeği olarak tamamlandı. Concrete production transport, credential provisioning, CLI invocation ve canlı observation bu kapsamda yoktur.
+- Modüler çekirdek PostgreSQL, R2 ve Redis adapter sözleşmelerini; çift gözlem penceresini; storage-reference sınıflandırmasını; kapalı evidence üretimini ve private/no-clobber/READY-last publisher sözleşmesini uygular.
+- PostgreSQL adapterı dedicated read-only/repeatable-read session, exact migration ledger ve least-privilege kontrolleri uygular. R2 adapterı yalnız `ListObjectsV2` ve `HeadObject`; Redis adapterı yalnız dokuz kanonik queue için exact-known-key okumaları kabul eder. `SCAN`, `KEYS`, Lua ve yazma işlemleri yasaktır.
+- Son odaklı doğrulama `21/21`; coverage line `%96.81`, branch `%82.53`, function `%96.47`. Geniş operations-safety paketi `193/193`; syntax, Prettier ve `git diff --check` temizdir.
+- Bağımsız code-review ve security-review frozen snapshot üzerinde GO verdi; Critical/High/Medium `0/0/0`.
+- Kod/test/tooling commit'i yalnız yerelde oluşturuldu: `f6982564` (`feat(release): add A14B offline collector core`). Restore tag'i ve bundle dokümantasyon kapanış commit'i sonrasında üretilecektir.
+- Production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint erişimi, credential okuma/oluşturma, migration, seed, queue/object/Redis mutation, push, tag-push veya deploy yapılmadı. B1 canlı adapter/observation ve production deploy **NO-GO** kalır.

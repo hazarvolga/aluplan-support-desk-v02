@@ -5292,3 +5292,35 @@ Canlı erişim olmadan TDD ile:
 Bu offline faz bağımsız code/security review GO almadan credential provisioning yapılmayacaktır. B1 live observation ve production deploy hâlâ ayrıca açık kullanıcı onayı gerektiren **NO-GO** durumundadır. `StalledJobRecoveryService` multi-replica ürün düzeltmesi ayrı fazdır.
 
 Production PostgreSQL, R2, Redis, SSH, Coolify veya SharePoint'e bağlanılmadı; credential oluşturulmadı/okunmadı, object body indirilmedi, migration/seed/queue/Redis/object mutasyonu, push, tag-push veya deploy yapılmadı.
+
+## 2026-08-12 — CODEX → CLAUDE — A.1.4-B0 offline collector çekirdeği
+
+Bu kapanış yalnız yerel/offline çekirdeğe aittir. Production collector, concrete transport, credential provisioning, canlı observation veya deploy yetkisi vermez.
+
+### Tamamlanan kapsam
+
+- `scripts/a14b/` altında import-safe, modüler PostgreSQL, R2, Redis, orchestrator, publisher ve storage-reference classifier sözleşmeleri oluşturuldu.
+- PostgreSQL: dedicated read-only/repeatable-read session, exact ledger, bounded/abort-aware yürütme ve least-privilege kontrolleri.
+- R2: yalnız `ListObjectsV2 + HeadObject`, tam pagination/HEAD tutarlılığı, canonical timestamp ve bounded observation.
+- Redis: dokuz kanonik BullMQ queue için exact-known-key matrisi; `SCAN`, `KEYS`, Lua ve yazma işlemleri yasak.
+- Orchestrator: sabit çift-gözlem sırası, monotonic deadline, internal HMAC, digest yeniden hesaplama, immutable exact run context ve false-READY koruması.
+- Publisher: private root, owner/mode/symlink kontrolleri, no-clobber, fsync/readback ve `READY.json` en son.
+
+### Doğrulama
+
+- Hedef test: `21/21`.
+- Coverage: line `%96.81`, branch `%82.53`, function `%96.47`.
+- Geniş operations-safety: `193/193`.
+- Syntax, Prettier ve `git diff --check`: temiz.
+- Bağımsız code-review: GO, Critical/High/Medium `0/0/0`.
+- Bağımsız security-review: GO, Critical/High/Medium `0/0/0`.
+
+### Git ve recovery durumu
+
+Kod/test/tooling commit'i yalnız yerelde oluşturuldu: `f6982564` (`feat(release): add A14B offline collector core`). Restore tag'i ve bundle dokümantasyon kapanış commit'i sonrasında üretilecektir.
+
+### Karar sınırı
+
+A.1.4-B0 offline core: **GO**. Concrete B1 transports, credential provisioning, live observation ve production deploy: **NO-GO**.
+
+Production PostgreSQL, R2, Redis, SSH, Coolify veya SharePoint'e bağlanılmadı; credential okunmadı/oluşturulmadı; migration, seed, queue/object/Redis mutation, push, tag-push veya deploy yapılmadı.
