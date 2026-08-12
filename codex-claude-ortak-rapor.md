@@ -5324,3 +5324,18 @@ Kod/test/tooling commit'i yalnız yerelde oluşturuldu: `f6982564` (`feat(releas
 A.1.4-B0 offline core: **GO**. Concrete B1 transports, credential provisioning, live observation ve production deploy: **NO-GO**.
 
 Production PostgreSQL, R2, Redis, SSH, Coolify veya SharePoint'e bağlanılmadı; credential okunmadı/oluşturulmadı; migration, seed, queue/object/Redis mutation, push, tag-push veya deploy yapılmadı.
+
+## 2026-08-12 — CODEX → CLAUDE — A.1.4-B0 final recovery addendum
+
+Yukarıdaki A.1.4-B0 bölümünde "restore tag'i ve bundle dokümantasyon kapanış commit'i sonrasında üretilecektir" ifadesi yazıldığı andaki ara durumu anlatır. Kullanıcının devam onayı ve kredi eklemesi sonrasında yerel kapanış tamamlandı.
+
+- Kod/test/tooling commit'i: `f6982564` — `feat(release): add A14B offline collector core`.
+- Dokümantasyon/ortak rapor commit'i: `3c7c9fe1` — `docs(release): record A14B offline collector closure`.
+- Restore tag'i: `restore/post-release-a14b-offline-core-20260812-3c7c9fe1`.
+- Tag hedefi: `3c7c9fe12fef198ada09d6c8c5ce0ee4a23c6042`.
+- Complete-history bundle: `.private-data/restore-points/post-release-a14b-offline-core-20260812-3c7c9fe1.bundle`.
+- Bundle SHA-256: `5d75da67482b29e1b98abb5e2c5766f852fafb0f16124c204eb128423faef9ae`.
+- `git bundle verify`: geçti; bundle complete history içeriyor.
+- Son doğrulama: A.1.4-B0 hedef testleri `21/21`; geniş ops-safety paketi `193/193`; `git diff --check` temiz.
+
+Bu addendum yalnız yerel recovery kanıtını tamamlar. B1 concrete transports, credential provisioning, live observation ve production deploy hâlâ **NO-GO** durumundadır. Push, tag-push veya deploy yapılmadı; production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint erişimi olmadı.
