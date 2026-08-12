@@ -4172,3 +4172,13 @@ Maintenance rule:
 - The A.1.4-B live collector was not implemented or run. Its next step is a design-only, fail-closed read-only contract and requires separate user approval before any production access.
 - `StalledJobRecoveryService` multi-replica behavior remains a separate product/architecture decision; it must not be silently folded into inventory work.
 - No push, tag-push, deploy, live credential access, production connection, migration, seed, queue/object/Redis mutation or production data change occurred. Production remains NO-GO.
+
+## 2026-08-12 - A.1.4-B design-only collector contract
+
+- Added `.ai/issues/2026-08-12-production-readonly-inventory-collector-design.md`; no collector/runtime/product code was implemented or executed.
+- The design separates PostgreSQL, R2, Redis, runtime-topology and local-volume adapters from an offline reconciler. Each transport receives a distinct short-lived least-privilege credential; no process receives all credentials.
+- Source analysis found the prior count-only PostgreSQL and Redis command declarations insufficient for key-level DB↔R2 and active/repeatable BullMQ evidence. Exact object-reference and exact-known-key contracts are required before implementation.
+- The first security review found C/H/M `0/2/3`. The design was hardened to avoid SCAN-as-ACL isolation, bracket DB+R2 as moving targets, probe effective PostgreSQL PUBLIC privileges, isolate the R2 parent token in a minting broker, HMAC keys before persistence and require a separately approved local-volume manifest.
+- Final security re-review returned GO for design-only closure with C/H/M `0/0/0`. Independent planning agreed that the next phase must remain offline TDD/implementation, not live access.
+- Cloudflare R2 Object Read includes object-body read; the narrow target is an action-scoped child credential for `ListObjectsV2` and `HeadObject`, with the parent secret outside the collector. Redis discovery defaults to exact known keys; BullMQ getters/Lua and fallback SCAN are outside the default contract.
+- No production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint access, credential operation, object body read, migration, seed, queue/object/Redis mutation, push or deploy occurred. Production and live A.1.4-B remain NO-GO.

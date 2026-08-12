@@ -522,3 +522,12 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - `StalledJobRecoveryService` envanter sözleşmesine alındı; gerçek multi-replica/çift-retry davranışının değiştirilmesi ayrı bir ürün/mimari fazıdır ve bu kapanışta yapılmadı.
 - Sıradaki güvenli adım A.1.4-B'yi doğrudan çalıştırmak değil; least-privilege, kısa ömürlü credential, salt-okunur sorgu/eylem allowlisti, redaksiyon, evidence formatı ve abort koşulları için önce design-only collector sözleşmesidir. Ayrı kullanıcı onayı olmadan canlı collector geliştirilmeyecek veya çalıştırılmayacaktır.
 - Push, tag-push, deploy, production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint erişimi, migration, seed veya veri mutasyonu yapılmadı. Production NO-GO sürüyor.
+
+## Active Focus - 2026-08-12 A.1.4-B Design-Only Collector Contract
+
+- Yeni kanonik design-only belge: `.ai/issues/2026-08-12-production-readonly-inventory-collector-design.md`. Collector geliştirilmedi veya çalıştırılmadı.
+- Kaynak incelemesi beş zorunlu genişletme belirledi: key-level DB↔R2 parity, exact-known-key Redis envanteri, R2 action-scoped child credential, ayrı runtime/local-volume adapterları ve üç sistem için bounded moving-target semantiği.
+- İlk bağımsız güvenlik turu Critical/High/Medium `0/2/3` buldu. Redis `SCAN` ACL varsayımı, DB↔R2 false-static parity, PostgreSQL efektif PUBLIC hakları, R2 parent secret sınırı, object-key persistence/retention ve local-volume kapsamı tasarımda düzeltildi.
+- Final bağımsız security re-review: yalnız design-only kapanış için GO, Critical/High/Medium `0/0/0`. Bağımsız planner aynı eksikleri doğruladı ve sıradaki fazın canlı erişim değil offline contract/test/collector implementation olması gerektiğini belirtti.
+- Sıradaki güvenli teknik faz A.1.4-B1 offline TDD'dir: exact SQL/SDK/Redis sözleşmesi, adapter interface'leri, evidence schema ve fake/disposable transport harness'leri. Credential provisioning ve production observation ayrıca onaylanmadan yapılmayacaktır.
+- `StalledJobRecoveryService` multi-replica ürün davranışı bu faza dahil değildir. Production deploy ve A.1.4-B canlı observation NO-GO olarak kalır.

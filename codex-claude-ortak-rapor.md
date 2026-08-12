@@ -5250,3 +5250,45 @@ Sınır değişmedi: `StalledJobRecoveryService` envanter sözleşmesine kaydedi
 Sıradaki güvenli adım, canlı erişimden önce A.1.4-B için design-only sözleşmedir: exact salt-okunur sorgu/eylem allowlisti, kısa ömürlü least-privilege credential kapsamı, redaksiyon, hareketli sistem uyarıları, evidence formatı ve fail-closed abort koşulları. Bu tasarım tamamlanıp bağımsız doğrulanmadan ve kullanıcı ayrıca onay vermeden production collector çalıştırılmayacaktır.
 
 Push, tag-push, deploy, production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint erişimi, migration, seed veya veri mutasyonu yapılmadı. Production deploy kararı **NO-GO** olarak kalır.
+
+## 2026-08-12 — CODEX → CLAUDE — A.1.4-B design-only collector sözleşmesi
+
+Kanonik tasarım belgesi eklendi:
+
+- `.ai/issues/2026-08-12-production-readonly-inventory-collector-design.md`
+
+Bu tur yalnız yerel tasarımdır. Collector, network adapterı, credential veya production invocation geliştirilmedi/çalıştırılmadı.
+
+### Kaynak-koddan doğrulanan zorunlu genişletmeler
+
+1. Mevcut PostgreSQL sözleşmesi object-reference toplamlarını sayıyor fakat `attachments.url`, `knowledge_sources.file_path` ve `branding.logo_url` exact key setini üretmediği için DB↔R2 missing/orphan paritesi kuramıyor.
+2. Mevcut Redis komut listesi active identifier ve repeatable metadata için yetersiz. Default tasarım `SCAN` yerine exact known-key sözleşmesi kullanacak; BullMQ `Queue` getter/Lua/`EVALSHA` yüzeyi collector'da yasak kalacak.
+3. Cloudflare bucket-scoped `Object Read only`, body okuma yetkisini de içeriyor. En dar hedef ayrı minting broker tarafından üretilen yalnız `ListObjectsV2 + HeadObject` child credential'dır; parent secret collector'a verilmez.
+4. PostgreSQL/R2/Redis adapterları replica/image/TZ/process singleton kanıtı üretemez. Runtime topology ve local uploads-volume manifesti ayrı read-only adapter ve ayrı kullanıcı onayı gerektirir.
+5. PostgreSQL, R2 ve Redis tek atomik snapshot paylaşmaz. DB+R2 ve Redis ön/son digestleri bracket edilir; herhangi bir drift sonucu `moving-target` yapar. Kesin parity yalnız ayrıca onaylı, writer'ların durduğu bakım penceresinde iddia edilebilir.
+
+### Security review ve düzeltmeler
+
+İlk bağımsız security review: Critical/High/Medium `0/2/3`.
+
+- Redis `SCAN` key-pattern ACL ile güvenilir prefix izolasyonu sayılmaktan çıkarıldı.
+- DB↔R2 statik kabulü kaldırıldı; iki sistem de ön/son snapshot ile bracket edildi.
+- PostgreSQL rolünde `NOINHERIT` yeterli sayılmadı; `PUBLIC` kaynaklı TEMP/function EXECUTE dahil effective privilege probe ve fail-closed koşulu eklendi.
+- R2 parent token ayrı güvenilir minting broker/process sınırına alındı.
+- Raw object key persistence yasaklandı; process belleğinde exact karşılaştırma ve persistence öncesi run-HMAC zorunlu oldu.
+- Local uploads/volume manifesti ayrı adapter ve ayrı onay kapısı olarak eklendi.
+
+Final bağımsız security re-review: yalnız design-only kapanış için **GO**, Critical/High/Medium `0/0/0`. Bağımsız planner aynı ana boşlukları doğruladı ve sıradaki fazın canlı erişim değil A.1.4-B1 offline contract/test/collector implementation olması gerektiğini belirtti.
+
+### Sıradaki güvenli faz
+
+Canlı erişim olmadan TDD ile:
+
+1. exact PostgreSQL/SDK/Redis operation contractları,
+2. ayrı adapter interface'leri ve evidence schema,
+3. fake/disposable PG17, R2 ve Redis harness'leri,
+4. forbidden-operation, secret-redaction, pagination/cursor, moving-target ve false-success RED testleri.
+
+Bu offline faz bağımsız code/security review GO almadan credential provisioning yapılmayacaktır. B1 live observation ve production deploy hâlâ ayrıca açık kullanıcı onayı gerektiren **NO-GO** durumundadır. `StalledJobRecoveryService` multi-replica ürün düzeltmesi ayrı fazdır.
+
+Production PostgreSQL, R2, Redis, SSH, Coolify veya SharePoint'e bağlanılmadı; credential oluşturulmadı/okunmadı, object body indirilmedi, migration/seed/queue/Redis/object mutasyonu, push, tag-push veya deploy yapılmadı.
