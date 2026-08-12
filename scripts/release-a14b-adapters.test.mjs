@@ -15,6 +15,8 @@ const hmacKey = Buffer.from("run-scoped-secret-that-must-never-be-persisted");
 const migrationName = "20260219151110_init_reset";
 const migrationChecksum = "a".repeat(64);
 const expectedMigrations = new Map([[migrationName, migrationChecksum]]);
+const historicalMigrationName = "20260426202926_add_proactive_chat";
+const historicalMarker = "manual-psql-fix";
 const expectedRole = {
   name: "release_inventory_reader",
   expiresAt: "2026-08-13T00:00:00.000Z",
@@ -142,6 +144,56 @@ test("PostgreSQL uses one dedicated client, exact statements and rollback", asyn
   assert.equal(snapshot.kind, "postgres");
   assert.ok(Object.isFrozen(snapshot.data));
   assert.equal(snapshot.data.references[0].storageKey, "attachments/a.pdf");
+});
+
+test("PostgreSQL historical marker requires explicit acknowledgement", async () => {
+  const expectedHistoricalMigrations = new Map([
+    [historicalMigrationName, historicalMarker],
+  ]);
+  const connect = async () => ({
+    query: async ({ sql }) => {
+      if (sql.includes('FROM "_prisma_migrations"'))
+        return {
+          rows: [
+            {
+              migration_name: historicalMigrationName,
+              checksum: historicalMarker,
+              started_at: "2026-08-12T08:00:00.000Z",
+              finished_at: "2026-08-12T08:01:00.000Z",
+              rolled_back_at: null,
+            },
+          ],
+        };
+      return postgresResult(sql);
+    },
+    release: async () => {},
+  });
+
+  await assert.rejects(
+    capturePostgresSnapshot({
+      expectedMigrations: expectedHistoricalMigrations,
+      expectedRole,
+      expectedDatabase,
+      connect,
+    }),
+    /historical marker|manifest/i,
+  );
+
+  const snapshot = await capturePostgresSnapshot({
+    expectedMigrations: expectedHistoricalMigrations,
+    acknowledgedHistoricalMarkers: new Map([
+      [historicalMigrationName, historicalMarker],
+    ]),
+    expectedRole,
+    expectedDatabase,
+    connect,
+  });
+  assert.deepEqual(snapshot.data.historicalLedgerMarkersAccepted, [
+    {
+      migration_name: historicalMigrationName,
+      marker: historicalMarker,
+    },
+  ]);
 });
 
 test("PostgreSQL fails closed for broad grants, bad ledger and rollback failure", async () => {

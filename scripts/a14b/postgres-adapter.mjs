@@ -61,6 +61,9 @@ export const POSTGRES_STATEMENT_ALLOWLIST = Object.freeze([
 
 const ALLOWED = new Set(POSTGRES_STATEMENT_ALLOWLIST);
 const issuedSnapshots = new WeakSet();
+const HISTORICAL_LEDGER_MARKERS = Object.freeze({
+  "20260426202926_add_proactive_chat": "manual-psql-fix",
+});
 
 export function assertIssuedPostgresSnapshot(snapshot) {
   if (!issuedSnapshots.has(snapshot))
@@ -156,21 +159,51 @@ function validatePrivileges(
   }
 }
 
-function validateLedger(ledger, expectedMigrations) {
+function validateHistoricalMarkerAcknowledgements(
+  expectedMigrations,
+  acknowledgedHistoricalMarkers,
+) {
+  if (acknowledgedHistoricalMarkers === undefined) return new Map();
+  if (!(acknowledgedHistoricalMarkers instanceof Map))
+    throw new Error("Historical migration marker acknowledgement is invalid");
+  if (acknowledgedHistoricalMarkers.size > 10)
+    throw new Error(
+      "Historical migration marker acknowledgement budget exceeded",
+    );
+  const acknowledged = new Map(acknowledgedHistoricalMarkers);
+  for (const [name, marker] of acknowledged) {
+    if (
+      HISTORICAL_LEDGER_MARKERS[name] !== marker ||
+      expectedMigrations.get(name) !== marker
+    )
+      throw new Error("Historical migration marker acknowledgement is invalid");
+  }
+  return acknowledged;
+}
+
+function validateLedger(
+  ledger,
+  expectedMigrations,
+  acknowledgedHistoricalMarkers,
+) {
   if (!(expectedMigrations instanceof Map) || expectedMigrations.size === 0) {
     throw new Error("Expected migration manifest is required");
   }
+  const acknowledgedMarkers = validateHistoricalMarkerAcknowledgements(
+    expectedMigrations,
+    acknowledgedHistoricalMarkers,
+  );
   if (expectedMigrations.size > 1000)
     throw new Error("Expected migration manifest exceeds its row budget");
   for (const [name, checksum] of expectedMigrations) {
     const checksumIsValid =
       /^[0-9a-f]{64}$/.test(checksum) ||
-      (name === "20260426202926_add_proactive_chat" &&
-        checksum === "manual-psql-fix");
+      acknowledgedMarkers.get(name) === checksum;
     if (!/^(?:0|\d{14})_[a-z0-9_]{1,180}$/.test(name) || !checksumIsValid)
       throw new Error("Expected migration manifest entry is invalid");
   }
   const seen = new Set();
+  const acceptedHistoricalMarkers = [];
   for (const row of ledger) {
     if (!row || seen.has(row.migration_name))
       throw new Error("Duplicate migration ledger row");
@@ -195,6 +228,14 @@ function validateLedger(ledger, expectedMigrations) {
         "Migration ledger is failed, unknown, or checksum-drifted",
       );
     }
+    if (HISTORICAL_LEDGER_MARKERS[row.migration_name] === row.checksum) {
+      if (acknowledgedMarkers.get(row.migration_name) !== row.checksum)
+        throw new Error("Historical migration ledger marker is unacknowledged");
+      acceptedHistoricalMarkers.push({
+        migration_name: row.migration_name,
+        marker: row.checksum,
+      });
+    }
     assertCanonicalTimestamp(startedAt, "migration startedAt");
     assertCanonicalTimestamp(finishedAt, "migration finishedAt");
     if (finishedAt < startedAt)
@@ -206,12 +247,14 @@ function validateLedger(ledger, expectedMigrations) {
   ) {
     throw new Error("Migration ledger does not match the expected manifest");
   }
+  return acceptedHistoricalMarkers;
 }
 
 export async function capturePostgresSnapshot({
   connect,
   signal,
   expectedMigrations,
+  acknowledgedHistoricalMarkers,
   expectedRole,
   expectedDatabase,
   maxReferenceRows = 250000,
@@ -327,7 +370,11 @@ export async function capturePostgresSnapshot({
       observedAt,
     );
     const ledger = rows(await call(POSTGRES_STATEMENT_ALLOWLIST[12]));
-    validateLedger(ledger, migrationManifest);
+    const historicalLedgerMarkersAccepted = validateLedger(
+      ledger,
+      migrationManifest,
+      acknowledgedHistoricalMarkers,
+    );
     const runtime = rows(await call(POSTGRES_STATEMENT_ALLOWLIST[13]));
     if (
       runtime[0]?.transaction_read_only !== "on" ||
@@ -412,6 +459,7 @@ export async function capturePostgresSnapshot({
       extensions: normalizedExtensions,
       references,
       counts,
+      historicalLedgerMarkersAccepted,
     };
     const snapshot = {
       kind: "postgres",

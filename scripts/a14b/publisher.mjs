@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   chmod,
   lstat,
@@ -7,22 +7,59 @@ import {
   open,
   readFile,
   readdir,
-  rename,
   rmdir,
   unlink,
 } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { canonicalJson, RUN_ID_PATTERN } from "./contracts.mjs";
 import { assertClosedBundle } from "./orchestrator.mjs";
 
 const MAX_ARTIFACT_BYTES = 4 * 1024 * 1024;
-const scriptDirectory = path.dirname(new URL(import.meta.url).pathname);
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 export const APPROVED_EVIDENCE_ROOT = path.resolve(
   scriptDirectory,
   "../../.private-data/release-evidence/a14b-production-inventory",
 );
 const SECRET_PATTERN =
   /(postgres(?:ql)?:\/\/|redis(?:s)?:\/\/|bearer\s+|-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:password|token|secret|connectionString|storageKey|objectKey|rawKey)\b)/i;
+const RAW_STORAGE_IDENTIFIER_PATTERN =
+  /\b(?:attachments|brand|knowledge-pool|tickets)\/[A-Za-z0-9][A-Za-z0-9._/-]{0,1023}/;
+
+function containsRawStorageIdentifier(value) {
+  if (typeof value === "string")
+    return RAW_STORAGE_IDENTIFIER_PATTERN.test(value);
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some(containsRawStorageIdentifier);
+  return Object.entries(value).some(
+    ([key, child]) =>
+      RAW_STORAGE_IDENTIFIER_PATTERN.test(key) ||
+      containsRawStorageIdentifier(child),
+  );
+}
+
+function assertArtifactContentSafe(content) {
+  if (SECRET_PATTERN.test(content))
+    throw new Error(
+      "Evidence artifact contains forbidden secret or raw identifier material",
+    );
+  try {
+    if (containsRawStorageIdentifier(JSON.parse(content)))
+      throw new Error(
+        "Evidence artifact contains forbidden secret or raw identifier material",
+      );
+  } catch (error) {
+    if (
+      error?.message ===
+      "Evidence artifact contains forbidden secret or raw identifier material"
+    )
+      throw error;
+    if (RAW_STORAGE_IDENTIFIER_PATTERN.test(content))
+      throw new Error(
+        "Evidence artifact contains forbidden secret or raw identifier material",
+      );
+  }
+}
 
 async function assertPrivatePath(root) {
   const parts = path.resolve(root).split(path.sep);
@@ -43,10 +80,7 @@ async function assertPrivatePath(root) {
 async function writeFileExclusive(file, content) {
   if (Buffer.byteLength(content) > MAX_ARTIFACT_BYTES)
     throw new Error("Evidence artifact exceeds byte budget");
-  if (SECRET_PATTERN.test(content))
-    throw new Error(
-      "Evidence artifact contains forbidden secret or raw identifier material",
-    );
+  assertArtifactContentSafe(content);
   const handle = await open(file, "wx", 0o600);
   try {
     await handle.writeFile(content);
@@ -58,11 +92,19 @@ async function writeFileExclusive(file, content) {
 }
 
 async function writeFileAtomic(directory, name, content) {
-  const temporary = path.join(directory, `.${name}.tmp`);
+  const temporary = path.join(
+    directory,
+    `.${process.pid}.${randomUUID()}.${name}.tmp`,
+  );
   const final = path.join(directory, name);
   await writeFileExclusive(temporary, content);
-  await link(temporary, final);
-  await unlink(temporary);
+  try {
+    await link(temporary, final);
+  } finally {
+    await unlink(temporary).catch((error) =>
+      error?.code === "ENOENT" ? undefined : Promise.reject(error),
+    );
+  }
   return final;
 }
 
@@ -113,7 +155,13 @@ export async function publishEvidenceBundle({ evidenceRoot, runId, bundle }) {
   const directory = path.join(root, runId);
   let identity;
   try {
-    await mkdir(directory, { mode: 0o700 });
+    try {
+      await mkdir(directory, { mode: 0o700 });
+    } catch (error) {
+      if (error?.code === "EEXIST")
+        throw new Error("Evidence run directory already exists");
+      throw error;
+    }
     await chmod(directory, 0o700);
     identity = await lstat(directory);
     const artifacts = {
@@ -136,6 +184,10 @@ export async function publishEvidenceBundle({ evidenceRoot, runId, bundle }) {
       });
     }
     await fsyncDirectory(directory);
+    if (bundle.observation.ready !== true) {
+      await fsyncDirectory(root);
+      return directory;
+    }
     const ready = canonicalJson({
       schemaVersion: 1,
       runId,

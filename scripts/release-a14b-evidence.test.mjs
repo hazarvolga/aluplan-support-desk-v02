@@ -429,20 +429,11 @@ test("orchestrator enforces its own monotonic deadline and AbortSignal", async (
 
 test("orchestrator refuses missing adapters, drift, missing R2 objects and production mode", async () => {
   await assert.rejects(
-    collectA14bInventory({ runContext, ...adapters({ drift: "r2" }) }),
-    /changed/i,
-  );
-  await assert.rejects(
     collectA14bInventory({
       runContext,
       ...adapters({ missing: "postgres" }),
     }),
     /issued|incomplete/i,
-  );
-  const source = adapters({ omitR2Object: true });
-  await assert.rejects(
-    collectA14bInventory({ runContext, ...source }),
-    /missing R2/i,
   );
   await assert.rejects(
     collectA14bInventory({
@@ -522,6 +513,42 @@ test("orchestrator refuses missing adapters, drift, missing R2 objects and produ
   await assert.rejects(
     collectA14bInventory({ runContext, ...forged }),
     /issued|incomplete/i,
+  );
+});
+
+test("orchestrator emits non-ready diagnostics for moving targets and missing R2 references", async () => {
+  const drifting = await collectA14bInventory({
+    runContext,
+    ...adapters({ drift: "r2" }),
+  });
+  assert.equal(drifting.observation.status, "moving-target");
+  assert.equal(drifting.observation.ready, false);
+  assert.equal(drifting.collector.ready, false);
+  assert.equal(drifting.collector.productionGo, false);
+  assert.equal(drifting.collector.storageParity.evaluated, false);
+  assert.equal(drifting.collector.storageParity.skippedReason, "moving-target");
+  assert.deepEqual(
+    drifting.observation.drift.map((item) => item.kind),
+    ["r2"],
+  );
+  assert.match(drifting.observation.drift[0].beforeDigest, /^[0-9a-f]{64}$/);
+  assert.match(drifting.observation.drift[0].afterDigest, /^[0-9a-f]{64}$/);
+
+  const missing = await collectA14bInventory({
+    runContext,
+    ...adapters({ omitR2Object: true }),
+  });
+  assert.equal(missing.observation.status, "blocked-referenced-but-missing");
+  assert.equal(missing.observation.ready, false);
+  assert.equal(missing.collector.ready, false);
+  assert.equal(missing.collector.storageParity.referencedButMissingCount, 2);
+  assert.equal(
+    missing.collector.storageParity.referencedButMissingFingerprints.length,
+    2,
+  );
+  assert.doesNotMatch(
+    JSON.stringify(missing),
+    /attachments\/a\.pdf|brand\/logo\.png/,
   );
 });
 
@@ -638,12 +665,49 @@ test("publisher rejects intermediate symlinks and preserves pre-existing runs", 
         runId: existingRunId,
         bundle: existingBundle,
       }),
-      /exist/i,
+      (error) =>
+        error.message === "Evidence run directory already exists" &&
+        !error.message.includes(existing),
     );
     assert.deepEqual(await readdir(existing), []);
   } finally {
     await rm(linked, { force: true });
     await rm(existing, { recursive: true, force: true });
     await rm(target, { recursive: true, force: true });
+  }
+});
+
+test("publisher path and temporary-file hygiene stays portable and non-leaky", async () => {
+  const source = await readFile(
+    path.join(project, "scripts/a14b/publisher.mjs"),
+    "utf8",
+  );
+  assert.match(source, /fileURLToPath\(import\.meta\.url\)/);
+  assert.match(source, /randomUUID/);
+  assert.match(source, /RAW_STORAGE_IDENTIFIER_PATTERN/);
+  assert.match(source, /containsRawStorageIdentifier/);
+  assert.doesNotMatch(source, /new URL\(import\.meta\.url\)\.pathname/);
+  assert.doesNotMatch(source, /`\.\$\{name\}\.tmp`/);
+});
+
+test("publisher writes blocked diagnostics without READY", async () => {
+  const root = await privateRoot();
+  const runId = `a14b-blocked-${process.pid}`;
+  const bundle = await collectA14bInventory({
+    runContext: { ...runContext, runId },
+    ...adapters({ omitR2Object: true }),
+  });
+  try {
+    const directory = await publishEvidenceBundle({
+      evidenceRoot: root,
+      runId,
+      bundle,
+    });
+    assert.deepEqual((await readdir(directory)).sort(), [
+      "collector.json",
+      "observation.json",
+    ]);
+  } finally {
+    await rm(path.join(root, runId), { recursive: true, force: true });
   }
 });

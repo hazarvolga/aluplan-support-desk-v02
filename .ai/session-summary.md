@@ -4192,3 +4192,11 @@ Maintenance rule:
 - Local code/test/tooling commit was created: `f6982564` (`feat(release): add A14B offline collector core`). Documentation commits: `3c7c9fe1` and final addendum `1107b7fa`.
 - Canonical final restore tag: `restore/post-release-a14b-offline-core-final-20260812-1107b7fa`, target `1107b7fa633abce35b27d6ebd0754a7a990a9bea`. Complete-history bundle: `.private-data/restore-points/post-release-a14b-offline-core-final-20260812-1107b7fa.bundle`, SHA-256 `7d2f17fd8556acd2ca3124cf32cadaf3477f6f6617ee9c77aa43d86a9c66e8eb`; `git bundle verify` passed.
 - No live system, credential, database, object store, Redis, SSH, Coolify or SharePoint access occurred. No push, deploy, migration, seed or data mutation occurred. Production and B1 live observation remain NO-GO.
+
+## 2026-08-12 - A.1.4-B0 follow-up hardening
+
+- Closed Claude's B0-1 diagnostic gap locally: moving-target and DB-referenced-but-missing R2 cases now produce closed, `ready:false`, `productionGo:false` diagnostic evidence instead of throwing before artifact generation. Publisher persists blocked diagnostics but never writes `READY.json` for them.
+- Closed B0-4 with explicit historical-marker acknowledgement: `manual-psql-fix` is default-deny unless passed through exact `acknowledgedHistoricalMarkers`, and accepted markers are projected as `historicalLedgerMarkersAccepted`.
+- Closed B0-5/B0-6/B0-7: publisher now uses `fileURLToPath`, pid+UUID temp names, raw storage-key pattern detection, and a redacted fixed EEXIST message.
+- Verification: focused A.1.4-B set `25/25`, broad operations-safety set `197/197`, syntax, Prettier and `git diff --check` passed.
+- Current work is not committed yet. B0-3 remains tied to the next restore point: after user commit approval, create an annotated restore tag and complete-history bundle. No live access, credential operation, deploy, migration, seed, queue/object/Redis mutation, push or tag-push occurred.

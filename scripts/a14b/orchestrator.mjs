@@ -41,11 +41,15 @@ function assertSnapshot(snapshot, kind) {
     throw new Error(`${kind} snapshot schema is incomplete`);
 }
 
-function compareSnapshots(before, after, kind) {
+function snapshotDrift(before, after, kind) {
   assertSnapshot(before, kind);
   assertSnapshot(after, kind);
-  if (before.digest !== after.digest)
-    throw new Error(`${kind} changed during the bounded observation window`);
+  if (before.digest === after.digest) return undefined;
+  return {
+    kind,
+    beforeDigest: before.digest,
+    afterDigest: after.digest,
+  };
 }
 
 function storageParity(postgres, r2, hmacKey) {
@@ -61,10 +65,14 @@ function storageParity(postgres, r2, hmacKey) {
   if (objectSet.size !== objects.length)
     throw new Error("R2 storage parity input contains duplicates");
   const missing = r2Keys.filter((key) => !objectSet.has(key));
-  if (missing.length) throw new Error("Database references missing R2 objects");
   return {
-    referencedAndPresent: r2Set.size,
+    evaluated: true,
+    referencedAndPresent: r2Keys.filter((key) => objectSet.has(key)).length,
     databaseReferenceCount: r2Keys.length,
+    referencedButMissingCount: missing.length,
+    referencedButMissingFingerprints: missing.map((key) =>
+      fingerprintIdentifier(key, hmacKey),
+    ),
     unreferencedObjectFingerprints: objects
       .filter((key) => !r2Set.has(key))
       .map((key) => fingerprintIdentifier(key, hmacKey)),
@@ -96,6 +104,12 @@ function projectPostgres(snapshot, hmacKey) {
       startedAt: item.started_at,
       finishedAt: item.finished_at,
       rolledBackAt: null,
+    })),
+    historicalLedgerMarkersAccepted: (
+      snapshot.data.historicalLedgerMarkersAccepted ?? []
+    ).map((item) => ({
+      migrationName: item.migration_name,
+      marker: item.marker,
     })),
     runtime: {
       serverVersion: snapshot.data.runtime[0].server_version,
@@ -272,59 +286,87 @@ export async function collectA14bInventory(options) {
     if (durationMs > observationTimeoutMs)
       throw new Error("A.1.4-B observation timed out");
     const captureFinishedAt = new Date().toISOString();
-    compareSnapshots(postgresBefore, postgresAfter, "postgres");
-    compareSnapshots(r2Before, r2After, "r2");
-    compareSnapshots(redisBefore, redisAfter, "redis");
+    const drift = [
+      snapshotDrift(postgresBefore, postgresAfter, "postgres"),
+      snapshotDrift(r2Before, r2After, "r2"),
+      snapshotDrift(redisBefore, redisAfter, "redis"),
+    ].filter(Boolean);
+    const buildBundle = ({ status, ready, storageParity }) => {
+      const observation = deepFreeze({
+        schemaVersion: 1,
+        status,
+        ready,
+        productionGo: false,
+        captureStartedAt,
+        captureFinishedAt,
+        durationMs,
+        adapterDigests: {
+          postgres: postgresAfter.digest,
+          r2: r2After.digest,
+          redis: redisAfter.digest,
+        },
+        drift,
+      });
+      const collector = deepFreeze({
+        schemaVersion: 1,
+        evidenceClass: "offline-contract-simulation",
+        targetEnvironment: "production",
+        executionEnvironment: "offline",
+        mode: context.mode,
+        runId: context.runId,
+        gitSha: context.gitSha,
+        contractSha256: context.contractSha256,
+        captureStartedAt,
+        captureFinishedAt,
+        durationMs,
+        status: observation.status,
+        ready,
+        productionAccessPerformed: false,
+        productionWritePerformed: false,
+        productionGo: false,
+        runtimeSingletonVerified: false,
+        storageParityEligibleForProductionGo: false,
+        storageParity,
+        postgres: projectPostgres(postgresAfter, hmacKey),
+        r2: projectR2(r2After, hmacKey),
+        redis: {
+          digest: redisAfter.digest,
+          operationContractSha256: redisAfter.contractSha256,
+          scope: redisAfter.scope,
+          keyCount: redisAfter.data.keys.length,
+          dataDigest: digestValue(redisAfter.data),
+          server: redisAfter.data.server,
+          keys: redisAfter.data.keys,
+        },
+      });
+      const bundle = deepFreeze({ collector, observation });
+      safeBundles.add(bundle);
+      return bundle;
+    };
+    if (drift.length) {
+      return buildBundle({
+        status: "moving-target",
+        ready: false,
+        storageParity: {
+          evaluated: false,
+          skippedReason: "moving-target",
+          fullParityClaimed: false,
+        },
+      });
+    }
     const parity = storageParity(postgresAfter, r2After, hmacKey);
-    const observation = deepFreeze({
-      schemaVersion: 1,
+    if (parity.referencedButMissingCount > 0) {
+      return buildBundle({
+        status: "blocked-referenced-but-missing",
+        ready: false,
+        storageParity: parity,
+      });
+    }
+    return buildBundle({
       status: "stable-bounded-observation",
       ready: true,
-      productionGo: false,
-      captureStartedAt,
-      captureFinishedAt,
-      durationMs,
-      adapterDigests: {
-        postgres: postgresAfter.digest,
-        r2: r2After.digest,
-        redis: redisAfter.digest,
-      },
-    });
-    const collector = deepFreeze({
-      schemaVersion: 1,
-      evidenceClass: "offline-contract-simulation",
-      targetEnvironment: "production",
-      executionEnvironment: "offline",
-      mode: context.mode,
-      runId: context.runId,
-      gitSha: context.gitSha,
-      contractSha256: context.contractSha256,
-      captureStartedAt,
-      captureFinishedAt,
-      durationMs,
-      status: observation.status,
-      ready: true,
-      productionAccessPerformed: false,
-      productionWritePerformed: false,
-      productionGo: false,
-      runtimeSingletonVerified: false,
-      storageParityEligibleForProductionGo: false,
       storageParity: parity,
-      postgres: projectPostgres(postgresAfter, hmacKey),
-      r2: projectR2(r2After, hmacKey),
-      redis: {
-        digest: redisAfter.digest,
-        operationContractSha256: redisAfter.contractSha256,
-        scope: redisAfter.scope,
-        keyCount: redisAfter.data.keys.length,
-        dataDigest: digestValue(redisAfter.data),
-        server: redisAfter.data.server,
-        keys: redisAfter.data.keys,
-      },
     });
-    const bundle = deepFreeze({ collector, observation });
-    safeBundles.add(bundle);
-    return bundle;
   } finally {
     hmacKey.fill(0);
   }
@@ -334,7 +376,7 @@ export function assertClosedBundle(bundle) {
   if (
     !safeBundles.has(bundle) ||
     bundle.collector?.productionGo !== false ||
-    bundle.observation?.ready !== true
+    typeof bundle.observation?.ready !== "boolean"
   ) {
     throw new Error("Evidence does not match the closed A.1.4-B schema");
   }

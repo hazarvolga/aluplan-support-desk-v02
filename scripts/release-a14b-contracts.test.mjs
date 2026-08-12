@@ -55,6 +55,9 @@ test("SQL, R2 and Redis calls are closed allowlists", () => {
     "SELECT 1",
     "COPY attachments TO STDOUT",
     "SET TRANSACTION READ WRITE",
+    "SELECT set_config('statement_timeout','0',true)",
+    "SELECT lo_import('/tmp/secret')",
+    "SELECT pg_sleep(60)",
   ]) {
     assert.throws(() => assertPostgresStatementAllowed(sql), /allowlist/i);
   }

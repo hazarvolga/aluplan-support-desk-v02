@@ -542,3 +542,12 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Kod/test/tooling commit'i yalnız yerelde oluşturuldu: `f6982564` (`feat(release): add A14B offline collector core`). İlk kapanış docs commit'i `3c7c9fe1`, final addendum commit'i `1107b7fa`.
 - Kanonik final restore tag'i `restore/post-release-a14b-offline-core-final-20260812-1107b7fa`; tag hedefi `1107b7fa633abce35b27d6ebd0754a7a990a9bea`. Complete-history bundle `.private-data/restore-points/post-release-a14b-offline-core-final-20260812-1107b7fa.bundle`, SHA-256 `7d2f17fd8556acd2ca3124cf32cadaf3477f6f6617ee9c77aa43d86a9c66e8eb`; `git bundle verify` geçti.
 - Production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint erişimi, credential okuma/oluşturma, migration, seed, queue/object/Redis mutation, push, tag-push veya deploy yapılmadı. B1 canlı adapter/observation ve production deploy **NO-GO** kalır.
+
+## Active Focus - 2026-08-12 A.1.4-B0 Follow-up Hardening
+
+- Claude'un A.1.4-B0 bağımsız doğrulamasındaki B0-2 recovery kayıt bulgusu ayrı docs commit'i `db8d53b9` ile kapatıldı; final `1107b7fa` tag/bundle/SHA kanıtı kanonik belgelere eklendi.
+- B0-1 Medium için offline orchestrator artık moving-target ve DB-referenced-but-missing R2 durumlarında abort etmek yerine kapalı, `ready:false`, `productionGo:false` diagnostic bundle üretir. Publisher bu blocked diagnostic artifact'lerini yazar ancak `READY.json` üretmez.
+- B0-4 kapandı: `manual-psql-fix` tarihsel migration marker'ı artık varsayılan olarak reddedilir; yalnız exact `acknowledgedHistoricalMarkers` parametresiyle kabul edilir ve `historicalLedgerMarkersAccepted` evidence alanında görünür kalır.
+- B0-5/B0-6/B0-7 kapandı: publisher `fileURLToPath` kullanır, temp dosya adları pid+UUID içerir, ham storage-key kalıbı secret/raw-material taramasına dahil edilir ve var olan run dizini `Evidence run directory already exists` sabit mesajıyla redakte edilir.
+- Doğrulama: A.1.4-B hedef seti `25/25`, geniş ops-safety paketi `197/197`; syntax, Prettier ve `git diff --check` temiz. Bu kontroller yalnız local fake/offline harness ile çalıştı.
+- B0-3 notu: Bu çalışma henüz commit edilmediği için yeni restore point oluşturulmadı. Commit onayı sonrası sıradaki restore tag'i annotated (`git tag -a`) olmalı; production/live observation ve deploy **NO-GO** kalır.
