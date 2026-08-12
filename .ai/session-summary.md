@@ -4189,5 +4189,6 @@ Maintenance rule:
 - Added fail-closed PostgreSQL, R2 and Redis adapter contracts, fixed-order double observation, reference classification, closed evidence generation and private atomic evidence publishing.
 - Final focused verification: `21/21`; coverage `%96.81` lines, `%82.53` branches, `%96.47` functions. Broad operations-safety: `193/193`. Syntax, formatting and diff hygiene passed.
 - Independent code and security reviews both returned GO with Critical/High/Medium `0/0/0` for the offline core only.
-- Local code/test/tooling commit was created: `f6982564` (`feat(release): add A14B offline collector core`). Restore tag and bundle will be produced after the documentation closure commit.
+- Local code/test/tooling commit was created: `f6982564` (`feat(release): add A14B offline collector core`). Documentation commits: `3c7c9fe1` and final addendum `1107b7fa`.
+- Canonical final restore tag: `restore/post-release-a14b-offline-core-final-20260812-1107b7fa`, target `1107b7fa633abce35b27d6ebd0754a7a990a9bea`. Complete-history bundle: `.private-data/restore-points/post-release-a14b-offline-core-final-20260812-1107b7fa.bundle`, SHA-256 `7d2f17fd8556acd2ca3124cf32cadaf3477f6f6617ee9c77aa43d86a9c66e8eb`; `git bundle verify` passed.
 - No live system, credential, database, object store, Redis, SSH, Coolify or SharePoint access occurred. No push, deploy, migration, seed or data mutation occurred. Production and B1 live observation remain NO-GO.
