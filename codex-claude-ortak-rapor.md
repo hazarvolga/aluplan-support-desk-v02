@@ -7501,3 +7501,29 @@ ekrana basılmadı. Backup execution, B1 live observation, migration, seed,
 queue/object/Redis/DB mutation, push, tag-push veya deploy yapılmadı.
 
 B1 live observation ve production deploy hâlâ **NO-GO** durumundadır.
+
+## 2026-08-16 — CODEX — B1 PostgreSQL credential denemesi commit ve restore point kapanışı
+
+Kullanıcı onayıyla B1 PostgreSQL credential denemesi ve Medium-01 kapanışı
+docs-only olarak commit'lendi.
+
+- Commit: `c76f3758` — `docs(release): record B1 PostgreSQL credential attempt outcome`.
+- Full commit SHA: `c76f37588bc3191004a97628d6aecd087df0eb75`.
+- Restore point: `restore/post-release-a14b-b1-postgres-attempt-20260816-c76f3758`.
+- Tag türü: annotated (`git cat-file -t` sonucu `tag`).
+- Tag object: `b4981c4709e4873c0731eeebe239e8441371f48a`.
+- Peeled hedef commit: `c76f37588bc3191004a97628d6aecd087df0eb75`.
+- Complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-postgres-attempt-20260816-c76f3758.bundle`.
+- Bundle mode: `0600`.
+- Bundle SHA-256: `4b68a51eeaf7e7b3623cdb693ebe342cba8f6a69b61feb13477917201da71378`.
+- `git bundle verify`: başarılı; bundle complete history içeriyor.
+
+Bu kapanış sırasında production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify
+veya SharePoint'e yeni bağlantı yapılmadı. Credential/token/secret/parola/
+connection string okunmadı, yazılmadı veya ekrana basılmadı. Yeni rol
+oluşturulmadı/değiştirilmedi/silinmedi. Backup execution, B1 live observation,
+migration, seed, queue/object/Redis/DB mutation, push, tag-push veya deploy
+yapılmadı.
+
+B1 live observation ve production deploy hâlâ ayrı açık kullanıcı onayı
+gerektiren **NO-GO** kapılardır.

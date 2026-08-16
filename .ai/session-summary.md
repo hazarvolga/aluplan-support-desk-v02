@@ -4272,3 +4272,7 @@ Maintenance rule:
 - No production backup, B1 live observation, runtime-topology/SSH/Coolify observation, migration, seed, queue/object/Redis data mutation, deploy, push or tag-push occurred.
 - Claude independently verified the attempt record as GO with C/H/M/L `0/0/1/0`; the single Medium was stale wording in credential-plan §14.7 that still described the earlier docs-only moment.
 - Fixed that docs-only gap by narrowing §14.7 to "rehber hazırlandığı andaki sonuç" and adding §14.8 "Gerçek deneme sonucu" with the role attempt, NO-GO reason and cleanup proof.
+- Commit: `c76f3758` — `docs(release): record B1 PostgreSQL credential attempt outcome`.
+- Recovery evidence: annotated tag `restore/post-release-a14b-b1-postgres-attempt-20260816-c76f3758`, tag object `b4981c4709e4873c0731eeebe239e8441371f48a`, peeled commit `c76f37588bc3191004a97628d6aecd087df0eb75`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-postgres-attempt-20260816-c76f3758.bundle`, mode `0600`, SHA-256 `4b68a51eeaf7e7b3623cdb693ebe342cba8f6a69b61feb13477917201da71378`.
+- No new production connection, credential read/write, role create/alter/drop, backup execution, live observation, mutation, push, tag-push or deploy occurred during restore-evidence recording. B1 live observation and production deploy remain **NO-GO** pending separate explicit approval.
