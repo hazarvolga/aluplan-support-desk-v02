@@ -6816,3 +6816,220 @@ Credential provisioning alt adımları, B1 concrete transports, B1 live
 observation, runtime-topology/SSH/Coolify erişimi, production backup execution
 ve production deploy hâlâ ayrı açık kullanıcı onayı gerektiren **NO-GO**
 kapılardır.
+
+## 2026-08-16 — CODEX — B1 PostgreSQL credential provisioning rehberi
+
+Kullanıcı `B1 PostgreSQL credential provisioning başlat` cümlesini verdi.
+Bu cümle yalnız PostgreSQL credential üretim rehberliğini başlatır; production
+PostgreSQL'e bağlanma, rol oluşturma/değiştirme/silme, parola veya connection
+string okuma/yazma, backup alma, B1 live observation, SSH/Coolify erişimi veya
+deploy yetkisi vermez.
+
+### Yapılan dokümantasyon
+
+- `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` dosyasına
+  yeni `§14 PostgreSQL provisioning rehberi` bölümü eklendi.
+- `.ai/current-focus.md` ve `.ai/session-summary.md` güncellendi.
+
+### Rehberin sözleşmesi
+
+Hazırlanacak PostgreSQL rolü yalnız operatör tarafından ve secret değerleri
+Codex'e yazılmadan üretilecek kısa ömürlü read-only rol olmalıdır:
+
+- `LOGIN`, `NOINHERIT`.
+- `default_transaction_read_only = on`.
+- `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOREPLICATION`,
+  `NOBYPASSRLS`.
+- Üyelik yok.
+- Hedef production database dışında `CONNECT`, `CREATE` veya `TEMPORARY`
+  yetkisi yok.
+- Hedef database içinde yalnız `public` schema için `USAGE`; `CREATE` yok.
+- Yalnız şu dört tablo için `SELECT`:
+  - `public."_prisma_migrations"`
+  - `public.attachments`
+  - `public.knowledge_sources`
+  - `public.settings`
+- Sequence, view/materialized-view/foreign-table, column-level grant, DML/DDL,
+  `TEMP`, schema create veya non-system function execute yok.
+
+Rehberde yalnız placeholder SQL şablonu var; gerçek parola, host, endpoint veya
+connection string yazılmadı. `VALID UNTIL` yalnız parola geçerliliğini
+sınırlar; observation sonrası revoke/drop/disable kanıtı ayrıca gereklidir.
+
+### Fail-closed sınır
+
+Effective-scope probe şu durumlardan birini görürse PostgreSQL credential scope
+**NO-GO** sayılır: rol attribute sapması, üyelik, hedef dışı database
+privilege, hedef database `TEMPORARY=true`, public dışı schema privilege,
+beklenmeyen relation grant/relkind, column grant, non-system function execute
+veya `PUBLIC` varsayılan privilege'lerinden gelen geniş `CONNECT`/`TEMP`
+sızıntısı.
+
+`PUBLIC` default privilege'lerini veya production database-wide ayarlarını
+değiştirmek geniş etkilidir. Böyle bir ihtiyaç doğarsa bu PostgreSQL
+credential provisioning rehberi durur; ayrı risk analizi ve ayrı açık kullanıcı
+onayı gerekir.
+
+### Sınırlar
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret/parola/connection string
+oluşturulmadı, okunmadı, yazılmadı veya ekrana basılmadı. Rol
+oluşturulmadı/değiştirilmedi/silinmedi. Backup execution, B1 live observation,
+migration, seed, queue/Redis/object/DB mutation, push, tag-push veya deploy
+yapılmadı.
+
+PostgreSQL credential'ın gerçek üretimi kullanıcı/operatör tarafında ayrı bir
+production write işlemidir. Scope probe PASS kanıtı gelmeden ve kullanıcı
+ayrıca `B1 canlı salt-okunur gözleme başla` demeden canlı gözlem
+başlatılamaz. Production deploy hâlâ **NO-GO**.
+
+## 2026-08-16 — CLAUDE — B1 PostgreSQL credential provisioning rehberi bağımsız doğrulaması
+
+Kapsam: Codex'in kullanıcının `B1 PostgreSQL credential provisioning başlat`
+onayı sonrası hazırladığı docs-only PostgreSQL credential provisioning
+rehberinin (§14), A.1.4-B0 PostgreSQL adapter sözleşmesiyle
+(`scripts/a14b/postgres-adapter.mjs`) uyumlu olup olmadığının ve canlıya
+dokunmadığının bağımsız doğrulanması. Bu doğrulama yalnız dokümantasyon
+içindir; canlı bağlantı, rol oluşturma, backup veya deploy yetkisi vermez.
+
+### İncelenen dosyalar
+
+- `FIRST-READ.md`, `AGENTS.md` (değişmedi; bu turda git diff'te görünmüyor)
+- `.ai/current-focus.md`, `.ai/session-summary.md`
+- `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` (yeni §14)
+- `codex-claude-ortak-rapor.md` — "2026-08-16 — CODEX — B1 PostgreSQL
+  credential provisioning rehberi" bölümü
+- `scripts/a14b/postgres-adapter.mjs` — kod sözleşmesi kaynağı
+
+### Sonuç: **GO** (yalnız docs-only PostgreSQL provisioning rehberi doğrulaması)
+
+Critical **0** / High **0** / Medium **0** / Low **0**.
+
+### Değişen dosya kapsamı
+
+`git status --short` beklenenle birebir eşleşti — yalnız dört dosya:
+
+- `M .ai/current-focus.md`
+- `M .ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`
+- `M .ai/session-summary.md`
+- `M codex-claude-ortak-rapor.md`
+
+Yeni/başka untracked dosya yok. Kod, script, migration, Prisma schema,
+Docker/Coolify config veya env dosyası değişmedi (`scripts/a14b/*` dahil
+hiçbir script diff'te görünmüyor; adapter yalnız referans için okundu,
+değiştirilmedi).
+
+### Doğrulanan maddeler
+
+1. **Yalnız rehber, canlı yetki yok** — §14 girişi ve §14.2 açıkça
+   "Bu şablon Codex tarafından çalıştırılmayacaktır" diyor; SQL şablonu
+   `<ROLE_NAME>`/`<PASSWORD_LOCAL>`/`<TARGET_DATABASE>`/`<EXPIRES_AT_UTC>`
+   placeholder'ları içeriyor, gerçek değer yok. §14.7 kapanışı production
+   bağlantısı/rol/parola işlemi yapılmadığını tekrar teyit ediyor.
+   Doğrulandı.
+
+2. **A.1.4-B0 adapter sözleşmesiyle uyum** — `postgres-adapter.mjs`
+   `validatePrivileges(...)` fonksiyonu satır 91-160 ile birebir karşılaştırıldı:
+   - `rolcanlogin===true` (LOGIN) ✓ §14.1
+   - `rolinherit===false` (NOINHERIT) ✓ §14.1
+   - `rolconfig` tam olarak `["default_transaction_read_only=on"]` ✓ §14.1
+   - `rolsuper/rolcreatedb/rolcreaterole/rolreplication/rolbypassrls===false`
+     ✓ §14.1 (`NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOREPLICATION/NOBYPASSRLS`)
+   - `membershipRows.length===0` ✓ §14.1 "Üyelik yok"
+   - `publicRows.length===1` ve yalnız hedef DB için
+     `can_connect=true/can_create_database=false/can_temporary=false`
+     ✓ §14.1 "hedef dışında CONNECT/CREATE/TEMPORARY yok"
+   - `schemaRows.length===1`, `schema_name='public'`, `can_use=true`,
+     `can_create=false` ✓ §14.1 "yalnız public USAGE; CREATE yok"
+   - `functionRows.length===0` (non-system function EXECUTE yasak) ✓ §14.1
+   - `columnGrantRows.length===0` ✓ §14.1
+   - `REQUIRED_SELECT_TABLES = ["_prisma_migrations","attachments",
+     "knowledge_sources","settings"]`, `relkind==='r'`, `can_read=true`,
+     `can_write=false` ✓ §14.1 dört tablo listesi ve "DML/DDL yok" birebir
+     eşleşiyor.
+   - Expiry penceresi: adapter `expiryTime - observedTime > 24h` → throw;
+     §14.3 "expiry observation anından sonra ve en fazla 24 saat içinde mi"
+     ile birebir eşleşiyor.
+   Doğrulandı — tam sözleşme paritesi, sapma yok.
+
+3. **DML/DDL/TEMP/schema-create/column-grant/function-execute/membership/admin
+   fail-closed** — §14.1 ve §14.4 bu sekiz kategoriyi ayrı ayrı yasaklıyor ve
+   adapter'ın ilgili alanlarıyla (`can_write`, `can_create`, `can_temporary`,
+   `columnGrantRows`, `functionRows`, `membershipRows`, `rolsuper` vb.) satır
+   satır örtüşüyor. §14.4 ayrıca beklenmeyen `relkind` (view/matview/
+   foreign-table/sequence) durumunu da kapsıyor; bu adapter'ın
+   `relkind==='r'` şartına karşılık geliyor. Doğrulandı.
+
+4. **PUBLIC privilege sızıntısında dur** — §14.4 son paragrafı: "`PUBLIC`
+   default privilege'lerini veya production database-wide ayarlarını
+   değiştirmek geniş etkilidir. Böyle bir ihtiyaç doğarsa bu PostgreSQL
+   credential provisioning rehberi durur; ayrı risk analizi ve ayrı açık
+   kullanıcı onayı gerekir." — istenen ifadeyle birebir. Doğrulandı.
+
+5. **`VALID UNTIL` yalnız parola geçerliliği** — §14.2: "`VALID UNTIL` parola
+   geçerliliğini sınırlar; rolün tüm erişimini tek başına kalıcı biçimde
+   kapatmaz. Bu yüzden observation sonrası revoke/drop/disable kanıtı ayrıca
+   gereklidir." PostgreSQL semantiğiyle teknik olarak doğru ve adapter'ın
+   `rolvaliduntil` kontrolünden ayrı bir cleanup gerekliliği doğru
+   vurgulanmış. Doğrulandı.
+
+6. **Secret'sız operatör çıktısı** — §14.5 şablonu yalnız
+   `role prepared: yes/no`, `Role name`, `Expiry`, `probe PASS/NO-GO`,
+   `NO-GO reason category`, `Revoke/drop plan prepared: yes/no` alanlarını
+   içeriyor; parola, host, connection string, endpoint yok. Doğrulandı.
+
+7. **Revoke/drop planı ve deploy kapısı** — §14.6 placeholder `REVOKE`/
+   `DROP ROLE` şablonu veriyor ve "Cleanup tamamlanmadan deploy kapısı
+   açılmaz" açıkça yazılı; beklenmeyen ownership/default privilege görülürse
+   cleanup'ın durup ayrı inceleme gerektirdiği de belirtilmiş. Doğrulandı.
+
+8. **Ortak rapor append-only** — `git diff codex-claude-ortak-rapor.md`
+   tek hunk üretti (`@@ -6816,3 +6816,70 @@`); eklenen 70 satır doğrudan
+   önceki son satırdan (6816) sonra geldi, hiçbir tarihsel bölüm değişmedi.
+   Doğrulandı — tam append-only.
+
+9. **Bu turdaki diff'te secret/credential/connection string/private key
+   sızıntısı** — `git diff` çıktısının tamamı `postgres(ql)?://`,
+   `redis://`, `AKIA`, `BEGIN (RSA|OPENSSH|PRIVATE)`, gerçek değerli
+   `PASSWORD '...'`/`VALID UNTIL '...'`, host/IP kalıpları için tarandı;
+   sıfır eşleşme (grep exit 1). Yalnız placeholder SQL (`<ROLE_NAME>` vb.)
+   var. Doğrulandı — sızıntı yok.
+
+10. **`git diff --check`** — Temiz, çıktı yok, exit 0. Doğrulandı.
+
+11. **Canlı bağlantı/rol/backup kanıtı** — `find ... -mmin -120` taraması
+    yalnız beklenen dört dokümantasyon dosyasını ve bu turdan önce zaten
+    kayıtlı iki git-bundle restore-point dosyasını
+    (`post-release-a14b-b1-credential-plan-...bundle`,
+    `post-release-a14b-b1-backup-gate-...bundle`) gösterdi; bunlar önceki
+    commit'lerin Git geçmiş kopyalarıdır, yeni canlı backup/rol artefaktı
+    değildir. `.private-data` altında önceki doğrulama durumuna göre yeni
+    dosya yok (yalnız zaten bilinen backup-gate bundle'ı). Doğrulandı —
+    production PostgreSQL/Redis/R2/SSH/Coolify/SharePoint bağlantısı veya
+    rol/parola/credential okuma-yazma kanıtı yok.
+
+### Genel değerlendirme
+
+PostgreSQL credential provisioning rehberi (§14), A.1.4-B0
+`postgres-adapter.mjs` sözleşmesiyle satır satır tutarlıdır: LOGIN/NOINHERIT/
+default_transaction_read_only, sıfır membership, hedef-dışı DB'de
+CONNECT/CREATE/TEMPORARY yok, yalnız `public` USAGE, tam olarak dört tabloda
+salt `SELECT`, sıfır column-grant ve non-system function EXECUTE, 24 saatlik
+expiry penceresi ve `PUBLIC` sızıntısında fail-closed duruş. Rehber yalnız
+placeholder SQL şablonları ve secret'sız operatör çıktı formatı içeriyor;
+Codex'in kendisi hiçbir SQL çalıştırmadı. Kod, script, migration, config
+değişmedi; yalnız dört dokümantasyon dosyası etkilendi ve ortak rapor
+eklemesi tam append-only'dir. Bu turda bulgu yok.
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret/parola/connection string
+oluşturulmadı, okunmadı, yazılmadı veya ekrana basılmadı. Rol
+oluşturulmadı/değiştirilmedi/silinmedi. Backup, B1 live observation,
+migration, seed, queue/object/Redis/DB mutation, push, tag-push veya deploy
+yapılmadı. **Hiçbir kod geliştirilmedi, hiçbir üretim/script/migration/config
+dosyası değiştirilmedi, hiçbir commit oluşturulmadı.** Bu bölüm dışında
+hiçbir dosya değişmemiştir. Commit onayı kullanıcıdan ayrıca beklenmelidir.
+
+B1 live observation ve production deploy hâlâ ayrı açık kullanıcı onayı
+gerektiren **NO-GO** kapılardır.

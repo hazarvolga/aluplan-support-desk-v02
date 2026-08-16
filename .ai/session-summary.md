@@ -4244,3 +4244,12 @@ Maintenance rule:
 - Recovery evidence: annotated tag `restore/post-release-a14b-b1-backup-gate-20260816-aecbf6c2`, tag object `82a66bb6ef33ee4bc9dcc0bb9d65f9b333812b63`, peeled commit `aecbf6c264c58557eed1e8ebd551b03ce95a52ed`.
 - Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-backup-gate-20260816-aecbf6c2.bundle`, mode `0600`, SHA-256 `be55dd9585f68eed35c230be6367bb550d3e905948d2ac874e9e5bbfa0a58a2f`.
 - No production connection, credential read/write, backup execution, mutation, push, tag-push or deploy occurred. Credential provisioning, B1 concrete transports, B1 live observation, runtime-topology/SSH/Coolify, production backup execution and production deploy remain **NO-GO** pending separate explicit approval.
+
+## 2026-08-16 - B1 PostgreSQL credential provisioning guidance
+
+- User gave the narrow approval phrase `B1 PostgreSQL credential provisioning başlat`.
+- This was treated as PostgreSQL credential production guidance only; it did not authorize Codex to connect to production PostgreSQL, create/alter/drop a role, read or write a password/connection string, run backup, start live observation or deploy.
+- Added §14 to `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`.
+- The new guide defines the expected short-lived read-only role contract: `LOGIN`, `NOINHERIT`, `default_transaction_read_only=on`, no membership/admin attributes, target database only, `public` schema usage only, and `SELECT` only on `public."_prisma_migrations"`, `public.attachments`, `public.knowledge_sources` and `public.settings`.
+- The guide requires a secret-free effective-scope probe before B1 live observation, fail-closed handling for broad `PUBLIC`/database/schema/table/function grants, and a revoke/drop plan before any deploy gate can open.
+- No production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint access occurred. No credential/token/secret was created, read, stored or printed. No mutation, push, tag-push or deploy occurred.

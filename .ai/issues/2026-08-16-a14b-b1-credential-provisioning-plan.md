@@ -298,8 +298,11 @@ ilerleyebilir.
 
 ### 12.5 Bu yöntem onayından sonra hâlâ kapalı olan işler
 
-- PostgreSQL credential üretimi: **NO-GO** until
-  `B1 PostgreSQL credential provisioning başlat`
+- PostgreSQL credential üretim rehberliği:
+  - Kullanıcı tarafından 2026-08-16 tarihinde `B1 PostgreSQL credential
+    provisioning başlat` cümlesiyle başlatıldı.
+  - Gerçek production rol oluşturma/değiştirme/silme ve Codex production
+    bağlantısı hâlâ **NO-GO**.
 - R2 credential üretimi: **NO-GO** until
   `B1 R2 credential provisioning başlat`
 - Redis credential üretimi: **NO-GO** until
@@ -315,7 +318,9 @@ Bu belge credential provisioning yöntemini planlar ve kullanıcı tarafından
 yöntem düzeyinde onaylanmıştır; credential oluşturmaz.
 
 - Credential provisioning yöntemi: **APPROVED**
-- PostgreSQL/R2/Redis credential provisioning alt adımları: **NO-GO**
+- PostgreSQL credential üretim rehberliği: **STARTED**
+- PostgreSQL gerçek production rol oluşturma/değiştirme/silme: **NO-GO**
+- R2/Redis credential provisioning alt adımları: **NO-GO**
 - B1 concrete transports: **NO-GO**
 - B1 live observation: **NO-GO**
 - Runtime-topology/SSH/Coolify: **NO-GO**
@@ -325,3 +330,184 @@ Bu belge oluşturulurken production PostgreSQL, Redis, Cloudflare R2, SSH,
 Coolify veya SharePoint'e bağlanılmadı; credential/token/secret okunmadı veya
 yazılmadı; migration, seed, queue/object/Redis/DB mutation, push, tag-push veya
 deploy yapılmadı.
+
+## 14. PostgreSQL provisioning rehberi
+
+Bu bölüm, kullanıcının `B1 PostgreSQL credential provisioning başlat`
+cümlesi sonrasında hazırlanmıştır. Bu cümle yalnız PostgreSQL credential
+üretim rehberliğini başlatır; Codex'in production PostgreSQL'e bağlanmasına,
+rol oluşturmasına, parola okumasına/yazmasına, backup almasına, live
+observation başlatmasına veya deploy yapmasına yetki vermez.
+
+### 14.1 Hedef
+
+Operatörün hazırlayacağı credential, yalnız A.1.4-B1 PostgreSQL envanter
+gözleminde kullanılacak kısa ömürlü bir read-only roldür.
+
+Bu rolün beklenen sözleşmesi:
+
+- `LOGIN`, `NOINHERIT`.
+- `default_transaction_read_only = on`.
+- `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOREPLICATION`,
+  `NOBYPASSRLS`.
+- Üyelik yok; başka rolden privilege inherit etmez.
+- Hedef production database dışında `CONNECT`, `CREATE` veya `TEMPORARY`
+  yetkisi yok.
+- Hedef database içinde yalnız `public` schema için `USAGE`; `CREATE` yok.
+- Yalnız şu dört tablo için `SELECT`:
+  - `public."_prisma_migrations"`
+  - `public.attachments`
+  - `public.knowledge_sources`
+  - `public.settings`
+- Sequence, view/materialized-view/foreign-table, column-level grant, DML/DDL,
+  `TEMP`, schema create veya non-system function execute yok.
+
+### 14.2 Operatör rol oluşturma şablonu
+
+Bu şablon **Codex tarafından çalıştırılmayacaktır**. Operatör production
+PostgreSQL admin/owner oturumunda, secret değerleri chat'e yazmadan kendi
+ortamında uyarlamalıdır.
+
+```sql
+-- PLACEHOLDER ONLY — do not paste real password or connection string into chat.
+-- Replace these locally in the operator session:
+--   <ROLE_NAME>          e.g. a14b_inventory_ro_20260816
+--   <TARGET_DATABASE>    production application database name
+--   <EXPIRES_AT_UTC>     ISO-8601 UTC timestamp, no more than 24h ahead
+--   <PASSWORD_LOCAL>     generated locally, never shared with Codex
+
+CREATE ROLE <ROLE_NAME>
+  WITH
+  LOGIN
+  NOINHERIT
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOREPLICATION
+  NOBYPASSRLS
+  PASSWORD '<PASSWORD_LOCAL>'
+  VALID UNTIL '<EXPIRES_AT_UTC>';
+
+ALTER ROLE <ROLE_NAME> SET default_transaction_read_only = on;
+
+GRANT CONNECT ON DATABASE <TARGET_DATABASE> TO <ROLE_NAME>;
+GRANT USAGE ON SCHEMA public TO <ROLE_NAME>;
+GRANT SELECT ON TABLE
+  public."_prisma_migrations",
+  public.attachments,
+  public.knowledge_sources,
+  public.settings
+TO <ROLE_NAME>;
+```
+
+Önemli PostgreSQL nüansı: `VALID UNTIL` parola geçerliliğini sınırlar; rolün
+tüm erişimini tek başına kalıcı biçimde kapatmaz. Bu yüzden observation sonrası
+revoke/drop/disable kanıtı ayrıca gereklidir.
+
+### 14.3 Effective-scope probe zorunluluğu
+
+Rol oluşturulduktan sonra B1 canlı gözlem başlamadan önce, aynı rol ile
+effective privilege probe yapılmalıdır. Probe sonucu secret içermemelidir ve
+yalnız şu sonucu raporlamalıdır:
+
+- role adı beklenen role adı mı,
+- expiry beklenen timestamp ile birebir mi,
+- expiry observation anından sonra ve en fazla 24 saat içinde mi,
+- `NOINHERIT`, `LOGIN`, `default_transaction_read_only=on` koşulları sağlandı
+  mı,
+- membership sayısı `0` mı,
+- hedef dışı database `CONNECT/CREATE/TEMPORARY` görünmüyor mu,
+- hedef database için `CONNECT=true`, `CREATE=false`, `TEMPORARY=false` mı,
+- `public` schema için `USAGE=true`, `CREATE=false` mı,
+- non-system function execute satırı `0` mı,
+- column-level grant satırı `0` mı,
+- relation grantleri tam olarak dört tablo ve sadece `SELECT` mi.
+
+Bu probe A.1.4-B0 PostgreSQL adapter sözleşmesindeki exact allowlist ile uyumlu
+olmalıdır; ekstra SQL, object-reference okuma veya full collector çalıştırma
+değildir.
+
+### 14.4 Fail-closed duruş noktaları
+
+Aşağıdaki durumlardan biri görülürse PostgreSQL credential scope **NO-GO**
+sayılır ve B1 live observation istenmez:
+
+- Rol admin/superuser/createdb/createrole/replication/bypassrls yetkisi taşıyor.
+- Rol bir başka role member olarak bağlı.
+- `rolvaliduntil` yok, geçmişte, 24 saatten uzun veya beklenen timestamp ile
+  birebir değil.
+- `default_transaction_read_only=on` yok.
+- Hedef dışı database için `CONNECT`, `CREATE` veya `TEMPORARY` görünüyor.
+- Hedef database için `TEMPORARY=true` görünüyor.
+- `public` schema dışında schema privilege görünüyor veya `public.CREATE=true`.
+- Dört gerekli tablo dışında relation grant var.
+- Dört gerekli tablodan biri view/materialized-view/foreign-table/sequence gibi
+  beklenmeyen relkind ile görünüyor.
+- DML/DDL/column grant/non-system function execute görünüyor.
+- Production ortamında `PUBLIC` üzerinden gelen geniş `CONNECT`/`TEMP`
+  varsayılanları role sızıyorsa.
+
+`PUBLIC` varsayılan privilege'lerini veya production database-wide ayarlarını
+değiştirmek geniş etkilidir. Böyle bir ihtiyaç doğarsa bu PostgreSQL
+credential provisioning rehberinin kapsamı durur; ayrı risk analizi ve ayrı
+açık kullanıcı onayı gerekir.
+
+### 14.5 Operatörün Codex'e bildirebileceği secret'sız çıktı
+
+Operatör gerçek parolayı, connection string'i, host'u veya secret değeri
+paylaşmadan yalnız şu formatta özet dönebilir:
+
+```text
+PostgreSQL B1 role prepared: yes/no
+Role name: <non-secret role name>
+Expiry: <ISO timestamp>
+Effective-scope probe: PASS/NO-GO
+NO-GO reason category if any: role-attribute | membership | db-privilege |
+schema-privilege | relation-grant | column-grant | function-grant |
+public-default | expiry | other
+Revoke/drop plan prepared: yes/no
+```
+
+Bu özet PASS olsa bile `B1 canlı salt-okunur gözleme başla` onayı verilmiş
+sayılmaz. PostgreSQL credential scope kanıtı yalnız sonraki live-observation
+kararına girdi sağlar.
+
+### 14.6 Revoke/drop planı
+
+Observation tamamlandıktan veya iptal edildikten sonra rol kaldırılmalı ya da
+erişimi devre dışı bırakılmalıdır. Operatör aşağıdaki gibi bir rollback planı
+hazırlamalıdır; gerçek role adı ve üretim bağlantısı Codex'e yazılmaz.
+
+```sql
+-- PLACEHOLDER ONLY — operator runs locally if/when cleanup is approved.
+REVOKE SELECT ON TABLE
+  public."_prisma_migrations",
+  public.attachments,
+  public.knowledge_sources,
+  public.settings
+FROM <ROLE_NAME>;
+
+REVOKE USAGE ON SCHEMA public FROM <ROLE_NAME>;
+REVOKE CONNECT ON DATABASE <TARGET_DATABASE> FROM <ROLE_NAME>;
+DROP ROLE <ROLE_NAME>;
+```
+
+Drop öncesi role bağlı beklenmeyen ownership/default privilege görülürse cleanup
+durur ve ayrı inceleme gerekir. Cleanup tamamlanmadan deploy kapısı açılmaz.
+
+### 14.7 Bu alt adımın sonucu
+
+Kullanıcının `B1 PostgreSQL credential provisioning başlat` cümlesiyle
+PostgreSQL credential üretim rehberliği başlamıştır; ancak bu belgeyi
+güncelleme sırasında:
+
+- Production PostgreSQL'e bağlanılmadı.
+- Rol oluşturulmadı, değiştirilmedi veya silinmedi.
+- Parola, token, connection string veya endpoint okunmadı/yazılmadı.
+- Backup, live observation, migration, seed, queue/object/Redis/DB mutation,
+  SSH/Coolify/SharePoint erişimi, push, tag-push veya deploy yapılmadı.
+
+PostgreSQL credential'ın gerçekten oluşturulması kullanıcı/operatör tarafında
+ayrı bir production write işlemidir. Scope probe PASS kanıtı gelmeden ve
+kullanıcı ayrıca `B1 canlı salt-okunur gözleme başla` demeden canlı gözlem
+başlatılamaz.
