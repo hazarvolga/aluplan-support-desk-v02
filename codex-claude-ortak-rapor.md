@@ -6884,6 +6884,47 @@ production write işlemidir. Scope probe PASS kanıtı gelmeden ve kullanıcı
 ayrıca `B1 canlı salt-okunur gözleme başla` demeden canlı gözlem
 başlatılamaz. Production deploy hâlâ **NO-GO**.
 
+## 2026-08-16 — CODEX — B1 PostgreSQL credential rehberi commit ve restore point kapanışı
+
+Kullanıcı onayıyla B1 PostgreSQL credential provisioning rehberi yerel docs
+commit'i ve doğrulanmış restore point ile kapatıldı.
+
+### Commit
+
+- Commit: `46fe0ad70fee888f10e72f55fe3a6ca75e750fce`
+- Kısa commit: `46fe0ad7`
+- Mesaj: `docs(release): close A14B B1 PostgreSQL credential guidance`
+- Kapsam: yalnız dokümantasyon
+  - `.ai/current-focus.md`
+  - `.ai/session-summary.md`
+  - `codex-claude-ortak-rapor.md`
+  - `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`
+
+### Restore point
+
+- Tag: `restore/post-release-a14b-b1-postgres-credential-20260816-46fe0ad7`
+- Tag türü: annotated (`git cat-file -t` sonucu `tag`)
+- Tag object: `d21dcab7fc3ddb43e40bb9c07e318a83d9eec489`
+- Peeled hedef commit: `46fe0ad70fee888f10e72f55fe3a6ca75e750fce`
+- Bundle: `.private-data/restore-points/post-release-a14b-b1-postgres-credential-20260816-46fe0ad7.bundle`
+- Bundle mode: `0600`
+- Bundle SHA-256: `fa40a3cbcdd3b5c44310f702bb371accecae1ec007b7aa8fbcbd40c16ec57e00`
+- Doğrulama: `git bundle verify` başarılı; bundle complete history içeriyor.
+
+### Sınırlar
+
+Bu kapanış yalnız yerel dokümantasyon ve recovery kanıtıdır. Production
+PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya SharePoint'e bağlanılmadı;
+credential/token/secret/parola/connection string okunmadı, yazılmadı veya
+ekrana basılmadı. Rol oluşturulmadı/değiştirilmedi/silinmedi. Backup execution,
+B1 live observation, migration, seed, queue/Redis/object/DB mutation, push,
+tag-push veya deploy yapılmadı.
+
+PostgreSQL credential'ın gerçek üretimi, effective-scope probe, B1 concrete
+transports, B1 live observation, runtime-topology/SSH/Coolify erişimi,
+production backup execution ve production deploy hâlâ ayrı açık kullanıcı
+onayı gerektiren **NO-GO** kapılardır.
+
 ## 2026-08-16 — CLAUDE — B1 PostgreSQL credential provisioning rehberi bağımsız doğrulaması
 
 Kapsam: Codex'in kullanıcının `B1 PostgreSQL credential provisioning başlat`

@@ -4253,3 +4253,6 @@ Maintenance rule:
 - The new guide defines the expected short-lived read-only role contract: `LOGIN`, `NOINHERIT`, `default_transaction_read_only=on`, no membership/admin attributes, target database only, `public` schema usage only, and `SELECT` only on `public."_prisma_migrations"`, `public.attachments`, `public.knowledge_sources` and `public.settings`.
 - The guide requires a secret-free effective-scope probe before B1 live observation, fail-closed handling for broad `PUBLIC`/database/schema/table/function grants, and a revoke/drop plan before any deploy gate can open.
 - No production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint access occurred. No credential/token/secret was created, read, stored or printed. No mutation, push, tag-push or deploy occurred.
+- Commit: `46fe0ad7` — `docs(release): close A14B B1 PostgreSQL credential guidance`.
+- Recovery evidence: annotated tag `restore/post-release-a14b-b1-postgres-credential-20260816-46fe0ad7`, tag object `d21dcab7fc3ddb43e40bb9c07e318a83d9eec489`, peeled commit `46fe0ad70fee888f10e72f55fe3a6ca75e750fce`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-postgres-credential-20260816-46fe0ad7.bundle`, mode `0600`, SHA-256 `fa40a3cbcdd3b5c44310f702bb371accecae1ec007b7aa8fbcbd40c16ec57e00`.
