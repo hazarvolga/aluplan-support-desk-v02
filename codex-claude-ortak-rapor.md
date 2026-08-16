@@ -7527,3 +7527,372 @@ yapılmadı.
 
 B1 live observation ve production deploy hâlâ ayrı açık kullanıcı onayı
 gerektiren **NO-GO** kapılardır.
+
+## 2026-08-16 — CODEX — PostgreSQL credential NO-GO sonrası strateji kararı
+
+Kullanıcının "ok yapalım" onayı, PostgreSQL credential denemesinden sonra
+sıradaki güvenli kararın docs-only olarak netleştirilmesi şeklinde işlendi.
+Canlı sisteme yeni bağlantı yapılmadı.
+
+Karar:
+
+- Aynı şablonla ikinci bir production PostgreSQL rol denemesi yapılmayacak.
+- Production-wide `PUBLIC` privilege revoke, database-wide `TEMPORARY`/`CONNECT`
+  revoke veya extension/function execute revocation denenmeyecek.
+- Bu geniş etkili revocation değişiklikleri mevcut B1 credential provisioning
+  kapsamı değildir; ayrı DBA değişiklik planı, staging restore provası,
+  uygulama bağlantı etkisi analizi ve rollback planı gerektirir.
+- Varsayılan güvenli yol: PostgreSQL migration ledger ve DB object-reference
+  kanıtını pre-deploy backup/restore gate içindeki izole disposable PG17
+  restore üzerinden almak.
+- Alternatif yol: PostgreSQL adapter privilege sözleşmesini public-default
+  gerçekliğine göre yeniden tasarlamak; bu ayrı design review, TDD, security
+  review ve disposable PG17 kabul testi gerektirir.
+
+Bu karar B1 live observation'ı GO yapmaz. R2/Redis credential scope,
+backup/restore gate, stable observation window ve ayrı açık B1 live observation
+onayı hâlâ gereklidir. Production deploy hâlâ ayrı açık `deploy et` onayı
+olmadan **NO-GO** kalır.
+
+Bu turda credential/token/secret/parola/connection string okunmadı, yazılmadı
+veya ekrana basılmadı. Yeni rol oluşturulmadı/değiştirilmedi/silinmedi.
+Production backup execution, B1 live observation, migration, seed,
+queue/object/Redis/DB mutation, push, tag-push veya deploy yapılmadı.
+
+## 2026-08-16 — CLAUDE — PostgreSQL credential NO-GO sonrası strateji kararı bağımsız doğrulaması
+
+Kapsam: Codex'in gerçek PostgreSQL credential denemesinin NO-GO sonucundan
+sonra eklediği docs-only strateji kararının (plan §14.9 ve ortak rapor
+bölümü) bağımsız doğrulanması. **Bu doğrulama canlı erişim, credential
+üretimi, backup execution, B1 live observation veya deploy yetkisi vermez.**
+Bu turda production PostgreSQL/Redis/R2/SSH/Coolify/SharePoint'e
+bağlanılmadı; credential okunmadı/yazılmadı; rol oluşturulmadı/silinmedi.
+
+### İncelenen dosyalar
+
+- `FIRST-READ.md`, `AGENTS.md` (bu turda değişmedi)
+- `.ai/current-focus.md`, `.ai/session-summary.md`
+- `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` — yeni §14.9,
+  ayrıca §12.5/§13/§14.8 tutarlılık için
+- `.ai/issues/2026-08-16-a14b-b1-predeploy-backup-restore-gate.md` §3.1/§4/§6
+- `.ai/issues/2026-08-12-a14b-b1-live-observation-preflight.md` §5/§7
+- `codex-claude-ortak-rapor.md` — "2026-08-16 — CODEX — PostgreSQL credential
+  NO-GO sonrası strateji kararı" bölümü
+- `scripts/a14b/postgres-adapter.mjs` — privilege sözleşmesi karşılaştırması
+
+### Sonuç: **GO** (yalnız docs-only strateji kararı doğrulaması)
+
+Critical **0** / High **0** / Medium **1** / Low **2**.
+
+### Önceki bulguların durumu
+
+- **Low-01 (ortak rapor bölümünün kronolojik ters sırada olması): KAPANDI.**
+  "CODEX — Medium-01 kapanışı" bölümü artık satır `7474`'te, Claude
+  doğrulamasından (`7330`) sonra duruyor; kronolojik sıra düzeltilmiş.
+- **Low-02 (§12.5/§13 çapraz referans eksikliği): KAPANDI.** Her iki yerde de
+  `bkz. §14.8` referansı eklenmiş.
+
+### Doğrulanan maddeler
+
+1. **§14.9 ↔ §14.8 çelişkisi yok; nedensellik doğru atfedilmiş.** §14.9,
+   NO-GO'nun ana nedenini "role-specific grant fazlası değil, PostgreSQL'in
+   `PUBLIC`/database default privilege yüzeyi ve pgvector/public function
+   execute gerçeği" olarak tanımlıyor. Bu, §14.8'de kayıtlı gözlemle birebir
+   uyumlu: relation grants tam beklendiği gibiydi (dört satır, `relkind=r`,
+   `can_read=t`, `can_write=f`), ihlal edenler üç database satırındaki
+   `can_temporary=t` ve public/pgvector function execute satırlarıydı.
+   Doğrulandı.
+
+2. **§14.9 ↔ `postgres-adapter.mjs` uyumu.** Adapter'ın kendi kod yorumu
+   (`scripts/a14b/postgres-adapter.mjs:15-18`) §14.9'un kararını doğrudan
+   destekliyor: "PostgreSQL grants EXECUTE on many built-ins to PUBLIC …
+   Revoking PUBLIC would be a broad production mutation." §14.9'un
+   "production-wide `PUBLIC` revoke denenmeyecek" kararı bu kodlu tespitle
+   tutarlıdır. §14.9 seçenek 2'nin "exact SQL invocation allowlist ana kontrol
+   olarak korunur, role-specific table/column/schema grants fail-closed kalır"
+   ifadesi de adapter'ın `assertPostgresStatementAllowed(...)` ve
+   `validatePrivileges(...)` yapısına doğru karşılık geliyor. Doğrulandı.
+
+3. **"PUBLIC revoke denemeyelim" kararı güvenlidir ve yeni release blocker
+   yaratmıyor.** Revoke edilseydi etkisi rol bazlı değil database/cluster
+   bazlı olurdu: uygulamanın kendi DB kullanıcısı, pgvector fonksiyon
+   çağrıları ve bakım araçları dahil o veritabanına bağlanan her rol
+   etkilenirdi; geri alma ayrı planlama gerektirirdi. §14.9 bunun yerine
+   PostgreSQL kanıtını zaten planlanmış olan pre-deploy backup/restore gate'e
+   yönlendiriyor; backup gate §6 "Minimum restore drill" listesinde
+   `Migration ledger doğrulaması` ve `Object reference manifest kıyası`
+   maddeleri **zaten mevcut**, yani bu yönlendirme yeni bir kapı icat etmiyor,
+   var olan kapıyı kullanıyor. Ayrıca seçenek 1 hiçbir kapıyı atlamıyor:
+   custom dump almak hâlâ `Production PostgreSQL backup al` onayını gerektiren
+   NO-GO bir adımdır. Doğrulandı.
+
+4. **Restore/clone yaklaşımı backup/restore gate planıyla tutarlı.** Backup
+   gate §3.1 (custom format dump, SHA-256, `pg_restore --list`, disposable
+   restore drill, restore sonrası migration ledger + kritik tablo sayımı +
+   schema parity) ile §14.9 seçenek 1 birebir örtüşüyor. Doğrulandı.
+
+5. **Kapsam ve hijyen.** `git status --short` yalnız dört dokümantasyon
+   dosyasını gösterdi; `scripts/`, `packages/`, `apps/` ve `docker-compose.yml`
+   altında sıfır değişiklik (`git status --porcelain` boş). Ortak rapor
+   eklemesi tek hunk (`@@ -7527,3 +7527,34 @@`) ve HEAD'in `7529` satırlık
+   sonundan sonra, yani **gerçek dosya sonunda** — tam append-only.
+   `git diff --check` temiz (exit 0). Secret deseni taraması
+   (`postgres://`, `redis://`, `AKIA`, `PRIVATE KEY`, gerçek değerli
+   `PASSWORD`/`password=`, IP, `sslmode=`, `:5432`, connection-string) sıfır
+   eşleşme verdi. `find ... -mmin -60` yalnız dört doküman ve önceden zaten
+   kayıtlı üç git-bundle restore-point'i gösterdi. **Secret sızıntısı yok,
+   canlı işlem kanıtı yok.** Doğrulandı.
+
+6. **NO-GO kapıları korunuyor.** §14.9 kapanışı, `current-focus.md`,
+   `session-summary.md` ve ortak rapor eki tutarlı biçimde B1 live
+   observation'ın GO olmadığını; R2/Redis credential scope, backup/restore
+   gate, stable observation window ve ayrı açık onay gerektiğini; production
+   deploy'un `deploy et` olmadan NO-GO kaldığını tekrarlıyor. Doğrulandı.
+
+### Bulgular
+
+- **Medium-01 — §14.9, dump-tabanlı PostgreSQL kanıtı ile canlı R2
+  manifesti arasındaki zamansal kaymayı (temporal skew) ele almıyor.**
+  Dosya/bölüm: `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`
+  §14.9, "Önerilen varsayılan yol" maddesi.
+  Sorun: Preflight §5 gözlem penceresi modeli, moving-target drift'i sınırlamak
+  için PostgreSQL ve R2 anlık görüntülerinin **iç içe** alınmasını şart koşuyor
+  (`Redis-before → R2-before → PG-before → R2-after → PG-after → Redis-after`).
+  Seçenek 1'de PostgreSQL tarafı tek bir dump zaman damgasından gelir; bu, R2
+  listelemesini kuşatan `PG-before`/`PG-after` çiftini üretemez. Preflight §7
+  ise "DB referansı olup R2'de olmayan production object"i açıkça **blocker**
+  olarak sınıflandırıyor. Somut senaryo: dump, R2 listelemesinden sonra
+  alınırsa, iki işlem arasında yüklenen ekler DB'de referanslı görünüp R2
+  manifestinde bulunmaz ve **yanlış blocker** üretir; ters sırada ise gerçek
+  bir eksiklik drift olarak yazılıp **yanlış parity-OK** sonucu doğurabilir.
+  Backup gate §4 kısmi azaltma sağlıyor ("Backup alınırken yeni upload/ticket
+  hareketi varsa bu hareket ayrıca sınıflandırılır. Moving-target drift deploy
+  GO sayılmaz"), fakat §14.9 bu kurala atıf yapmıyor; yalnız §14.9'u okuyan bir
+  operatör dump ile R2 listelemesini rastgele zamanlarda alıp karşılaştırabilir.
+  **Önerilen düzeltme:** §14.9 seçenek 1'e şu şart eklensin — dump zaman
+  damgası ve R2 manifest penceresi ayrı ayrı kayda geçirilecek, R2 listelemesi
+  dump'ı kuşatacak biçimde (öncesi ve sonrası) alınacak veya aradaki fark
+  açıkça moving-target olarak sınıflandırılacak; ayrıca backup gate §4 ve
+  preflight §5/§7'ye çapraz referans verilecek. Engelleyici değildir; deploy
+  zaten NO-GO'dur.
+
+- **Low-01 — §14.9'un "uzun ömürlü observation credential gerektirmez"
+  ifadesi, dump yolunun privilege ihtiyacını olduğundan dar gösterebilir.**
+  Dosya/bölüm: aynı belge §14.9, seçenek 1 son cümlesi.
+  `pg_dump` tüm tablolarda okuma yetkisi gerektirir; bu, reddedilen dört
+  tablolu rolden **çok daha geniş** bir erişimdir. Seçenek 1'in avantajı daha
+  düşük *privilege* değil, daha düşük *kalıcılık* ve daha dar *zaman
+  penceresidir* (operatörün Coolify oturumunda tek seferlik, artefakt üreten
+  bir işlem). Metin bunu söylemediği için ileride biri seçenek 1'i "daha az
+  yetkili yol" sanabilir. **Önerilen düzeltme:** cümle "uzun ömürlü observation
+  credential gerektirmez; buna karşılık dump işlemi geniş okuma yetkisi
+  gerektirdiğinden tek seferlik, operatör kontrollü ve kayıtlı olmalıdır"
+  biçiminde netleştirilsin.
+
+- **Low-02 — §14.9 seçenek 2, çözülmesi gereken kesin kod çelişkisini
+  adresiyle göstermiyor.**
+  Dosya/bölüm: aynı belge §14.9, "Alternatif" maddesi.
+  Gerçek çelişki `scripts/a14b/postgres-adapter.mjs` içinde ölçülebilir:
+  `:15-18` yorumu forbidden-function listesinin "**not** a role-level
+  zero-EXECUTE requirement" olduğunu söylerken, `validatePrivileges(...)`
+  `:141` satırında `functionRows.length !== 0` ile fiilen role seviyesinde
+  sıfır-EXECUTE dayatıyor; üstelik ilgili sorgu (statement allowlist index 9)
+  yalnız `pg_%`/`information_schema` şemalarını dışlıyor, dolayısıyla
+  pgvector'ın yaşadığı `public` şemasını **kapsıyor**. Bu yüzden pgvector
+  kurulu bir production veritabanında bu kontrol, `PUBLIC` EXECUTE revoke
+  edilmedikçe **sağlanamaz** — denemenin başarısız olmasının kök nedeni tam
+  olarak budur. §14.9 doğru kararı (production mutasyonu yerine yeniden
+  tasarım) veriyor, fakat bu dosya/satır düzeyindeki çelişkiyi adlandırmıyor.
+  **Önerilen düzeltme:** seçenek 2'ye `postgres-adapter.mjs:15-18` ile `:141`
+  arasındaki çelişkinin ve statement-allowlist index 9'un `public` şemasını
+  kapsamasının, design-review fazının birincil çıktısı olduğu notu eklensin.
+
+### Genel değerlendirme
+
+Strateji kararı teknik olarak doğrudur ve güvenlidir. NO-GO'nun kök nedeni
+§14.8'deki gözlemle ve adapter kodunun kendi yorumuyla tutarlı biçimde
+atfedilmiştir; "canlı production privilege'larını sessizce daraltma" yolunun
+reddedilmesi doğru karardır, çünkü etkisi rol bazlı değil cluster bazlıdır.
+Önerilen varsayılan yol (izole disposable PG17 restore) zaten backup/restore
+gate §6'da tanımlı bir kapıyı kullanır, yeni bir kapı icat etmez ve hiçbir
+onayı atlamaz. Üç bulgunun hiçbiri engelleyici değildir; Medium-01 deploy
+kararına girdi olacak parity metodolojisinde yazılı bir boşluğu, iki Low ise
+ifade netliği ve design-review hedefinin kesinliğini iyileştirir. Önceki turun
+Low-01 ve Low-02 bulguları kapanmıştır.
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret/parola/connection string
+okunmadı, yazılmadı veya ekrana basılmadı. Rol oluşturulmadı/değiştirilmedi/
+silinmedi. Backup execution, B1 live observation, migration, seed,
+queue/object/Redis/DB mutation, push, tag-push veya deploy yapılmadı.
+**Hiçbir kod geliştirilmedi, hiçbir üretim/script/migration/config dosyası
+değiştirilmedi, hiçbir commit oluşturulmadı.** Bu bölüm dışında hiçbir dosya
+değişmemiştir. Commit onayı kullanıcıdan ayrıca beklenmelidir.
+
+B1 live observation, credential provisioning, runtime-topology/SSH/Coolify ve
+production deploy hâlâ ayrı açık kullanıcı onayı gerektiren **NO-GO**
+kapılardır.
+
+## 2026-08-16 — CODEX — PostgreSQL strateji kararı Claude bulguları kapanışı
+
+Claude, PostgreSQL credential NO-GO sonrası strateji kararını docs-only kapsamda
+GO olarak doğruladı ve Critical/High/Medium/Low `0/0/1/2` buldu. Üç bulgu da
+bu docs-only düzeltmeyle kapatıldı.
+
+- **Medium-01 kapandı:** §14.9 seçenek 1'e dump zaman damgası ile R2 manifest
+  penceresinin ayrı ayrı kaydedileceği eklendi. R2 listelemesi dump'ı
+  kuşatacak biçimde öncesi/sonrası alınmazsa veya arada fark varsa sonuç
+  `moving-target` olarak sınıflandırılır; DB↔R2 temporal skew varken deploy GO
+  verilmez. Backup gate §4 ve preflight §5/§7 çapraz referansı eklendi.
+- **Low-01 kapandı:** `pg_dump` yolunun daha düşük privilege olmadığı,
+  aksine geniş okuma yetkisi gerektirdiği; avantajının tek seferlik, operatör
+  kontrollü ve kayıtlı üretim backup işlemi olması olduğu netleştirildi.
+- **Low-02 kapandı:** Gelecekteki public-default-aware adapter redesign fazının
+  çözmesi gereken kesin hedef yazıldı: `scripts/a14b/postgres-adapter.mjs`
+  içindeki forbidden-function yorumunun role-level zero-EXECUTE şartı
+  olmadığını söylemesi ile `validatePrivileges(...)` içindeki
+  `functionRows.length !== 0` kontrolünün public/pgvector fonksiyonlarında
+  fiilen sıfır non-system function execute şartı uygulaması arasındaki çelişki.
+
+Bu kapanış docs-only'dir. Production PostgreSQL, Redis, Cloudflare R2, SSH,
+Coolify veya SharePoint'e bağlanılmadı. Credential/token/secret/parola/
+connection string okunmadı, yazılmadı veya ekrana basılmadı. Yeni rol
+oluşturulmadı/değiştirilmedi/silinmedi. Backup execution, B1 live observation,
+migration, seed, queue/object/Redis/DB mutation, push, tag-push veya deploy
+yapılmadı.
+
+B1 live observation, credential provisioning, runtime-topology/SSH/Coolify ve
+production deploy hâlâ ayrı açık kullanıcı onayı gerektiren **NO-GO**
+kapılardır.
+
+## 2026-08-16 — CLAUDE — PostgreSQL strateji kararı bulgu kapanışı bağımsız doğrulaması
+
+Kapsam: Claude'un bir önceki turda bildirdiği Medium-01, Low-01 ve Low-02
+bulgularının docs-only düzeltmeyle gerçekten kapanıp kapanmadığının bağımsız
+doğrulanması. **Bu doğrulama canlı erişim, credential provisioning, backup
+execution, B1 live observation veya deploy yetkisi vermez.** Bu turda
+production PostgreSQL/Redis/R2/SSH/Coolify/SharePoint'e bağlanılmadı;
+credential okunmadı/yazılmadı; rol oluşturulmadı/değiştirilmedi/silinmedi.
+
+### İncelenen dosyalar
+
+- `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` — §14.9
+- `.ai/current-focus.md`, `.ai/session-summary.md`
+- `codex-claude-ortak-rapor.md` — "2026-08-16 — CODEX — PostgreSQL strateji
+  kararı Claude bulguları kapanışı" bölümü
+- `scripts/a14b/postgres-adapter.mjs` — yalnız §14.9'daki çelişki notunu
+  doğrulamak için okundu; değiştirilmedi
+- Çapraz referans hedefleri:
+  `.ai/issues/2026-08-16-a14b-b1-predeploy-backup-restore-gate.md` ve
+  `.ai/issues/2026-08-12-a14b-b1-live-observation-preflight.md`
+
+### Sonuç: **GO** — üç bulgunun tamamı **KAPANDI**
+
+Critical **0** / High **0** / Medium **0** / Low **0**. **Kalan bulgu yok.**
+
+### Medium-01 — KAPANDI
+
+§14.9 seçenek 1 dört alt şartın tamamını karşılıyor:
+
+- **Dump zaman damgası ve R2 manifest penceresi birlikte ele alınıyor:**
+  "Dump zaman damgası ve R2 manifest penceresi ayrı ayrı kayda
+  geçirilmelidir." ✓
+- **Kuşatma ve moving-target kuralı yazılı:** "R2 listelemesi dump'ı kuşatacak
+  biçimde öncesi ve sonrası alınmalı veya aradaki fark açıkça `moving-target`
+  olarak sınıflandırılmalıdır." ✓
+- **Çapraz referanslar doğru — hedefler bağımsız olarak doğrulandı:**
+  - `2026-08-16-a14b-b1-predeploy-backup-restore-gate.md` §4 gerçekten
+    `## 4. Bakım penceresi / live writes` (satır 127) ve moving-target drift
+    kuralını içeriyor. ✓
+  - `2026-08-12-a14b-b1-live-observation-preflight.md` §5 gerçekten
+    `## 5. Observation window` (satır 139), §7 gerçekten
+    `## 7. Object parity sınıfları` (satır 181) — DB-referenced-missing'i
+    blocker sayan bölüm. ✓
+  - Her iki dosya yolu da mevcut ve yazım doğru. ✓
+- **Deploy sonucu açık:** "DB↔R2 temporal skew varsa deploy GO verilmez." ✓
+
+Ek değerlendirme: kuşatma kuralı, azami kayma süresi belirtilmese de kendi
+tespit mekanizmasını sağlıyor — `R2-before ≠ R2-after` ise sonuç zaten
+moving-target olur ve deploy GO verilmez. Dump, kuşatma tanımı gereği pencere
+içinde kalır. Bu nedenle ek bir süre sınırı şartı gerekmiyor.
+
+### Low-01 — KAPANDI
+
+§14.9 seçenek 1 artık privilege gerçeğini açıkça yazıyor: "buna karşılık
+`pg_dump` geniş okuma yetkisi gerektirdiğinden tek seferlik, operatör
+kontrollü ve kayıtlı bir production backup işlemi olarak ele alınmalıdır."
+Önerilen üç unsurun tamamı mevcut — geniş okuma yetkisi (daha düşük privilege
+değil), tek seferlik, operatör kontrollü ve kayıtlı. ✓
+
+### Low-02 — KAPANDI
+
+§14.9 seçenek 2 artık design-review fazının **birincil çıktısı** olarak kesin
+kod çelişkisini adlandırıyor. İfade `scripts/a14b/postgres-adapter.mjs`
+kaynağına karşı bağımsız olarak doğrulandı:
+
+- Dosyanın forbidden-function yorumu gerçekten bu listenin role-level
+  zero-EXECUTE şartı **olmadığını** belirtiyor ve `PUBLIC` revoke'un geniş bir
+  production mutasyonu olacağını söylüyor. ✓
+- `validatePrivileges(...)` gerçekten `functionRows.length !== 0` koşuluyla
+  fiilen sıfır non-system function execute şartı uyguluyor. ✓
+- İlgili statement-allowlist sorgusu yalnız `pg_%` ve `information_schema`
+  şemalarını dışlıyor, dolayısıyla `public` şemasını **kapsıyor**; pgvector
+  fonksiyonları `public` içinde yaşadığı ve PostgreSQL bunlara varsayılan
+  olarak `PUBLIC` EXECUTE verdiği için bu kontrol, `PUBLIC` EXECUTE revoke
+  edilmedikçe sağlanamaz. ✓
+
+§14.9'un "pgvector fonksiyonları bu kontrolü düşürür" tespiti teknik olarak
+doğrudur ve 2026-08-16 denemesinin NO-GO kök nedenini birebir açıklar.
+
+### Kapsam ve hijyen doğrulaması
+
+- **Docs-only:** `git status --short` yalnız dört dokümantasyon dosyasını
+  gösterdi (`.ai/current-focus.md`, `.ai/session-summary.md`,
+  `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`,
+  `codex-claude-ortak-rapor.md`). Docs dışında sıfır değişiklik. ✓
+- **Kod/script/migration/config değişmedi:** `git status --porcelain` ile
+  `scripts/`, `packages/`, `apps/`, `docker-compose.yml`, `.env.example`
+  kontrol edildi — hepsi boş. Ayrıca `git diff --stat HEAD -- scripts/a14b/postgres-adapter.mjs`
+  boş; adapter yalnız okundu, değiştirilmedi. ✓
+- **Append-only:** ortak rapor tek hunk (`@@ -7527,3 +7527,240 @@`), HEAD'in
+  `7529` satırlık sonundan sonra. Bölüm sıralaması kronolojik: Claude
+  doğrulaması `7562`, Codex kapanışı `7736` — kapanış doğrulamadan sonra.
+  Önceki turlarda görülen ters-sıra sapması tekrarlanmadı. ✓
+- **Secret sızıntısı yok:** tam diff `postgres://`, `redis://`, `AKIA`,
+  `PRIVATE KEY`, gerçek değerli `PASSWORD`/`password=`, IP, `sslmode=`,
+  `:5432` kalıpları için tarandı. Yalnız iki eşleşme çıktı ve her ikisi de bir
+  önceki Claude bölümünün *tarama desenlerini tarif eden* metnidir, gerçek
+  değer değildir. ✓
+- **Canlı işlem kanıtı yok:** `find ... -mmin -60` yalnız dört dokümantasyon
+  dosyasını ve önceden zaten kayıtlı iki git-bundle restore-point'ini
+  gösterdi. Yeni dump, backup, credential dosyası veya production artefaktı
+  yok. ✓
+- **`git diff --check`:** temiz, exit 0. ✓
+- **NO-GO kapıları korunuyor:** §14.9 kapanışı, `current-focus.md`,
+  `session-summary.md` ve ortak rapor eki tutarlı biçimde B1 live
+  observation'ın GO olmadığını ve production deploy'un `deploy et` olmadan
+  NO-GO kaldığını tekrarlıyor. ✓
+
+### Genel değerlendirme
+
+Üç bulgunun tamamı, önerilen düzeltmelerle birebir örtüşecek biçimde
+kapatılmıştır. Medium-01'in çapraz referans hedefleri (backup gate §4,
+preflight §5 ve §7) dosya ve bölüm başlığı düzeyinde bağımsız olarak
+doğrulanmış ve doğru bulunmuştur; Low-02'nin kod çelişkisi tanımı
+`postgres-adapter.mjs` kaynağına karşı satır düzeyinde doğrulanmış ve teknik
+olarak eksiksiz bulunmuştur. Bu turda yeni bulgu yoktur ve kalan açık bulgu
+bulunmamaktadır. Değişiklik seti docs-only'dir ve tek bir `docs(release):`
+commit'i için uygundur.
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret/parola/connection string
+okunmadı, yazılmadı veya ekrana basılmadı. Rol oluşturulmadı/değiştirilmedi/
+silinmedi. Backup execution, B1 live observation, migration, seed,
+queue/object/Redis/DB mutation, push, tag-push veya deploy yapılmadı.
+**Hiçbir kod geliştirilmedi, hiçbir üretim/script/migration/config dosyası
+değiştirilmedi, hiçbir commit oluşturulmadı.** Bu bölüm dışında hiçbir dosya
+değişmemiştir. Commit onayı kullanıcıdan ayrıca beklenmelidir.
+
+B1 live observation, credential provisioning, runtime-topology/SSH/Coolify ve
+production deploy hâlâ ayrı açık kullanıcı onayı gerektiren **NO-GO**
+kapılardır.

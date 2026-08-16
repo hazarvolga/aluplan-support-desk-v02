@@ -591,3 +591,63 @@ Sıradaki güvenli karar, PostgreSQL credential stratejisinin bu `PUBLIC`/pgvect
 privilege gerçekliği altında nasıl değişeceğini tasarlamaktır. Production-wide
 `PUBLIC` privilege revocation gibi geniş etkili değişiklikler bu denemenin ve
 bu belgenin mevcut onay kapsamı dışındadır.
+
+### 14.9 PostgreSQL strateji kararı: ikinci canlı rol denemesi yapılmayacak
+
+2026-08-16 gerçek denemesi, rol oluşturma şablonunun syntactic olarak
+çalıştığını fakat production PostgreSQL'in mevcut effective privilege
+gerçekliğiyle A.1.4-B0 PostgreSQL adapter sözleşmesini geçemediğini gösterdi.
+NO-GO'nun ana nedeni role-specific grant fazlası değil, PostgreSQL'in
+`PUBLIC`/database default privilege yüzeyi ve pgvector/public function execute
+gerçeğidir.
+
+Bu nedenle sıradaki güvenli varsayılan karar:
+
+- Aynı şablonla ikinci bir production PostgreSQL rol denemesi yapılmayacak.
+- Production-wide `PUBLIC` privilege revoke, database-wide `TEMPORARY`/`CONNECT`
+  revoke veya extension/function execute revocation denenmeyecek.
+- Bu tip revocation değişiklikleri ancak ayrı bir DBA değişiklik planı, staging
+  restore provası, uygulama bağlantı etkisi analizi ve rollback planı ile
+  değerlendirilebilir; mevcut B1 credential provisioning kapsamı değildir.
+
+Güvenli seçenekler:
+
+1. **Önerilen varsayılan yol — PostgreSQL kanıtını restore/clone üzerinden almak.**
+   Deploy öncesi backup/restore gate kapsamında production PostgreSQL'den
+   custom dump alınır, SHA-256 ve catalog check yapılır, izole disposable PG17
+   restore üzerinde migration ledger ve DB object-reference kanıtı üretilir.
+   Bu yol canlı PostgreSQL'e uzun ömürlü observation credential gerektirmez ve
+   canlı `PUBLIC` privilege yüzeyini değiştirmez; buna karşılık `pg_dump`
+   geniş okuma yetkisi gerektirdiğinden tek seferlik, operatör kontrollü ve
+   kayıtlı bir production backup işlemi olarak ele alınmalıdır.
+   Dump zaman damgası ve R2 manifest penceresi ayrı ayrı kayda geçirilmelidir:
+   R2 listelemesi dump'ı kuşatacak biçimde öncesi ve sonrası alınmalı veya
+   aradaki fark açıkça `moving-target` olarak sınıflandırılmalıdır. Bu şart,
+   `.ai/issues/2026-08-16-a14b-b1-predeploy-backup-restore-gate.md` §4 ve
+   `.ai/issues/2026-08-12-a14b-b1-live-observation-preflight.md` §5/§7 ile
+   birlikte uygulanır; DB↔R2 temporal skew varsa deploy GO verilmez.
+
+2. **Alternatif — PostgreSQL adapter sözleşmesini public-default gerçekliğine
+   göre yeniden tasarlamak.** Bu seçenek kod/test değişikliği gerektirir:
+   exact SQL invocation allowlist ana kontrol olarak korunur, role-specific
+   table/column/schema grants yine fail-closed kalır, fakat PostgreSQL'in
+   kaçınılmaz `PUBLIC` built-in/extension execute ve database default privilege
+   yüzeyi açıkça sınıflandırılır. Bu design-review fazının birincil çıktısı,
+   `scripts/a14b/postgres-adapter.mjs` içindeki iki gerçekliği uzlaştırmak
+   olmalıdır: dosyanın forbidden-function yorumu bu listenin role-level
+   zero-EXECUTE şartı olmadığını belirtirken, `validatePrivileges(...)`
+   içindeki `functionRows.length !== 0` kontrolü fiilen sıfır non-system
+   function execute şartı uygular; ilgili allowlist sorgusu `public` şemasını
+   kapsadığı için pgvector fonksiyonları bu kontrolü düşürür. Bu yol ancak ayrı
+   design review, TDD, security review ve disposable PG17 kabul testiyle
+   açılabilir.
+
+3. **Reddedilen yol — canlı production privilege'larını sessizce daraltmak.**
+   `PUBLIC` revoke veya function execute revoke canlı uygulama bağlantılarını,
+   extension davranışını veya bakım araçlarını etkileyebilir. Bu yüzden hızlı
+   release hazırlığı içinde kullanılmayacak.
+
+Bu karar B1 live observation'ı GO yapmaz. B1 live observation hâlâ ayrı açık
+onay, geçerli R2/Redis credential scope kanıtı, backup/restore gate kanıtı ve
+stabil observation window gerektirir. Production deploy hâlâ ayrı açık `deploy
+et` onayı gelmeden **NO-GO** kalır.
