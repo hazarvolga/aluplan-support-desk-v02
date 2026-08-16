@@ -6355,3 +6355,184 @@ Critical **0** / High **0** / Medium **0** / Low **0**. **Yeni bulgu yok.** Dör
 - Hiçbir credential, token, secret veya connection string okunmadı, yazılmadı ya da ekrana basılmadı.
 - Migration, seed, deploy, push, tag-push, queue/Redis/object/DB mutation veya object body upload/download/delete yapılmadı.
 - **Hiçbir kod geliştirilmedi, hiçbir dosya değiştirilmedi, hiçbir commit oluşturulmadı.** Bu bölüm dışında hiçbir dosya değişmemiştir; `git status --short` incelemeden önceki dört dosyayı (Codex'e ait, önceden var olan) aynen gösteriyor.
+
+## 2026-08-16 — CODEX — B1 credential provisioning planı
+
+Kullanıcının "önerine göre ilerleyelim" onayı üzerine canlıya dokunmadan B1
+credential provisioning yöntemini tanımlayan docs-only plan oluşturuldu.
+
+Yeni belge:
+
+- `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`
+
+Planın temel kararları:
+
+- Credential provisioning, B1 concrete transports, live observation,
+  runtime-topology/SSH/Coolify erişimi ve production deploy ayrı onay
+  kapılarıdır.
+- PostgreSQL, R2 ve Redis için tek ortak credential kullanılmayacak; her sistem
+  ayrı ve kısa ömürlü least-privilege credential gerektirir.
+- PostgreSQL için hedef model kısa ömürlü `LOGIN`, `NOINHERIT`,
+  `default_transaction_read_only=on`, hedef DB dışında bağlantısız ve yalnız
+  gereken tablolarda `SELECT` yetkili roldür.
+- R2 için hedef yalnız `ListObjectsV2` + `HeadObject` metadata kapsamıdır.
+  `GetObject` credential seviyesinde dışlanamıyorsa compensating-control audit
+  kanıtı ve ayrı kullanıcı onayı gerekir.
+- Redis için hedef yalnız dokuz kanonik BullMQ queue için exact-known-key
+  read-only erişimdir; `SCAN`, `KEYS`, Lua ve write komutları default B1
+  kapsamı dışındadır.
+- SSH/Coolify runtime-topology varsayılan credential provisioning kapsamı
+  dışındadır; gerekiyorsa ayrıca açık onay ve önceden listelenmiş komut seti
+  gerekir.
+- Secret/token/parola/connection string değerleri Codex'e yazılmayacak, Git'e
+  eklenmeyecek ve rapora/terminal çıktısına basılmayacaktır.
+- Her credential için revoke/drop/disable cleanup planı olmadan deploy kapısı
+  açılmaz.
+
+Karar:
+
+- Credential provisioning: **NO-GO**.
+- B1 concrete transports: **NO-GO**.
+- B1 live observation: **NO-GO**.
+- Runtime-topology/SSH/Coolify erişimi: **NO-GO**.
+- Production deploy: **NO-GO**.
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret okunmadı veya yazılmadı.
+Object body upload/download/delete, migration, seed, queue/Redis/DB mutation,
+push, tag-push veya deploy yapılmadı. Commit atılmadı; bağımsız doğrulama ve
+commit onayı ayrıca beklenmelidir.
+
+## 2026-08-16 — CLAUDE — B1 credential provisioning planı bağımsız doğrulaması
+
+Kapsam: Codex'in docs-only hazırladığı
+`.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` belgesinin,
+önceki B1 preflight (`.ai/issues/2026-08-12-a14b-b1-live-observation-preflight.md`)
+ve gece gözlem/deploy kapıları (`.ai/issues/2026-08-12-a14b-b1-night-observation-and-deploy-gates.md`)
+belgeleriyle çelişip çelişmediğinin, canlıya dokunmadığının ve hiçbir
+credential üretmediğinin bağımsız doğrulanması. Bu doğrulama yalnız
+dokümantasyon içindir; canlı erişim veya deploy yetkisi vermez.
+
+### Sonuç: **GO** (plan yalnız docs-only kapanış için; tüm canlı kapılar NO-GO kalır)
+
+Critical **0** / High **0** / Medium **0** / Low **1**.
+
+### Doğrulanan maddeler
+
+1. **Yetki kapsamı** — Belge tek başına credential oluşturma, production
+   erişimi, B1 live observation, SSH/Coolify erişimi veya deploy yetkisi
+   vermiyor. Belge §1, §2 ve §12 bunu açıkça yazıyor; "Bu belge credential
+   oluşturma, canlı observation, SSH/Coolify erişimi veya deploy yetkisi
+   vermez." Doğrulandı.
+
+2. **Bağımsız GO/NO-GO kapıları** — Credential provisioning, B1 concrete
+   transports, B1 live observation, runtime-topology/SSH/Coolify ve production
+   deploy §2 ve §12'de ayrı ayrı ve tutarlı biçimde **NO-GO** olarak
+   listeleniyor. Doğrulandı.
+
+3. **PostgreSQL planı ↔ preflight paritesi** — Belge §4, preflight §4.1 ile
+   madde madde eşleşiyor: kısa ömürlü read-only rol, `LOGIN`/`NOINHERIT`,
+   `default_transaction_read_only = on`, hedef DB dışı bağlantı yok, yalnız
+   gerekli tablolarda `SELECT`, `CREATE`/`TEMP`/DML/DDL/riskli fonksiyon yok,
+   exact SQL allowlist, `REPEATABLE READ READ ONLY`, her durumda `ROLLBACK`,
+   failed/contradictory/unknown migration ledger → NO-GO. Role
+   create/alter/drop işleminin production write olduğu ve bu belgeyle
+   yetkilendirilmediği açıkça yazılmış: "Role create/alter/drop production DB
+   üzerinde write kabul edilir; bu belge o işlemi yetkilendirmez." Doğrulandı.
+
+4. **R2 planı ↔ preflight D-03/B1-2 paritesi** — Hedef bucket adı doğru:
+   `aluplan-support-desk`. Parent secret collector'a verilmiyor. Hedef yalnız
+   `ListObjectsV2` + `HeadObject`. `GetObject` credential seviyesinde
+   dışlanamıyorsa bucket-scoped read-only token'ın tek başına GO kanıtı
+   sayılmadığı ve audit-log compensating-control + ayrı kullanıcı onayı
+   şartının korunduğu §5'te birebir yazılı. Object body read/upload/delete/
+   overwrite yok; ham object key kalıcı evidence'a yazılmıyor
+   (HMAC/fingerprint). Doğrulandı.
+
+5. **Redis/BullMQ planı** — Dokuz kanonik queue ile sınırlı; `SCAN`, `KEYS`,
+   Lua, write komutları yasak; fallback `SCAN` gerekirse default B1 NO-GO;
+   existing broad Redis credential ile B1 Redis GO verilmiyor;
+   `StalledJobRecoveryService` runtime gözlemde ayrı sınıflandırılıyor. §6
+   önceki preflight §4.3 ile birebir tutarlı. Doğrulandı.
+
+6. **Runtime-topology / SSH / Coolify** — §7: varsayılan B1 credential
+   provisioning kapsamı SSH/Coolify/runtime-topology içermiyor; gerekiyorsa
+   ayrı açık onay ve önceden listelenmiş komut seti şartı var; salt-okunur
+   gözlem dışında restart/redeploy/env edit/volume edit/container mutation
+   yasaklanmış. Doğrulandı.
+
+7. **Secret handling** — §3 ve §8: secret/token/parola/connection string/reset
+   URL Git'e, dokümana, terminal çıktısına veya ortak rapora yazılmıyor;
+   credential değerleri Codex tarafından okunmuyor/saklanmıyor/tekrar
+   edilmiyor; varsa Git dışı private alan + dosya `0600` + dizin `0700`;
+   ortak rapora yalnız redacted presence/scope kararı/revoke planı yazılıyor.
+   Doğrulandı.
+
+8. **Revocation/cleanup planı** — §9: PostgreSQL rolü, R2 token ve Redis ACL
+   user/token için ayrı revoke/drop/disable/expire planı var; "Cleanup
+   yapılmadan deploy kapısı açılmaz" açıkça yazılı. Doğrulandı.
+
+9. **Onay cümleleri** — §11'deki altı cümle ("B1 credential provisioning
+   yöntemini onaylıyorum", "B1 PostgreSQL/R2/Redis credential provisioning
+   başlat", "B1 canlı salt-okunur gözleme başla", "deploy et") istenen dar
+   kapsamla birebir eşleşiyor; hiçbiri kendiliğinden geniş yetki
+   vermiyor. Doğrulandı.
+
+10. **Kod/script/migration/config değişikliği** — `git status --short`
+    yalnız `.ai/current-focus.md`, `.ai/session-summary.md`,
+    `codex-claude-ortak-rapor.md` (M) ve
+    `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` (??)
+    gösteriyor; `git diff --name-status` aynı üç dosyayı listeliyor.
+    `apps/`, `packages/`, script veya config dizinlerinde değişiklik yok.
+    `git diff --check` temiz (çıktı yok, exit 0). Doğrulandı.
+
+11. **Canlı bağlantı/credential kanıtı** — Bağımsız dosya sistemi taraması
+    (`find ... -mmin -180`) yalnız beklenen dört dosyayı gösterdi;
+    `.private-data/` altında bu doğrulama öncesine göre daha yeni dosya
+    bulunmadı. Belgelerin kendi beyanlarıyla ve gözlemlenebilir dosya
+    sistemi kanıtıyla production PostgreSQL/Redis/R2/SSH/Coolify/SharePoint
+    bağlantısı veya credential okuma/yazma bulunmadı. Doğrulandı.
+
+12. **Secret/credential/endpoint sızıntı taraması** — Yeni belge ve ortak
+    rapor ekinde `postgres://`, `redis://`, `AKIA`, `PRIVATE KEY`,
+    `password=`, `secret=`, `token=` kalıpları için hedefli grep yapıldı;
+    eşleşen tüm satırlar dosyanın önceden var olan tarihsel bölümlerinde
+    (ör. satır 122, 908, 1925, 1937, 4930, 5064, 5500) ve zaten yasaklayıcı
+    açıklama/örnek/redakte edilmiş bağlamda; yeni eklenen bölümde veya yeni
+    issue dosyasında hiçbir eşleşme yok. Doğrulandı — sızıntı yok.
+
+### Bulgu
+
+- **Low-01 — Ortak rapor append-only kuralı satır 5888 civarında teknik
+  olarak ihlal edildi.** `git diff -U3 codex-claude-ortak-rapor.md` çıktısının
+  ilk hunk'ı, dosyanın en altına değil, önceden var olan
+  "## 2026-08-12 — CODEX — A.1.4-B1 preflight bağımsız doğrulama bulguları
+  kapanışı" bölümünün hemen üstüne (satır ~5891) tek bir boş satır ekliyor.
+  İçerik/metin/iddia değişmiyor, secret sızmıyor, yalnız biçimlendirme amaçlı
+  bir satır sonu eklenmiş. Buna rağmen `FIRST-READ.md` §"Claude son doğrulama
+  kapanış talimatı" madde 8 ve bölüm 7 açıkça "ortak raporun tarihsel üst
+  bölümlerini değiştirme; yalnız en alta append et" diyor; bu hunk katı
+  anlamda en alttan append değildir. Önerilen düzeltme: bir sonraki
+  Codex/Claude eklemesinde bu tür ara-satır düzenlemelerinden kaçınılmalı;
+  mevcut durumda içerik zararsız olduğu için geri alma gerektirmiyor, yalnız
+  ileriye dönük disiplin notu olarak kaydediliyor.
+
+### Genel değerlendirme
+
+A.1.4-B1 credential provisioning planı, önceki preflight ve gece
+gözlem/deploy kapıları belgeleriyle PostgreSQL/R2/Redis/SSH-Coolify/secret-
+handling/revocation/onay-cümlesi düzeyinde tam tutarlıdır. Belge tek başına
+hiçbir canlı yetki vermez; tüm kapılar (credential provisioning, B1 concrete
+transports, B1 live observation, runtime-topology/SSH/Coolify, production
+deploy) ayrı ayrı **NO-GO** kalmaya devam eder. Kod, script, migration veya
+config değişmemiştir; yalnız dört dokümantasyon dosyası etkilenmiştir. Tek
+bulgu (Low-01) içerik-nötr bir append-only biçim sapmasıdır ve engelleyici
+değildir.
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret okunmadı, yazılmadı veya
+ekrana basılmadı. Migration, seed, deploy, push, tag-push, queue/Redis/
+object/DB mutation veya object body upload/download/delete yapılmadı.
+**Hiçbir kod geliştirilmedi, hiçbir üretim/script/migration/config dosyası
+değiştirilmedi, hiçbir commit oluşturulmadı.** Bu bölüm dışında hiçbir dosya
+değişmemiştir. Commit onayı kullanıcıdan ayrıca beklenmelidir.

@@ -577,3 +577,10 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Restore evidence: annotated tag `restore/post-release-a14b-b1-night-gates-20260812-869e1f38`, tag object `04fb516cb097889c4c5ea41d9845c996d9ab03a5`, peeled commit `869e1f38a37033eb9b64f8c12b09b94f14880012`.
 - Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-night-gates-20260812-869e1f38.bundle`, mode `0600`, SHA-256 `3bc8da35eab7792349b813ddcf11eaa7d374bc1965ab896b31fdaf6a2587495f`; `git bundle verify` geçti.
 - Credential provisioning, B1 concrete transports, B1 live observation, runtime-topology/SSH/Coolify erişimi ve production deploy hâlâ ayrı açık kullanıcı onayı gerektiren **NO-GO** kapılardır.
+
+## Active Focus - 2026-08-16 B1 Credential Provisioning Plan
+
+- Sıradaki güvenli kapı docs-only olarak başlatıldı: `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`.
+- Plan, PostgreSQL/R2/Redis için ayrı ve kısa ömürlü credential modelini, secret-handling sınırlarını, R2 `GetObject` compensating-control şartını, Redis exact-known-key gerekliliğini ve revocation/cleanup beklentisini tanımlar.
+- Bu belge credential oluşturma, canlı observation, SSH/Coolify erişimi veya deploy yetkisi vermez. Tüm canlı kapılar hâlâ **NO-GO**.
+- Production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya SharePoint'e bağlanılmadı; credential/token/secret okunmadı veya yazılmadı.

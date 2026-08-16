@@ -4226,3 +4226,10 @@ Maintenance rule:
 - Recovery evidence: annotated tag `restore/post-release-a14b-b1-night-gates-20260812-869e1f38`, tag object `04fb516cb097889c4c5ea41d9845c996d9ab03a5`, peeled commit `869e1f38a37033eb9b64f8c12b09b94f14880012`.
 - Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-night-gates-20260812-869e1f38.bundle`, mode `0600`, SHA-256 `3bc8da35eab7792349b813ddcf11eaa7d374bc1965ab896b31fdaf6a2587495f`.
 - B1 concrete transports, credential provisioning, live observation, runtime-topology/SSH/Coolify and production deploy remain **NO-GO** pending separate explicit approval.
+
+## 2026-08-16 - B1 credential provisioning plan
+
+- Added docs-only credential plan: `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`.
+- The plan separates PostgreSQL, R2 and Redis credentials, requires short-lived least-privilege scope, keeps SSH/Coolify outside default scope, and requires revocation/cleanup before any deploy gate can open.
+- It explicitly preserves the R2 `GetObject` compensating-control caveat and Redis exact-known-key/no-SCAN boundary.
+- No production connection, credential read/write, mutation, push, tag-push or deploy occurred.
