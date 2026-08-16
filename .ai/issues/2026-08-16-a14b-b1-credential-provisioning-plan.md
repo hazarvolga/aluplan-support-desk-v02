@@ -1,7 +1,7 @@
 # A.1.4-B1 Credential Provisioning Plan
 
 Tarih: 2026-08-16
-Durum: **PLAN ONLY / CREDENTIAL PROVISIONING NO-GO / LIVE OBSERVATION NO-GO / DEPLOY NO-GO**
+Durum: **METHOD APPROVED / CREDENTIAL PROVISIONING NO-GO / LIVE OBSERVATION NO-GO / DEPLOY NO-GO**
 
 Bu belge B1 canlı salt-okunur gözleme geçmeden önce credential üretim yöntemini
 kilitlemek için hazırlanmıştır. Bu belge tek başına credential oluşturma,
@@ -209,6 +209,7 @@ Bu belge tamamlandıktan sonra bile hiçbir canlı işlem başlamaz.
 Bir sonraki konuşma için anlamları dar onay cümleleri:
 
 - `B1 credential provisioning yöntemini onaylıyorum`
+  - Kullanıcı tarafından 2026-08-16 tarihinde verildi.
   - Yalnız yöntemin onayıdır; credential oluşturma veya canlı gözlem değildir.
 - `B1 PostgreSQL credential provisioning başlat`
   - Yalnız PostgreSQL credential üretim rehberliğini başlatır.
@@ -223,11 +224,98 @@ Bir sonraki konuşma için anlamları dar onay cümleleri:
   - Yalnız tüm observation, backup/restore/rollback ve final deploy kapıları GO
     ise deployment için ayrı açık onaydır.
 
-## 12. Bu belgenin sonucu
+## 12. Onaylanan yöntem sonrası secret'sız operatör checklist'i
 
-Bu belge credential provisioning yöntemini planlar; credential oluşturmaz.
+Bu bölüm, kullanıcı tarafından verilen `B1 credential provisioning yöntemini
+onaylıyorum` cümlesi sonrasında hazırlanmıştır. Bu onay yalnız yöntemi
+onaylar; aşağıdaki alt credential üretim adımlarını başlatmaz.
 
-- Credential provisioning: **NO-GO**
+### 12.1 Ortak hazırlık
+
+- Her credential ayrı üretilir; PostgreSQL/R2/Redis tek secret altında
+  birleştirilmez.
+- Credential değerleri Codex'e yazılmaz ve ortak rapora eklenmez.
+- Operatör her credential için şu bilgileri secret'sız kayda hazırlar:
+  - sistem adı,
+  - kapsam özeti,
+  - üretim zamanı,
+  - planlanan bitiş/expire zamanı,
+  - revoke/drop/disable yöntemi,
+  - scope kanıtı var/yok.
+- Geniş/admin credential kullanılırsa B1 provisioning GO sayılmaz.
+- Credential scope kanıtları tamamlanmadan `B1 canlı salt-okunur gözleme
+  başla` onayı istenmez.
+
+### 12.2 PostgreSQL operatör checklist'i
+
+Bu adım yalnız kullanıcı ayrıca `B1 PostgreSQL credential provisioning başlat`
+derse ilerleyebilir.
+
+- Kısa ömürlü read-only rol hazırlanır.
+- Rol `LOGIN`, `NOINHERIT` ve `default_transaction_read_only = on` şartlarını
+  taşır.
+- Hedef production database dışında bağlantı yetkisi olmamalıdır.
+- Gereken tablolar dışında `SELECT` yetkisi verilmez.
+- `CREATE`, `TEMP`, DML, DDL ve riskli fonksiyon kullanımı effective-scope
+  probe ile fail-closed doğrulanmalıdır.
+- `statement_timeout`, `lock_timeout` ve
+  `idle_in_transaction_session_timeout` bounded olmalıdır.
+- Parola/connection string Codex'e yazılmaz.
+- Observation bittikten sonra rol revoke/drop/disable edilir veya expire
+  edildiği kanıtlanır.
+
+### 12.3 Cloudflare R2 operatör checklist'i
+
+Bu adım yalnız kullanıcı ayrıca `B1 R2 credential provisioning başlat` derse
+ilerleyebilir.
+
+- Hedef bucket: `aluplan-support-desk`.
+- Parent token/secret collector'a verilmez.
+- Tercih edilen kapsam yalnız `ListObjectsV2` ve `HeadObject`.
+- Upload/delete/overwrite/lifecycle/object body read yoktur.
+- Cloudflare token modeli `GetObject`'i credential seviyesinde kesin
+  dışlayamıyorsa:
+  - bucket-scoped read-only token tek başına GO kanıtı sayılmaz,
+  - collector'ın yalnız allowlist çağrıları yaptığını gösteren invocation/audit
+    kanıtı gerekir,
+  - ayrıca kullanıcıdan compensating-control onayı gerekir.
+- Token değeri Codex'e yazılmaz.
+- Observation bittikten sonra token revoke/expire edilir.
+
+### 12.4 Redis/BullMQ operatör checklist'i
+
+Bu adım yalnız kullanıcı ayrıca `B1 Redis credential provisioning başlat` derse
+ilerleyebilir.
+
+- Credential yalnız dokuz kanonik BullMQ queue'nun exact-known-key okumasına
+  izin vermelidir.
+- `SCAN`, `KEYS`, Lua, write komutları ve BullMQ mutating helper'ları yasaktır.
+- Queue depth, active/delayed/failed/repeatable state bounded okunmalıdır.
+- Fallback `SCAN` gerekirse default B1 scope NO-GO olur ve ayrı privacy/scope
+  onayı gerekir.
+- Existing broad Redis credential B1 Redis GO kanıtı sayılmaz.
+- Observation bittikten sonra ACL user/token revoke/disable edilir.
+
+### 12.5 Bu yöntem onayından sonra hâlâ kapalı olan işler
+
+- PostgreSQL credential üretimi: **NO-GO** until
+  `B1 PostgreSQL credential provisioning başlat`
+- R2 credential üretimi: **NO-GO** until
+  `B1 R2 credential provisioning başlat`
+- Redis credential üretimi: **NO-GO** until
+  `B1 Redis credential provisioning başlat`
+- B1 concrete transports: **NO-GO**
+- B1 live observation: **NO-GO**
+- Runtime-topology/SSH/Coolify: **NO-GO**
+- Production deploy: **NO-GO**
+
+## 13. Bu belgenin sonucu
+
+Bu belge credential provisioning yöntemini planlar ve kullanıcı tarafından
+yöntem düzeyinde onaylanmıştır; credential oluşturmaz.
+
+- Credential provisioning yöntemi: **APPROVED**
+- PostgreSQL/R2/Redis credential provisioning alt adımları: **NO-GO**
 - B1 concrete transports: **NO-GO**
 - B1 live observation: **NO-GO**
 - Runtime-topology/SSH/Coolify: **NO-GO**

@@ -6574,3 +6574,203 @@ seed, queue/Redis/object/DB mutation, push, tag-push veya deploy yapılmadı.
 Credential provisioning, B1 concrete transports, B1 live observation,
 runtime-topology/SSH/Coolify erişimi ve production deploy hâlâ ayrı açık
 kullanıcı onayı gerektiren **NO-GO** kapılardır.
+
+## 2026-08-16 — CODEX — B1 credential provisioning yöntem onayı ve secret'sız checklist
+
+Kullanıcı `B1 credential provisioning yöntemini onaylıyorum` cümlesini verdi.
+Bu yalnız yöntem onayı olarak işlendi; PostgreSQL/R2/Redis credential üretimi,
+B1 concrete transports, B1 live observation, runtime-topology/SSH/Coolify
+erişimi veya production deploy onayı sayılmadı.
+
+Güncellenen dosyalar:
+
+- `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`
+- `.ai/current-focus.md`
+- `.ai/session-summary.md`
+
+Credential planına secret'sız operatör checklist'i eklendi:
+
+- PostgreSQL için kısa ömürlü read-only rol, `LOGIN`, `NOINHERIT`,
+  `default_transaction_read_only`, bounded timeout ve effective-scope probe
+  şartları.
+- R2 için `aluplan-support-desk` bucket'ında yalnız `ListObjectsV2` ve
+  `HeadObject` hedefi; `GetObject` dışlanamıyorsa compensating-control ve ayrı
+  kullanıcı onayı şartı.
+- Redis/BullMQ için yalnız dokuz kanonik queue exact-known-key okuması; `SCAN`,
+  `KEYS`, Lua ve write komutları yasak.
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret oluşturulmadı, okunmadı,
+yazılmadı veya ekrana basılmadı. Migration, seed, queue/Redis/object/DB
+mutation, push, tag-push veya deploy yapılmadı.
+
+Sıradaki canlıya yaklaşan alt adımlar hâlâ ayrı açık onay ister:
+
+- `B1 PostgreSQL credential provisioning başlat`
+- `B1 R2 credential provisioning başlat`
+- `B1 Redis credential provisioning başlat`
+- `B1 canlı salt-okunur gözleme başla`
+- `deploy et`
+
+## 2026-08-16 — CODEX — B1 pre-deploy backup/restore gate planı
+
+Kullanıcının deploy öncesi canlı durumun backup'ının alınıp alınamayacağı
+sorusu üzerine docs-only backup/restore gate planı eklendi:
+
+- `.ai/issues/2026-08-16-a14b-b1-predeploy-backup-restore-gate.md`
+- `.ai/current-focus.md`
+- `.ai/session-summary.md`
+
+Plan, deploy öncesi yalnız Git restore point'in yeterli olmadığını açıkça
+kaydeder. Canlı ticket, müşteri, attachment, knowledge file, queue ve runtime
+state için ayrı backup/restore kanıtı gerekir.
+
+Kilitlenen kapılar:
+
+- PostgreSQL: custom-format dump, SHA-256, catalog check ve disposable restore
+  drill olmadan deploy GO yok.
+- R2/object storage: `aluplan-support-desk` object manifesti, DB-referenced
+  missing object kontrolü ve backup/copy/versioning stratejisi olmadan deploy
+  GO yok.
+- Redis/BullMQ/runtime: dokuz queue state'i, active/delayed/failed/repeatable
+  durumu, running image/commit ve Coolify rollback hedefi bilinmeden deploy GO
+  yok.
+- Offsite: local-only backup tek başına production GO sayılmaz; R2 backup
+  bucket, provider-side recovery veya client-side encrypted SharePoint/OneDrive
+  copy stratejisi belirlenmelidir.
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret oluşturulmadı, okunmadı,
+yazılmadı veya ekrana basılmadı. Backup execution, migration, seed,
+queue/Redis/object/DB mutation, push, tag-push veya deploy yapılmadı.
+
+Yeni dar onay cümleleri:
+
+- `B1 pre-deploy backup planını onaylıyorum`
+- `Production PostgreSQL backup al`
+- `Production R2 backup manifesti al`
+- `Production R2 backup copy başlat`
+
+Bu cümleler verilmeden backup execution veya canlı storage erişimi başlamaz.
+
+## 2026-08-16 — CLAUDE — B1 pre-deploy backup/restore gate planı bağımsız doğrulaması
+
+Kapsam: Codex'in docs-only hazırladığı
+`.ai/issues/2026-08-16-a14b-b1-predeploy-backup-restore-gate.md` belgesinin,
+credential provisioning planı ve önceki B1 preflight/gece kapı belgeleriyle
+çelişip çelişmediğinin bağımsız doğrulanması. Bu doğrulama yalnız
+dokümantasyon içindir; canlı erişim, credential üretimi, backup alma veya
+deploy yetkisi vermez.
+
+### Sonuç: **GO** (yalnız docs-only plan doğrulaması; tüm canlı kapılar NO-GO kalır)
+
+Critical **0** / High **0** / Medium **0** / Low **0**.
+
+### Doğrulanan maddeler
+
+1. **Dosya kapsamı** — `git status --porcelain` yalnız beklenen beş kaydı
+   gösterdi: yeni `?? .ai/issues/2026-08-16-a14b-b1-predeploy-backup-restore-gate.md`
+   ve `M` durumunda `.ai/current-focus.md`, `.ai/session-summary.md`,
+   `codex-claude-ortak-rapor.md`, `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`.
+   `.ai/` ve `codex-claude-ortak-rapor.md` dışında hiçbir yol değişmedi
+   (filtrelenmiş `git status --porcelain` boş döndü). Kod, script, migration,
+   Prisma schema, Docker/Coolify config veya env dosyası değişmedi.
+   Doğrulandı.
+
+2. **Boundary/yetki ayrımı** — Belge §2 ve §10'da Production PostgreSQL
+   backup execution, R2 backup/copy execution, Redis/Coolify/runtime
+   inventory, B1 live observation, runtime-topology/SSH/Coolify ve production
+   deploy ayrı ayrı **NO-GO** olarak listeleniyor. Doğrulandı.
+
+3. **PostgreSQL backup kapısı** — §3.1: custom-format dump, SHA-256,
+   `pg_restore --list`/eşdeğer catalog check, disposable restore drill,
+   restore sonrası migration ledger + kritik tablo sayımı + schema parity
+   kanıtı, ve backup komutunun secret sızdırmaması NO-GO koşulu olarak
+   birebir yazılı. Doğrulandı.
+
+4. **R2/object storage kapısı** — Hedef bucket adı doğru: `aluplan-support-desk`.
+   §3.2: key fingerprint/size/ETag/last-modified içeren tam manifest,
+   DB-referenced missing object → NO-GO, R2 backup/copy/versioning/immutable
+   recovery stratejisi netleşmeden deploy GO yok, object body read/copy geniş
+   yetki gerekiyorsa ayrı açık onay + compensating control şartı ve ham
+   object key/private URL'nin kalıcı rapora yazılmaması (HMAC/fingerprint)
+   birebir korunuyor. Doğrulandı.
+
+5. **Redis/BullMQ/runtime rollback kapısı** — §3.3: dokuz kanonik queue
+   exact-known-key state snapshot, active/delayed/failed/repeatable/stalled
+   durumu, belirsiz/hareketli queue state → deploy GO yok, running
+   image/commit/env fingerprint ve Coolify rollback hedefi + health gate
+   şartı yazılı. Doğrulandı.
+
+6. **Bakım penceresi/moving-target** — §4: canlı bilet/upload hareketi
+   sürerken DB↔R2 exact parity'nin moving-target olabileceği ve düşük
+   trafik/gece penceresi gerektiği açıkça yazılı; moving-target drift deploy
+   GO sayılmıyor, yalnız diagnostic artifact kalıyor. Doğrulandı.
+
+7. **Offsite/restore drill** — §5: yerel-only backup'ın tek başına production
+   GO için yeterli olmadığı, R2 backup bucket/provider-side recovery veya
+   client-side encrypted SharePoint/OneDrive copy gerektiği yazılı. §6:
+   restore drill başarısız olursa deploy NO-GO ve backup "alındı" sayılsa
+   bile "deploy güvenliği" sayılmadığı açık. Doğrulandı.
+
+8. **Secret handling** — §7: secret/token/parola/connection string/reset
+   URL/object body değeri Git'e, dokümana, terminale veya ortak rapora
+   yazılmıyor; backup dosyaları private alanda `0600`, dizinler `0700`.
+   Doğrulandı.
+
+9. **Onay cümleleri** — §8'deki altı cümle (`B1 pre-deploy backup planını
+   onaylıyorum`, `Production PostgreSQL backup al`, `Production R2 backup
+   manifesti al`, `Production R2 backup copy başlat`, `B1 canlı salt-okunur
+   gözleme başla`, `deploy et`) istenen dar kapsamla birebir eşleşiyor;
+   hiçbiri tek başına deploy yetkisi saymıyor, deploy yalnız `deploy et`
+   cümlesine bağlı. Doğrulandı.
+
+10. **Ortak rapor append-only** — `git diff codex-claude-ortak-rapor.md`
+    tek bir hunk üretti (`@@ -6574,3 +6574,81 @@`); eklenen 81 satır
+    doğrudan dosyanın önceki son satırından (6574) sonra geldi, hiçbir
+    tarihsel bölüm değiştirilmedi veya araya eklenmedi. Bu turda önceki
+    doğrulamada bulunan ara-satır (Low-01) türü sapma tekrarlanmadı.
+    Doğrulandı — tam append-only.
+
+11. **Secret/canlı erişim kanıtı** — `find ... -mmin -180` taraması yalnız
+    beklenen beş dokümantasyon dosyasını ve önceki (bu turdan önceki, zaten
+    kayıtlı) `restore-points/post-release-a14b-b1-credential-plan-20260816-508bb43f.bundle`
+    git-bundle kanıtını gösterdi; bu bundle önceki commit'in Git geçmiş
+    kopyasıdır, canlı production backup artefaktı değildir. `.private-data`
+    altında `current-focus.md`'den daha yeni başka dosya yok. Hedefli secret
+    deseni taraması (`postgres://`, `redis://`, `AKIA`, `PRIVATE KEY`,
+    `password=`, `secret=`, `token=`) hem yeni backup-gate belgesinde hem de
+    credential planındaki değişikliklerde hem de ortak rapor ekinde sıfır
+    eşleşme verdi. `git diff --check` temiz (exit 0). Doğrulandı — canlı
+    bağlantı veya credential okuma/yazma kanıtı yok.
+
+12. **Credential planı ile tutarlılık** — `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`
+    dosyasındaki değişiklik yalnız kullanıcının verdiği `B1 credential
+    provisioning yöntemini onaylıyorum` cümlesini işliyor (durum başlığı
+    "METHOD APPROVED", yeni §12 secret'sız operatör checklist'i). Bu belge
+    ortak rapor değildir, append-only kuralı ona uygulanmaz; ancak içerik
+    yine de PostgreSQL/R2/Redis alt adımlarını, B1 concrete transports, live
+    observation, runtime-topology/SSH/Coolify ve production deploy'u §12.5 ve
+    §13'te ayrı ayrı **NO-GO** tutmaya devam ediyor — backup/restore gate
+    planıyla çelişki yok. Doğrulandı.
+
+### Genel değerlendirme
+
+B1 pre-deploy backup/restore gate planı, credential provisioning planı ve
+önceki B1 preflight/gece gözlem-deploy kapıları belgeleriyle PostgreSQL
+custom-dump+restore-drill, R2 manifest+missing-object+offsite-strateji,
+Redis/BullMQ exact-known-key+rollback-hedefi, moving-target/bakım penceresi,
+secret-handling ve onay-cümlesi düzeyinde tam tutarlıdır. Belge tek başına
+hiçbir canlı yetki vermez; backup execution, B1 live observation,
+runtime-topology/SSH/Coolify ve production deploy ayrı ayrı **NO-GO** kalmaya
+devam eder. Kod, script, migration, Prisma schema, Docker/Coolify config veya
+env dosyası değişmemiştir; yalnız beş dokümantasyon dosyası etkilenmiştir.
+Bu turda bulgu yok.
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret oluşturulmadı, okunmadı,
+yazılmadı veya ekrana basılmadı. Backup execution, migration, seed, deploy,
+push, tag-push, queue/Redis/object/DB mutation yapılmadı. **Hiçbir kod
+geliştirilmedi, hiçbir üretim/script/migration/config dosyası değiştirilmedi,
+hiçbir commit oluşturulmadı.** Bu bölüm dışında hiçbir dosya değişmemiştir.
+Commit onayı kullanıcıdan ayrıca beklenmelidir.

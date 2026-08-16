@@ -587,5 +587,9 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Docs commit'i oluşturuldu: `508bb43f` (`docs(release): close A14B B1 credential provisioning plan`).
 - Restore point annotated tag olarak oluşturuldu: `restore/post-release-a14b-b1-credential-plan-20260816-508bb43f`. Tag object `a5de08ba2165f43f5414b3ba0f082e2cd5e66109`, peeled hedef commit `508bb43f4aee1936322bb474f1a1c69c131ff4ab`.
 - Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-credential-plan-20260816-508bb43f.bundle`, mode `0600`, SHA-256 `1df4de44c9aed670a399e30a6f795549d9617bcdcddc75810240569bac686444`; `git bundle verify` geçti.
+- Kullanıcı `B1 credential provisioning yöntemini onaylıyorum` cümlesini verdi; bu yalnız yöntem onayı olarak işlendi. PostgreSQL/R2/Redis credential üretimi, concrete transports, B1 live observation, SSH/Coolify runtime-topology ve deploy hâlâ ayrı açık onay gerektiren **NO-GO** kapılardır.
+- Secret'sız operatör checklist'i credential planına eklendi; credential değerleri oluşturulmadı, okunmadı veya yazılmadı.
+- Deploy öncesi veri güvenliği için yeni docs-only backup/restore gate planı eklendi: `.ai/issues/2026-08-16-a14b-b1-predeploy-backup-restore-gate.md`.
+- Bu plan PostgreSQL custom dump + SHA + restore drill, R2 manifest/backup stratejisi, Redis/BullMQ runtime snapshot ve Coolify rollback hedefini deploy öncesi GO kapısı olarak tanımlar. Backup execution hâlâ ayrı açık onay gerektiren **NO-GO** kapısıdır.
 - Production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya SharePoint'e bağlanılmadı; credential/token/secret okunmadı veya yazılmadı.
 - Credential provisioning, B1 concrete transports, B1 live observation, runtime-topology/SSH/Coolify erişimi ve production deploy hâlâ ayrı açık kullanıcı onayı gerektiren **NO-GO** kapılardır.

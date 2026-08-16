@@ -4236,4 +4236,7 @@ Maintenance rule:
 - Commit: `508bb43f` — `docs(release): close A14B B1 credential provisioning plan`.
 - Recovery evidence: annotated tag `restore/post-release-a14b-b1-credential-plan-20260816-508bb43f`, tag object `a5de08ba2165f43f5414b3ba0f082e2cd5e66109`, peeled commit `508bb43f4aee1936322bb474f1a1c69c131ff4ab`.
 - Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-credential-plan-20260816-508bb43f.bundle`, mode `0600`, SHA-256 `1df4de44c9aed670a399e30a6f795549d9617bcdcddc75810240569bac686444`.
+- User approved only the credential provisioning method with `B1 credential provisioning yöntemini onaylıyorum`; this does not authorize credential creation, concrete transports, live observation, SSH/Coolify or deploy.
+- Added a secret-free operator checklist for PostgreSQL, R2 and Redis credential preparation. No credential value was created, read, stored or printed.
+- Added docs-only pre-deploy backup/restore gate: `.ai/issues/2026-08-16-a14b-b1-predeploy-backup-restore-gate.md`. It requires PostgreSQL restore evidence, R2/object parity strategy, Redis/BullMQ runtime state and rollback target evidence before deploy can be considered.
 - No production connection, credential read/write, mutation, push, tag-push or deploy occurred. Credential provisioning, B1 concrete transports, B1 live observation, runtime-topology/SSH/Coolify and production deploy remain **NO-GO** pending separate explicit approval.
