@@ -7896,3 +7896,32 @@ değişmemiştir. Commit onayı kullanıcıdan ayrıca beklenmelidir.
 B1 live observation, credential provisioning, runtime-topology/SSH/Coolify ve
 production deploy hâlâ ayrı açık kullanıcı onayı gerektiren **NO-GO**
 kapılardır.
+
+## 2026-08-16 — CODEX — PostgreSQL strateji kapanışı commit ve restore kanıtı
+
+### Sonuç
+
+- Claude'un nihai bağımsız doğrulaması Critical/High/Medium/Low `0/0/0/0`
+  ile **GO** verdi; docs-only strateji kapanışında açık bulgu kalmadı.
+- Docs commit'i oluşturuldu: `9f2b43bb` —
+  `docs(release): close B1 PostgreSQL credential strategy findings`.
+- Restore etiketi annotated olarak oluşturuldu:
+  `restore/post-release-a14b-b1-postgres-strategy-20260816-9f2b43bb`.
+- Tag object: `79465f77e3b0e0a5c6b9a1849ea02f91b8e0e6e9`.
+- Peeled hedef commit: `9f2b43bb4106c1603c6e6a28cfb245594363b890`.
+- Complete-history bundle:
+  `.private-data/restore-points/post-release-a14b-b1-postgres-strategy-20260816-9f2b43bb.bundle`.
+- Bundle izni: `0600`.
+- Bundle SHA-256:
+  `98494cda53c27842e085d121731c82cfabcda8cea039619d50ea573df280a4b8`.
+- `git bundle verify` başarılı; bundle complete history içeriyor ve HEAD/tag
+  hedefi doğrulandı.
+
+### Yetki sınırı
+
+Bu kapanış sırasında production PostgreSQL, Redis, Cloudflare R2, SSH,
+Coolify veya SharePoint'e bağlanılmadı. Credential/token/secret/parola/
+connection string okunmadı veya yazılmadı. Backup execution, B1 live
+observation, migration, seed, queue/object/Redis/DB mutation, push, tag-push
+ve deploy yapılmadı. B1 live observation ve production deploy hâlâ ayrı açık
+kullanıcı onayı gerektiren **NO-GO** kapılarıdır.
