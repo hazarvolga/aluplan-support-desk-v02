@@ -6774,3 +6774,45 @@ push, tag-push, queue/Redis/object/DB mutation yapılmadı. **Hiçbir kod
 geliştirilmedi, hiçbir üretim/script/migration/config dosyası değiştirilmedi,
 hiçbir commit oluşturulmadı.** Bu bölüm dışında hiçbir dosya değişmemiştir.
 Commit onayı kullanıcıdan ayrıca beklenmelidir.
+
+## 2026-08-16 — CODEX — B1 backup/credential planı commit ve restore point kapanışı
+
+Kullanıcı onayıyla B1 credential yöntem onayı, secret'sız operatör checklist'i
+ve pre-deploy backup/restore gate planı yerel commit ve doğrulanmış restore
+point ile kapatıldı.
+
+### Commit
+
+- Commit: `aecbf6c264c58557eed1e8ebd551b03ce95a52ed`
+- Kısa commit: `aecbf6c2`
+- Mesaj: `docs(release): close A14B B1 backup and credential planning`
+- Kapsam: yalnız dokümantasyon
+  - `.ai/current-focus.md`
+  - `.ai/session-summary.md`
+  - `codex-claude-ortak-rapor.md`
+  - `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`
+  - `.ai/issues/2026-08-16-a14b-b1-predeploy-backup-restore-gate.md`
+
+### Restore point
+
+- Tag: `restore/post-release-a14b-b1-backup-gate-20260816-aecbf6c2`
+- Tag türü: annotated (`git cat-file -t` sonucu `tag`)
+- Tag object: `82a66bb6ef33ee4bc9dcc0bb9d65f9b333812b63`
+- Peeled hedef commit: `aecbf6c264c58557eed1e8ebd551b03ce95a52ed`
+- Bundle: `.private-data/restore-points/post-release-a14b-b1-backup-gate-20260816-aecbf6c2.bundle`
+- Bundle mode: `0600`
+- Bundle SHA-256: `be55dd9585f68eed35c230be6367bb550d3e905948d2ac874e9e5bbfa0a58a2f`
+- Doğrulama: `git bundle verify` başarılı; bundle complete history içeriyor.
+
+### Sınırlar
+
+Bu kapanış yalnız yerel dokümantasyon ve recovery kanıtıdır. Production
+PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya SharePoint'e bağlanılmadı;
+credential/token/secret okunmadı, yazılmadı veya ekrana basılmadı. Backup
+execution, migration, seed, queue/Redis/object/DB mutation, push, tag-push veya
+deploy yapılmadı.
+
+Credential provisioning alt adımları, B1 concrete transports, B1 live
+observation, runtime-topology/SSH/Coolify erişimi, production backup execution
+ve production deploy hâlâ ayrı açık kullanıcı onayı gerektiren **NO-GO**
+kapılardır.

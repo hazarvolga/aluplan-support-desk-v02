@@ -4239,4 +4239,8 @@ Maintenance rule:
 - User approved only the credential provisioning method with `B1 credential provisioning yöntemini onaylıyorum`; this does not authorize credential creation, concrete transports, live observation, SSH/Coolify or deploy.
 - Added a secret-free operator checklist for PostgreSQL, R2 and Redis credential preparation. No credential value was created, read, stored or printed.
 - Added docs-only pre-deploy backup/restore gate: `.ai/issues/2026-08-16-a14b-b1-predeploy-backup-restore-gate.md`. It requires PostgreSQL restore evidence, R2/object parity strategy, Redis/BullMQ runtime state and rollback target evidence before deploy can be considered.
-- No production connection, credential read/write, mutation, push, tag-push or deploy occurred. Credential provisioning, B1 concrete transports, B1 live observation, runtime-topology/SSH/Coolify and production deploy remain **NO-GO** pending separate explicit approval.
+- Claude independently verified the backup/restore gate plan as GO with C/H/M/L `0/0/0/0`.
+- Commit: `aecbf6c2` — `docs(release): close A14B B1 backup and credential planning`.
+- Recovery evidence: annotated tag `restore/post-release-a14b-b1-backup-gate-20260816-aecbf6c2`, tag object `82a66bb6ef33ee4bc9dcc0bb9d65f9b333812b63`, peeled commit `aecbf6c264c58557eed1e8ebd551b03ce95a52ed`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-backup-gate-20260816-aecbf6c2.bundle`, mode `0600`, SHA-256 `be55dd9585f68eed35c230be6367bb550d3e905948d2ac874e9e5bbfa0a58a2f`.
+- No production connection, credential read/write, backup execution, mutation, push, tag-push or deploy occurred. Credential provisioning, B1 concrete transports, B1 live observation, runtime-topology/SSH/Coolify, production backup execution and production deploy remain **NO-GO** pending separate explicit approval.
