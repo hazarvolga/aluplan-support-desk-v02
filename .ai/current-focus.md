@@ -583,4 +583,9 @@ Keep Hotinfo and AI-optional ticket creation separate from vendor PDF RAG:
 - Sıradaki güvenli kapı docs-only olarak başlatıldı: `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`.
 - Plan, PostgreSQL/R2/Redis için ayrı ve kısa ömürlü credential modelini, secret-handling sınırlarını, R2 `GetObject` compensating-control şartını, Redis exact-known-key gerekliliğini ve revocation/cleanup beklentisini tanımlar.
 - Bu belge credential oluşturma, canlı observation, SSH/Coolify erişimi veya deploy yetkisi vermez. Tüm canlı kapılar hâlâ **NO-GO**.
+- Claude bağımsız doğrulaması GO verdi; Critical/High/Medium `0/0/0`, yalnız append-only disiplinine dair içerik-nötr bir Low notu vardı ve ileriye dönük kural olarak kaydedildi.
+- Docs commit'i oluşturuldu: `508bb43f` (`docs(release): close A14B B1 credential provisioning plan`).
+- Restore point annotated tag olarak oluşturuldu: `restore/post-release-a14b-b1-credential-plan-20260816-508bb43f`. Tag object `a5de08ba2165f43f5414b3ba0f082e2cd5e66109`, peeled hedef commit `508bb43f4aee1936322bb474f1a1c69c131ff4ab`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-credential-plan-20260816-508bb43f.bundle`, mode `0600`, SHA-256 `1df4de44c9aed670a399e30a6f795549d9617bcdcddc75810240569bac686444`; `git bundle verify` geçti.
 - Production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya SharePoint'e bağlanılmadı; credential/token/secret okunmadı veya yazılmadı.
+- Credential provisioning, B1 concrete transports, B1 live observation, runtime-topology/SSH/Coolify erişimi ve production deploy hâlâ ayrı açık kullanıcı onayı gerektiren **NO-GO** kapılardır.

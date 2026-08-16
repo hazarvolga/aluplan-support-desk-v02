@@ -4232,4 +4232,8 @@ Maintenance rule:
 - Added docs-only credential plan: `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`.
 - The plan separates PostgreSQL, R2 and Redis credentials, requires short-lived least-privilege scope, keeps SSH/Coolify outside default scope, and requires revocation/cleanup before any deploy gate can open.
 - It explicitly preserves the R2 `GetObject` compensating-control caveat and Redis exact-known-key/no-SCAN boundary.
-- No production connection, credential read/write, mutation, push, tag-push or deploy occurred.
+- Claude independently verified the docs-only plan as GO with C/H/M `0/0/0`; the only Low note was an append-only formatting discipline issue, not a content or security finding.
+- Commit: `508bb43f` — `docs(release): close A14B B1 credential provisioning plan`.
+- Recovery evidence: annotated tag `restore/post-release-a14b-b1-credential-plan-20260816-508bb43f`, tag object `a5de08ba2165f43f5414b3ba0f082e2cd5e66109`, peeled commit `508bb43f4aee1936322bb474f1a1c69c131ff4ab`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-credential-plan-20260816-508bb43f.bundle`, mode `0600`, SHA-256 `1df4de44c9aed670a399e30a6f795549d9617bcdcddc75810240569bac686444`.
+- No production connection, credential read/write, mutation, push, tag-push or deploy occurred. Credential provisioning, B1 concrete transports, B1 live observation, runtime-topology/SSH/Coolify and production deploy remain **NO-GO** pending separate explicit approval.

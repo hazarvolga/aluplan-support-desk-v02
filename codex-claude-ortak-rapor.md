@@ -6536,3 +6536,41 @@ object/DB mutation veya object body upload/download/delete yapılmadı.
 **Hiçbir kod geliştirilmedi, hiçbir üretim/script/migration/config dosyası
 değiştirilmedi, hiçbir commit oluşturulmadı.** Bu bölüm dışında hiçbir dosya
 değişmemiştir. Commit onayı kullanıcıdan ayrıca beklenmelidir.
+
+## 2026-08-16 — CODEX — B1 credential provisioning planı commit ve restore point kapanışı
+
+Kullanıcı onayıyla A.1.4-B1 credential provisioning planı dokümantasyon
+çalışması yerel commit ve doğrulanmış restore point ile kapatıldı.
+
+### Commit
+
+- Commit: `508bb43f4aee1936322bb474f1a1c69c131ff4ab`
+- Kısa commit: `508bb43f`
+- Mesaj: `docs(release): close A14B B1 credential provisioning plan`
+- Kapsam: yalnız dokümantasyon
+  - `.ai/current-focus.md`
+  - `.ai/session-summary.md`
+  - `codex-claude-ortak-rapor.md`
+  - `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`
+
+### Restore point
+
+- Tag: `restore/post-release-a14b-b1-credential-plan-20260816-508bb43f`
+- Tag türü: annotated (`git cat-file -t` sonucu `tag`)
+- Tag object: `a5de08ba2165f43f5414b3ba0f082e2cd5e66109`
+- Peeled hedef commit: `508bb43f4aee1936322bb474f1a1c69c131ff4ab`
+- Bundle: `.private-data/restore-points/post-release-a14b-b1-credential-plan-20260816-508bb43f.bundle`
+- Bundle mode: `0600`
+- Bundle SHA-256: `1df4de44c9aed670a399e30a6f795549d9617bcdcddc75810240569bac686444`
+- Doğrulama: `git bundle verify` başarılı; bundle complete history içeriyor.
+
+### Sınırlar
+
+Bu kapanış yalnız yerel dokümantasyon ve recovery kanıtıdır. Production
+PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya SharePoint'e bağlanılmadı;
+credential/token/secret okunmadı, yazılmadı veya ekrana basılmadı. Migration,
+seed, queue/Redis/object/DB mutation, push, tag-push veya deploy yapılmadı.
+
+Credential provisioning, B1 concrete transports, B1 live observation,
+runtime-topology/SSH/Coolify erişimi ve production deploy hâlâ ayrı açık
+kullanıcı onayı gerektiren **NO-GO** kapılardır.
