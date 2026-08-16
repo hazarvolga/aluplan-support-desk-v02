@@ -7074,3 +7074,430 @@ hiçbir dosya değişmemiştir. Commit onayı kullanıcıdan ayrıca beklenmelid
 
 B1 live observation ve production deploy hâlâ ayrı açık kullanıcı onayı
 gerektiren **NO-GO** kapılardır.
+
+## 2026-08-16 — CODEX — B1 PostgreSQL credential provisioning denemesi ve NO-GO sonucu
+
+Kullanıcı şu dar production-write onayını verdi:
+
+> Production PostgreSQL üzerinde yalnız B1 için geçici read-only rol oluşturmanı
+> onaylıyorum; parola/connection string değerlerini okuma, yazma veya rapora
+> geçirme.
+
+Bu onay yalnız B1 için geçici PostgreSQL read-only rol hazırlama denemesini
+kapsadı. B1 live observation, production backup, runtime-topology/SSH/Coolify
+erişimi veya deploy onayı olarak yorumlanmadı.
+
+### Yapılan üretim işlemi
+
+- Kullanıcı/operatör Coolify production PostgreSQL terminalinde çalıştı.
+- Codex herhangi bir parola, token, endpoint veya connection string görmedi,
+  okumadı, saklamadı veya rapora yazmadı.
+- Production database bağlamı `SELECT current_database();` ile `postgres`
+  olarak doğrulandı.
+- Başlangıç kontrolü:
+  - `a14b_inventory_ro_20260816` rolü yoktu (`role_exists = f`).
+  - Dört hedef tablo mevcuttu:
+    - `public."_prisma_migrations"`
+    - `public.attachments`
+    - `public.knowledge_sources`
+    - `public.settings`
+- Geçici rol oluşturuldu:
+  - Role name: `a14b_inventory_ro_20260816`
+  - Expiry: `2026-08-16T23:59:00.000Z`
+  - `LOGIN`, `NOINHERIT`
+  - `default_transaction_read_only=on`
+  - Yalnız dört hedef tabloya `SELECT` grant'i
+- Parola kullanıcı/operatör tarafından `\password` ile girildi; değer Codex'e
+  yazılmadı.
+
+### Effective-scope sonucu
+
+Effective-scope probe **NO-GO** verdi.
+
+Somut gerekçeler:
+
+- Database privilege çıktısı beklenenden genişti:
+  - `aluplan_support | can_connect=t | can_temporary=t`
+  - `postgres | can_connect=t | can_temporary=t`
+  - `template1 | can_connect=t | can_temporary=f`
+- Beklenen B1 sözleşmesi yalnız hedef DB için `CONNECT=true`, `CREATE=false`,
+  `TEMPORARY=false` idi.
+- Ekran/pager çıktısında public/pgvector fonksiyon execute satırları da
+  görüldü (`array_to_vector`, `halfvec_*`, `cosine_distance` vb.); bu da
+  zero non-system function execute beklentisine aykırıdır.
+- Relation grants kısmı dört hedef tablo için beklendiği gibiydi:
+  - dört satır,
+  - `relkind = r`,
+  - `can_read = t`,
+  - `can_write = f`.
+
+Bu nedenle PostgreSQL credential scope **NO-GO** kabul edildi ve B1 live
+observation başlatılmadı.
+
+### Cleanup
+
+NO-GO sonucundan sonra geçici rol production PostgreSQL'den temizlendi:
+
+- `REVOKE SELECT ...`
+- `REVOKE USAGE ON SCHEMA public ...`
+- `REVOKE CONNECT ON DATABASE postgres ...`
+- `DROP ROLE a14b_inventory_ro_20260816`
+- `COMMIT`
+
+Final doğrulama:
+
+```text
+role_exists = f
+```
+
+Yani geçici rol production'da kalmadı.
+
+### Sınırlar
+
+Bu turda production PostgreSQL üzerinde yalnız dar kapsamlı geçici rol denemesi
+ve ardından cleanup yapıldı. Backup execution, B1 live observation,
+runtime-topology/SSH/Coolify gözlemi, Redis/R2 credential provisioning,
+migration, seed, queue/object/Redis veri mutasyonu, deploy, push veya tag-push
+yapılmadı.
+
+B1 live observation ve production deploy hâlâ **NO-GO** durumundadır. Sıradaki
+güvenli karar, PostgreSQL credential stratejisinin bu `PUBLIC`/pgvector
+privilege gerçekliği altında nasıl değişeceğini tasarlamak ve bunu ayrı
+bağımsız doğrulamaya sokmaktır; production-wide `PUBLIC` privilege revocation
+gibi geniş etkili değişiklikler bu denemenin kapsamı dışındadır.
+
+## 2026-08-16 — CLAUDE — B1 PostgreSQL credential provisioning denemesi bağımsız doğrulaması
+
+Kapsam: Codex'in kullanıcıyla birlikte production PostgreSQL üzerinde
+yürüttüğü, `a14b_inventory_ro_20260816` geçici read-only rol denemesinin,
+scope-probe NO-GO kararının ve cleanup'ın bağımsız doğrulanması. Bu doğrulama
+yalnız kayıt/karar doğruluğu içindir; bu turda Codex production'a bağlanmadı,
+credential okumadı/yazmadı, rol oluşturmadı/silmedi.
+
+### İncelenen dosyalar
+
+- `FIRST-READ.md`, `AGENTS.md` (değişmemiş)
+- `.ai/current-focus.md`, `.ai/session-summary.md`
+- `codex-claude-ortak-rapor.md` — "2026-08-16 — CODEX — B1 PostgreSQL
+  credential provisioning denemesi ve NO-GO sonucu" bölümü
+- `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` (§14, tam)
+- `scripts/a14b/postgres-adapter.mjs` — `validatePrivileges(...)` sözleşmesi
+
+### Sonuç: **GO** (kayıt/karar doğruluğu doğrulaması) — 1 Medium dokümantasyon tutarlılık bulgusu
+
+Critical **0** / High **0** / Medium **1** / Low **0**.
+
+### Değişen dosya kapsamı
+
+`git status --short` yalnız üç dosyayı gösterdi:
+
+- `M .ai/current-focus.md`
+- `M .ai/session-summary.md`
+- `M codex-claude-ortak-rapor.md`
+
+`.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` bu turda
+değişmedi (HEAD `ffee4365` ile birebir aynı; son içerik değişikliği önceki
+`46fe0ad7` commit'inden). Kod, script, migration, Prisma schema, Docker/Coolify
+config veya env dosyası değişmedi.
+
+### Doğrulanan maddeler
+
+1. **NO-GO kararı doğru mu** — Evet, teknik olarak tam doğru. Rapor edilen
+   `aluplan_support|can_connect=t|can_temporary=t`,
+   `postgres|can_connect=t|can_temporary=t`, `template1|can_connect=t|
+   can_temporary=f` çıktısı, `postgres-adapter.mjs` `validatePrivileges(...)`
+   içindeki iki bağımsız kontrolü aynı anda ihlal ediyor:
+   - `publicRows.length !== 1` (üç veritabanı görünüyor, yalnız hedef DB
+     değil) → throw.
+   - Hedef DB (`postgres`) satırının kendisi de `can_temporary !== false`
+     taşıyor → throw.
+   Bu, PostgreSQL'in gerçek varsayılan davranışıyla uyumludur: `CONNECT` ve
+   `TEMPORARY`, açıkça REVOKE edilmedikçe her veritabanında `PUBLIC`'e
+   varsayılan olarak verilir; rapor edilen sızıntı gerçekçi ve beklenen bir
+   PostgreSQL-varsayılan senaryosudur, uydurma veya yanlış yorumlanmış bir
+   sonuç değildir. Fonksiyon execute bulgusu da aynı mekanizmayla açıklanır:
+   pgvector fonksiyonları `public` şemasında yaşar ve PostgreSQL varsayılan
+   olarak fonksiyonlara `PUBLIC` EXECUTE verir; adapter `functionRows.length
+   !== 0` şartıyla bunu sıfır tolerans olarak reddeder — rapor edilen
+   `array_to_vector`/`halfvec_*`/`cosine_distance` satırları bu kontrolü
+   doğru tetikliyor. Relation grants kısmı (4 satır, `relkind=r`, `can_read=t`,
+   `can_write=f`) adapter'ın `REQUIRED_SELECT_TABLES` beklentisiyle tam
+   örtüşüyor ve doğru biçimde sorun olarak işaretlenmemiş. **NO-GO kararı
+   doğrulandı.**
+
+2. **Cleanup sonrası `role_exists = f` yeterli mi** — Evet, yeterli ve
+   kendi kendini doğrulayan bir kanıttır. PostgreSQL'de `DROP ROLE`, rol
+   herhangi bir nesneye sahipse (ownership) veya çözülmemiş bağımlılığı
+   varsa hata verir ve rolü silmez. Rapor edilen sıra — grant'leri
+   REVOKE etmek, ardından `DROP ROLE` çalıştırmak ve son olarak
+   `role_exists = f` doğrulamak — rolün hem doğrudan yetkilerinin
+   temizlendiğini hem de artık `pg_roles` kataloğunda var olmadığını
+   kanıtlıyor. Rol yalnız GRANT almış (hiçbir nesneye sahip olmamış) kısa
+   ömürlü bir denemeydi; bu senaryoda `role_exists=f` + başarılı `DROP ROLE`
+   kombinasyonu artık bağımlılık kalmadığının yeterli kanıtıdır. Doğrulandı.
+
+3. **Production-wide `PUBLIC` revoke'un kapsam dışı tutulması doğru mu** —
+   Evet. Kullanıcının verdiği dar onay metni yalnız "B1 için geçici read-only
+   rol oluşturma"yı kapsıyor; `PUBLIC`'in veritabanı/şema/fonksiyon
+   varsayılan yetkilerini production genelinde REVOKE etmek, o veritabanına
+   bağlanan diğer tüm rollere (uygulamanın kendi DB kullanıcısı dahil) etki
+   eden, geri dönüşü ayrı planlama gerektiren geniş bir production mutasyonu
+   olurdu. Plan §14.4'ün kendi fail-closed maddesiyle ("Böyle bir ihtiyaç
+   doğarsa bu PostgreSQL credential provisioning rehberi durur; ayrı risk
+   analizi ve ayrı açık kullanıcı onayı gerekir.") ve kullanıcı onayının dar
+   kapsamıyla tam tutarlı. Doğrulandı.
+
+4. **Ortak rapor append-only** — `git diff codex-claude-ortak-rapor.md`
+   tek hunk üretti (`@@ -7074,3 +7074,94 @@`); eklenen 94 satır doğrudan
+   önceki son satırdan (7074) sonra geldi, hiçbir tarihsel bölüm değişmedi.
+   Doğrulandı — tam append-only.
+
+5. **Secret/credential/connection string sızıntısı** — Bu turdaki diff'in
+   tamamı (`current-focus.md`, `session-summary.md`, ortak rapor eki)
+   `postgres(ql)?://`, `redis://`, `AKIA`, `BEGIN (RSA|OPENSSH|PRIVATE)`,
+   gerçek değerli `PASSWORD`/`password=`, IP adresi ve connection-string
+   kalıpları için tarandı; sıfır eşleşme (grep exit 1). Rapor yalnız rol adı
+   (`a14b_inventory_ro_20260816`, kendi başına secret değildir), expiry
+   timestamp'i ve NO-GO gerekçe kategorilerini içeriyor; parola/token/
+   connection string/endpoint hiçbir yerde yok. Doğrulandı — sızıntı yok.
+
+6. **`git diff --check`** — Temiz, çıktı yok, exit 0. Doğrulandı.
+
+7. **B1 live observation hâlâ NO-GO mu** — Evet. Hem
+   `current-focus.md`/`session-summary.md`/ortak rapor eki hem de
+   `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` §14.5/§14.7
+   B1 live observation'ın scope probe PASS olmadan ve ayrıca `B1 canlı
+   salt-okunur gözleme başla` onayı verilmeden başlamayacağını tutarlı
+   biçimde tekrarlıyor. Bu probe NO-GO sonucuyla kapandığı için B1 live
+   observation ve production deploy hâlâ **NO-GO**. Doğrulandı.
+
+8. **Canlı bağlantı/mutation/deploy kanıtı** — `find ... -mmin -120`
+   taraması yalnız beklenen dokümantasyon dosyalarını ve önceden zaten
+   kayıtlı üç git-bundle restore-point dosyasını gösterdi; bunlar Git geçmiş
+   kopyalarıdır, yeni canlı artefakt değildir. Backup, migration, seed,
+   queue/object/Redis/DB mutation, deploy, push veya tag-push izi yok.
+   Doğrulandı.
+
+### Bulgu
+
+- **Medium-01 — Credential planı §14.7 artık stale/çelişkili.**
+  `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` §14.7 hâlâ
+  "Production PostgreSQL'e bağlanılmadı. Rol oluşturulmadı, değiştirilmedi
+  veya silinmedi. Parola, token, connection string veya endpoint
+  okunmadı/yazılmadı." diyor. Bu ifade `46fe0ad7` commit'inde (yalnız
+  docs-only rehber kapanışı) doğruydu, ama bu turdaki gerçek üretim denemesi
+  (rol oluşturma, NO-GO probe, cleanup) sonrasında artık **yanlış/stale**
+  durumda; dosya bu turda hiç güncellenmedi (`git diff` boş, son değişiklik
+  hâlâ `46fe0ad7`). `current-focus.md`, `session-summary.md` ve ortak rapor
+  doğru ve güncel; ancak FIRST-READ.md §3 madde 8 yeni bir oturumda "Aktif
+  konuya ait `.ai/issues/` belgesi varsa onun tamamı"nın okunmasını istiyor —
+  biri yalnız bu issue dosyasının §14.7'sine bakarsa "hiç canlı işlem
+  yapılmadı" yanlış izlenimini edinebilir. Güvenlik riski yok (canlı erişim
+  zaten doğru şekilde NO-GO kalmaya devam ediyor ve hiçbir yanlış GO
+  verilmiyor), ancak dokümantasyon bütünlüğü riski var. **Önerilen düzeltme:**
+  `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` dosyasına
+  yeni bir §14.8 "Gerçek deneme sonucu" bölümü eklenip §14.7'nin yalnızca
+  "rehber hazırlandığında" geçerli olduğu netleştirilmeli ve gerçek
+  attempt/NO-GO/cleanup özeti (veya `current-focus.md`/ortak rapora referans)
+  eklenmelidir. Bu, ayrı bir docs-only düzeltme commit'i ile kapatılabilir;
+  acil/engelleyici değildir.
+
+### Genel değerlendirme
+
+Codex'in NO-GO kararı hem `postgres-adapter.mjs` kodlu sözleşmesiyle hem de
+gerçek PostgreSQL varsayılan-privilege davranışıyla tam örtüşüyor; rapor
+edilen bulgular teknik olarak tutarlı ve gerçekçi. Cleanup kanıtı
+(`role_exists=f` + başarılı `DROP ROLE`) yeterlidir. Production-wide `PUBLIC`
+düzeltmesinin kapsam dışı bırakılması doğru ve kullanıcı onayının dar
+kapsamıyla tutarlıdır. Ortak rapor eklemesi tam append-only, sızıntı yok,
+`git diff --check` temiz, değişen dosyalar yalnız üç dokümantasyon dosyasıyla
+sınırlı. Tek bulgu (Medium-01) canlı sisteme veya güvenliğe değil, credential
+planı dokümanının güncel duruma göre stale kalmasına ilişkindir ve
+engelleyici değildir.
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret/parola/connection string
+okunmadı, yazılmadı veya ekrana basılmadı. Rol oluşturulmadı/değiştirilmedi/
+silinmedi. Backup, B1 live observation, migration, seed, queue/object/Redis/DB
+mutation, push, tag-push veya deploy yapılmadı. **Hiçbir kod geliştirilmedi,
+hiçbir üretim/script/migration/config dosyası değiştirilmedi, hiçbir commit
+oluşturulmadı.** Bu bölüm dışında hiçbir dosya değişmemiştir. Commit onayı
+kullanıcıdan ayrıca beklenmelidir.
+
+B1 live observation ve production deploy hâlâ ayrı açık kullanıcı onayı
+gerektiren **NO-GO** kapılardır.
+
+## 2026-08-16 — CLAUDE — Medium-01 kapanışı bağımsız doğrulaması
+
+Kapsam: Claude'un bir önceki turda bildirdiği Medium-01 bulgusunun
+(`.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` §14.7'nin
+gerçek deneme sonrası stale kalması) docs-only düzeltmeyle gerçekten kapanıp
+kapanmadığının bağımsız doğrulanması. Bu turda Codex'in düzeltmesi incelendi;
+canlı sisteme bağlanılmadı, credential okunmadı/yazılmadı, rol
+oluşturulmadı/silinmedi.
+
+### İncelenen dosyalar
+
+- `FIRST-READ.md`, `AGENTS.md` (bu turda değişmedi)
+- `.ai/current-focus.md`, `.ai/session-summary.md`
+- `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` (§12.5, §13,
+  §14.7, yeni §14.8)
+- `codex-claude-ortak-rapor.md` — "2026-08-16 — CODEX — B1 PostgreSQL
+  credential denemesi Medium-01 kapanışı" bölümü ve hemen çevresindeki
+  deneme/doğrulama bölümleri
+
+### Sonuç: **GO** — Medium-01 **KAPANDI**; 2 yeni Low bulgu
+
+Critical **0** / High **0** / Medium **0** / Low **2**.
+
+### Medium-01 kapanış doğrulaması
+
+Evet, kapandı. İki yapısal değişiklik de doğrulandı:
+
+1. **§14.7 daraltıldı.** Başlık `Bu alt adımın sonucu` → `Rehber hazırlandığı
+   andaki sonuç` olarak değişti ve gövde metni `bu belgeyi güncelleme
+   sırasında` → `bu belgeyi ilk güncelleme sırasında` olarak zamansal biçimde
+   sınırlandı. Böylece "production PostgreSQL'e bağlanılmadı / rol
+   oluşturulmadı" ifadeleri artık mutlak bir iddia değil, rehberin
+   hazırlandığı ana ait tarihsel bir kayıttır.
+
+2. **§14.8 `Gerçek deneme sonucu` eklendi** ve istenen on bir olgunun tamamını
+   doğru kaydediyor:
+   - dar production-write onay cümlesi (birebir alıntılanmış) ✓
+   - production DB bağlamının `postgres` olarak doğrulanması ✓
+   - `a14b_inventory_ro_20260816` geçici rolünün oluşturulması, expiry
+     `2026-08-16T23:59:00.000Z`, `LOGIN`/`NOINHERIT`/
+     `default_transaction_read_only=on` ✓
+   - parolanın operatör tarafından `\password` ile girildiği ve Codex'e
+     yazılmadığı ✓
+   - effective-scope probe sonucunun **NO-GO** olduğu ✓
+   - üç database privilege satırı birebir (`aluplan_support | can_connect=t |
+     can_temporary=t`, `postgres | can_connect=t | can_temporary=t`,
+     `template1 | can_connect=t | can_temporary=f`) ✓
+   - public/pgvector function execute satırlarının görüldüğü ✓
+   - relation grants'in dört hedef tablo için beklenen dar kapsamda olduğu
+     (dört satır, `relkind = r`, `can_read = t`, `can_write = f`) ✓
+   - cleanup adımlarının (`REVOKE`, `DROP ROLE`, `COMMIT`) yapıldığı ✓
+   - final doğrulamanın `role_exists = f` olduğu ✓
+   - B1 live observation'ın başlatılmadığı ✓
+   - production-wide `PUBLIC` privilege revocation'ın kapsam dışı bırakıldığı ✓
+
+Dört dokümantasyon dosyası (plan §14.8, `current-focus.md`,
+`session-summary.md`, ortak rapor) aynı olguları çelişkisiz aktarıyor; sayı,
+rol adı, expiry, gerekçe ve cleanup sonucu bakımından sapma yok.
+
+### Yeni bulgular
+
+- **Low-01 — Ortak rapordaki yeni Codex bölümü dosyanın gerçek sonuna değil,
+  HEAD'in eski sonuna eklenmiş; sonuç kronolojik olarak ters sıralı.**
+  `git show HEAD:codex-claude-ortak-rapor.md | wc -l` = `7076`, yani commit'li
+  içerik 7076. satırda bitiyor. Codex'in yeni "Medium-01 kapanışı" bölümü
+  satır `7078`'de başlıyor — yani commit'li EOF'nin hemen ardına eklenmiş.
+  Oysa çalışma ağacında o noktadan sonra zaten iki bölüm vardı: "CODEX — B1
+  PostgreSQL credential provisioning denemesi ve NO-GO sonucu" (şimdi `7109`)
+  ve "CLAUDE — B1 PostgreSQL credential provisioning denemesi bağımsız
+  doğrulaması" (şimdi `7200`). Sonuç: en yeni kayıt, kapattığı bulgunun
+  bildirildiği doğrulamadan **122 satır önce** görünüyor; okuyucu "Claude'un
+  ... doğrulaması GO verdi" cümlesini, atıf yapılan doğrulamaya ulaşmadan önce
+  okuyor. `git diff` HEAD'e göre tek hunk ürettiği için commit'li tarihsel
+  içerik değişmemiştir — bu bir veri kaybı veya içerik tahrifi değildir; ancak
+  FIRST-READ.md bölüm 7 ve "Claude son doğrulama kapanış talimatı" madde 8'in
+  istediği "yeni kayıtları yalnız **en alta** append et" kuralı, dosyanın
+  gerçek sonuna değil eski commit sınırına yazıldığı için sağlanmamıştır.
+  **Önerilen düzeltme:** commit'ten önce "Medium-01 kapanışı" bölümü kesilip
+  dosyanın gerçek sonuna (bu Claude bölümünden sonra) taşınsın; böylece
+  commit'lenen ledger kronolojik kalır. Bundan sonraki eklemelerde append
+  noktası `tail` ile doğrulanmalı, `git show HEAD:` çıktısıyla değil.
+
+- **Low-02 — Plan §12.5 ve §13 özet satırları §14.8'e çapraz referans vermiyor.**
+  `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md:304-305` hâlâ
+  "Gerçek production rol oluşturma/değiştirme/silme ve Codex production
+  bağlantısı hâlâ **NO-GO**" diyor; `:322` ise "PostgreSQL gerçek production
+  rol oluşturma/değiştirme/silme: **NO-GO**". Bunlar *duran yetki kapısı*
+  olarak hâlâ doğrudur — yeni bir rol oluşturmak için yine ayrı açık onay
+  gerekir ve ayakta duran bir yetki yoktur. Ancak yalnız §12.5/§13'ü okuyan
+  biri, hiç rol oluşturulmamış izlenimi edinebilir; gerçekte bir kez dar
+  onayla oluşturulup drop edilmiştir. Bu, Medium-01 ile aynı sınıfta ama çok
+  daha zayıf bir staleness'tır, çünkü doğru kayıt (§14.8) aynı belgede
+  mevcuttur. **Önerilen düzeltme:** bu iki satıra `(bkz. §14.8 — 2026-08-16
+  tarihli tek seferlik dar onaylı deneme ve cleanup)` benzeri bir referans
+  eklenmesi ya da ifadenin "yeni/ek rol oluşturma" biçiminde netleştirilmesi.
+  Engelleyici değildir.
+
+### Diğer doğrulamalar
+
+- **Değişen dosya kapsamı** — `git status --short` beklenen dört dosyayı
+  gösterdi: `M .ai/current-focus.md`, `M .ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`,
+  `M .ai/session-summary.md`, `M codex-claude-ortak-rapor.md`. Untracked yeni
+  dosya yok. Kod, script, migration, Prisma schema, Docker/Coolify config veya
+  env dosyası değişmedi.
+- **Secret sızıntısı** — Tüm `git diff` çıktısı `postgres(ql)?://`, `redis://`,
+  `AKIA`, `BEGIN (RSA|OPENSSH|PRIVATE)`, gerçek değerli `PASSWORD`/`password=`,
+  IP, `sslmode=`, `:5432` ve connection-string kalıpları için tarandı. Yalnız
+  iki eşleşme çıktı ve her ikisi de bir önceki Claude doğrulama bölümünün
+  *tarama desenlerini tarif eden* metnidir, gerçek değer değildir. Rapor
+  edilen tek tanımlayıcı rol adıdır (`a14b_inventory_ro_20260816`); bu secret
+  değildir ve rol zaten drop edilmiştir. **Sızıntı yok.**
+- **Canlı bağlantı/deploy/mutation kanıtı** — `find ... -mmin -90` yalnız dört
+  dokümantasyon dosyasını ve önceden zaten kayıtlı iki git-bundle
+  restore-point dosyasını gösterdi; bunlar Git geçmiş kopyalarıdır. Yeni
+  production artefaktı, dump, backup veya credential dosyası yok. Bu turda
+  yeni canlı bağlantı, rol işlemi, migration, seed, mutation, deploy, push
+  veya tag-push kanıtı **yok**.
+- **`git diff --check`** — Temiz, çıktı yok, exit 0.
+- **B1 live observation ve production deploy** — Plan §12.5/§13/§14.8,
+  `current-focus.md`, `session-summary.md` ve ortak rapor eki tutarlı biçimde
+  **NO-GO** tekrarlıyor. Scope probe NO-GO ile kapandığı için canlı gözlem
+  başlatılamaz.
+
+### Commit önerisi
+
+Bu değişiklik seti docs-only'dir ve commit'lenebilir. Önerim: commit'ten önce
+**Low-01** düzeltilsin — "Medium-01 kapanışı" bölümü dosyanın gerçek sonuna
+taşınsın ki commit'lenen ortak rapor kronolojik append-only kalsın. Low-02
+aynı commit'e dahil edilebilir veya ayrı bırakılabilir; engelleyici değildir.
+Ardından tek bir `docs(release):` commit'i uygundur. Push, tag-push ve deploy
+yapılmamalıdır.
+
+Bu turda production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Credential/token/secret/parola/connection string
+okunmadı, yazılmadı veya ekrana basılmadı. Rol oluşturulmadı/değiştirilmedi/
+silinmedi. Backup, B1 live observation, migration, seed, queue/object/Redis/DB
+mutation, push, tag-push veya deploy yapılmadı. **Hiçbir kod geliştirilmedi,
+hiçbir üretim/script/migration/config dosyası değiştirilmedi, hiçbir commit
+oluşturulmadı.** Bu bölüm dışında hiçbir dosya değişmemiştir. Commit onayı
+kullanıcıdan ayrıca beklenmelidir.
+
+B1 live observation ve production deploy hâlâ ayrı açık kullanıcı onayı
+gerektiren **NO-GO** kapılardır.
+
+## 2026-08-16 — CODEX — B1 PostgreSQL credential denemesi Medium-01 kapanışı
+
+Claude'un B1 PostgreSQL credential provisioning denemesi bağımsız doğrulaması
+GO verdi; Critical/High/Medium/Low `0/0/1/0`. Tek Medium bulgu,
+`.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md` §14.7'nin
+önceki docs-only rehber anını anlatmaya devam etmesi ve gerçek deneme sonrası
+stale kalmasıydı.
+
+Docs-only düzeltme yapıldı:
+
+- §14.7 başlığı `Rehber hazırlandığı andaki sonuç` olarak daraltıldı.
+- Yeni §14.8 `Gerçek deneme sonucu` eklendi.
+- §14.8 şunları kaydeder:
+  - dar production-write onay cümlesi,
+  - production DB bağlamının `postgres` olduğu,
+  - geçici rolün oluşturulduğu,
+  - effective-scope probe'un `PUBLIC`/database `TEMPORARY` ve pgvector/public
+    function execute gerekçeleriyle **NO-GO** verdiği,
+  - B1 live observation'ın başlatılmadığı,
+  - cleanup sonrası `role_exists = f` olduğu,
+  - production-wide `PUBLIC` privilege revocation gibi geniş etkili
+    değişikliklerin kapsam dışı kaldığı.
+
+Bu düzeltmede production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify veya
+SharePoint'e bağlanılmadı. Yeni rol oluşturulmadı/değiştirilmedi/silinmedi;
+credential/token/secret/parola/connection string okunmadı, yazılmadı veya
+ekrana basılmadı. Backup execution, B1 live observation, migration, seed,
+queue/object/Redis/DB mutation, push, tag-push veya deploy yapılmadı.
+
+B1 live observation ve production deploy hâlâ **NO-GO** durumundadır.

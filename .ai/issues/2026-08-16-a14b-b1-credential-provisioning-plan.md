@@ -302,7 +302,8 @@ ilerleyebilir.
   - Kullanıcı tarafından 2026-08-16 tarihinde `B1 PostgreSQL credential
     provisioning başlat` cümlesiyle başlatıldı.
   - Gerçek production rol oluşturma/değiştirme/silme ve Codex production
-    bağlantısı hâlâ **NO-GO**.
+    bağlantısı hâlâ **NO-GO**; yapılan geçici deneme ve cleanup sonucu için
+    bkz. §14.8.
 - R2 credential üretimi: **NO-GO** until
   `B1 R2 credential provisioning başlat`
 - Redis credential üretimi: **NO-GO** until
@@ -320,6 +321,7 @@ yöntem düzeyinde onaylanmıştır; credential oluşturmaz.
 - Credential provisioning yöntemi: **APPROVED**
 - PostgreSQL credential üretim rehberliği: **STARTED**
 - PostgreSQL gerçek production rol oluşturma/değiştirme/silme: **NO-GO**
+  (geçici deneme ve cleanup sonucu için bkz. §14.8)
 - R2/Redis credential provisioning alt adımları: **NO-GO**
 - B1 concrete transports: **NO-GO**
 - B1 live observation: **NO-GO**
@@ -495,11 +497,11 @@ DROP ROLE <ROLE_NAME>;
 Drop öncesi role bağlı beklenmeyen ownership/default privilege görülürse cleanup
 durur ve ayrı inceleme gerekir. Cleanup tamamlanmadan deploy kapısı açılmaz.
 
-### 14.7 Bu alt adımın sonucu
+### 14.7 Rehber hazırlandığı andaki sonuç
 
 Kullanıcının `B1 PostgreSQL credential provisioning başlat` cümlesiyle
 PostgreSQL credential üretim rehberliği başlamıştır; ancak bu belgeyi
-güncelleme sırasında:
+ilk güncelleme sırasında:
 
 - Production PostgreSQL'e bağlanılmadı.
 - Rol oluşturulmadı, değiştirilmedi veya silinmedi.
@@ -511,3 +513,81 @@ PostgreSQL credential'ın gerçekten oluşturulması kullanıcı/operatör taraf
 ayrı bir production write işlemidir. Scope probe PASS kanıtı gelmeden ve
 kullanıcı ayrıca `B1 canlı salt-okunur gözleme başla` demeden canlı gözlem
 başlatılamaz.
+
+### 14.8 Gerçek deneme sonucu
+
+Bu bölüm, §14.7'deki rehber hazırlandıktan sonra kullanıcı tarafından verilen
+dar production-write onayıyla yapılan gerçek provisioning denemesini kaydeder.
+
+Kullanıcı şu onayı verdi:
+
+```text
+Production PostgreSQL üzerinde yalnız B1 için geçici read-only rol oluşturmanı
+onaylıyorum; parola/connection string değerlerini okuma, yazma veya rapora
+geçirme.
+```
+
+Bu onay yalnız geçici B1 PostgreSQL read-only rol denemesini kapsadı; B1 live
+observation, production backup, runtime-topology/SSH/Coolify erişimi veya deploy
+onayı olarak yorumlanmadı.
+
+Deneme özeti:
+
+- Production database bağlamı `postgres` olarak doğrulandı.
+- Başlangıç kontrolünde `a14b_inventory_ro_20260816` rolü yoktu
+  (`role_exists = f`).
+- Dört hedef tablo mevcuttu:
+  - `public."_prisma_migrations"`
+  - `public.attachments`
+  - `public.knowledge_sources`
+  - `public.settings`
+- Geçici rol oluşturuldu:
+  - Role name: `a14b_inventory_ro_20260816`
+  - Expiry: `2026-08-16T23:59:00.000Z`
+  - `LOGIN`, `NOINHERIT`
+  - `default_transaction_read_only=on`
+  - Yalnız dört hedef tabloya `SELECT` grant'i
+- Parola kullanıcı/operatör tarafından `\password` ile girildi; değer Codex'e
+  yazılmadı, okunmadı veya rapora eklenmedi.
+
+Effective-scope probe sonucu: **NO-GO**.
+
+NO-GO gerekçeleri:
+
+- Database privilege çıktısı beklenenden genişti:
+  - `aluplan_support | can_connect=t | can_temporary=t`
+  - `postgres | can_connect=t | can_temporary=t`
+  - `template1 | can_connect=t | can_temporary=f`
+- Ekran/pager çıktısında public/pgvector function execute satırları görüldü
+  (`array_to_vector`, `halfvec_*`, `cosine_distance` vb.).
+- Relation grants kısmı dört hedef tablo için beklenen dar kapsamdaydı:
+  - dört satır,
+  - `relkind = r`,
+  - `can_read = t`,
+  - `can_write = f`.
+
+NO-GO sonucundan sonra cleanup yapıldı:
+
+- `REVOKE SELECT ...`
+- `REVOKE USAGE ON SCHEMA public ...`
+- `REVOKE CONNECT ON DATABASE postgres ...`
+- `DROP ROLE a14b_inventory_ro_20260816`
+- `COMMIT`
+
+Final cleanup doğrulaması:
+
+```text
+role_exists = f
+```
+
+Yani geçici rol production'da kalmadı.
+
+Bu deneme sonucunda B1 live observation başlatılmadı. Production backup,
+runtime-topology/SSH/Coolify gözlemi, Redis/R2 credential provisioning,
+migration, seed, queue/object/Redis veri mutasyonu, deploy, push veya tag-push
+yapılmadı.
+
+Sıradaki güvenli karar, PostgreSQL credential stratejisinin bu `PUBLIC`/pgvector
+privilege gerçekliği altında nasıl değişeceğini tasarlamaktır. Production-wide
+`PUBLIC` privilege revocation gibi geniş etkili değişiklikler bu denemenin ve
+bu belgenin mevcut onay kapsamı dışındadır.

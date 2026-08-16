@@ -4256,3 +4256,19 @@ Maintenance rule:
 - Commit: `46fe0ad7` — `docs(release): close A14B B1 PostgreSQL credential guidance`.
 - Recovery evidence: annotated tag `restore/post-release-a14b-b1-postgres-credential-20260816-46fe0ad7`, tag object `d21dcab7fc3ddb43e40bb9c07e318a83d9eec489`, peeled commit `46fe0ad70fee888f10e72f55fe3a6ca75e750fce`.
 - Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-postgres-credential-20260816-46fe0ad7.bundle`, mode `0600`, SHA-256 `fa40a3cbcdd3b5c44310f702bb371accecae1ec007b7aa8fbcbd40c16ec57e00`.
+
+## 2026-08-16 - B1 PostgreSQL credential provisioning attempt
+
+- User gave the explicit narrow production-write approval: `Production PostgreSQL üzerinde yalnız B1 için geçici read-only rol oluşturmanı onaylıyorum; parola/connection string değerlerini okuma, yazma veya rapora geçirme.`
+- Codex did not receive, read, print or store any PostgreSQL password, token, endpoint or connection string. The user/operator worked inside the Coolify PostgreSQL terminal and set the password via `\password`.
+- Production DB context was confirmed as `postgres`; the preflight role existence check returned `role_exists = f`, and all four target tables existed.
+- A temporary role was created: `a14b_inventory_ro_20260816`, with expiry `2026-08-16T23:59:00.000Z`, `LOGIN`, `NOINHERIT`, `default_transaction_read_only=on`, and `SELECT` grants on only the four intended tables.
+- Effective-scope probe result: **NO-GO**.
+  - Database privilege output showed broader access than allowed: `aluplan_support` and `template1` appeared in addition to `postgres`, and `can_temporary = true` appeared for `aluplan_support` and `postgres`.
+  - Pager output also showed public/pgvector function execute rows, which violates the zero non-system function execute expectation.
+  - Relation grants for the four target tables were otherwise as expected: four rows, `relkind = r`, `can_read = true`, `can_write = false`.
+- Because the scope probe failed, B1 live observation was not started.
+- Cleanup completed in production PostgreSQL: grants were revoked, `DROP ROLE a14b_inventory_ro_20260816` succeeded, and final verification returned `role_exists = f`.
+- No production backup, B1 live observation, runtime-topology/SSH/Coolify observation, migration, seed, queue/object/Redis data mutation, deploy, push or tag-push occurred.
+- Claude independently verified the attempt record as GO with C/H/M/L `0/0/1/0`; the single Medium was stale wording in credential-plan §14.7 that still described the earlier docs-only moment.
+- Fixed that docs-only gap by narrowing §14.7 to "rehber hazırlandığı andaki sonuç" and adding §14.8 "Gerçek deneme sonucu" with the role attempt, NO-GO reason and cleanup proof.
