@@ -8007,3 +8007,28 @@ upload/delete, backup execution, live observation, push, tag-push ve deploy
 yapılmadı. Gerçek parent token, gerçek mint, provider canary, B1 live
 observation ve production deploy ayrı açık onay gerektiren **NO-GO**
 kapılarıdır.
+
+## 2026-08-20 — CODEX — R2 offline minting commit ve restore kanıtı
+
+- Tool commit: `3b2d5edb` —
+  `feat(release): add offline R2 credential minting tool`.
+- Test commit: `2ffe6d7b` —
+  `test(release): harden offline R2 credential minting`.
+- Docs closure commit: `b90b6279` —
+  `docs(release): record offline R2 minting closure`.
+- Restore tag annotated olarak oluşturuldu:
+  `restore/post-release-a14b-r2-offline-mint-20260820-b90b6279`.
+- Tag object: `5a7c7d9dd2cb542fdbca466293eca72aa4ee7f98`.
+- Peeled hedef commit: `b90b6279832e2cc944d6028789fc52882d2d355b`.
+- Complete-history bundle:
+  `.private-data/restore-points/post-release-a14b-r2-offline-mint-20260820-b90b6279.bundle`.
+- Bundle mode: `0600`.
+- Bundle SHA-256:
+  `9aaec3e369b69b4ebacbe63040add03ee93dd90c4afa417ec71486f6a7f1b479`.
+- `git bundle verify` başarılı; bundle complete history içeriyor ve annotated
+  tag hedefi doğrulandı.
+
+Bu kayıt sırasında push veya tag-push yapılmadı. Gerçek credential/token
+oluşturulmadı veya okunmadı; Cloudflare/R2 veya production sistemine
+bağlanılmadı. Provider canary, B1 live observation, backup execution ve deploy
+yapılmadı; bunlar ayrı açık onay gerektiren **NO-GO** kapılarıdır.
