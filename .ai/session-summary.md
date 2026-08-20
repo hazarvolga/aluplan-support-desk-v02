@@ -4283,3 +4283,11 @@ Maintenance rule:
 - Recovery evidence: annotated tag `restore/post-release-a14b-b1-postgres-strategy-20260816-9f2b43bb`, tag object `79465f77e3b0e0a5c6b9a1849ea02f91b8e0e6e9`, peeled commit `9f2b43bb4106c1603c6e6a28cfb245594363b890`.
 - Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-postgres-strategy-20260816-9f2b43bb.bundle`, mode `0600`, SHA-256 `98494cda53c27842e085d121731c82cfabcda8cea039619d50ea573df280a4b8`.
 - No production access, credential operation, backup execution, live observation, push, tag-push or deploy occurred. Production deploy remains **NO-GO**.
+
+## 2026-08-20 - B1 R2 offline credential minting tool
+
+- Implemented a local-only Cloudflare R2 temporary-credential signer in a separate `scripts/a14b-minting/` trust boundary; it is not exported by the collector core.
+- The policy is non-configurable: bucket `aluplan-support-desk`, scope `object-read-only`, exact actions `ListObjectsV2` and `HeadObject`, TTL 900 seconds, and no `paths` claim.
+- Parent account/access-key metadata is read only from a private mode-0600 metadata file. The parent secret is accepted only through hidden interactive TTY input, never argv/environment/config/log/report. Child credentials are published mode-0600 with symlink/path/mode/owner checks and no-clobber semantics; stdout contains only a redacted receipt.
+- Cloudflare's official HS256 JWT, SHA-256 child-secret and `base64("jwt/" + signedJwt)` session-token derivation are covered with synthetic fixtures. Final hardening rejects secret/unknown metadata fields, cleans invocation-owned bearer files after write/publish and post-publish verification failures, restores TTY state on EOF/error/close, and locks imports to an offline allowlist. Focused tests passed 16/16; combined A14B tests passed 41/41; sequential full ops-safety passed 213/213; focused coverage was 86.54% lines, 83.44% branches and 82.05% functions. Independent TDD/code/security re-reviews were GO with Critical/High/Medium/Low 0/0/0/0.
+- No real token or credential was created/read, no Cloudflare or production system was contacted, and no R2 request, push, tag-push or deploy occurred. Real parent creation, real child mint, provider canary, B1 live observation and deploy remain separate NO-GO gates.

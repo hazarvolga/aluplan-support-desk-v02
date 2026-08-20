@@ -7925,3 +7925,85 @@ connection string okunmadı veya yazılmadı. Backup execution, B1 live
 observation, migration, seed, queue/object/Redis/DB mutation, push, tag-push
 ve deploy yapılmadı. B1 live observation ve production deploy hâlâ ayrı açık
 kullanıcı onayı gerektiren **NO-GO** kapılarıdır.
+
+## 2026-08-20 — CODEX — B1 R2 offline credential minting aracı
+
+### Sonuç
+
+- Kullanıcının dar onayı: `B1 R2 offline credential minting aracını hazırla`.
+- Yalnız local/offline araç geliştirildi; bu onay gerçek Cloudflare tokenı,
+  child credential, canary, B1 live observation veya deploy yetkisi sayılmadı.
+- Minting sınırı collector'dan ayrıldı: `scripts/a14b-minting/`.
+- Sabit policy:
+  - bucket `aluplan-support-desk`,
+  - scope `object-read-only`,
+  - yalnız `ListObjectsV2` ve `HeadObject`,
+  - TTL `900` saniye,
+  - `GetObject` ve tüm write/delete/copy/admin eylemleri yok.
+- Parent secret argv/environment/config/disk metadata/log/rapordan kabul
+  edilmez; yalnız echo kapalı gerçek TTY girişi kullanılır.
+- Child credential yalnız private/symlink-free owner-matched dizin zincirinde
+  mode `0600`, no-clobber dosyaya yazılır. CLI yalnız secret içermeyen receipt
+  basar.
+- Cloudflare resmî local-signing algoritması sentetik fixture'larla
+  doğrulandı: HS256 JWT, JWT SHA-256 child secret ve
+  `base64("jwt/" + signedJwt)` session token.
+
+### Yerel doğrulama
+
+- Focused minting seti: `11/11` PASS.
+- A14B birleşik set: `34/34` PASS.
+- Focused coverage: `%85.29` lines, `%80.17` branches.
+- Syntax ve `git diff --check`: PASS.
+- Full ops-safety, bağımsız code review ve security review bu çalışma seti
+  stabilize edildikten sonra ayrıca kaydedilecektir.
+
+### Yetki sınırı
+
+Bu turda gerçek account/access-key/secret/session-token kullanılmadı,
+oluşturulmadı, okunmadı veya rapora yazılmadı. Cloudflare R2, production
+PostgreSQL/Redis, SSH, Coolify veya SharePoint'e bağlanılmadı. Object list,
+HEAD, GET, upload, delete, backup execution, migration, seed, push, tag-push ve
+deploy yapılmadı. Gerçek parent token oluşturma, gerçek child mint, provider
+scope/canary, B1 live observation ve production deploy ayrı açık onay
+gerektiren **NO-GO** kapılarıdır.
+
+## 2026-08-20 — CODEX — B1 R2 offline minting final hardening kapanışı
+
+### Kapatılan bulgular
+
+- Disk metadata sözleşmesi exact `schemaVersion`, `accountId` ve
+  `accessKeyId` alanlarına daraltıldı. Parent secret veya bilinmeyen alan,
+  child credential üretilmeden önce fail-closed reddedilir.
+- Temp dosyanın open/write/chmod/fsync/link/final-verify yaşam döngüsü tek
+  cleanup sınırına alındı. Cleanup yalnız bu çalıştırmaya `dev/ino` ile bağlı
+  temp/final dosyaları siler; post-write ve post-publish doğrulama hataları
+  davranış testleriyle kilitlendi.
+- Hidden-TTY girişi önceki raw-mode durumunu geri yükler; EOF, close, error,
+  iptal ve geçersiz girdi yolları tek kez sonlanır.
+- CLI help canonical Git-dışı metadata yolunu ve secretsız exact şemayı
+  gösterir. Üretim modüllerinin importları exact offline allowlist ile
+  kilitlendi; network, subprocess, environment, dynamic import ve
+  `createRequire` yüzeyi yoktur.
+
+### Final yerel kanıt
+
+- Focused minting: `16/16` PASS.
+- A14B birleşik set: `41/41` PASS.
+- Focused coverage: `%86.54` lines / `%83.44` branches / `%82.05` functions.
+- Geniş ops-safety paralel koşusunda eski bir restore testi 5 saniyelik kaynak
+  rekabeti timeout'una bir kez takıldı; aynı dosyanın bağımsız koşusu geçti.
+  Test dosyaları sıralı ve temiz olarak yeniden çalıştırıldı: `213/213` PASS.
+- Syntax, Prettier ve `git diff --check`: PASS.
+- Bağımsız TDD, code-review ve security-review final sonucu:
+  Critical/High/Medium/Low `0/0/0/0`, local/offline araç için GO.
+
+### Yetki sınırı
+
+Bu kapanış yalnız local/offline kod ve sentetik test kanıtıdır. Gerçek parent
+token oluşturulmadı veya okunmadı; gerçek child credential mint edilmedi;
+Cloudflare/R2 veya başka production sisteme bağlanılmadı. List/HEAD/Get,
+upload/delete, backup execution, live observation, push, tag-push ve deploy
+yapılmadı. Gerçek parent token, gerçek mint, provider canary, B1 live
+observation ve production deploy ayrı açık onay gerektiren **NO-GO**
+kapılarıdır.

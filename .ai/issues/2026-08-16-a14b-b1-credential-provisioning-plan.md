@@ -651,3 +651,90 @@ Bu karar B1 live observation'ı GO yapmaz. B1 live observation hâlâ ayrı aç�
 onay, geçerli R2/Redis credential scope kanıtı, backup/restore gate kanıtı ve
 stabil observation window gerektirir. Production deploy hâlâ ayrı açık `deploy
 et` onayı gelmeden **NO-GO** kalır.
+
+## 15. R2 offline child credential minting aracı
+
+Kullanıcı 2026-08-20 tarihinde yalnız aşağıdaki local/offline geliştirmeyi
+onayladı:
+
+```text
+B1 R2 offline credential minting aracını hazırla.
+```
+
+Bu onay gerçek Cloudflare tokenı oluşturma/okuma, production R2'ye bağlanma,
+child credential üretme, canary çalıştırma, B1 live observation veya deploy
+onayı değildir.
+
+Hazırlanan araç:
+
+- `scripts/a14b-minting/r2-credential-mint.mjs`: Cloudflare local-signing
+  algoritmasının ağsız kriptografik çekirdeğidir. Collector çekirdeğinden ayrı
+  tutulur ve collector entrypoint'inden export edilmez.
+- `scripts/a14b-minting/r2-credential-files.mjs`: yalnız private,
+  owner-matched, symlink-free dizin/dosya zincirinde `0600` no-clobber child
+  credential yayınlar.
+- `scripts/release-a14b-r2-credential-mint.mjs`: policy override kabul etmeyen
+  ince CLI wrapper'ıdır.
+- `scripts/release-a14b-r2-credential-mint.test.mjs`: kriptografik sözleşme,
+  path/mode/symlink/no-clobber, hidden-TTY ve offline sınırlarını davranışsal
+  olarak kilitler.
+
+Policy sabittir ve CLI parametresi değildir:
+
+- Bucket: `aluplan-support-desk`
+- Scope: `object-read-only`
+- Actions: yalnız `ListObjectsV2`, `HeadObject`
+- TTL: tam `900` saniye
+- `GetObject`, upload, overwrite, copy, delete, lifecycle/admin işlemleri yok
+- `paths` claim'i yok; production bucket metadata envanteri tam bucket
+  seviyesinde yapılacaktır.
+
+Araç Cloudflare'ın resmî local-signing sözleşmesini uygular:
+
+1. Exact bucket/scope/actions ile HS256 JWT üretir.
+2. Parent Access Key ID child Access Key ID olarak yeniden kullanılır.
+3. Child Secret Access Key, signed JWT'nin SHA-256 hex digest'idir.
+4. Session Token, `base64("jwt/" + signedJwt)` değeridir.
+
+Secret sınırı:
+
+- Diskteki `parent-metadata.json` yalnız `schemaVersion`, `accountId` ve
+  `accessKeyId` içerir; parent secret içermez.
+- Parent secret argv, environment, config, log veya rapordan alınmaz; yalnız
+  echo kapalı gerçek TTY girişinden alınır.
+- CLI stdout yalnız redacted receipt üretir; Access Key ID, parent/child secret
+  ve session token basılmaz.
+- Child credential bearer secret'tır; yalnız canonical Git-dışı private kökte
+  `0600`, no-clobber dosyada tutulur ve observation sonrası silme/revoke planı
+  uygulanmadan deploy kapısı açılmaz.
+
+Offline aracın sınırı:
+
+- Parent tokenın gerçekten yalnız `aluplan-support-desk` bucket'ına scoped
+  olduğunu tek başına kanıtlayamaz.
+- Provider'ın child credential'ı kabul ettiğini kanıtlayamaz.
+- Gerçek parent token oluşturma, gerçek child mint ve yalnız
+  `ListObjectsV2`/`HeadObject` canary'si ayrı açık onay ve provider-scope kanıtı
+  gerektirir.
+
+Bu turda yalnız sentetik test credential'ları kullanıldı. Cloudflare'a veya
+production R2/DB/Redis/SSH/Coolify/SharePoint'e bağlanılmadı; gerçek credential
+oluşturulmadı/okunmadı/yazılmadı; object list/head/get/upload/delete yapılmadı;
+push, tag-push veya deploy yapılmadı. B1 live observation ve production deploy
+hâlâ **NO-GO** durumundadır.
+
+### 15.1 Yerel hardening kapanışı
+
+- Disk metadata sözleşmesi exact `schemaVersion`, `accountId`, `accessKeyId`
+  alanlarıyla sınırlandı; secret veya bilinmeyen alan child üretiminden önce
+  fail-closed reddedilir.
+- Bearer temp/final dosya yaşam döngüsü tek cleanup sınırına alındı; yazma,
+  fsync veya publish hatasında yalnız bu çalıştırmaya ait `dev/ino` bağlı
+  dosyalar temizlenir.
+- Hidden-TTY akışı önceki raw-mode durumunu geri yükler ve EOF, close, error,
+  iptal ile geçersiz girdi yollarında tek kez sonlanır.
+- Final kanıt: focused `16/16`, A14B `41/41`, sıralı geniş ops-safety
+  `213/213`; coverage `%86.54` lines / `%83.44` branches / `%82.05`
+  functions; syntax, Prettier ve `git diff --check` temiz. Bağımsız
+  TDD/code/security re-review Critical/High/Medium/Low `0/0/0/0` ile
+  local/offline araç için GO verdi.
