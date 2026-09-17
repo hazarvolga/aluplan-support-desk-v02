@@ -208,3 +208,26 @@ Private byte-verified incremental archives (0600; require previous source/contro
 - prisma-build-evidence.tgz: `e58c3d73e3fa1478457fd1bc38f7706038d25965599848e6d62d6cd0c67a7f88` (18 success/failure/inventory/checksum artifacts).
 
 Generated client, binary and build outputs remain outside source commits. This Git checkpoint records evidence only; actual tested source consolidation is still required. Next bounded work is safe execution of the remaining HTTP security suites and sender-authentication/CRM admission decision, followed by isolated data-preservation release rehearsal. Passing compilation does not reopen production authority or establish a clean host.
+
+## Follow-up: remaining HTTP security verification — 2026-09-18
+
+Local-only test work, no application authorization changes. Static inspection found three remaining security specs relying on Supertest auto-binding unstarted Nest servers. Initial test-only changes explicitly bound loopback52984 inside cleanup scopes and asserted the actual address. The existing sandbox network profile is unchanged: only that local fixture port is allowed. Probe verified fixed HTTP success and EPERM/EACCES for application4000, database5432, registry-proxy52983, external443 and Docker socket. Clean test environment and synthetic persistence remain in place.
+
+Initial sequential run passed all3suites/58tests. The authority fixture uses actual JWT/RBAC guards with mocked DB/Redis; storage uses real JWT/file-path checks and synthetic temporary files; attachment authorization uses its existing request/guard fixtures. This is not full application bootstrap, actual CRM membership, database integration or deployed-environment validation.
+
+Independent review identified a portability issue: hardcoding one port across suites would conflict under normal parallel Jest. Test-only adjustment therefore uses explicit ALUPLAN_HTTP_TEST_FIXED_PORT=52984 only in the isolated sequential runner; normal test execution uses loopback port0, and unsupported explicit values must fail. No runtime env/config contract or application behavior is introduced. Four HTTP specs are covered, including the earlier upload fixture. Existing security assertions, authentication logic and fixture identities remain unchanged.
+
+### Final verification
+
+The existing runner now accepts only fixed probe/test/security/full modes, remains --runInBand with a120second external bound and explicit synthetic env, and sets the fixed-port test variable itself. Network policy was not widened. Independent review approved both the runner and four test-only changes; normal parallel CI/ephemeral behavior was reviewed statically, not executed under this restricted fixed-port policy.
+
+Root `upload-http-run.cjs full` completed normally: **149/149 suites passed,1728 tests passed,1 existing skipped,63.801seconds**. This is the default backend Jest selection, which still excludes test/integration. Earlier nontransport exclusions are absent from this run. No new skip or lowered assertion/property count. Existing Node native crash did not recur under explicit listening and VM-module support; this is a verified working test setup, not a general diagnosis/fix of Node internals. Coverage percentage, browser E2E, real database/Redis, provider delivery and Linux image acceptance remain unverified.
+
+Negative port check used unsupported value5432 inside the fully network-denied sandbox. All four HTTP fixtures rejected configuration before listen. Two initial probe-wrapper assumptions were wrong: direct raw Jest lacked pnpm test dependency resolution, and expecting zero executed tests ignored26 non-HTTP tests in mixed suites. Logs retained; no false success inferred. Correct inspection of the pnpm run shows4failed suites,13setup/test failures all attributable to fixed-port rejection plus26 non-HTTP passes. The normal configured149-suite run above is separate and green. Boundary probe rerun passed after completion. Changed tests/runner passed redacted secret scan. No service/DB/provider/production access or push/deploy; all877canonical source hashes remain unchanged.
+
+Byte-verified private incremental archives (0600; require prior source/control artifacts):
+
+- http-security-inputs-20260918.tgz: `1c39be322b24a862ff7f95eb1cd7dc677399364be33972a4ad814306152b70ac` (four specs plus original manifest).
+- http-security-evidence-20260918.tgz: `3316978265ffb2076ef6402bedc72c1b77686eb90fa5e9d185789106a7ab4f4b` (runner/profile/probe and seven execution/diagnostic logs).
+
+Next release work remains sender-authentication/CRM admission policy, actual candidate source commit consolidation, and isolated database/browser/data-preserving rollback rehearsal. This evidence-only Git checkpoint is not a release code commit or production GO; no live host cleanliness claim is made.
