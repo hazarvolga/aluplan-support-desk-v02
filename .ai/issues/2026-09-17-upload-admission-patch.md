@@ -104,3 +104,41 @@ Canonical877source hashes unchanged. Six archived files verified byte-for-byte a
 - `reply-patch-evidence.tgz`: SHA256 `45c5088aa811635881e94651af19857498b1cbe5d6baff2b71fdc288bdd76f0f` (full test/typecheck and both i18n command logs).
 
 Both under ignored private dependency-gate directory, mode0600. Incremental archives require previous checkpoints. Candidate source remains separate from canonical product commits; this documentation commit is evidence only, not a release source revision or remote backup.
+
+## Follow-up: inbound attachment failure visibility — 2026-09-17
+
+Candidate-only small change to EmailInboundService, one new focused spec and one existing-spec mock return correction. Both threaded/new-ticket paths count storage or metadata failures and continue subsequent attachments. Final successful inbound log update keeps processed=true and stores `INBOUND_ATTACHMENT_FAILURE count=N ticketMessageId=ID`; no filenames, addresses, content or raw provider errors in the new marker/error logs. Full success/no attachments explicitly sets error=null. Existing duplicate skip retains the partial-failure marker. No schema, new queue, automatic retry/replay or dashboard change.
+
+Keeping processed=true is intentional: ticket/message creation already succeeded. Setting it false merely to retry attachments could duplicate customer messages/tickets. This is partial-failure visibility, not automatic file recovery or exactly-once delivery. If the final log update itself fails, existing replay/seen-mail ambiguity remains. An attachment metadata failure after storage success can leave an orphan object.
+
+Evidence: initial RED10failed/2passed; new mocked public handleInboundEmails tests12/12 pass. Root ran these plus existing bounce and storage/attachment durability tests: **4suites/32tests pass**. Independent code/security review approved bounded scope. Existing inbound service suite is blocked at import by absent generated Prisma client despite its corrected addMessage mock; full backend typecheck was rerun and still fails missing database exports/downstream types. No real IMAP, mail delivery, DB connection, app startup, production access, dependency change, push or deploy.
+
+### Operator recovery boundary
+
+Admin email logs read outbound `emailLog`, not `inboundEmailLog`; do not claim a new dashboard warning. Durable evidence is in existing inbound log storage and generic server error logs. With separately approved read-only DB access, an operator can inspect only necessary metadata using this **unexecuted** query:
+
+```sql
+BEGIN READ ONLY;
+SET LOCAL statement_timeout = '3s';
+SELECT id, ticket_id, processed, processed_at, error
+FROM inbound_email_logs
+WHERE position('INBOUND_ATTACHMENT_FAILURE ' in error) = 1
+ORDER BY created_at DESC
+LIMIT 50;
+ROLLBACK;
+```
+
+Verify original email/attachment availability and compare against the identified existing ticket message before any separately authorized recovery. Mailbox retention/byte recovery are unverified. Do not flip processed=false or replay the entire email. Do not insert attachment records without confirmed stored bytes. No recovery actions were executed here.
+
+### Separate source-based authorization finding
+
+Inbound email and OmniChannel code can use `sender?.id || ticket.userId` for a threaded reply and can create a new active user when the sender is absent. TicketsService.create has no CRM membership check in the inspected path; addMessage checks access using the passed sender identity, so substituting the ticket owner undermines that boundary. This is inconsistent with the owner's CRM-only access policy and requires a separate fail-closed sender/CRM authorization review before release. Actual enabled live intake routes and email-origin trust were not checked; no production exploit or current compromise is claimed. Membership alone also does not authenticate an email From header. No sender-policy or mail-TLS change is bundled into this visibility patch.
+
+### Checkpoint
+
+All877canonical source hashes unchanged; four archived files match candidate bytes. Private incremental archives (0600), retained with previous candidate/control checkpoints:
+
+- inbound-patch-inputs.tgz SHA256 `af2dd5c6520b6ccb353a48c0b1c5cf2a19a8be07bb33ae02b8e046984d712685`.
+- inbound-patch-evidence.tgz SHA256 `62313f57230659ab9e0928a5519bfd9254ede498dd1de9662bdcd1e1871dbc41`.
+
+Evidence-only local Git checkpoint; candidate implementation remains outside canonical product commits, no off-device backup or release approval implied. Next bounded step is the email sender/CRM authorization decision and regression tests, not more generic refactoring.
