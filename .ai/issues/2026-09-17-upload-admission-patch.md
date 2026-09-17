@@ -75,3 +75,32 @@ Private ignored archives, mode0600, retained beside earlier checkpoints:
 - `storage-patch-evidence.tgz`: SHA256 `9476a7446d3764106a70300fbf02911ed7e7e5f5462b31fbef60272951e2be90`; root regression, HTTP and typecheck logs. Existing HTTP controls remain in prior evidence archive.
 
 Local evidence checkpoint only, not off-device backup or production rollback authorization. No local database may be restored over production.
+
+## Follow-up: reply partial-success UI — 2026-09-17
+
+Candidate-only ticket detail page, one focused spec and four translation keys in each of TR/EN/DE. No dependency, schema, backend or new infrastructure changes. Existing sanitizer and permission conditions retained; static impact limited to ticket detail page and its attachment socket callback (no callable graph impact tool).
+
+- Keep composer contents until addMessage acknowledgement. Clear only the submitted snapshot, preserving newer text/files/AI visuals.
+- Immediately retain acknowledged message; an attachment failure now shows separate pending files and retry/discard controls. Retry uses the original message ID and failed/remaining files, never addMessage. Discard clears local retry state only, never server data.
+- A synchronous ref lock prevents same-tick duplicate submission; new sends wait until pending files are retried/discarded. Keyed ticket component plus active checks stop remaining uploads after navigation and keep retry state on the original ticket.
+- Deduplicate HTTP/socket attachment acknowledgements by attachment ID in both arrival orders. This review-discovered race was reproduced before fixing.
+- Temporary retry files are not persisted across navigation/reload; the localized UI explicitly warns about this. Lost HTTP acknowledgements still make server acceptance ambiguous: no exactly-once guarantee or backend idempotency redesign claimed.
+
+### Verification
+
+Initial focused RED5failed/2passed; additional socket race RED2failed/9passed. Final focused11/11. Root full frontend suite **47files/327tests passed**, frontend TypeScript check passed. Direct frontend i18n checker reports all3locales complete; all12new values additionally asserted present. Root workspace i18n wrapper initially failed because nested pnpm is absent from sanitized PATH; direct package invocation of the same checker passed without widening the environment.
+
+Independent code/security review approved the narrow patch after the socket duplicate issue was fixed. Existing React mock/TipTap warnings remain. ReactDOM/jsdom tests mock editor/API/socket dependencies and are not actual browser E2E. Existing Playwright config starts/reuses3000/4000 services and persisted admin state; deliberately not run unchanged. Browser rendering/real auth/provider acceptance remains open, as do prior backend generation/build/recovery gates. No live/DB access, app startup, push or deployment.
+
+Correction to prior compatibility wording: current load() catches refresh failures internally, so the demonstrated old duplicate-message path was attachment failure, not refresh failure. The new regression also confirms acknowledged replies are not restored on refresh failure.
+
+Next bounded compatibility work: inbound-email attachment failure visibility/recovery; do not replay whole emails and duplicate tickets. New-ticket creation's partial-upload recovery and isolated browser verification remain separate acceptance checks. No automatic release follows these local fixes.
+
+### Local recovery
+
+Canonical877source hashes unchanged. Six archived files verified byte-for-byte after escaping bracket-containing route paths for BSD tar member matching. Earlier failed verification was an archive-selection pattern issue, not a successful restore claim.
+
+- `reply-patch-inputs.tgz`: SHA256 `523e382540eea340e313010f36015a8cb8fe430859266ee4e411d2f95bcf8c97` (page, focused spec, three locale JSON files, original manifest).
+- `reply-patch-evidence.tgz`: SHA256 `45c5088aa811635881e94651af19857498b1cbe5d6baff2b71fdc288bdd76f0f` (full test/typecheck and both i18n command logs).
+
+Both under ignored private dependency-gate directory, mode0600. Incremental archives require previous checkpoints. Candidate source remains separate from canonical product commits; this documentation commit is evidence only, not a release source revision or remote backup.
