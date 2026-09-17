@@ -43,3 +43,35 @@ HTTP test launcher adds fixed `--experimental-vm-modules` for Jest's genuine Fil
 Private ignored `.private-data/dependency-gate-20260917/upload-patch-inputs.tgz` contains current manifests/lock, three controllers, two new tests and original source manifest. SHA256: `6f0bf859561bdcfe7774d42ec7e1848f60083c92f48bf0a138cf26ff66addf6d`. Incremental upload-patch-evidence.tgz contains new harness controls, version test, audit and test/typecheck logs. Retain original source checkpoint and earlier controls archives for complete recovery. Archives mode0600; no live data included.
 
 Evidence archive SHA256: `06fa0717ef96697ba91ee9febf59851530fbaa588c4ea92284c724cba7bb7f3b`.
+
+## Follow-up: storage failure contract — 2026-09-17
+
+Small candidate-only continuation, independently reviewed. `StorageService.uploadFile` now rejects generic503 when configured S3 lacks credentials/client, settings lookup fails or PutObject fails; it never silently substitutes local storage. Explicit LOCAL storage still works; directory/write failures produce the same sanitized503. No provider details are returned or logged by the new upload catch. Successful key/response contracts remain unchanged.
+
+Attachment controller authorizes first, awaits successful storage, then optionally parses Hotinfo and creates metadata. It no longer creates `FAILED_STORAGE_UPLOAD_*` success records. Hotinfo parsing failure after successful storage remains tolerated. No read/download/delete changes; no historical record/file changes, new env, migration, app startup, production/DB access, package acquisition, push or deploy.
+
+### Evidence
+
+- Initial durability RED:11failed/5passed. Final18 durability tests include S3 settings/credential/write failures, pending PutObject acknowledgement, LOCAL success/failure, authorization-before-storage and Hotinfo behavior.
+- Root rerun:18durability+23multipart=41/41pass; expanded genuine HTTP suite18/18pass including storage503/no metadata calls for all three upload routes. Synthetic mocked storage/auth only, no real provider/customer data. No socket remains listening on52984.
+- Independent code/security review approved this bounded change, not release readiness.
+- General backend typecheck rerun still FAILS with missing generated Prisma exports/downstream errors; no diagnostic reported against modified storage implementation. Specs are excluded from that command: their successful SWC/Jest runs are not a complete test TypeScript check. Reviewer corrected new test index typing manually. No full build/E2E/coverage or fresh dependency audit in this continuation.
+- All877original canonical source hashes still match. Candidate-only inputs13files verified byte-for-byte against archive; source changes not imported as canonical product-code commits.
+
+### Caller compatibility: explicit release gates, not scope expansion
+
+1. Frontend `tickets/[id]/page.tsx:369`: message is created before uploading attachments; shared catch restores input/removes optimistic display if upload fails. Manual retry may create a duplicate message. Next minimal step: represent message success separately from attachment failure and preserve a safe retry target. Do not blindly retry message creation.
+2. New-ticket flow already reports partial upload error but redirects; failed files are not retained for retry. Verify acceptable customer recovery alongside the reply flow.
+3. `email/email-inbound.service.ts:171,236`: attachment error is caught/logged; email can still be marked processed. Explicit failure visibility/recovery is required before shipping this changed failure behavior when inbound email is enabled. Do not automatically replay entire emails or duplicate tickets.
+4. Logo UI already catches failed upload and does not save a new logo URL. Knowledge controller and LearnNow PDF flow create source metadata only after awaited storage success; static inspection, not real integration verification.
+
+Storage acknowledgement is not a disaster-recovery proof. Successful upload followed by DB failure may leave an orphan object; existing timestamp-key collision possibility also remains. No atomic storage/DB redesign or automatic cleanup is introduced. These limitations and frontend/email gates prevent calling this production-ready.
+
+### Recovery checkpoint
+
+Private ignored archives, mode0600, retained beside earlier checkpoints:
+
+- `storage-patch-inputs.tgz`: SHA256 `4a96ab9bb640b11949b93f15195345ba5675e6b4eb5a7356adb18c434ea668bb`; cumulative manifests/lock, four controllers/service files, four tests and original source manifest.
+- `storage-patch-evidence.tgz`: SHA256 `9476a7446d3764106a70300fbf02911ed7e7e5f5462b31fbef60272951e2be90`; root regression, HTTP and typecheck logs. Existing HTTP controls remain in prior evidence archive.
+
+Local evidence checkpoint only, not off-device backup or production rollback authorization. No local database may be restored over production.
