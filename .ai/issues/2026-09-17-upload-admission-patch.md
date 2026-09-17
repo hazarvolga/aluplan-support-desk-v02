@@ -142,3 +142,32 @@ All877canonical source hashes unchanged; four archived files match candidate byt
 - inbound-patch-evidence.tgz SHA256 `62313f57230659ab9e0928a5519bfd9254ede498dd1de9662bdcd1e1871dbc41`.
 
 Evidence-only local Git checkpoint; candidate implementation remains outside canonical product commits, no off-device backup or release approval implied. Next bounded step is the email sender/CRM authorization decision and regression tests, not more generic refactoring.
+
+## Follow-up: bounded inbound account/ownership mitigation — 2026-09-17
+
+Owner approved continuing the proposed local-only sequence. Static impact analysis covers EmailInboundService.processMail, OmniChannelService.handleInboundEmailWebhook, their callers and TicketsService.addMessage/findOne/create. Callable GitNexus tools are unavailable and the graph is stale; no graph-based proof is claimed. Independent security review confirmed unknown-sender owner substitution, automatic ACTIVE account provisioning, and IMAP role amplification from an unverified From address.
+
+The bounded candidate change must reject unknown, inactive, deleted or roleless accounts before domain writes; remove automatic account provisioning; require exact ownership for existing-ticket replies; and pass only CUSTOMER authority for email-origin messages. An ownership denial must never fall through into new-ticket creation. Existing processed-message duplicate fences, bounce handling and attachment failure markers remain intact. Staff cross-customer replies through inbound email are intentionally disallowed; authenticated dashboard reply behavior is not changed.
+
+This is **risk reduction, not authenticated email admission**. A known customer's address can still be spoofed without trusted ingress evidence. Existing ACTIVE status is not proof of CRM membership or completion of secure onboarding, particularly for historically auto-created accounts. No new CRM entitlement concept, automatic account deactivation or hardcoded test-user exception is introduced. HMAC authenticates the webhook secret holder, not the claimed author. Arbitrary Authentication-Results headers must not be trusted. Full sender authenticity and CRM admission remain release blockers.
+
+Rejected messages use the existing error record, not a new review UI or full-content quarantine. IMAP's existing markSeen behavior and mailbox retention remain operational recovery limitations. No automatic replay or mailbox mutation change is included. Before release, establish a trusted ingress contract or separately approve suspending automatic mail-to-ticket writes while preserving mailbox delivery. Do not silently ship that workflow decision.
+
+### Offline client generation attempt
+
+Root ran the existing network-denied harness with `pnpm --filter @aluplan/database exec prisma generate`. Prisma loaded the existing prisma.config.js; dotenv reported zero injected variables. It failed because the darwin-arm64 schema engine was unavailable and binaries.prisma.sh could not resolve inside the sandbox. Network permissions were not widened, no dependencies acquired, no database connection/migration performed and no successful client generation is claimed. Full backend typecheck/build remains open. Next generation attempt requires reviewed, bounded tool acquisition, not reuse of production credentials or blind enablement of install scripts.
+
+### Implementation and evidence
+
+Candidate changes are limited to the two inbound services, new `email/inbound-sender-eligibility.spec.ts`, and explicit eligible-owner fixtures in the existing inbound/attachment specs. Fixed rejection markers are `INBOUND_SENDER_NOT_ELIGIBLE` and `INBOUND_TICKET_OWNER_MISMATCH`. No new environment variable, dependency, schema or migration. This is not a standalone publishable release branch.
+
+TDD: 32 failures / 4 passes before the fix; all 36 new tests pass after it. Root independently ran those tests plus attachment visibility, bounce and storage/attachment durability: **5 suites / 68 tests passed** in the offline sandbox. Dependencies are mocked; no actual IMAP/HTTP-provider/DB or sender authentication acceptance is claimed. Full backend TypeScript check was rerun and still fails with missing generated database exports and downstream errors. Older full service suites remain generation-blocked; their adjusted fixtures are not counted as passing tests.
+
+All 877 canonical source files still match the original manifest. Byte-verified private incremental archives (mode0600, local only, require previous checkpoints):
+
+- `inbound-sender-inputs.tgz`: `9c08af9517be0013082a15f460e95ed165fffd4fb0a8409567e1f69b4bd2acff` (five candidate source/test files plus original manifest).
+- `inbound-sender-evidence.tgz`: `eddf69e25673d330ce81d53caf8448555b88f984cdf23f5c2f8a1f063f11a917` (root regression and failing typecheck logs).
+
+No production access, database operation, app restart, external message, push or deployment. Next: finish sender trust/admission decision and bounded Prisma tooling acquisition, then consolidate the actual tested source into scoped local commits before isolated release rehearsal. Do not substitute evidence-only documentation commits for a reproducible code release.
+
+Independent post-change code/security review approved this bounded local mitigation with no introduced Critical/High finding identified. The reviewer did not independently run tests; the 68-test execution is root evidence. Source files and the report passed the redacted secret scan. This approval explicitly excludes production readiness and the unresolved sender authenticity/CRM/TLS/recovery/compilation gates.
