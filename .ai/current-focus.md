@@ -1,5 +1,9 @@
 # Current Focus
 
+## Local mail TLS maintenance plan prepared — 2026-09-19
+
+See the top plan section in `issues/2026-09-19-mail-transport-observation.md`. Local SMTP/IMAP both bypass certificate validation; SMTP does not require STARTTLS. No source fix or live change performed this turn. Plan preserves SMTP587, moves IMAP to993 only in coordinated approved maintenance, retains image/volumes, and requires certificate renewal, private off-host recovery, TLS and controlled delivery acceptance. Next: isolated client regression/patch and separately approved read-only certificate/image/renewal inventory. No certificate issuance, DNS edit, restart, settings write, push or deploy authorization.
+
 ## Mail file-backup gate completed — 2026-09-19
 
 Owner-approved root-only on-host backup `/var/backups/aluplan-mail-20260919-wvS1G5/mail-backup.tgz` includes mail-data/state/config plusCompose/env. gzip/archivecompare/SHA256 and separate extracted persistentfile comparison passed;31transientsockets excluded. Livecopy notatomic, nooffhostcopy or service-restoreproof. Runtime unchanged; noTLS/restart/deploy/DBwrites. EffectiveSMTP/IMAP TLSoff independently confirmed. Existingmailtransport report holds evidence and limits. Next localTLSmaintenance plan, not livechanges; newauthority required for remediation.

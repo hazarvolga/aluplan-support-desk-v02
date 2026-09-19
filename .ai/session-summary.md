@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Local-only TLS maintenance plan
+
+Rechecked local mail providers and official DMS/Nodemailer documentation. Recorded minimal staged plan in existing mail report, including current client validation bypass, SMTP587 STARTTLS vs direct TLS, coordinated IMAP993 transition, version-pinned server setup, renewal, secure administration, off-host recovery gap, controlled mail-to-ticket acceptance and non-destructive rollback. Historical pending-inspection statements explicitly superseded. No runtime code/config, production access, tests, certificate issuance, restart, push or deployment this turn.
+
 ## 2026-09-19 — Authorized on-host mail backup
 
 Effective Postfix/Dovecot TLSoff confirmed viareadonlyqueries. Explicitbackupapproval used for freshroot0700folder,0600archive of maildata/state/config/Compose/env, no secretcontentdisplay. gzip/tarcompare/SHA256pass; extracted persistentfiles match with31socketexceptions; live-to-stage dryruns zerochanges, runtimeidentityunchanged. File-level only, notatomic/fullrestore/offhost/DBbackup. Shellclosed; noTLS/restart/deploy. Evidence/path/limits in existingmailtransport report. Next prepare separatelyapproved TLSmaintenance and offhost/recoveryacceptance.
