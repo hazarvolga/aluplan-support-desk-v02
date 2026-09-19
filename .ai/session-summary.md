@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Mail DNS and IMAP capability follow-up
+
+Correlated owner's masked live settings screenshot with freshDNS A/MX. Credential-free IMAP143CAPABILITY advertisesPLAIN/LOGIN withoutSTARTTLS; no mailboxaccess. Browser simultaneoususerinteraction respected; no furtherUIactions or livechanges. Existing mailtransport report updated with evidence and explicitunverified certificate/backup gates. Noappcode/test/deploy changes.
+
 ## 2026-09-19 — Read-only mail service identification
 
 Owner-provided Coolify service read in existingFirefox session: DockerMailserver latest,Runningunknown,persistentmailvolumes. NoCompose save. Unauthenticated external587 EHLO lacksSTARTTLS and advertisesAUTH;993refuses. Noauth/email/datachange. Actualapp mailtarget unknown; independentsecurityreview keeps strictTLSdeployment blocked pendingtarget/certcompatibility. New mailtransport observation report records limitations and narrow nextread-only gate; no runtime edits or releaseapproval.

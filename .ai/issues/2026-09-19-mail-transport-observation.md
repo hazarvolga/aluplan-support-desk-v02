@@ -18,10 +18,16 @@ Owner provided Coolify service `q4wgowwo0wwsg0sksg8gkow4` and requested browser 
 
 ## What remains unknown
 
-The production application's actual SMTP/IMAP host, port, secure/STARTTLS options and delivery provider are not yet correlated with this service. Therefore this is NOT proof that the application sends passwords unencrypted, nor proof of compromise or failed customer delivery. Internal reachability may differ from external probes. SPF/DKIM/DMARC and trusted sender-header handling are not established.
+The owner's subsequent live-settings screenshot shows SMTP mail.allplan.net.tr:587 with direct TLS unchecked and IMAP mail.allplan.net.tr:143 with TLS unchecked. Passwords stayed masked. Fresh unauthenticated DNS lookup resolved mail.allplan.net.tr A to167.86.84.107, no AAAA data; allplan.net.tr MX priority10 points to mail.allplan.net.tr. This correlates the displayed app targets with the observed VPS, though backend-side DNS/network and effective runtime options remain unverified.
+
+A fresh IMAP143 greeting and tagged CAPABILITY response from mail.allplan.net.tr advertised AUTH=PLAIN and AUTH=LOGIN, without STARTTLS. Probe sent only `a1 CAPABILITY` and disconnected: no authentication, mailbox selection or message access. Combined with the earlier SMTP587 observation and owner-supplied TLS-off settings, this is a concrete transport confidentiality concern, not proof of stolen credentials or failed delivery. Successful AUTH was not attempted. SPF/DKIM/DMARC and trusted sender-header handling are not established.
+
+Browser continuation encountered simultaneous owner interaction. Current foreground was unrelated to this task; no further UI actions taken. Actual certificate files/effective mailserver TLS configuration, mail-data/config backup integrity and restore readiness remain UNVERIFIED. No credential changes or server remediation attempted.
 
 ## Release decision and next bounded gate
 
 Independent security review agrees: do not deploy a strict-TLS application change against an unverified active mail endpoint. It could interrupt customer email. First read ONLY actual app mail host/port/TLS settings (not passwords), correlate with service runtime, then verify supported TLS endpoint, certificate chain/hostname and expiry. If server remediation/restart is required, prepare separately approved maintenance change with mail-data/config backup, rollback, and controlled delivery test; do not bundle a mailserver latest-image upgrade into the application release.
 
 Local regression-first TLS hardening can be prepared, but remains release-blocked until actual target compatibility is proven. Other runtime/data-preservation gates in source-consolidation report remain open. No production data modified, no push/deploy.
+
+Next action once the management browser is available: read-only inspect the mail service's effective TLS settings, existing certificate metadata (never private key bytes), exact image digest and backup metadata for mail-data/mail-config. Do not recreate volumes, upgrade latest, enable random security components, or restart to discover configuration. Then prepare a separately approved maintenance plan: verified recoverable mail/config backup, trusted certificate and renewal, TLS transport acceptance without credentials, application transition and controlled mail test. Review credential rotation after secure transport is established; do not rotate silently or claim zero downtime.

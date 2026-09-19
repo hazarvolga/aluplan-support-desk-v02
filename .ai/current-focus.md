@@ -1,5 +1,9 @@
 # Current Focus
 
+## Mail target correlated, transport prerequisite confirmed — 2026-09-19
+
+Owner screenshot:SMTP587directTLSoff/IMAP143TLSoff atmail.allplan.net.tr. FreshDNS A matchesVPS,MXpoints there; IMAP143CAPABILITY lacksSTARTTLS and advertisesPLAIN/LOGIN. Noauth/messages/datachanges. Browser in owneruse; effectiveTLS/cert and mailbackup checks incomplete. See existing mailtransport report. Next management read-only certificate/backup readiness, then separatelyapproved mailTLSmaintenance; do not deploy strictclientTLS first.
+
 ## Mail endpoint compatibility gate — 2026-09-19
 
 Read-only Firefox Coolify inspection confirms Docker Mailserver service; external587 advertisesAUTH withoutSTARTTLS,993refused. App actualtarget not yet correlated, so no plaintext-app claim. Do not deploy strictTLS until actual mailtarget/certificate compatibility verified. See issues/2026-09-19-mail-transport-observation.md. No livechanges/credentials/mail sent/restart/deploy. Next narrowly inspect nonsecret app mail host/port/TLS settings and service runtime; any server remediation needs separate change approval.
