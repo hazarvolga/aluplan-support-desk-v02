@@ -3,8 +3,23 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const { readFileSync } = require('node:fs');
-const { guard, expectStatus, assertLogin, readProbeRequestTimeout } = require('./rehearsal-customer-probe.cjs');
+const { guard, expectStatus, assertLogin, readProbeRequestTimeout, readExtendedProbeMode, assertSyntheticBytes } = require('./rehearsal-customer-probe.cjs');
 const safe = { ALLOW_LOCAL_CUSTOMER_PROBE: '1', NODE_ENV: 'production', DATABASE_URL: 'postgresql://probe:secret@aluplan-customer-a1b2-pg:5432/working_clone' };
+test('extended probe requires an exact explicit opt-in', () => {
+  assert.equal(readExtendedProbeMode({}), false);
+  assert.equal(readExtendedProbeMode({ ALUPLAN_PROBE_EXTENDED: '1' }), true);
+  for (const value of ['', '0', 'true', ' 1', 'private-mode-canary']) {
+    assert.throws(() => readExtendedProbeMode({ ALUPLAN_PROBE_EXTENDED: value }),
+      { name: 'Error', message: 'invalid extended probe mode' });
+  }
+});
+test('attachment byte assertion accepts only matching nonempty bytes', () => {
+  assert.doesNotThrow(() => assertSyntheticBytes(Buffer.from([1, 2]), new Uint8Array([1, 2])));
+  for (const [actual, expected] of [[[], []], [[1], [2]], [[1, 2], [1]], [[], [1]]]) {
+    assert.throws(() => assertSyntheticBytes(Buffer.from(actual), Buffer.from(expected)),
+      { name: 'Error', message: 'attachment byte mismatch' });
+  }
+});
 test('probe request timeout defaults to 5000 milliseconds when absent', () => {
   assert.equal(readProbeRequestTimeout({}), 5000);
 });
