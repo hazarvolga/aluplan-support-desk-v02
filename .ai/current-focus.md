@@ -1,5 +1,13 @@
 # Current Focus
 
+## Extended authenticated HTTP rehearsal passed; rollback artifact remains open — 2026-09-19
+
+Same frozen runtime `3403ae61` / image `b1126e5c…` passed **56/56 real HTTP checks** on a NEW isolated sanitized September17 clone. Added customer own-review and management denials; SUPPORT_AGENT status/bulk/merge with persisted effects; ADMIN status mutation and admin-only lookup; internal-note hiding; two synthetic PNG uploads and exact local-disk/HTTP bytes with owner/staff success and cross-customer/anonymous/internal-note denials. No application, migration, image, role-grant or provider configuration changes. Tool helpers passed14/14 combined tests (new tests first failed as expected); independent contract/security reviews completed before execution.
+
+Run `customer-d7254ddf9d6f`: preboot180 tickets/563 messages/114 attachment records/1285 users; postprobe182/568/116/1289. Additions are two synthetic tickets, five messages (two replies, one staff note, two merge notes), two attachments and four users. Preboot protected parity passed; historical postboot row parity is NOT claimed. Owned resources removed and label inventories rechecked empty. Synthetic upload bytes were ephemeral LOCAL storage, not historical R2 preservation or rollback proof. Production untouched; no push/deploy.
+
+Next release blocker: designate and inspect a trustworthy immutable rollback artifact/startup path before new-write-preserving rollback. The September17 observed backend image ID `302229b2…` is absent locally and has no source attestation; prior local image `b802af…` is NOT a demonstrated production rollback target. Historical tag-matching `d9b21b9d` startup contains schema/ledger and user/role repair operations, so normal old startup cannot be presumed safe. Acquisition from production requires separately scoped approval; do not use an old dump, silently bypass startup, or call same-image restart a rollback. Browser/CRM/reset, historical object bytes, exact-image vulnerability review, mail TLS and host preflight also remain open.
+
 ## Exact image and restored-data customer HTTP acceptance passed — 2026-09-19
 
 Frozen runtime source3403ae61 produced Linux/amd64 image `sha256:b1126e5cc5c60adff63fb843c40fe89da4450ba40ed8ef75e5c738b42f7239bf`. Static smoke57/57 migration files and separate UID1000/permission probes passed. Real A13 sanitized Sept17 restore/migration passed protected fingerprints, canonical CUSTOMER4, schema/RBAC checks and second-pass no-op;180tickets/563messages/114attachment records/1285users preserved before app boot.

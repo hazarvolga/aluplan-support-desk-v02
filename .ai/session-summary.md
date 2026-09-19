@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Staff/admin, customer review and synthetic attachment acceptance
+
+Extended only the local probe with explicit opt-in, exact request statuses, manual same-origin storage redirect handling, multipart bytes, persisted authorization effects and aggregate-only diagnostics. TDD2 new failures/7 prior passes then14/14 combined passes. Independent reviewers confirmed contracts and found two proof gaps before execution: ADMIN needed a real mutation; bulk OPEN after ADMIN OPEN would be a no-op. Added ADMIN NEW→OPEN, bulk OPEN→IN_PROGRESS and exact internal merge-note sender/distribution assertions. No runtime product changes.
+
+Same immutable3403ae61 image passed56/56 in run `customer-d7254ddf9d6f`, with migration/preboot parity and credential-zero checks. Counts180/563/114/1285→182/568/116/1289 reflect synthetic fixtures only; no complete postboot historical-row parity claim. Exact synthetic PNG bytes passed on disk and authenticated HTTP; owner/staff success and cross-customer/anonymous/internal-note denials passed. Four emulated logins12.369/12.320/11.885/11.930s; no native performance claim. All owned resources removed, absence rechecked; private receipts retained. No production access/push/deploy.
+
+Read-only rollback preflight found observed September17 image302229b2… absent locally; prior localb802af… is not a proven live rollback target. Tag-matchingd9 source startup performs schema/ledger and user/role repair, but actual image provenance/entrypoint remain unverified. Next gate is a reviewed, designated immutable rollback artifact/startup path and preserved new writes/bytes; production acquisition requires separate approval. Full details in source-consolidation. Production remains NO-GO.
+
 ## 2026-09-19 — Exact customer release image and real HTTP proof
 
 Built frozen3403ae61 Linux/amd64 imageb1126e5cc5c60adff63fb843c40fe89da4450ba40ed8ef75e5c738b42f7239bf; static smoke and separate nonroot permissions passed. A13 runcustomer-20260919-3403ae61 preserved sanitized Sept17 protected data/counts180/563/114/1285, validated CUSTOMER4/schema and second migration no-op. New normal full-app clone/freshRedis customer probe passed22actualHTTP checks with two synthetic customers/tickets/replies and ownership/internal-note/CSRF denials. Preboot credential assertion0 and protected parity; postprobe182/565/114/1287. Owned containers/network/volumes removed and absence verified; original artifacts/references untouched.

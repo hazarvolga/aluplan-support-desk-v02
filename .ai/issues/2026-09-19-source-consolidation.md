@@ -1,5 +1,38 @@
 # Local source consolidation — 2026-09-19
 
+## Extended customer/staff/admin and attachment HTTP proof — 2026-09-19
+
+### Scope and checks
+
+Only `scripts/rehearsal-customer-probe.cjs` and its tests changed. Explicit `ALUPLAN_PROBE_EXTENDED=1` enables additional tests; absent means the existing22-check mode. Invalid opt-ins fail before dependency loading/DB access. Request timeout20s and total probe deadline120s remain bounded; normal crypto and application guards are unchanged. New helper tests first failed2/7 existing passed, then combined probe/sanitization tests passed14/14. The same frozen runtime image/source from the preceding section was reused, not rebuilt or modified.
+
+Two independent read-only contract/security reviews checked the probe and scratch runner. Review caught ADMIN-only lookup being insufficient management proof and bulk OPEN becoming a no-op after the added ADMIN OPEN transition. Both corrected before execution: persisted ADMIN status change and actual bulk OPEN→IN_PROGRESS. Merge assertions require exactly two new internal messages, both from SUPPORT_AGENT, one per fixture ticket. The runner enables extended mode and requires exact56 plus PASS; isolation and ownership-checked cleanup remain unchanged.
+
+Actual checks comprise the previous22 plus34:
+
+- CUSTOMER own NEW→PENDING_CUSTOMER_REVIEW succeeds and persists; other-customer review, arbitrary OPEN, bulk, merge and missing-CSRF bodyless PATCH deny without selected ticket/message mutations.
+- Synthetic SUPPORT_AGENT and ADMIN authenticate through real login using existing DB roles, without adding grants. Support reads a nonowned fixture, creates a persisted internal note hidden from its customer, changes review→OPEN, bulk changes both tickets to IN_PROGRESS, then merges with verified parent/status and internal notes. ADMIN changes the other fixture NEW→OPEN and accesses user lookup; customer/support lookup deny.
+- Two68-byte synthetic PNG files upload through real multipart endpoints into LOCAL storage. Metadata/message binding and on-disk bytes match; owner/staff wrapper redirects lead only to the exact authenticated local storage path. Downloaded bytes and private/no-store, attachment-disposition, nosniff and CSP headers match. Cross-customer upload/download, anonymous download, direct-storage bypass, missing-CSRF upload and customer internal-attachment reads deny. Rejected uploads preserve scoped row counts and file inventories.
+- Active webhook count is zero before tests. Reserved synthetic recipient email logs show no QUEUED/SENT entries at final observation; network isolation, not that point-in-time query alone, is the provider boundary.
+
+### Recorded result and cleanup
+
+Run `customer-d7254ddf9d6f`, private folder `.private-data/release-evidence/customer-d7254ddf9d6f/`: PASS56/56; cleanup clean, diagnosticFailedfalse. Probe SHA256 `a83e5d15587edc14775a9d97321647dcd9f6678dcb2662b1dccb878d300d68f7`. Image remains `sha256:b1126e5cc5c60adff63fb843c40fe89da4450ba40ed8ef75e5c738b42f7239bf`, runtime source `3403ae617f4b50cde4d18c2a54015e32a7eba5ce`, sanitized dump SHA `c7a2aeb8969841e8e17e07e6e43241d3fb768a358f017e9716aeb08a11e673c4`.
+
+Preboot counts180 tickets/563 messages/114 attachment records/1285 users; after probe182/568/116/1289. Two tickets, two customer replies, one staff internal note, two merge notes, two attachments and four identities are synthetic additions in the disposable copy. Protected preboot fingerprints match accepted migration-only evidence; scheduled local jobs mean no complete postboot historical-row conservation claim. Login durations12369/12320/11885/11930ms under amd64 emulation, not native VPS performance. Sampled externalTCP/DNS remained blocked. All owned containers, volume and network removed; independent label inventories empty. Original artifacts/reference resources preserved. No production access or modification, real-provider messages, push or deploy.
+
+Limits: this is backend HTTP, not rendered browser/cookie proof. LOCAL synthetic bytes do not establish historical114object bodies, R2 transport, persistent volume behavior or version rollback. Anonymous upload, customer upload into an internal message and ADMIN attachment access were not exercised. These are evidence boundaries, not assertions of a discovered exploit. No fresh vulnerability or host-cleanliness claim.
+
+### Rollback preflight and next gate
+
+Read-only local inspection found no designated, provenance-verified production rollback artifact:
+
+- September17 observed backend image ID `sha256:302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644` is absent locally. Its tag referred to `d9b21b9d7b5c4c259acbe9a5828fdd04ba077ce2`, but there was no OCI revision. A local Docker image ID is not a registry manifest digest or source attestation.
+- Available `b802af…` / source18929781 is a prior LOCAL candidate, not observed production rollback. Other cached hotfix/root images lack an appropriate verified designation. No suitable receipt found in bounded local evidence inventory.
+- Tag-matching historical `apps/backend/scripts/deploy.sh` contains conditional schema/ledger repair and invokes `production-sync.js`, `grant-admin.js`, `fix-customer-roles.js` before API startup. This is source evidence, not verified contents of the missing image. It prevents assuming old normal boot is data-safe.
+
+Next smallest gate: explicitly designate an immutable fallback artifact with provenance and inspect its actual entrypoint; if a startup adaptation is necessary, review/record it rather than silently bypassing old behavior. Then switch a single local app instance against the migrated clone while retaining candidate-created records AND attachment bytes, verify authenticated old-app read/reply/download hashes, and never rewind the DB to an old dump. Same-image restart is persistence testing only. Acquiring anything from production requires separately scoped approval; this phase did not do it. Browser/CRM/reset, historic object parity, exact-image vulnerability review, mail TLS and host/credential preflight remain required. Production remains NO-GO.
+
 ## Exact CUSTOMER image, restore and real customer HTTP acceptance — 2026-09-19
 
 ### Frozen artifact and migration-only evidence
