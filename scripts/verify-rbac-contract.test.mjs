@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 
 import {
   extractRbacDecoratorsFromSource,
@@ -124,4 +125,26 @@ test("database verification requires the exact SUPPORT_AGENT permission boundary
     () => verifyDatabaseSnapshot(canonicalContract, overPrivileged),
     /SUPPORT_AGENT.*unexpected permission.*users:manage/i,
   );
+});
+
+test("real canonical contract rejects CUSTOMER0 and excess CUSTOMER grants", async () => {
+  const contract = JSON.parse(await readFile(
+    new URL('../packages/database/prisma/rbac-canonical.json', import.meta.url),
+    'utf8',
+  ));
+  const validSnapshot = {
+    permissions: contract.permissions.map(({ name }) => name),
+    rolePermissions: structuredClone(contract.rolePermissions),
+  };
+  assert.doesNotThrow(() => verifyDatabaseSnapshot(contract, validSnapshot));
+
+  const emptyCustomer = structuredClone(validSnapshot);
+  emptyCustomer.rolePermissions.CUSTOMER = [];
+  assert.throws(() => verifyDatabaseSnapshot(contract, emptyCustomer), /CUSTOMER.*missing permission/i);
+
+  for (const extra of ['faq:read', 'faq:review', 'faq:manage', '*', 'users:manage']) {
+    const excessCustomer = structuredClone(validSnapshot);
+    excessCustomer.rolePermissions.CUSTOMER = [...(excessCustomer.rolePermissions.CUSTOMER ?? []), extra];
+    assert.throws(() => verifyDatabaseSnapshot(contract, excessCustomer), /CUSTOMER.*unexpected permission/i);
+  }
 });

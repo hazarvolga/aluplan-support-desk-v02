@@ -37,7 +37,10 @@ describe('TicketsService', () => {
         get: jest.fn(),
         set: jest.fn(),
     };
-    const mockTicketAccessService = { canAccessTicket: jest.fn().mockResolvedValue(true) };
+    const mockTicketAccessService = {
+        canAccessTicket: jest.fn().mockResolvedValue(true),
+        canManageTicket: jest.fn().mockResolvedValue(true),
+    };
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -281,7 +284,7 @@ describe('TicketsService', () => {
             prisma.ticket.findFirst.mockResolvedValue(ticket);
 
             // Act & Assert
-            await expect(service.transition('tik1', TicketStatus.RESOLVED, 'agent1')).rejects.toThrow(BadRequestException);
+            await expect(service.transition('tik1', TicketStatus.RESOLVED, { sub: 'agent1', role: 'AGENT' })).rejects.toThrow(BadRequestException);
         });
 
         it('should update status and emit event for valid transition', async () => {
@@ -293,7 +296,7 @@ describe('TicketsService', () => {
             prisma.ticket.update.mockResolvedValue(updatedTicket);
 
             // Act
-            const result = await service.transition('tik1', TicketStatus.OPEN, 'agent1');
+            const result = await service.transition('tik1', TicketStatus.OPEN, { sub: 'agent1', role: 'AGENT' });
 
             // Assert
             expect(result.status).toBe('OPEN');
@@ -735,7 +738,7 @@ describe('TicketsService', () => {
                 prisma.ticket.update.mockResolvedValue({ ...ticket, status: 'CLOSED' });
 
                 // Act
-                await service.transition('tik1', TicketStatus.CLOSED, 'agent1');
+                await service.transition('tik1', TicketStatus.CLOSED, { sub: 'agent1', role: 'AGENT' });
 
                 // Assert
                 expect(prisma.ticket.update).toHaveBeenCalledWith(

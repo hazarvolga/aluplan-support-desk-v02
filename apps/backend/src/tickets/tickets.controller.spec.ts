@@ -151,7 +151,7 @@ describe('TicketsController', () => {
             const result = await controller.transition('tik1', TicketStatus.RESOLVED, req);
 
             // Assert
-            expect(mockTicketsService.transition).toHaveBeenCalledWith('tik1', TicketStatus.RESOLVED, 'user1');
+            expect(mockTicketsService.transition).toHaveBeenCalledWith('tik1', TicketStatus.RESOLVED, req.user);
             expect(mockNotificationsGateway.emitTicketUpdated).toHaveBeenCalledWith(expectedResult);
             expect(result).toEqual(expectedResult);
         });
