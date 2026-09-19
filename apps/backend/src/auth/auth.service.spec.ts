@@ -66,6 +66,14 @@ describe('AuthService', () => {
         crmEmailValidator = module.get<CrmEmailValidatorService>(CrmEmailValidatorService);
 
         jest.clearAllMocks();
+        prisma.role = { findUnique: jest.fn().mockResolvedValue({
+            name: 'CUSTOMER',
+            permissions: ['ticket:create', 'ticket:read'].map(name => ({ permission: { name } })),
+        }) };
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
     });
 
     describe('login', () => {
@@ -105,7 +113,7 @@ describe('AuthService', () => {
                 status: 'ACTIVE',
                 deletedAt: null,
                 passwordHash: 'hash',
-                roleId: null,
+                roleId: 'role-customer',
             };
             prisma.user.findUnique.mockResolvedValue(mockUser);
             prisma.user.update.mockResolvedValue(mockUser);
@@ -139,7 +147,7 @@ describe('AuthService', () => {
                 status: 'ACTIVE',
                 deletedAt: null,
                 passwordHash: 'hash',
-                roleId: null,
+                roleId: 'role-customer',
             };
             prisma.user.findUnique.mockResolvedValueOnce(null);
             prisma.user.findFirst.mockResolvedValueOnce(mockUser);
@@ -175,7 +183,7 @@ describe('AuthService', () => {
 
         it('should return new tokens on valid refresh', async () => {
             // Arrange
-            const mockUser = { id: '1', email: 'test@test.com', status: 'ACTIVE', deletedAt: null, sessionVersion: 0, refreshTokenHash: 'hash', roleId: null };
+            const mockUser = { id: '1', email: 'test@test.com', status: 'ACTIVE', deletedAt: null, sessionVersion: 0, refreshTokenHash: 'hash', roleId: 'role-customer' };
             prisma.user.findUnique.mockResolvedValue(mockUser);
             prisma.user.updateMany.mockResolvedValue({ count: 1 });
             (bcrypt.compare as jest.Mock).mockResolvedValue(true);
@@ -189,7 +197,7 @@ describe('AuthService', () => {
             expect(result).toHaveProperty('refresh_token');
         });
 
-        it('should fall back to default role permissions when role has no mapped permissions', async () => {
+        it('preserves explicitly empty role permissions without resurrecting defaults', async () => {
             const mockUser = { id: '1', email: 'test@test.com', fullName: 'Test User', status: 'ACTIVE', deletedAt: null, sessionVersion: 0, refreshTokenHash: 'hash', roleId: 'role-customer' };
             prisma.role = { findUnique: jest.fn() };
             prisma.user.findUnique.mockResolvedValue(mockUser);
@@ -205,7 +213,7 @@ describe('AuthService', () => {
             expect(jwt.signAsync).toHaveBeenCalledWith(
                 expect.objectContaining({
                     role: 'CUSTOMER',
-                    permissions: expect.arrayContaining(['ticket:create', 'ticket:read', 'ticket:update']),
+                    permissions: [],
                 }),
                 expect.any(Object),
             );
@@ -214,7 +222,7 @@ describe('AuthService', () => {
         it('rejects refresh rotation when a concurrent reset changed the durable session', async () => {
             prisma.user.findUnique.mockResolvedValue({
                 id: '1', email: 'test@test.com', fullName: 'Test User', status: 'ACTIVE',
-                deletedAt: null, sessionVersion: 0, refreshTokenHash: 'old-hash', roleId: null,
+                deletedAt: null, sessionVersion: 0, refreshTokenHash: 'old-hash', roleId: 'role-customer',
             });
             (bcrypt.compare as jest.Mock).mockResolvedValue(true);
             (bcrypt.hash as jest.Mock).mockResolvedValue('next-hash');
@@ -228,6 +236,76 @@ describe('AuthService', () => {
                     id: '1', sessionVersion: 0, refreshTokenHash: 'old-hash',
                 }),
             }));
+        });
+    });
+
+    describe('database session authority', () => {
+        const user = {
+            id: 'authority-user', email: 'authority@example.com', fullName: 'Authority Fixture',
+            status: 'ACTIVE', deletedAt: null, passwordHash: 'password-hash',
+            refreshTokenHash: 'refresh-hash', sessionVersion: 4, roleId: 'role-admin',
+        };
+
+        beforeEach(() => {
+            prisma.user.findUnique.mockResolvedValue(user);
+            prisma.user.update.mockResolvedValue(user);
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
+            (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+            (bcrypt.hash as jest.Mock).mockResolvedValue('next-hash');
+            jwt.signAsync.mockResolvedValue('new-token');
+        });
+
+        it.each(['login', 'refresh'] as const)('%s never mints wildcard access for an empty ADMIN mapping', async operation => {
+            prisma.role.findUnique.mockResolvedValue({ name: 'ADMIN', permissions: [] });
+
+            if (operation === 'login') {
+                await service.login({ email: user.email, password: 'valid-password' });
+            } else {
+                await service.refreshTokens(user.id, 'valid-refresh', 4);
+            }
+
+            expect(jwt.signAsync).toHaveBeenCalledTimes(2);
+            for (const [payload] of jwt.signAsync.mock.calls) {
+                expect(payload).toMatchObject({ role: 'ADMIN', permissions: [], sessionVersion: 4 });
+            }
+        });
+
+        it.each([null, { name: ' ', permissions: [] }, { name: 'ADMIN', permissions: null }])(
+            'rejects login when assigned role authority is invalid: %p', async role => {
+                prisma.role.findUnique.mockResolvedValue(role);
+                await expect(service.login({ email: user.email, password: 'valid-password' }))
+                    .rejects.toThrow(UnauthorizedException);
+                expect(jwt.signAsync).not.toHaveBeenCalled();
+                expect(prisma.user.update).not.toHaveBeenCalled();
+            },
+        );
+
+        it.each([null, { name: '', permissions: [] }, { name: 'ADMIN', permissions: [{ permission: null }] }])(
+            'rejects refresh when assigned role authority is invalid: %p', async role => {
+                prisma.role.findUnique.mockResolvedValue(role);
+                await expect(service.refreshTokens(user.id, 'valid-refresh', 4)).rejects.toThrow(ForbiddenException);
+                expect(jwt.signAsync).not.toHaveBeenCalled();
+                expect(prisma.user.updateMany).not.toHaveBeenCalled();
+            },
+        );
+
+        it('rejects an unassigned role on login and refresh', async () => {
+            prisma.user.findUnique.mockResolvedValue({ ...user, roleId: null });
+            await expect(service.login({ email: user.email, password: 'valid-password' })).rejects.toThrow(UnauthorizedException);
+            await expect(service.refreshTokens(user.id, 'valid-refresh', 4)).rejects.toThrow(ForbiddenException);
+            expect(prisma.role.findUnique).not.toHaveBeenCalled();
+            expect(jwt.signAsync).not.toHaveBeenCalled();
+        });
+
+        it('refresh uses the current database permissions and preserves the assigned role spelling', async () => {
+            prisma.role.findUnique.mockResolvedValue({
+                name: 'team-lead', permissions: [{ permission: { name: 'ticket:read' } }],
+            });
+            await service.refreshTokens(user.id, 'valid-refresh', 4);
+            expect(jwt.signAsync).toHaveBeenCalledWith(
+                expect.objectContaining({ role: 'team-lead', permissions: ['ticket:read'], sessionVersion: 4 }),
+                expect.any(Object),
+            );
         });
     });
 
@@ -511,13 +589,18 @@ describe('AuthService', () => {
     });
 
     describe('logout', () => {
+        beforeEach(() => {
+            jest.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
+        });
+
         it('should clear refresh token and blacklist jti', async () => {
             // Arrange
             prisma.user.updateMany.mockResolvedValue({ count: 1 });
             redis.set.mockResolvedValue('OK');
 
             // Act
-            const result = await service.logout('user-1', 'jti-123');
+            const expiration = Math.floor(Date.now() / 1000) + 3600;
+            const result = await service.logout('user-1', 'jti-123', expiration);
 
             // Assert
             expect(result.success).toBe(true);
@@ -525,20 +608,52 @@ describe('AuthService', () => {
                 where: { id: 'user-1', refreshTokenHash: { not: null } },
                 data: { refreshTokenHash: null }
             });
-            expect(redis.set).toHaveBeenCalledWith('jwt:blacklist:jti-123', 'revoked', 15 * 60);
+            expect(redis.set).toHaveBeenCalledWith('jwt:blacklist:jti-123', 'revoked', 3600);
         });
 
-        it('should clear refresh token without jti', async () => {
+        it('durably invalidates every session for a legacy token without jti', async () => {
             // Arrange
             prisma.user.updateMany.mockResolvedValue({ count: 1 });
 
             // Act
-            const result = await service.logout('user-1');
+            const result = await service.logout('user-1', undefined, Math.floor(Date.now() / 1000) + 3600);
 
             // Assert
             expect(result.success).toBe(true);
-            expect(prisma.user.updateMany).toHaveBeenCalled();
+            expect(prisma.user.updateMany).toHaveBeenCalledWith({
+                where: { id: 'user-1' },
+                data: { refreshTokenHash: null, sessionVersion: { increment: 1 } },
+            });
             expect(redis.set).not.toHaveBeenCalled();
+        });
+
+        it.each([undefined, NaN, Infinity, -1, 0])('rejects missing or invalid expiration before writes: %p', async expiration => {
+            await expect(service.logout('user-1', 'jti-123', expiration)).rejects.toThrow(UnauthorizedException);
+            expect(prisma.user.updateMany).not.toHaveBeenCalled();
+            expect(redis.set).not.toHaveBeenCalled();
+        });
+
+        it('rounds up the remaining token lifetime without dropping a fractional second', async () => {
+            jest.spyOn(Date, 'now').mockReturnValue(1_800_000_000_250);
+            await service.logout('user-1', 'jti-123', 1_800_000_000.75);
+            expect(redis.set).toHaveBeenCalledWith('jwt:blacklist:jti-123', 'revoked', 1);
+        });
+
+        it('propagates a blacklist write failure instead of claiming logout succeeded after refresh clearing', async () => {
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
+            const redisFailure = new Error('Redis unavailable');
+            redis.set.mockRejectedValueOnce(redisFailure);
+
+            await expect(service.logout('user-1', 'jti-123', Math.floor(Date.now() / 1000) + 3600))
+                .rejects.toBe(redisFailure);
+
+            expect(prisma.user.updateMany).toHaveBeenCalledWith({
+                where: { id: 'user-1', refreshTokenHash: { not: null } },
+                data: { refreshTokenHash: null },
+            });
+            expect(prisma.user.updateMany).toHaveBeenCalledTimes(1);
+            // No session-version bump occurs: per-token revocation still requires the Redis write.
+            expect(redis.set).toHaveBeenCalledWith('jwt:blacklist:jti-123', 'revoked', 3600);
         });
     });
 
@@ -646,18 +761,19 @@ describe('AuthService', () => {
             });
         });
 
-        it('should skip CRM check for admin bypass emails', async () => {
+        it('should require CRM validation even for a submitted admin bypass email', async () => {
             // Arrange
             prisma.user.findUnique.mockResolvedValue(null);
             prisma.customerProfile.findFirst.mockResolvedValue(null);
             crmEmailValidator.isAdminBypass.mockReturnValue(true);
+            crmEmailValidator.validateEmailInCrm.mockResolvedValue({ isValid: true, contactId: 'crm-admin' });
 
             // Act
             const result = await service.lookupEmail('admin@example.com');
 
             // Assert
             expect(result).toEqual({ action: 'NEW', companyName: null });
-            expect(crmEmailValidator.validateEmailInCrm).not.toHaveBeenCalled();
+            expect(crmEmailValidator.validateEmailInCrm).toHaveBeenCalledWith('admin@example.com');
         });
 
         it('should validate NEW_MATCHED_COMPANY user with CRM and return action when valid', async () => {

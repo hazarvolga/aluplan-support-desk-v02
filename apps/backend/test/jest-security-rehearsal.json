@@ -1,0 +1,14 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": "integration/customer-security-rehearsal\\.integration\\.spec\\.ts$",
+  "transform": { "^.+\\.ts$": "@swc/jest" },
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/../src/$1",
+    "^@aluplan/database$": "<rootDir>/../../../packages/database"
+  },
+  "maxWorkers": 1,
+  "testTimeout": 60000,
+  "detectOpenHandles": true
+}

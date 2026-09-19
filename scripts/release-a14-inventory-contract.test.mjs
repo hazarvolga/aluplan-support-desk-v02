@@ -360,7 +360,16 @@ test("discovers repeatable jobs from the repeat option, not a jobId suffix", () 
 });
 
 test("records every source cron and known repeatable job without claiming runtime singleton", () => {
-  assert.equal(APPROVED_CRON_DECLARATIONS.length, 9);
+  assert.equal(APPROVED_CRON_DECLARATIONS.length, 10);
+  assert.deepEqual(
+    APPROVED_CRON_DECLARATIONS.find((cron) => cron.method === 'revalidateSessions'),
+    {
+      sourceFile: 'apps/backend/src/notifications/notifications.gateway.ts',
+      method: 'revalidateSessions',
+      scope: 'local-sockets-every-30-seconds',
+      runtimeSingletonVerified: false,
+    },
+  );
   assert.deepEqual(
     APPROVED_REPEATABLE_JOBS.map((job) => job.jobId),
     [
@@ -488,7 +497,7 @@ test("preparation plan is explicit about local-only evidence and manual approval
   assert.equal(plan.productionGo, false);
   assert.equal(plan.operatorApprovalRequired, true);
   assert.equal(plan.queues.length, 9);
-  assert.equal(plan.cronDeclarations.length, 9);
+  assert.equal(plan.cronDeclarations.length, 10);
   assert.equal(plan.repeatableJobs.length, 4);
   assert.equal(plan.schemaVersion, 2);
   assert.equal(plan.inProcessIntervalJobs.length, 2);

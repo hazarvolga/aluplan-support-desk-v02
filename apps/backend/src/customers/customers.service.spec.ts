@@ -1,10 +1,11 @@
 import { CustomersService } from './customers.service';
 import { CrmEmailValidatorService } from '../crm/crm-email-validator.service';
+import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 
 // Direct instantiation — avoids NestJS DI circular dependency issues in tests
 function buildService(overrides: Partial<{
   crmIsAdminBypass: boolean;
-  crmValidationResult: { isValid: boolean; errorCode?: string; errorMessage?: string };
+  crmValidationResult: { isValid: boolean; contactId?: string; errorCode?: string; errorMessage?: string };
 }> = {}) {
   const mockPrisma = {
     user: {
@@ -130,6 +131,8 @@ describe('CustomersService', () => {
       const { service, mockPrisma } = buildService({ crmIsAdminBypass: true });
       mockPrisma.user.findFirst.mockResolvedValue({
         id: 'user-id', status: 'INACTIVE', deletedAt: null,
+        email: 'user@example.com', roleId: 'role-id',
+        role: { id: 'role-id', name: 'CUSTOMER' }, sessionVersion: 0,
       });
       mockPrisma.$transaction.mockImplementation(async (fn: any) => fn({
         user: {
@@ -199,7 +202,7 @@ describe('CustomersService', () => {
     });
 
     it('rejects registration when CRM returns NOT_FOUND', async () => {
-      const { service, mockPrisma } = buildService({
+      const { service, mockPrisma, mockEmailService } = buildService({
         crmValidationResult: {
           isValid: false,
           errorCode: 'NOT_FOUND',
@@ -220,16 +223,16 @@ describe('CustomersService', () => {
         isAllplanUser: false,
       };
 
-      await expect(service.registerCustomer(dto as any)).rejects.toThrow(
-        'Bu e-posta adresi CRM sisteminde kayıtlı değil.'
-      );
+      await expect(service.registerCustomer(dto as any)).rejects.toThrow(BadRequestException);
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+      expect(mockEmailService.enqueueEmail).not.toHaveBeenCalled();
     });
 
-    it('allows registration when CRM returns CRM_ERROR (fail-open)', async () => {
-      const { service, mockPrisma, mockErrorLogger } = buildService({
+    it.each(['CRM_ERROR', 'NETWORK_ERROR', undefined])('rejects registration without writes when CRM cannot validate: %s', async (errorCode) => {
+      const { service, mockPrisma, mockEmailService } = buildService({
         crmValidationResult: {
           isValid: false,
-          errorCode: 'CRM_ERROR',
+          errorCode,
           errorMessage: 'Sistem geçici olarak kullanılamıyor.',
         },
       });
@@ -247,17 +250,35 @@ describe('CustomersService', () => {
         isAllplanUser: false,
       };
 
-      // Should NOT throw — fail-open behavior
-      await expect(service.registerCustomer(dto as any)).resolves.toBeDefined();
-      // Should log the error
-      expect(mockErrorLogger.logError).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'crm_validation_fail_open' })
-      );
+      await expect(service.registerCustomer(dto as any)).rejects.toThrow(ServiceUnavailableException);
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+      expect(mockEmailService.enqueueEmail).not.toHaveBeenCalled();
     });
 
-    it('skips CRM validation for admin bypass emails', async () => {
+    it('normalizes a rejected CRM dependency into a temporary error without writes', async () => {
+      const { service, mockPrisma, mockCrmValidator, mockEmailService } = buildService();
+      jest.mocked(mockCrmValidator.validateEmailInCrm).mockRejectedValue(new Error('Internal dependency detail'));
+      await expect(service.registerCustomer({ email: 'member@example.com' } as any))
+        .rejects.toThrow(ServiceUnavailableException);
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+      expect(mockEmailService.enqueueEmail).not.toHaveBeenCalled();
+    });
+
+    it.each([null, undefined, {}, { isValid: 'true' }, { isValid: 1 }])(
+      'rejects malformed CRM evidence without writes: %p', async (result) => {
+        const { service, mockPrisma, mockCrmValidator, mockEmailService } = buildService();
+        jest.mocked(mockCrmValidator.validateEmailInCrm).mockResolvedValue(result as any);
+        await expect(service.registerCustomer({ email: 'member@example.com' } as any))
+          .rejects.toThrow(ServiceUnavailableException);
+        expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+        expect(mockEmailService.enqueueEmail).not.toHaveBeenCalled();
+      },
+    );
+
+    it('does not bypass CRM on public customer registration for a staff-looking email', async () => {
       const { service, mockPrisma, mockCrmValidator } = buildService({
         crmIsAdminBypass: true,
+        crmValidationResult: { isValid: false, errorCode: 'NOT_FOUND' },
       });
 
       mockPrisma.user.findUnique.mockResolvedValue(null);
@@ -273,9 +294,43 @@ describe('CustomersService', () => {
         isAllplanUser: false,
       };
 
-      await expect(service.registerCustomer(dto as any)).resolves.toBeDefined();
-      // CRM validation should NOT be called for admin bypass
-      expect(mockCrmValidator.validateEmailInCrm).not.toHaveBeenCalled();
+      await expect(service.registerCustomer(dto as any)).rejects.toThrow();
+      expect(mockCrmValidator.validateEmailInCrm).toHaveBeenCalledWith(dto.email);
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('does not turn a form customer number into CRM verification evidence', async () => {
+      const { service, mockPrisma } = buildService();
+      const create = jest.fn().mockResolvedValue({ id: 'user-id', email: 'member@example.com' });
+      mockPrisma.$transaction.mockImplementation(async (fn: any) => fn({ user: { findFirst: jest.fn().mockResolvedValue(null), create } }));
+      await service.registerCustomer({
+        email: 'member@example.com', firstName: 'Test', lastName: 'User', password: 'SyntheticPassword123!',
+        customerNo: 'UNTRUSTED-FORM-NUMBER', isAllplanUser: false, usedProducts: [],
+      } as any);
+      expect(create.mock.calls[0][0].data.customerProfile.create).not.toHaveProperty('crmVerified');
+      expect(create.mock.calls[0][0].data.status).toBe('INACTIVE');
+    });
+
+    it('does not restore or alter CRM-owned verification during an inactive account claim', async () => {
+      const { service, mockPrisma } = buildService();
+      const upsert = jest.fn();
+      const user = {
+        id: 'user-id', email: 'member@example.com', status: 'INACTIVE', deletedAt: null,
+        roleId: 'role-id', role: { id: 'role-id', name: 'CUSTOMER' }, sessionVersion: 0,
+        passwordHash: 'synthetic-existing-hash',
+      };
+      mockPrisma.user.findFirst.mockResolvedValue(user);
+      mockPrisma.$transaction.mockImplementation(async (fn: any) => fn({
+        user: { findFirst: jest.fn().mockResolvedValue(user), updateMany: jest.fn().mockResolvedValue({ count: 1 }), findUnique: jest.fn().mockResolvedValue(user) },
+        customerProfile: { upsert },
+      }));
+      await service.registerCustomer({
+        email: user.email, firstName: 'Test', lastName: 'User', password: 'SyntheticPassword123!',
+        customerNo: 'UNTRUSTED-FORM-NUMBER', isAllplanUser: false, usedProducts: [],
+      } as any);
+      expect(upsert.mock.calls[0][0].update).not.toHaveProperty('crmVerified');
+      expect(upsert.mock.calls[0][0].update).not.toHaveProperty('deletedAt');
+      expect(upsert.mock.calls[0][0].create).not.toHaveProperty('crmVerified');
     });
   });
 

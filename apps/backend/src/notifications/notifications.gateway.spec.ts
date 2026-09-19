@@ -10,6 +10,12 @@ import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants
 import { AiHealthEventService } from '../ai/ai-health-event.service';
 import { TicketAccessService } from '../common/services/ticket-access.service';
 
+const socketData = (userId: string, role: string) => ({
+    userId, role,
+    session: { sub: userId, role, exp: Math.floor(Date.now() / 1000) + 3600 },
+});
+const activeUser = (role: string) => ({ status: 'ACTIVE', deletedAt: null, sessionVersion: 0, role: { name: role } });
+
 describe('NotificationsGateway', () => {
     let gateway: NotificationsGateway;
     let mockJwtService: any;
@@ -27,11 +33,12 @@ describe('NotificationsGateway', () => {
         mockPrisma = {
             ticket: { findUnique: jest.fn() },
             ticketMessage: { findFirst: jest.fn() },
-            proactiveChatSession: { findMany: jest.fn().mockResolvedValue([]) },
+            proactiveChatSession: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn() },
             notification: { createMany: jest.fn(), create: jest.fn() },
-            user: { findMany: jest.fn() }
+            user: { findMany: jest.fn(), findUnique: jest.fn().mockResolvedValue({ status: 'ACTIVE', deletedAt: null, sessionVersion: 0, role: { name: 'admin' } }) }
         };
         mockRedis = {
+            get: jest.fn().mockResolvedValue(null),
             getClient: jest.fn().mockReturnValue({
                 sadd: jest.fn(),
                 srem: jest.fn(),
@@ -70,6 +77,46 @@ describe('NotificationsGateway', () => {
     });
 
     describe('handleConnection', () => {
+        it.each([false, true])('releases readiness after immediate authentication rejection (hasToken=%s)', async (hasToken) => {
+            mockJwtService.verify.mockImplementation(() => { throw new Error('invalid signature'); });
+            const socket: any = { id: 'rejected-socket', handshake: { auth: hasToken ? { token: 'invalid' } : {} }, data: {}, disconnect: jest.fn() };
+            await gateway.handleConnection(socket);
+            expect(socket.disconnect).toHaveBeenCalled();
+            expect((gateway as any).connectionReady.size).toBe(0);
+        });
+        it.each([true, false])('waits for pending handshake authentication before buffered join (valid=%s)', async (valid) => {
+            let release!: (user: unknown) => void;
+            mockPrisma.user.findUnique.mockReturnValueOnce(new Promise(resolve => { release = resolve; }));
+            mockJwtService.verify.mockReturnValue(socketData('user-1', 'admin').session);
+            const socket: any = { handshake: { auth: { token: 'signed-token' } }, data: {}, join: jest.fn(), disconnect: jest.fn() };
+            const connected = gateway.handleConnection(socket);
+            const joined = gateway.joinTicket(socket, 'ticket-1');
+            await Promise.resolve();
+            expect(socket.disconnect).not.toHaveBeenCalled();
+            expect(socket.join).not.toHaveBeenCalled();
+            release(valid ? activeUser('admin') : null);
+            await connected;
+            await expect(joined).resolves.toEqual(valid ? { joined: 'ticket-1' } : { error: 'Unauthorized' });
+            if (valid) expect(socket.disconnect).not.toHaveBeenCalled();
+            else expect(socket.join).not.toHaveBeenCalled();
+        });
+        it.each([
+            { label: 'expired', payload: { exp: 1 }, user: activeUser('admin'), revoked: null },
+            { label: 'missing expiry', payload: { exp: undefined }, user: activeUser('admin'), revoked: null },
+            { label: 'old session version', payload: {}, user: { ...activeUser('admin'), sessionVersion: 1 }, revoked: null },
+            { label: 'soft-deleted account', payload: {}, user: { ...activeUser('admin'), deletedAt: new Date() }, revoked: null },
+            { label: 'missing account', payload: {}, user: null, revoked: null },
+            { label: 'changed role', payload: {}, user: activeUser('CUSTOMER'), revoked: null },
+            { label: 'force logout without issued time', payload: {}, user: activeUser('admin'), revoked: String(Date.now()) },
+        ])('rejects $label before joining rooms', async ({ payload, user, revoked }) => {
+            const socket: any = { handshake: { auth: { token: 'signed-token' } }, data: {}, join: jest.fn(), disconnect: jest.fn() };
+            mockJwtService.verify.mockReturnValue({ ...socketData('user-1', 'admin').session, ...payload });
+            mockPrisma.user.findUnique.mockResolvedValue(user);
+            mockRedis.get.mockResolvedValue(revoked);
+            await gateway.handleConnection(socket);
+            expect(socket.disconnect).toHaveBeenCalled();
+            expect(socket.join).not.toHaveBeenCalled();
+        });
         it('should verify JWT and join rooms', async () => {
             const mockSocket: any = {
                 handshake: { auth: { token: 'valid-token' } },
@@ -77,7 +124,7 @@ describe('NotificationsGateway', () => {
                 join: jest.fn(),
                 disconnect: jest.fn(),
             };
-            mockJwtService.verify.mockReturnValue({ sub: 'user-1', role: 'admin' });
+            mockJwtService.verify.mockReturnValue(socketData('user-1', 'admin').session);
 
             await gateway.handleConnection(mockSocket);
 
@@ -92,11 +139,30 @@ describe('NotificationsGateway', () => {
             await gateway.handleConnection(mockSocket);
             expect(mockSocket.disconnect).toHaveBeenCalled();
         });
+
+        it.each(['SUSPENDED', 'DELETED'])('rejects signed tokens for a %s account', async (status) => {
+            const socket: any = { handshake: { auth: { token: 'signed-token' } }, data: {}, join: jest.fn(), disconnect: jest.fn() };
+            mockJwtService.verify.mockReturnValue({ sub: 'user-1', role: 'admin', exp: Math.floor(Date.now() / 1000) + 60 });
+            mockPrisma.user.findUnique.mockResolvedValue({ status, deletedAt: null, sessionVersion: 0, role: { name: 'admin' } });
+            await gateway.handleConnection(socket);
+            expect(socket.disconnect).toHaveBeenCalled();
+            expect(socket.join).not.toHaveBeenCalled();
+        });
+
+        it('rejects a revoked signed token before joining any role room', async () => {
+            const socket: any = { handshake: { auth: { token: 'signed-token' } }, data: {}, join: jest.fn(), disconnect: jest.fn() };
+            mockJwtService.verify.mockReturnValue({ sub: 'user-1', role: 'admin', jti: 'revoked', exp: Math.floor(Date.now() / 1000) + 60 });
+            mockRedis.get.mockResolvedValue('1');
+            await gateway.handleConnection(socket);
+            expect(socket.disconnect).toHaveBeenCalled();
+            expect(socket.join).not.toHaveBeenCalled();
+        });
     });
 
     describe('joinTicket', () => {
+        beforeEach(() => mockPrisma.user.findUnique.mockResolvedValue(activeUser('agent')));
         const mockSocket: any = {
-            data: { userId: 'user-1', role: 'agent' },
+            data: socketData('user-1', 'agent'),
             join: jest.fn(),
         };
 
@@ -111,7 +177,8 @@ describe('NotificationsGateway', () => {
         });
 
         it('should deny customer joining someone elses ticket', async () => {
-            const customerSocket: any = { data: { userId: 'customer-1', role: 'CUSTOMER' } };
+            mockPrisma.user.findUnique.mockResolvedValue(activeUser('CUSTOMER'));
+            const customerSocket: any = { data: socketData('customer-1', 'CUSTOMER') };
             mockTicketAccess.canAccessTicket.mockResolvedValueOnce(false);
 
             const result = await gateway.joinTicket(customerSocket, 'tik-1');
@@ -126,8 +193,10 @@ describe('NotificationsGateway', () => {
     });
 
     describe('markAsRead', () => {
+        beforeEach(() => mockPrisma.user.findUnique.mockResolvedValue(activeUser('CUSTOMER')));
         const readerSocket: any = {
-            data: { userId: 'user-1', role: 'CUSTOMER' },
+            data: socketData('user-1', 'CUSTOMER'),
+            rooms: new Set(['ticket:ticket-1']),
             to: jest.fn().mockReturnThis(),
         };
 
@@ -149,7 +218,7 @@ describe('NotificationsGateway', () => {
             expect(result).toEqual({ error: 'Message not found' });
             expect(mockPrisma.ticketMessage.findFirst).toHaveBeenCalledWith({
                 where: { id: 'message-2', ticketId: 'ticket-1' },
-                select: { id: true, isInternal: true },
+                select: { id: true, isInternal: true, senderId: true, ticket: { select: { userId: true } } },
             });
             expect(mockEmail.cancelEmail).not.toHaveBeenCalled();
         });
@@ -163,11 +232,44 @@ describe('NotificationsGateway', () => {
             expect(mockEmail.cancelEmail).not.toHaveBeenCalled();
             expect(readerSocket.to).not.toHaveBeenCalled();
         });
+
+        it('keeps internal-note read receipts out of the customer room', async () => {
+            mockPrisma.user.findUnique.mockResolvedValue(activeUser('AGENT'));
+            const socket: any = { data: socketData('staff-1', 'AGENT'), rooms: new Set(['ticket:ticket-1']), to: jest.fn().mockReturnThis(), emit: jest.fn() };
+            mockPrisma.ticketMessage.findFirst.mockResolvedValue({ id: 'message-1', isInternal: true, senderId: 'other-staff', ticket: { userId: 'customer-1' } });
+            await gateway.markAsRead(socket, { ticketId: 'ticket-1', messageId: 'message-1' });
+            expect(socket.to).not.toHaveBeenCalledWith('ticket:ticket-1');
+            expect(mockEmail.cancelEmail).not.toHaveBeenCalled();
+        });
+
+        it('does not let staff reading a public reply cancel the customer email', async () => {
+            mockPrisma.user.findUnique.mockResolvedValue(activeUser('AGENT'));
+            const socket: any = { data: socketData('staff-1', 'AGENT'), rooms: new Set(['ticket:ticket-1']), to: jest.fn().mockReturnThis(), emit: jest.fn() };
+            mockPrisma.ticketMessage.findFirst.mockResolvedValue({ id: 'message-1', isInternal: false, senderId: 'other-staff', ticket: { userId: 'customer-1' } });
+            await gateway.markAsRead(socket, { ticketId: 'ticket-1', messageId: 'message-1' });
+            expect(mockEmail.cancelEmail).not.toHaveBeenCalled();
+        });
+
+        it('rejects a read event from a socket outside the ticket room', async () => {
+            const socket: any = { data: socketData('customer-1', 'CUSTOMER'), rooms: new Set(), to: jest.fn().mockReturnThis(), emit: jest.fn() };
+            mockPrisma.ticketMessage.findFirst.mockResolvedValue({ id: 'message-1', isInternal: false, senderId: 'staff-1', ticket: { userId: 'customer-1' } });
+            await expect(gateway.markAsRead(socket, { ticketId: 'ticket-1', messageId: 'message-1' })).resolves.toEqual({ error: 'Unauthorized' });
+            expect(mockEmail.cancelEmail).not.toHaveBeenCalled();
+        });
+
+        it('preserves customer read cancellation for their own incoming public reply', async () => {
+            const socket: any = { data: socketData('customer-1', 'CUSTOMER'), rooms: new Set(['ticket:ticket-1']), to: jest.fn().mockReturnThis(), emit: jest.fn() };
+            mockPrisma.ticketMessage.findFirst.mockResolvedValue({ id: 'message-1', isInternal: false, senderId: 'staff-1', ticket: { userId: 'customer-1' } });
+            await expect(gateway.markAsRead(socket, { ticketId: 'ticket-1', messageId: 'message-1' })).resolves.toEqual({ read: 'message-1' });
+            expect(mockEmail.cancelEmail).toHaveBeenCalledWith('email-ntf-msg-message-1');
+            expect(socket.to).toHaveBeenCalledWith('ticket:ticket-1');
+        });
     });
 
     describe('announceTyping', () => {
+        beforeEach(() => mockPrisma.user.findUnique.mockResolvedValue(activeUser('CUSTOMER')));
         const typingSocket: any = {
-            data: { userId: 'customer-1', role: 'CUSTOMER' },
+            data: socketData('customer-1', 'CUSTOMER'),
             rooms: new Set(['ticket:ticket-1']),
             to: jest.fn().mockReturnThis(),
             emit: jest.fn(),
@@ -193,6 +295,23 @@ describe('NotificationsGateway', () => {
     });
 
     describe('ticket event audience', () => {
+        it('treats unknown message visibility as private rather than broadcasting to customers', () => {
+            gateway.emitNewMessage('ticket-1', { id: 'message-1' });
+            expect(mockServer.to).not.toHaveBeenCalledWith('ticket:ticket-1');
+        });
+
+        it('treats unknown attachment visibility as private', () => {
+            gateway.emitAttachmentAdded({ ticketId: 'ticket-1', messageId: 'message-1', attachment: { id: 'a1' } });
+            expect(mockServer.to).not.toHaveBeenCalledWith('ticket:ticket-1');
+        });
+
+        it('preserves public message and attachment delivery', () => {
+            gateway.emitNewMessage('ticket-1', { id: 'message-1', isInternal: false });
+            gateway.emitAttachmentAdded({ ticketId: 'ticket-1', messageId: 'message-1', isInternal: false, attachment: { id: 'a1' } });
+            expect(mockServer.to).toHaveBeenCalledWith('ticket:ticket-1');
+            expect(mockServer.emit).toHaveBeenCalledWith('ticket:new_message', expect.any(Object));
+            expect(mockServer.emit).toHaveBeenCalledWith('ticket:attachment_added', expect.any(Object));
+        });
         it('does not broadcast an internal message to the customer ticket room', () => {
             gateway.emitNewMessage('ticket-1', { id: 'message-1', isInternal: true });
 
@@ -294,9 +413,17 @@ describe('NotificationsGateway', () => {
     });
 
     describe('handleHeartbeat', () => {
+        beforeEach(() => mockPrisma.user.findUnique.mockResolvedValue(activeUser('CUSTOMER')));
+        it('disconnects an already-connected user after session revocation', async () => {
+            const socket: any = { data: socketData('user-1', 'CUSTOMER'), disconnect: jest.fn() };
+            mockPrisma.user.findUnique.mockResolvedValue({ ...activeUser('CUSTOMER'), sessionVersion: 1 });
+            await gateway.handleHeartbeat(socket);
+            expect(socket.disconnect).toHaveBeenCalled();
+            expect(mockRedis.getClient().set).not.toHaveBeenCalled();
+        });
         it('should update Redis presence key TTL', async () => {
             const mockSocket: any = {
-                data: { userId: 'user-1' },
+                data: socketData('user-1', 'CUSTOMER'),
             };
             const mockSet = jest.fn();
             mockRedis.getClient.mockReturnValue({
@@ -306,6 +433,38 @@ describe('NotificationsGateway', () => {
             await gateway.handleHeartbeat(mockSocket);
 
             expect(mockSet).toHaveBeenCalledWith('ws:presence:user:user-1', 'active', 'EX', 60);
+        });
+    });
+
+    describe('session sweep and payload boundaries', () => {
+        it('disconnects an idle revoked socket without waiting for its heartbeat', async () => {
+            const socket: any = { data: socketData('user-1', 'admin'), disconnect: jest.fn() };
+            mockServer.local = { fetchSockets: jest.fn().mockResolvedValue([socket]) };
+            mockPrisma.user.findUnique.mockResolvedValue({ ...activeUser('admin'), sessionVersion: 5 });
+            await gateway.revalidateSessions();
+            expect(socket.disconnect).toHaveBeenCalledWith(true);
+        });
+
+        it.each([null, undefined, {}, { ticketId: [] }, { ticketId: 'ticket-1', isTyping: 'true' }])('rejects malformed typing data %p before side effects', async (payload) => {
+            const socket: any = { data: socketData('user-1', 'admin'), to: jest.fn() };
+            await expect(gateway.announceTyping(socket, payload as any)).resolves.toEqual({ error: 'Invalid payload' });
+            expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
+            expect(socket.to).not.toHaveBeenCalled();
+        });
+
+        it('denies proactive typing from a nonparticipant even if it knows a session ID', async () => {
+            const socket: any = { data: socketData('user-1', 'admin'), rooms: new Set(['proactive_chat:session-1']), to: jest.fn().mockReturnThis(), emit: jest.fn() };
+            mockPrisma.proactiveChatSession.findUnique.mockResolvedValue({ agentId: 'other-agent', customerId: 'other-customer' });
+            await expect(gateway.proactiveChatTyping(socket, { sessionId: 'session-1', isTyping: true })).resolves.toEqual({ error: 'Unauthorized' });
+            expect(socket.to).not.toHaveBeenCalled();
+        });
+
+        it('preserves proactive typing between active session participants', async () => {
+            const socket: any = { data: socketData('user-1', 'admin'), rooms: new Set(['proactive_chat:session-1']), to: jest.fn().mockReturnThis(), emit: jest.fn() };
+            mockPrisma.proactiveChatSession.findUnique.mockResolvedValue({ agentId: 'user-1', customerId: 'other-customer' });
+            await gateway.proactiveChatTyping(socket, { sessionId: 'session-1', isTyping: true });
+            expect(socket.to).toHaveBeenCalledWith('proactive_chat:session-1');
+            expect(socket.emit).toHaveBeenCalledWith('proactive_chat:typing', expect.objectContaining({ userId: 'user-1' }));
         });
     });
 

@@ -122,9 +122,9 @@ describe('AuthController', () => {
     });
 
     describe('logout', () => {
-        it('should call authService.logout with user id and jti', async () => {
+        it('passes the verified access-token expiry to logout', async () => {
             // Arrange
-            const req = { user: { sub: 'user1', jti: 'jti-abc' } };
+            const req = { user: { sub: 'user1', jti: 'jti-abc', exp: 1_800_000_000 } };
             mockAuthService.logout.mockResolvedValue({ success: true });
 
             // Act
@@ -132,7 +132,7 @@ describe('AuthController', () => {
             const result = await controller.logout(req, mockRes);
 
             // Assert
-            expect(mockAuthService.logout).toHaveBeenCalledWith('user1', 'jti-abc');
+            expect(mockAuthService.logout).toHaveBeenCalledWith('user1', 'jti-abc', 1_800_000_000);
             expect(result).toEqual({ success: true });
             // Cookie name changed to 'alu_at'
             expect(mockRes.clearCookie).toHaveBeenCalledWith('alu_at', expect.any(Object));

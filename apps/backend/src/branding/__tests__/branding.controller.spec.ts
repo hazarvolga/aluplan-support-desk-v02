@@ -32,6 +32,13 @@ describe('BrandingController', () => {
     });
 
     describe('getAsset', () => {
+        it.each(['tickets/private.pdf', 'brand/logos/../../tickets/private.pdf', 'brand/logos/secret.html', 'brand/logos/%2e%2e/private.png'])('rejects nonpublic asset key %s without reading storage', async (key) => {
+            mockStorageService.getFile.mockResolvedValue(Buffer.from('secret'));
+            const res = { status: jest.fn().mockReturnThis(), send: jest.fn(), setHeader: jest.fn() } as any;
+            await controller.getAsset(key, res);
+            expect(storageService.getFile).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(404);
+        });
         it('should stream branding assets through the stable backend endpoint', async () => {
             const logo = Buffer.from('logo');
             mockStorageService.getFile.mockResolvedValue(logo);
@@ -73,9 +80,9 @@ describe('BrandingController', () => {
                 send: jest.fn(),
             } as any;
 
-            await controller.getAsset('missing.png', res);
+            await controller.getAsset('brand/logos/missing.png', res);
 
-            expect(storageService.getFile).toHaveBeenCalledWith('missing.png');
+            expect(storageService.getFile).toHaveBeenCalledWith('brand/logos/missing.png');
             expect(res.status).toHaveBeenCalledWith(404);
             expect(mockSend).toHaveBeenCalledWith('Asset not found');
         });

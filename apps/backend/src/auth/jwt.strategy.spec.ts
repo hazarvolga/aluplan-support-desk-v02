@@ -39,6 +39,7 @@ describe('JwtStrategy', () => {
         jest.clearAllMocks();
         mockPrismaService.user.findUnique.mockResolvedValue({
             status: 'ACTIVE', deletedAt: null, sessionVersion: 0,
+            role: { name: 'ADMIN', permissions: [{ permission: { name: '*' } }] },
         });
     });
 
@@ -62,7 +63,61 @@ describe('JwtStrategy', () => {
             permissions: ['*'],
             jti: 'jti-123',
             iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + 3600,
         };
+
+        it.each([undefined, 1, NaN])('rejects unbounded or expired access sessions: %s', async (exp) => {
+            await expect(strategy.validate({ ...basePayload, exp })).rejects.toThrow(UnauthorizedException);
+            expect(mockPrismaService.user.findUnique).not.toHaveBeenCalled();
+        });
+
+        it('rejects stale administrator claims after a current role change', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue({
+                status: 'ACTIVE', deletedAt: null, sessionVersion: 0,
+                role: { name: 'CUSTOMER', permissions: [] },
+            });
+            await expect(strategy.validate(basePayload)).rejects.toThrow(UnauthorizedException);
+        });
+
+        it.each([null, { name: '', permissions: [] }])('rejects missing or unusable current roles: %j', async (role) => {
+            mockPrismaService.user.findUnique.mockResolvedValue({ status: 'ACTIVE', deletedAt: null, sessionVersion: 0, role });
+            await expect(strategy.validate(basePayload)).rejects.toThrow(UnauthorizedException);
+        });
+
+        it.each([{ permissions: [] }, { permissions: ['ticket:read'] }])('uses exact current grants, never cached token wildcard: $permissions', async ({ permissions }) => {
+            redis.get.mockResolvedValue(null);
+            mockPrismaService.user.findUnique.mockResolvedValue({
+                status: 'ACTIVE', deletedAt: null, sessionVersion: 0,
+                role: { name: 'ADMIN', permissions: permissions.map(name => ({ permission: { name } })) },
+            });
+            await expect(strategy.validate(basePayload)).resolves.toMatchObject({ permissions });
+        });
+
+        it('accepts role spelling aliases but returns current database authority', async () => {
+            redis.get.mockResolvedValue(null);
+            mockPrismaService.user.findUnique.mockResolvedValue({
+                status: 'ACTIVE', deletedAt: null, sessionVersion: 0,
+                role: { name: 'SUPPORT_AGENT', permissions: [{ permission: { name: 'ticket:read' } }] },
+            });
+            await expect(strategy.validate({ ...basePayload, role: 'support-agent' })).resolves.toMatchObject({
+                role: 'SUPPORT_AGENT', permissions: ['ticket:read'],
+            });
+        });
+
+        it.each([undefined, NaN, 0])('rejects force-logout tokens with unprovable issuance: %s', async (sessionIssuedAt) => {
+            redis.get.mockImplementation((key: string) => key.startsWith('user:') ? String(Date.now()) : null);
+            await expect(strategy.validate({ ...basePayload, iat: undefined, sessionIssuedAt })).rejects.toThrow(UnauthorizedException);
+        });
+
+        it('fails closed on a malformed force-logout marker', async () => {
+            redis.get.mockImplementation((key: string) => key.startsWith('user:') ? 'invalid-timestamp' : null);
+            await expect(strategy.validate(basePayload)).rejects.toThrow(UnauthorizedException);
+        });
+
+        it.each(['', undefined, ['user-1']])('rejects malformed subject before database access: %j', async (sub) => {
+            await expect(strategy.validate({ ...basePayload, sub } as JwtPayload)).rejects.toThrow(UnauthorizedException);
+            expect(mockPrismaService.user.findUnique).not.toHaveBeenCalled();
+        });
 
         it('should return user object for valid token', async () => {
             // Arrange

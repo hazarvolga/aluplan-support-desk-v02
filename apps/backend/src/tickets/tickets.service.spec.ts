@@ -552,6 +552,43 @@ describe('TicketsService', () => {
         });
 
         describe('addMessage', () => {
+            it.each(['CUSTOMER', 'AGENT'])(
+                'rejects forged inline attachment keys before any write for %s',
+                async (role) => {
+                    prisma.ticket.findFirst.mockResolvedValue({ id: 'tik1', status: 'OPEN', userId: 'user1' });
+                    prisma.ticketMessage.create.mockResolvedValue({ id: 'msg1' });
+                    const createAttachments = jest.fn().mockResolvedValue({ count: 1 });
+                    prisma.attachment = { createMany: createAttachments };
+
+                    await expect(service.addMessage('tik1', {
+                        message: 'Please attach this file',
+                        attachments: [{
+                            url: 'tickets/msg_victim/private-note.pdf',
+                            fileName: 'private-note.pdf',
+                            fileSize: 100,
+                            mimeType: 'application/pdf',
+                        }],
+                    }, 'user1', role)).rejects.toThrow(BadRequestException);
+
+                    expect(prisma.ticketMessage.create).not.toHaveBeenCalled();
+                    expect(createAttachments).not.toHaveBeenCalled();
+                    expect(prisma.ticket.update).not.toHaveBeenCalled();
+                    expect(eventEmitter.emit).not.toHaveBeenCalled();
+                },
+            );
+
+            it.each([[], null])('rejects even empty or null inline attachment metadata: %p', async (attachments) => {
+                prisma.ticket.findFirst.mockResolvedValue({ id: 'tik1', status: 'OPEN', userId: 'user1' });
+                prisma.ticketMessage.create.mockResolvedValue({ id: 'msg1' });
+
+                await expect(service.addMessage('tik1', {
+                    message: 'Reply', attachments,
+                } as any, 'user1', 'CUSTOMER')).rejects.toThrow(BadRequestException);
+
+                expect(prisma.ticketMessage.create).not.toHaveBeenCalled();
+                expect(eventEmitter.emit).not.toHaveBeenCalled();
+            });
+
             it('should throw BadRequestException when adding a message to a closed ticket', async () => {
                 // Arrange
                 const ticket = { id: 'tik1', status: 'CLOSED', userId: 'user1' };

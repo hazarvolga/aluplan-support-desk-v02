@@ -28,6 +28,13 @@ import { StorageService } from '../common/services/storage.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
 
+// These properties test orchestration, not tokenizer accuracy. Reconstructing
+// real vocabulary maps per generated query obscures those invariants with CPU work.
+jest.mock('./utils/token-counter', () => ({
+    ...jest.requireActual('./utils/token-counter'),
+    countTokens: jest.fn((text: string) => Math.ceil(text.length / 4)),
+}));
+
 const PBT_NUM_RUNS = 100;
 const PBT_SEED_BASE = 20260805;
 
@@ -172,6 +179,7 @@ async function buildModule(overrides: {
     }).compile();
 
     return {
+        module,
         service: module.get(AiQueryService),
         prisma,
         aiService,
@@ -221,9 +229,9 @@ describe('Property 2: Shift Detection DB Persistence', () => {
                         productId: null,
                     });
 
-                    const { service } = await buildModule({ prisma, diagnosisAnalyze });
+                    const { service, module } = await buildModule({ prisma, diagnosisAnalyze });
 
-                    await service.queryInternal({ userQuery, history, userId: 'user-1' });
+                    await service.queryInternal({ userQuery, history, userId: 'user-1' }).finally(() => module.close());
 
                     // Must be called exactly once
                     expect(prisma.aiShiftDetection.create).toHaveBeenCalledTimes(1);
@@ -277,13 +285,13 @@ describe('Property 3: History Mutation iff isProblemShift', () => {
                         productId: null,
                     });
 
-                    const { service } = await buildModule({ promptContext, diagnosisAnalyze });
+                    const { service, module } = await buildModule({ promptContext, diagnosisAnalyze });
 
                     await service.queryInternal({
                         userQuery: 'test query for history mutation',
                         history: [...history],
                         userId: 'user-1',
-                    });
+                    }).finally(() => module.close());
 
                     expect(promptContext.buildContext).toHaveBeenCalled();
                     const buildContextCall = (promptContext.buildContext as jest.Mock).mock.calls[0][0];
@@ -347,9 +355,9 @@ describe('Property 5: Shift Event Langfuse Payload Completeness', () => {
                         productId: null,
                     });
 
-                    const { service } = await buildModule({ langfuse, diagnosisAnalyze });
+                    const { service, module } = await buildModule({ langfuse, diagnosisAnalyze });
 
-                    await service.queryInternal({ userQuery, history, userId });
+                    await service.queryInternal({ userQuery, history, userId }).finally(() => module.close());
 
                     expect(langfuse.addEvent).toHaveBeenCalled();
 
@@ -418,13 +426,13 @@ describe('Property 6: Pipeline Resilience', () => {
                         productId: null,
                     });
 
-                    const { service } = await buildModule({ prisma, langfuse, diagnosisAnalyze });
+                    const { service, module } = await buildModule({ prisma, langfuse, diagnosisAnalyze });
 
                     // Must resolve — not throw
                     const result = await service.queryInternal({
                         userQuery: 'test query',
                         history: [{ role: 'user', content: 'prev' }],
-                    });
+                    }).finally(() => module.close());
 
                     expect(result.query).toBeDefined();
                     expect(result.confidence).toBeDefined();
