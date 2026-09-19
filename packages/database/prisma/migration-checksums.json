@@ -54,5 +54,6 @@
   "20260806021000_grant_faq_review_to_existing_reviewers": "65c9bdf102a4ffcb42649e084633adeff11f1ffb52cf9680b9f342818ce3bb1b",
   "20260806022000_align_faq_entry_sources_updated_at_default": "4cc424bf1b2e6c400f9841726c22475fece3e33791a04dcdc9322bb0eee2facc",
   "20260807090000_add_support_agent_rbac_contract": "78bd99d4bcfac9b40d98e394ec98b8a16915d25ef64b1a6fe473f4d62141b6e2",
-  "20260807143000_add_product_taxonomy_unique_indexes": "96b493355eed118ef06324941ef29ab094eca1b0b98aaefec900d13754611033"
+  "20260807143000_add_product_taxonomy_unique_indexes": "96b493355eed118ef06324941ef29ab094eca1b0b98aaefec900d13754611033",
+  "20260919000000_add_customer_rbac_contract": "a8904020a3dbf9416913ad96bc174364609c7880e594e17f6f56601d7219ce51"
 }

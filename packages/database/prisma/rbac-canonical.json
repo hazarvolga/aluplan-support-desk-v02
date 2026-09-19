@@ -127,6 +127,12 @@
     }
   ],
   "rolePermissions": {
+    "CUSTOMER": [
+      "kb:read",
+      "ticket:create",
+      "ticket:read",
+      "ticket:update"
+    ],
     "SUPPORT_AGENT": [
       "ai-interactions:read",
       "faq:manage",
@@ -147,6 +153,34 @@
     ]
   },
   "roleBoundaries": {
+    "CUSTOMER": {
+      "required": [
+        "kb:read",
+        "ticket:create",
+        "ticket:read",
+        "ticket:update"
+      ],
+      "forbidden": [
+        "*",
+        "admin:settings",
+        "ai-interactions:read",
+        "faq:manage",
+        "faq:read",
+        "faq:review",
+        "kb:approve",
+        "kb:create",
+        "kb:delete",
+        "kb:submit_review",
+        "kb:update",
+        "reports:read",
+        "settings:read",
+        "settings:write",
+        "ticket:assign",
+        "ticket:close",
+        "ticket:escalate",
+        "users:manage"
+      ]
+    },
     "SUPPORT_AGENT": {
       "required": [
         "ai-interactions:read",

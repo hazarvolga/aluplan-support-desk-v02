@@ -55,7 +55,7 @@ async function main() {
         },
         { name: 'AGENT', isSystem: true, perms: ['ticket:create', 'ticket:read', 'ticket:update', 'kb:read', 'faq:read'] },
         { name: 'DEPARTMENT_MANAGER', isSystem: true, perms: ['ticket:create', 'ticket:read', 'ticket:update', 'ticket:assign', 'kb:read', 'kb:approve', 'reports:read'] },
-        { name: 'CUSTOMER', isSystem: true, perms: ['ticket:create', 'ticket:read', 'ticket:update', 'kb:read'] },
+        { name: 'CUSTOMER', isSystem: true, perms: canonicalContract.rolePermissions.CUSTOMER },
     ];
 
     for (const r of sysRoles) {
