@@ -3,6 +3,14 @@
 Durable project decisions live here. Keep each ADR short: context, decision, reason,
 and consequence. Use session summaries for implementation history.
 
+## ADR-021 - Preserve CUSTOMER Workflows Through Explicit Database Grants
+
+- Date: 2026-09-19
+- Status: Accepted for local release candidate; production activation separately gated.
+- Context: Legacy CUSTOMER authorization fell back to token permissions when database grants were empty. Current database-authoritative sessions correctly remove that fallback, exposing a compatibility gap. Reusing `ticket:update` for customer replies and staff management also requires resource/action checks.
+- Decision: Canonical CUSTOMER receives exactly `kb:read`, `ticket:create`, `ticket:read`, `ticket:update` through an additive, fail-closed migration, never seed/reset or token fallback. Preserve own-ticket customer review under the existing state machine; require recognized staff and valid target access for arbitrary transitions, merging and bulk updates. Published FAQ access remains distinct from internal FAQ permissions. Do not change CRM admission rules or existing user-role assignments.
+- Consequence: Release acceptance must prove customer availability and cross-customer denial together. Unexpected existing grants require an explicit policy decision, not automatic removal or widening. A passing canonical staff contract alone is insufficient; exact-image, restored-data and real authenticated workflow tests remain mandatory.
+
 ## ADR-001 - Stay On pgvector Before Considering Qdrant
 
 - Date: 2026-05-13

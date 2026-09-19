@@ -1,5 +1,17 @@
 # Current Focus
 
+## CUSTOMER compatibility and ticket authorization fixed locally — 2026-09-19
+
+Added exact CUSTOMER4 database contract and additive migration; no fallback resurrection, seed or user reassignment. Customer-owned PENDING_CUSTOMER_REVIEW remains available for the existing close/review button. Arbitrary status management, merge and bulk update now require recognized staff identity and accessible, nondeleted targets; both merge IDs/all bulk IDs are checked before writes. Published public FAQ remains accessible through its existing endpoint without granting internal FAQ permissions.
+
+Fresh focused backend7suites/123tests pass; backend plus changed/new tests TypeScript0. Real synthetic network-none PostgreSQL17 migration proof7/7 passes, including full rollback on excess grants/alias/missing catalog and preservation/idempotence on empty/partial/fresh CUSTOMER. Synthetic test container/tmpfs removed; existing resources and private snapshots unchanged. This is not exact-image or full customer authentication/browser acceptance. Independent scoped security review approves local commit; production remains NO-GO.
+
+Next: freeze the local checkpoint, rebuild the exact Linux/amd64 artifact, repeat A13 restore/migration on a NEW sanitized Sept17 clone plus fresh Redis, then run real customer/staff/admin login, ticket/reply/isolation and attachment/new-write rollback acceptance. The accepted18929781 image predates this patch and cannot prove it. Keep mail TLS/server compatibility and fresh production backup/inventory as separately approved release gates. No production access, push or deploy in this phase.
+
+## RBAC comparison corrects the customer blocker interpretation — 2026-09-19
+
+Read-only root cause: observed-live-tag d9 source provides five CUSTOMER fallback permissions when DB mappings are empty; candidate4626f627 removes fallback and uses current DB authority. Roles can have been correctly assigned while role_permissions remains empty. Baseline ADMIN14/CUSTOMER0; migrated ADMIN16/CUSTOMER0/SUPPORT_AGENT16; prior postmigration numbers are not live inventory. Canonical checker covers SUPPORT_AGENT, not customer availability. Before granting ticket:update, address source-level missing ownership on transition/link routes with narrow synthetic negative tests. Details in source-consolidation report. No code/live/DB changes; implementation and production remain gated.
+
 ## Sanitized full-app boot passed; customer acceptance blocked — 2026-09-19
 
 Exact accepted18929781 backend image booted normally on NEW sanitized Sept17 clone plus fresh Redis; health HTTP200 with DB/Redis/BullMQ/storage/memory up. Preboot structured credential assertion0 and62protected fingerprints matched. No published ports, host binds or real provider credentials; internal Docker network/restricted DNS. Disposable mutable clone only; cron may change local copied records, so postboot business parity is NOT claimed.

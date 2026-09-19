@@ -1,5 +1,15 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Local CUSTOMER compatibility and management authorization
+
+Implemented canonical CUSTOMER4 and atomic/additive/idempotent migration preserving role metadata/users; A13 compares only those reviewed additions. Closed transition/link ownership gaps and reviewer-discovered bulk bypass before writes while preserving the actual customer own-ticket review/close-button request. Public FAQ requires no customer FAQ grant. Focused7suites/123tests and full backend + changed/new test typecheck0 pass. Real disposable PostgreSQL17 synthetic proof7/7 validates successful preservation/no-op and failure rollback; no copied customer data used. The owned temporary container/tmpfs was removed and absence verified. Source security review approves local scope; production NO-GO.
+
+Test-harness note: JSON HTTP requests initially failed because the borrowed-dependency Jest resolver selected the wrong transitive pnpm package. Fixed scratch resolution to prefer each importer's actual dependency, removed diagnostics and explicit parser workaround; unchanged Nest default parsing passes. No product parser/dependency changes. Details and evidence limits in source-consolidation report. Next exact rebuilt image and sanitized-clone full-app acceptance; no live connection, provider traffic, push or deploy.
+
+## 2026-09-19 — Read-only customer authorization comparison
+
+Compared exact historical d9 tag source, current4626f627 authority change, preserved A13 baseline/postmigration RBAC fingerprints, seed/catalog/checkers and customer routes. Legacy empty-mapping CUSTOMER fallback5 versus candidate0 confirmed by offline pure-function execution. Prior probe was prerequisite-only, not failed login/HTTP proof. ADMIN baseline14 includes wildcard; migrated16/support16 must not be called live counts. Identified canonical CUSTOMER coverage gap and source-level transition/link ownership risks behind ticket:update; no exploit or fix performed. Next narrow compatibility/security tests and reviewed additive grants, not seed/reset or blanket fallback. Full evidence in source-consolidation report; production untouched.
+
 ## Sanitized full-app boot passed; customer acceptance blocked — 2026-09-19
 
 Exact accepted18929781 backend image booted normally on NEW sanitized Sept17 clone plus fresh Redis; health HTTP200 with DB/Redis/BullMQ/storage/memory up. Preboot structured credential assertion0 and62protected fingerprints matched. No published ports, host binds or real provider credentials; internal Docker network/restricted DNS. Disposable mutable clone only; cron may change local copied records, so postboot business parity is NOT claimed.
