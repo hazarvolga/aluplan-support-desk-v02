@@ -77,6 +77,23 @@ export class AttachmentsService {
         return attachment;
     }
 
+    async findAuthorizedForDownload(id: string, requester?: AttachmentRequester) {
+        const attachment = await this.prisma.attachment.findUnique({
+            where: { id },
+            include: { message: { select: { ticketId: true, isInternal: true } } },
+        });
+        if (!attachment) throw new NotFoundException('Attachment not found');
+        if (!attachment.message?.ticketId) throw new ForbiddenException('Invalid attachment context');
+
+        const canAccess = await this.ticketAccess.canAccessTicket(requester, attachment.message.ticketId);
+        if (!canAccess) throw new ForbiddenException('You do not have access to this ticket');
+        if (attachment.message.isInternal && this.isCustomerRole(requester?.role)) {
+            throw new ForbiddenException('You do not have access to this message');
+        }
+
+        return attachment;
+    }
+
     async findMessageByAttachment(attachmentId: string) {
         const attachment = await this.prisma.attachment.findUnique({
             where: { id: attachmentId },

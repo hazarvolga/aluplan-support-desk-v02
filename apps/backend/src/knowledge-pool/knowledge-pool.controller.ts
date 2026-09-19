@@ -48,6 +48,13 @@ export class KnowledgePoolController {
     @UseInterceptors(
         FileInterceptor('file', {
             storage: memoryStorage(), // Use memory storage so we can stream to R2/S3
+            limits: {
+                // Busboy emits partsLimit at the ceiling; allow one terminating boundary.
+                fileSize: 50 * 1024 * 1024, files: 1, fields: 1, parts: 3,
+                fieldSize: 1024 * 1024,
+                // Multer 2.3 supports this limit; @types/multer has not caught up.
+                ...{ fieldArrayIndexLimit: 0 },
+            },
         }),
     )
     @ApiOperation({ summary: 'Upload a knowledge file (PDF, TXT, CSV, MD, DOCX)' })

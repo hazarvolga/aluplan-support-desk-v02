@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
     S3Client,
@@ -13,6 +13,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import sanitize from 'sanitize-filename';
 import { SettingsService } from '../../settings/settings.service';
+import { openLocalStorageFile } from '../utils/storage-path.util';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
@@ -109,10 +110,10 @@ export class StorageService implements OnModuleInit {
         const sanitizedName = sanitize(file.originalname);
         const key = `${sanitizedFolder}/${Date.now()}-${sanitizedName}`;
 
-        const { client, bucket, endpoint } = await this.getS3Client();
-
-        if (this.storageType === 'S3' && client) {
-            try {
+        try {
+            if (this.storageType === 'S3') {
+                const { client, bucket } = await this.getS3Client();
+                if (!client || !bucket) throw new Error('S3 upload configuration is incomplete');
                 await client.send(
                     new PutObjectCommand({
                         Bucket: bucket,
@@ -121,18 +122,16 @@ export class StorageService implements OnModuleInit {
                         ContentType: file.mimetype,
                     }),
                 );
-            } catch (error: any) {
-                this.logger.error(`S3 Upload Failed: [Bucket: ${bucket}] [Key: ${key}] [Endpoint: ${endpoint}]`);
-                this.logger.error(`Error Details: ${error.message}${error.$metadata ? ` (Status: ${error.$metadata.httpStatusCode})` : ''}`);
-                this.logger.warn(`Falling back to local storage for key ${key} due to S3 failure.`);
+            } else {
                 const filePath = path.join(this.localPath, key);
                 await fs.ensureDir(path.dirname(filePath));
                 await fs.writeFile(filePath, file.buffer);
             }
-        } else {
-            const filePath = path.join(this.localPath, key);
-            await fs.ensureDir(path.dirname(filePath));
-            await fs.writeFile(filePath, file.buffer);
+        } catch {
+            // Never acknowledge an S3 upload by silently writing to ephemeral local disk.
+            // Provider errors can include credentials, endpoints or customer filenames.
+            this.logger.error(`File upload failed for configured ${this.storageType} storage.`);
+            throw new ServiceUnavailableException('File storage is temporarily unavailable. Please retry.');
         }
 
         return key;
@@ -174,11 +173,12 @@ export class StorageService implements OnModuleInit {
                 const byteArray = await response.Body?.transformToByteArray();
                 return byteArray ? Buffer.from(byteArray) : null;
             } else {
-                const filePath = path.join(this.localPath, key);
-                if (await fs.pathExists(filePath)) {
-                    return fs.readFile(filePath);
+                const { file } = await openLocalStorageFile(this.localPath, key);
+                try {
+                    return await file.readFile();
+                } finally {
+                    await file.close();
                 }
-                return null;
             }
         } catch (e) {
             this.logger.error(`Failed to get file [${key}]: ${e.message}`);

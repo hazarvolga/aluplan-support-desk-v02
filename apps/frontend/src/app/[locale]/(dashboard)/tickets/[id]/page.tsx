@@ -5,6 +5,7 @@ import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
+import { subscribeTicketRoom } from '@/lib/socket-room';
 import {
     Ticket, Clock, Shield, User as UserIcon, Send,
     Paperclip, Download, MoreVertical, CheckCircle2,
@@ -77,18 +78,25 @@ const CHANNEL_COLORS: Record<string, string> = {
 };
 
 export default function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
+    return <TicketDetail key={id} id={id} />;
+}
+
+function TicketDetail({ id }: { id: string }) {
     const t = useTranslations('tickets.detail');
     const ts = useTranslations('tickets.status');
     const tp = useTranslations('tickets.priority');
     const tc = useTranslations('common');
     const locale = useLocale();
     const router = useRouter();
-    const { id } = use(params);
     const [ticket, setTicket] = useState<any>(null);
     const [user, setUser] = useState<any>(null);
     const [reply, setReply] = useState('');
     const [files, setFiles] = useState<File[]>([]);
     const [sending, setSending] = useState(false);
+    const [pendingAttachments, setPendingAttachments] = useState<{ messageId: string; files: File[] } | null>(null);
+    const replyOperationRef = useRef(false);
+    const activeRef = useRef(true);
     const [updating, setUpdating] = useState(false);
     const [summary, setSummary] = useState<string | null>(null);
     const [summarizing, setSummarizing] = useState(false);
@@ -108,6 +116,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     // Live chat states
     const [isTyping, setIsTyping] = useState(false);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    useEffect(() => {
+        activeRef.current = true;
+        return () => {
+            activeRef.current = false;
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        };
+    }, []);
     const [someoneTyping, setSomeoneTyping] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
@@ -192,8 +207,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         if (!id || !user) return;
 
         const socket = getSocket();
-        socket.connect();
-        socket.emit('ticket:join', id);
+        const leaveTicketRoom = subscribeTicketRoom(socket, id);
 
         const handleNewMessage = (data: any) => {
             if (data.ticketId === id && data.message.senderId !== user.id) {
@@ -238,6 +252,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     ...prev,
                     messages: prev.messages.map((m: any) => {
                         if (m.id === data.messageId) {
+                            if (m.attachments?.some((attachment: any) => attachment.id === data.attachment.id)) return m;
                             return {
                                 ...m,
                                 attachments: [...(m.attachments || []), data.attachment]
@@ -254,15 +269,15 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         socket.on('ticket:typing', handleTyping);
         socket.on('ticket:updated', handleTicketUpdated);
         socket.on('ticket:presence', handlePresence);
+        if (!socket.connected) socket.connect();
 
         return () => {
-            socket.emit('ticket:leave', id);
+            leaveTicketRoom();
             socket.off('ticket:new_message', handleNewMessage);
             socket.off('ticket:attachment_added', handleAttachmentAdded);
             socket.off('ticket:typing', handleTyping);
             socket.off('ticket:updated', handleTicketUpdated);
             socket.off('ticket:presence', handlePresence);
-            socket.disconnect();
         };
     }, [id, user]);
 
@@ -326,15 +341,49 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         }
     };
 
+    const uploadReplyAttachments = async (messageId: string, uploadFiles: File[]) => {
+        for (let index = 0; index < uploadFiles.length; index++) {
+            if (!activeRef.current) return;
+            try {
+                const attachment = await api.attachments.upload(messageId, uploadFiles[index]) as { id: string };
+                if (!activeRef.current) return;
+                setTicket((prev: any) => ({ ...prev, messages: prev.messages.map((message: any) =>
+                    message.id === messageId && !message.attachments?.some((existing: any) => existing.id === attachment.id)
+                        ? { ...message, attachments: [...(message.attachments || []), attachment] } : message) }));
+            } catch {
+                if (!activeRef.current) return;
+                setPendingAttachments({ messageId, files: uploadFiles.slice(index) });
+                toast.error(t('attachment_partial_failure'));
+                return;
+            }
+        }
+        if (!activeRef.current) return;
+        setPendingAttachments(null);
+        await load();
+    };
+
+    const handleRetryAttachments = async () => {
+        if (replyOperationRef.current || !pendingAttachments || isComposerDisabled) return;
+        replyOperationRef.current = true;
+        setSending(true);
+        try {
+            await uploadReplyAttachments(pendingAttachments.messageId, pendingAttachments.files);
+        } finally {
+            replyOperationRef.current = false;
+            if (activeRef.current) setSending(false);
+        }
+    };
+
     const handleSendReply = async () => {
+        if (replyOperationRef.current || pendingAttachments || isComposerDisabled) return;
         const sanitizedReply = ContentSanitizer.sanitize(reply);
         if (ContentSanitizer.isEffectivelyEmpty(sanitizedReply) && files.length === 0) return;
 
         const messageText = sanitizedReply;
         const previousReply = reply;
         const previousDraftVisuals = draftVisuals;
-        setReply(''); // Clear immediately for UX
-        setDraftVisuals([]);
+        const uploadFiles = [...files];
+        replyOperationRef.current = true;
         setSending(true);
 
         // Optimistic UI: Add message locally first
@@ -364,32 +413,28 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 contentFormat: 'HTML',
             });
 
-            if (files.length > 0) {
-                for (const file of files) {
-                    await api.attachments.upload(message.id, file);
-                }
-            }
-
-            // Replace optimistic message with real one
+            if (!activeRef.current) return;
+            // Message persistence is independent of the following attachment uploads.
             setTicket((prev: any) => ({
                 ...prev,
                 messages: prev.messages.map((m: any) => m.id === tempId ? { ...message, sender: user } : m)
             }));
 
-            setFiles([]);
-            await load(); // Refresh state to ensure attachments appear correctly
-            // No toast for success in chat, it's expected
+            setReply((current) => current === previousReply ? '' : current);
+            setDraftVisuals((current) => current === previousDraftVisuals ? [] : current);
+            setFiles((current) => current.filter((file) => !uploadFiles.includes(file)));
+            await uploadReplyAttachments(message.id, uploadFiles);
         } catch (error: any) {
+            if (!activeRef.current) return;
             toast.error(t('send_error', { error: error.message }));
             // Remove optimistic message on failure
             setTicket((prev: any) => ({
                 ...prev,
                 messages: prev.messages.filter((m: any) => m.id !== tempId)
             }));
-            setReply(previousReply); // Restore input
-            setDraftVisuals(previousDraftVisuals);
         } finally {
-            setSending(false);
+            replyOperationRef.current = false;
+            if (activeRef.current) setSending(false);
         }
     };
 
@@ -814,8 +859,18 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     </CardContent>
 
                     <CardFooter className="p-3 border-t border-border/50 bg-background/50 backdrop-blur-sm flex flex-col gap-3 z-10">
-
-
+                        {pendingAttachments && (
+                            <div role="alert" className="w-full rounded-md border border-amber-500/40 p-3 text-sm space-y-2">
+                                <p>{t('pending_attachments_notice')}</p>
+                                <ul>{pendingAttachments.files.map((file, index) => <li key={index}>{file.name}</li>)}</ul>
+                                <div className="flex gap-2">
+                                    <Button onClick={handleRetryAttachments} disabled={sending || isComposerDisabled}>{t('retry_attachments')}</Button>
+                                    <Button variant="outline" disabled={sending} onClick={() => {
+                                        if (!replyOperationRef.current) setPendingAttachments(null);
+                                    }}>{t('discard_pending_attachments')}</Button>
+                                </div>
+                            </div>
+                        )}
                         {/* Selected Files Preview */}
                         {files.length > 0 && (
                             <div className="flex flex-wrap gap-2 w-full">
@@ -854,7 +909,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     disabled={isComposerDisabled}
                                     aria-label={t('message_placeholder')}
                                     onSubmit={() => {
-                                        if (!sending && (!isReplyEffectivelyEmpty || files.length > 0)) {
+                                        if (!sending && !pendingAttachments && (!isReplyEffectivelyEmpty || files.length > 0)) {
                                             handleSendReply();
                                         }
                                     }}
@@ -864,7 +919,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             {!isComposerDisabled && (
                                 <Button
                                     onClick={handleSendReply}
-                                    disabled={sending || (isReplyEffectivelyEmpty && files.length === 0)}
+                                    disabled={sending || Boolean(pendingAttachments) || (isReplyEffectivelyEmpty && files.length === 0)}
                                     className="shrink-0 bg-primary hover:bg-primary/90 rounded-md h-auto min-h-20 w-14 border-border transition-all hover:scale-[1.02] active:scale-[0.98] self-stretch"
                                 >
                                     {sending ? <Loader2 className="h-5 w-5 animate-spin text-primary-foreground" /> : <Send className="h-6 w-6 text-primary-foreground" />}

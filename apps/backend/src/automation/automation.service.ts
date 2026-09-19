@@ -87,7 +87,9 @@ export class AutomationService {
     async handleMessageAdded(payload: { ticket: any; message: any; recipientEmail?: string; userName?: string }) {
         this.logger.log(`🤖 Automation: Processing message notification for ${payload.ticket.ticketNumber} [Channel: ${payload.message.channel}]`);
 
-        if (payload.recipientEmail) {
+        // Only explicitly public messages may leave the ticket through email.
+        // Missing or malformed visibility must not expose a staff-only note.
+        if (payload.message.isInternal === false && payload.recipientEmail) {
             const isWeb = payload.message.channel === 'WEB';
             const jobId = `email-ntf-msg-${payload.message.id}`; // Define jobId here
             const options = isWeb ? {

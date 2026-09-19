@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, forwardRef, ForbiddenException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
@@ -141,28 +141,34 @@ export class EmailInboundService implements OnModuleInit {
         }
 
         try {
+            const sender = await this.prisma.user.findUnique({
+                where: { email: from }, include: { role: true },
+            });
+            if (!sender?.id || sender.status !== 'ACTIVE' || sender.deletedAt || !sender.role?.name?.trim()) {
+                throw new ForbiddenException('INBOUND_SENDER_NOT_ELIGIBLE');
+            }
+
             // Logic: Ticket Threading
             const ticketMatch = subject.match(/\[(SUP-\d+)\]/);
             let ticketId = null;
+            let ticketMessageId: string | null = null;
+            let failedAttachmentCount = 0;
 
             if (ticketMatch) {
                 const ticketNumber = ticketMatch[1];
                 const ticket = await this.prisma.ticket.findUnique({ where: { ticketNumber } });
                 if (ticket) {
-                    // Identify sender
-                    const sender = await this.prisma.user.findUnique({
-                        where: { email: from },
-                        include: { role: true }
-                    });
-                    const senderId = sender?.id || ticket.userId;
-                    const role = sender?.role?.name || 'CUSTOMER';
+                    if (ticket.userId !== sender.id) {
+                        throw new ForbiddenException('INBOUND_TICKET_OWNER_MISMATCH');
+                    }
 
                     const message = await this.ticketsService.addMessage(ticket.id, {
                         message: body,
                         isInternal: false,
                         channel: CommunicationChannel.EMAIL,
-                    }, senderId!, role);
+                    }, sender.id, 'CUSTOMER');
                     ticketId = ticket.id;
+                    ticketMessageId = message.id;
 
                     // Handle attachments for threaded message
                     if (mail.attachments && mail.attachments.length > 0) {
@@ -183,8 +189,9 @@ export class EmailInboundService implements OnModuleInit {
                                         url: key,
                                     }
                                 });
-                            } catch (err) {
-                                this.logger.error(`Failed to process attachment ${attachment.filename} for ticket ${ticket.id}: ${err.message}`);
+                            } catch {
+                                failedAttachmentCount += 1;
+                                this.logger.error('Inbound email attachment processing failed.');
                             }
                         }
                     }
@@ -192,42 +199,22 @@ export class EmailInboundService implements OnModuleInit {
             }
 
             if (!ticketId) {
-                // Create New Ticket
-                // 1. Find or create user
-                let user = await this.prisma.user.findUnique({ where: { email: from } });
-
-                if (!user) {
-                    // Create skeleton profile for new inbound email sender
-                    const customerRole = await this.prisma.role.findFirst({
-                        where: { name: { equals: 'CUSTOMER', mode: 'insensitive' } }
-                    });
-
-                    user = await this.prisma.user.create({
-                        data: {
-                            email: from,
-                            fullName: from.split('@')[0], // Use email prefix as temporary name
-                            passwordHash: 'inbound-only', // System account
-                            status: 'ACTIVE',
-                            roleId: customerRole?.id
-                        }
-                    });
-                    this.logger.log(`Created skeleton user for inbound email: ${from} (Role: ${customerRole?.name})`);
-                }
-
+                // Email intake never provisions accounts or grants staff authority.
                 const newTicket = await this.ticketsService.create({
                     subject,
                     description: body,
                     priority: 'MEDIUM',
-                } as any, user.id);
+                } as any, sender.id);
                 ticketId = newTicket.id;
                 const message = await this.prisma.ticketMessage.create({
                     data: {
                         ticketId: ticketId,
-                        senderId: user.id,
+                        senderId: sender.id,
                         message: this.piiMaskingService.maskSensitiveData(mail.text || mail.html || '(No content)'),
                         channel: CommunicationChannel.EMAIL,
                     },
                 });
+                ticketMessageId = message.id;
 
                 // Handle attachments
                 if (mail.attachments && mail.attachments.length > 0) {
@@ -248,8 +235,9 @@ export class EmailInboundService implements OnModuleInit {
                                     url: key,
                                 }
                             });
-                        } catch (err) {
-                            this.logger.error(`Failed to process attachment ${attachment.filename}: ${err.message}`);
+                        } catch {
+                            failedAttachmentCount += 1;
+                            this.logger.error('Inbound email attachment processing failed.');
                         }
                     }
                 }
@@ -261,6 +249,10 @@ export class EmailInboundService implements OnModuleInit {
                     processed: true,
                     ticketId,
                     processedAt: new Date(),
+                    // Keep the duplicate fence: the message exists even when some files failed.
+                    error: failedAttachmentCount > 0
+                        ? `INBOUND_ATTACHMENT_FAILURE count=${failedAttachmentCount} ticketMessageId=${ticketMessageId}`
+                        : null,
                 },
             });
         } catch (error: any) {

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException, ServiceUnavailableException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
@@ -11,6 +11,7 @@ import { RedisService } from '../redis/redis.service';
 import { CrmEmailValidatorService } from '../crm/crm-email-validator.service';
 import * as crypto from 'crypto';
 import { normalizeEmailAddress } from '../common/utils/email-normalization.util';
+import { resolveSessionAuthority } from './session-authority';
 
 const AUTH_ACTION_SECRET = 'AUTH_ACTION_JWT_SECRET';
 const EMAIL_VERIFICATION_AUDIENCE = 'aluplan:email-verification';
@@ -76,9 +77,11 @@ export class AuthService {
                 include: { permissions: { include: { permission: true } } }
             }) : null;
 
-            const role = roleWithPerms?.name || 'CUSTOMER';
-            const rolePermissions = roleWithPerms?.permissions.map(p => p.permission.name) || [];
-            const permissions = rolePermissions.length > 0 ? rolePermissions : this.getPermissionsForRole(role);
+            const authority = resolveSessionAuthority(roleWithPerms);
+            if (!authority) {
+                throw new UnauthorizedException('Invalid credentials');
+            }
+            const { role, permissions } = authority;
 
             const tokens = await this.generateTokens(
                 user.id, user.email, user.fullName, role, permissions, user.sessionVersion ?? 0,
@@ -93,7 +96,7 @@ export class AuthService {
                     email: user.email,
                     fullName: user.fullName,
                     avatarUrl: user.avatarUrl,
-                    role: roleWithPerms || { name: role, permissions: permissions.map(p => ({ permission: { name: p } })) },
+                    role: roleWithPerms,
                 },
                 ...tokens,
             };
@@ -125,9 +128,11 @@ export class AuthService {
             include: { permissions: { include: { permission: true } } }
         }) : null;
 
-        const role = roleWithPerms?.name || 'CUSTOMER';
-        const rolePermissions = roleWithPerms?.permissions.map(p => p.permission.name) || [];
-        const permissions = rolePermissions.length > 0 ? rolePermissions : this.getPermissionsForRole(role);
+        const authority = resolveSessionAuthority(roleWithPerms);
+        if (!authority) {
+            throw new ForbiddenException('Access denied');
+        }
+        const { role, permissions } = authority;
 
         const tokens = await this.generateTokens(
             userId, user.email, user.fullName, role, permissions, user.sessionVersion ?? 0,
@@ -150,16 +155,29 @@ export class AuthService {
         return tokens;
     }
 
-    async logout(userId: string, jti?: string) {
+    async logout(userId: string, jti?: string, expiration?: number) {
+        const nowSeconds = Date.now() / 1000;
+        if (typeof expiration !== 'number' || !Number.isFinite(expiration) || expiration <= nowSeconds) {
+            throw new UnauthorizedException('Invalid session');
+        }
+
+        // A legacy token has no per-token revocation key; invalidate all its user's sessions durably.
+        if (!jti) {
+            await this.prisma.user.updateMany({
+                where: { id: userId },
+                data: { refreshTokenHash: null, sessionVersion: { increment: 1 } },
+            });
+            return { success: true };
+        }
+
         await this.prisma.user.updateMany({
             where: { id: userId, refreshTokenHash: { not: null } },
             data: { refreshTokenHash: null }
         });
 
-        if (jti) {
-            // Blacklist the token for its remaining max life (15 mins)
-            await this.redisService.set(`jwt:blacklist:${jti}`, 'revoked', 15 * 60);
-        }
+        // Retain revocation until the verified token actually expires, including long-lived tokens.
+        const remainingLifetime = Math.max(1, Math.ceil(expiration - nowSeconds));
+        await this.redisService.set(`jwt:blacklist:${jti}`, 'revoked', remainingLifetime);
 
         return { success: true };
     }
@@ -212,7 +230,7 @@ export class AuthService {
 
         // ── User does NOT exist in DB — new registration path ────────────────
         // Determine the intended action (NEW or NEW_MATCHED_COMPANY) first,
-        // then gate it behind CRM validation (unless admin bypass applies).
+        // then gate it behind CRM validation for every new customer.
 
         const domain = normalizedEmail.split('@')[1];
         if (!domain) {
@@ -252,7 +270,7 @@ export class AuthService {
 
     /**
      * Runs CRM validation for a new (not-yet-registered) user.
-     * Admin bypass emails skip the CRM check entirely.
+     * Submitted email addresses never establish staff authority or bypass customer CRM membership.
      *
      * @param email       - The email address being looked up
      * @param action      - The intended action ('NEW' | 'NEW_MATCHED_COMPANY')
@@ -263,18 +281,25 @@ export class AuthService {
         action: 'NEW' | 'NEW_MATCHED_COMPANY',
         companyName: string | null,
     ) {
-        // Admin bypass — skip CRM check
-        if (this.crmEmailValidator.isAdminBypass(email)) {
-            this.logger.debug(`lookupEmail: Admin bypass — skipping CRM check for ${action}`);
-            return { action, companyName };
+        const unavailableMessage = 'CRM kaydı şu anda doğrulanamıyor. Lütfen daha sonra tekrar deneyin.';
+        let result: Awaited<ReturnType<CrmEmailValidatorService['validateEmailInCrm']>>;
+        try {
+            result = await this.crmEmailValidator.validateEmailInCrm(email);
+        } catch {
+            this.logger.warn('lookupEmail: CRM validation unavailable');
+            throw new ServiceUnavailableException(unavailableMessage);
         }
 
-        // CRM validation
-        const result = await this.crmEmailValidator.validateEmailInCrm(email);
-
-        if (!result.isValid) {
-            this.logger.debug(`lookupEmail: CRM rejected email — errorCode: ${result.errorCode}`);
-            return { action: 'CRM_REJECTED', errorMessage: result.errorMessage };
+        if (result?.isValid !== true) {
+            if (result?.errorCode === 'NOT_FOUND') {
+                this.logger.debug('lookupEmail: CRM customer membership not found');
+                return {
+                    action: 'CRM_REJECTED',
+                    errorMessage: 'Bu e-posta adresi CRM sisteminde kayıtlı değil.',
+                };
+            }
+            this.logger.warn('lookupEmail: CRM validation unavailable or malformed');
+            throw new ServiceUnavailableException(unavailableMessage);
         }
 
         return { action, companyName };
@@ -583,24 +608,6 @@ export class AuthService {
                 },
             },
         });
-    }
-
-    private getPermissionsForRole(role: string): string[] {
-        const basePermissions = [
-            'ticket:create', 'ticket:read', 'ticket:update',
-            'kb:read', 'faq:read'
-        ];
-
-        const r = role.toLowerCase();
-
-        if (r === 'admin' || r === 'super-admin') return ['*']; // Full access
-        if (r === 'department-manager') return [...basePermissions, 'ticket:assign', 'reports:read', 'settings:read'];
-        if (r === 'team-lead') return [...basePermissions, 'ticket:assign', 'reports:read'];
-        if (r === 'senior-agent') return [...basePermissions, 'ticket:escalate'];
-        if (r === 'agent') return basePermissions;
-        if (r === 'customer') return ['ticket:create', 'ticket:update', 'ticket:read', 'kb:read'];
-
-        return basePermissions;
     }
 
     private async updateRefreshTokenHash(userId: string, refreshToken: string) {

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TicketsService } from '../tickets/tickets.service';
 import { isDeliveryStatusNotification } from '../email/email-bounce.util';
@@ -57,6 +57,13 @@ export class OmniChannelService {
         }
 
         try {
+            const sender = await this.prisma.user.findUnique({
+                where: { email: from }, include: { role: true },
+            });
+            if (!sender?.id || sender.status !== 'ACTIVE' || sender.deletedAt || !sender.role?.name?.trim()) {
+                throw new ForbiddenException('INBOUND_SENDER_NOT_ELIGIBLE');
+            }
+
             // Thread detection - Support both [#SUP-123] and [SUP-123] formats
             const ticketMatch = subject.match(/\[#?SUP-(\d+)\]/i);
             let ticketId = null;
@@ -65,42 +72,26 @@ export class OmniChannelService {
                 const ticketNumber = `SUP-${ticketMatch[1]}`;
                 const ticket = await this.prisma.ticket.findUnique({ where: { ticketNumber } });
                 if (ticket) {
-                    const sender = await this.prisma.user.findUnique({
-                        where: { email: from }
-                    });
-                    const senderId = sender?.id || ticket.userId;
+                    if (ticket.userId !== sender.id) {
+                        throw new ForbiddenException('INBOUND_TICKET_OWNER_MISMATCH');
+                    }
                     const role = 'customer'; // Default to customer role for webhook senders
 
                     await this.ticketsService.addMessage(ticket.id, {
                         message: body,
                         isInternal: false,
-                    }, senderId!, role);
+                    }, sender.id, role);
                     ticketId = ticket.id;
                 }
             }
 
             if (!ticketId) {
-                // Find or create customer
-                let user = await this.prisma.user.findUnique({ where: { email: from } });
-
-                if (!user) {
-                    user = await this.prisma.user.create({
-                        data: {
-                            email: from,
-                            fullName: from.split('@')[0],
-                            passwordHash: 'webhook-inbound-only',
-                            status: 'ACTIVE'
-                            // role is managed by dynamic RBAC, not set here
-                        }
-                    });
-                    this.logger.log(`Created skeleton user for webhook email: ${from}`);
-                }
-
+                // Only an eligible existing account can open a ticket through email.
                 const newTicket = await this.ticketsService.create({
                     subject,
                     description: body,
                     priority: 'MEDIUM' as any,
-                }, user.id);
+                }, sender.id);
                 ticketId = newTicket.id;
             }
 

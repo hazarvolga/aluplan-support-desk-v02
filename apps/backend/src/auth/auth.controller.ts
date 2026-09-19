@@ -101,7 +101,7 @@ export class AuthController {
     @ApiOperation({ summary: 'Logout' })
     @ApiResponse({ status: 204, description: 'Logout successful. Cookies cleared.' })
     async logout(@Request() req: any, @Res({ passthrough: true }) res: Response) {
-        const result = await this.authService.logout(req.user.sub, req.user.jti);
+        const result = await this.authService.logout(req.user.sub, req.user.jti, req.user.exp);
 
         const isProd = this.config.get('NODE_ENV') === 'production';
         const cookieDomain = isProd ? '.allplan.net.tr' : undefined;

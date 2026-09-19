@@ -997,6 +997,14 @@ export class TicketsService {
     // ADD MESSAGE
     // =============================================
     async addMessage(ticketId: string, dto: AddMessageDto, senderId: string, role: string) {
+        // Storage keys must originate from the authorized message-bound upload,
+        // never from caller-supplied metadata that could point at another ticket.
+        if (dto.attachments !== undefined) {
+            throw new BadRequestException('Attachments must be uploaded through the attachment endpoint');
+        }
+        if (dto.isInternal === true && this.isCustomerRole(role)) {
+            throw new ForbiddenException('Internal notes are available to support staff only');
+        }
         const ticket = await this.findOne(ticketId, { id: senderId, role }); // ownership check happens here
 
         if (ticket.status === TicketStatus.CLOSED) {
@@ -1008,12 +1016,11 @@ export class TicketsService {
             ? sanitizeRichTextHtml(this.piiMaskingService.maskSensitiveData(sanitizeRichTextHtml(dto.message)))
             : this.piiMaskingService.maskSensitiveData(dto.message);
 
-        const hasAttachments = Boolean(dto.attachments?.length);
-        if (contentFormat === MessageContentFormat.HTML && isRichTextEffectivelyEmpty(messageBody) && !hasAttachments) {
+        if (contentFormat === MessageContentFormat.HTML && isRichTextEffectivelyEmpty(messageBody)) {
             throw new BadRequestException('message cannot be empty after sanitization');
         }
 
-        if (messageBody.trim().length === 0 && !hasAttachments) {
+        if (messageBody.trim().length === 0) {
             throw new BadRequestException('message cannot be empty');
         }
 
@@ -1027,26 +1034,6 @@ export class TicketsService {
             },
             include: { sender: { select: { id: true, fullName: true, avatarUrl: true } } },
         });
-
-        // Support UI-based attachments if provided in the DTO
-        // Support UI-based attachments using batch creation to prevent N+1 queries
-        if (dto.attachments && dto.attachments.length > 0) {
-            try {
-                const attachmentData = dto.attachments.map(attach => ({
-                    messageId: message.id,
-                    fileName: attach.fileName,
-                    fileSize: attach.fileSize,
-                    mimeType: attach.mimeType,
-                    url: attach.url,
-                }));
-                await this.prisma.attachment.createMany({
-                    data: attachmentData,
-                    skipDuplicates: true
-                });
-            } catch (err) {
-                this.logger.error(`[TicketsService] Failed to link batch attachments: ${err.message}`);
-            }
-        }
 
         // If ticket was PENDING_CUSTOMER and a customer replied → reopen
         if (ticket.status === TicketStatus.PENDING_CUSTOMER && ticket.userId === senderId) {
