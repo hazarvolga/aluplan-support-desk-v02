@@ -1,5 +1,11 @@
 # Current Focus
 
+## Non-root backend source prepared — 2026-09-19
+
+Final combined regression68/68 passes; independent review approves source-only checkpoint. Prior fixture formatting is retained in a separate style commit. Next exact-image build/runtime acceptance, not production deployment.
+
+Minimal Dockerfile USER node/HOME change with narrow writable uploads/OpenAPI/template screens only; conditional template bases preserve fallback.5/5 source contract tests pass; exact image/runtime NOT yet proved. No migration/boot changes. Existing uploads mounts/custom paths, backup operator directory, Prisma/Chromium and persistence need isolated artifact checks. Prior fixture whitespace diff remains untouched. See source-consolidation report; no live/push/deploy authority.
+
 ## Stabilization scope frozen — 2026-09-19
 
 Wire-level local client acceptance completed:10/10 opt-in tests pass with real SMTP/IMAP libraries, valid/invalid certificates and no plaintext AUTH; TypeScript0 diagnostics. This is local Node24/macOS loopback evidence, not production Node20/Linux DMS acceptance. See mail transport report. Next bounded step: backend non-root runtime and exact-image isolated rehearsal; do not start live TLS changes on this evidence alone.

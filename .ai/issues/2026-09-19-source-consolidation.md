@@ -1,5 +1,17 @@
 # Local source consolidation — 2026-09-19
 
+## Minimal non-root backend candidate — 2026-09-19
+
+Final combined source/tooling regression:68/68 passed (5 non-root contracts +63 fake-Docker release/restore contracts), normal exit0. Independent code review approved local checkpoint. No runtime artifact acceptance implied. Prior mail-fixture whitespace-only change was verified with `git diff -w --exit-code` and independent review, and retained in a separate style commit.
+
+Dockerfile now ends with `USER node`, `HOME=/home/node`. Application code remains root-owned. Only `/app/uploads`, precreated `/app/openapi.json` and existing MJML `screens` directories are assigned to node. Standard dist, legacy dist/src and source fallback bases are handled conditionally: absent higher-priority template bases are not created, preserving the existing template lookup. Layouts/partials/locales, generated client, migrations and node_modules remain root-owned. No npm/Prisma removal, dependency change, startup bypass, schema edit or runtime application-code change in this batch.
+
+Read-only write-path audit found the unconditional OpenAPI startup write and template-edit writes; simply appending USER would have broken those flows. LOCAL uploads require node access; custom STORAGE_LOCAL_PATH and existing mounts need separately verified owner/ACL compatibility because a mount hides image permissions. /tmp and /home/node support temporary/cache use. In-process DB backup is disabled; operator backups require a separately provisioned owned0700 root/marker, not application ownership of /app/.private-data. Template/upload persistence still needs exact-image/volume acceptance; this patch does not make container-local changes durable.
+
+Regression-first source contracts initially failed for missing USER/write provisions, then passed5/5 after implementation and conditional-template checks. These inspect Dockerfile/startup contracts, not Linux filesystem behavior. No exact new image has been built or run yet; UID, permission-denied tests for code, writable-path tests, Prisma migration engine/cache and Chromium behavior remain required in the current Linux/amd64 artifact. Therefore non-root runtime is prepared in source, NOT closed as a runtime release gate. Existing base image was not available under its pinned reference locally; historical images are not substitutes.
+
+No production, credentials, DB, application startup, volume changes or container creation/deletion. Pre-existing mail fixture indentation-only diff is preserved separately and not part of this change. Next: freeze this source revision and build/test the exact artifact in isolation before application/data rehearsal. Migration-on-start behavior remains unchanged and requires the existing approved migration gate.
+
 ## Stabilization-only checkpoint — 2026-09-19
 
 Owner explicitly deferred new customer requests/features. Freeze scope to demonstrated security, compatibility and data-preservation release blockers. Do not expand into redesigns or blanket dependency upgrades. Source-equivalence statements below describe consolidation time; subsequent strict mail-client commits intentionally changed the candidate.

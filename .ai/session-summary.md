@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Minimal non-root image source
+
+Combined non-root + release/restore contract tests68/68 passed, exit0; independent review approved local checkpoint. Whitespace-only fixture change independently confirmed and separated into style commit. Exact image not yet built/run.
+
+Audited actual writes, including startup OpenAPI export and editable MJML screens. Dockerfile now defaults node, preserving root-owned code with narrowly owned uploads/OpenAPI/screens and conditional template bases. Migration/CLI/dependencies unchanged. New source tests RED then5/5GREEN; runtime image proof still open. No live/DB/container mutations. Existing fixture indentation diff preserved outside this batch. Next exact Linux/amd64 image/writable-path rehearsal.
+
 ## 2026-09-19 — Stabilization-only release reconciliation
 
 Added opt-in real-client loopback SMTP/IMAP TLS tests plus ephemeral certificate generator;10/10 tests pass and TypeScript0 diagnostics. Trusted success, invalid trust/name/expiry rejection and absence of plaintext AUTH verified using actual provider entrypoints. Temporary test keys cleaned; no production code changes. Local-only Node24/macOS proof; production image/server, delivery and sender-trust gates remain open.
