@@ -1,5 +1,13 @@
 # Current Focus
 
+## Authorized live startup inspection confirms rollback hazard — 2026-09-19
+
+Owner explicitly approved read-only image identity/startup inspection. Verified-host SSH to vmi3049865 confirmed backend-api still uses image `302229b2403d…`, Linux/amd64, no OCI revision or RepoDigests. Configured startup is docker-entrypoint.sh → `./deploy.sh`. All four running-container deploy/recovery file SHA256 values exactly match reviewed `d9b21b9d` source. This binds the identified startup hazard to the live container, not the entire image to Git.
+
+Normal old startup includes schema/ledger repair and user/role/data recovery scripts; unsafe to presume an ordinary restart or unchanged-image rollback preserves current data and access policy. Source presence does not prove those conditional effects occurred or active compromise. Container stayed running with identical start2026-09-02T19:03:59.250425823Z/restart0 throughout observation. No restart/deploy, DB/Redis query, environment-value read, settings change, image export or backup operation occurred.
+
+Next authority gate: separately approve private acquisition of the exact image for OFFLINE inspection only (no execution/publication), then review/designate a safe rollback startup configuration and prove new-write/attachment preservation on an isolated migrated clone. No automatic old-image startup or silent direct-node override. Full identity/hashes and limits are in source-consolidation. Production deployment remains NO-GO.
+
 ## Extended authenticated HTTP rehearsal passed; rollback artifact remains open — 2026-09-19
 
 Same frozen runtime `3403ae61` / image `b1126e5c…` passed **56/56 real HTTP checks** on a NEW isolated sanitized September17 clone. Added customer own-review and management denials; SUPPORT_AGENT status/bulk/merge with persisted effects; ADMIN status mutation and admin-only lookup; internal-note hiding; two synthetic PNG uploads and exact local-disk/HTTP bytes with owner/staff success and cross-customer/anonymous/internal-note denials. No application, migration, image, role-grant or provider configuration changes. Tool helpers passed14/14 combined tests (new tests first failed as expected); independent contract/security reviews completed before execution.

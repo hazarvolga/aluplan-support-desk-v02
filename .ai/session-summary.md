@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Approved live image/startup observation, no mutation
+
+Following explicit owner approval for image identity/startup inspection only, root used existing maintenance SSH identity with BatchMode/IdentitiesOnly/StrictHostKeyChecking and host-key updates disabled. Host vmi3049865; backend-api image302229b2403d… still matches September17 observation. Image amd64/root-default, no revision/RepoDigests; container writable rootfs, nonprivileged, no mounts. Entry point docker-entrypoint.sh and command ./deploy.sh; command independently matched by SHA. All four deploy/recovery-file hashes exactly match historical d9 source, so identified normal-startup recovery/role mutation hazard is now tied to observed container files. Full code/image provenance remains unproven.
+
+Selected metadata observation18:00:46–18:02:05UTC. Start2026-09-02T19:03:59.250425823Z/restart0/running unchanged. No app scripts imported/executed, DB/Redis/customer/env reads, raw logs, restart, migration, backup, image export, push or deploy. SHA utilities and wrapper structure reads only inside container. Local independent reviewer confirmed: risk on ordinary restart is supported; occurrence of conditional data changes or active compromise is not. Next exact-image private acquisition needs separate approval, followed by explicit safe-startup/offline rollback review, not normal legacy boot or silent bypass. Current authority consumed; production NO-GO.
+
 ## 2026-09-19 — Staff/admin, customer review and synthetic attachment acceptance
 
 Extended only the local probe with explicit opt-in, exact request statuses, manual same-origin storage redirect handling, multipart bytes, persisted authorization effects and aggregate-only diagnostics. TDD2 new failures/7 prior passes then14/14 combined passes. Independent reviewers confirmed contracts and found two proof gaps before execution: ADMIN needed a real mutation; bulk OPEN after ADMIN OPEN would be a no-op. Added ADMIN NEW→OPEN, bulk OPEN→IN_PROGRESS and exact internal merge-note sender/distribution assertions. No runtime product changes.

@@ -1,5 +1,41 @@
 # Local source consolidation — 2026-09-19
 
+## Authorized read-only live image and startup verification — 2026-09-19
+
+The owner replied "ok go on" to the explicit request for live image identity and startup configuration inspection only. Root alone connected to the recorded167.86.84.107 host with existing maintenance identity, BatchMode, IdentitiesOnly, StrictHostKeyChecking, UpdateHostKeys=no and bounded connect/subprocess timeouts. Hostname matched vmi3049865. No other apps were investigated. Selected detailed metadata timestamps18:00:46.519471–18:02:05.639358UTC; initial target-resolution preceded that window.
+
+### Fresh observations
+
+| Surface | Observed evidence |
+| --- | --- |
+| Container | backend-api, short ID `9ea92d99bfbd` |
+| Exact image ID | `sha256:302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644` (same as September17) |
+| Image | Linux/amd64; created2026-06-30T08:54:29.754387563+02:00; OCI revision absent; RepoDigests empty |
+| Container/image startup | WorkingDir /app; Entrypoint docker-entrypoint.sh; Cmd ./deploy.sh |
+| Runtime settings | User empty/default root; writable rootfs; privileged=false; no mounts |
+| Before/after | running; StartedAt2026-09-02T19:03:59.250425823Z; RestartCount0 unchanged |
+
+The command was initially withheld by the strict output allowlist; its length11/SHA256 `53f61ccb6fc17b6ef56feac7bcc97c8c6a47c10459910cac15f55d20ecbff0c4` exactly matches the literal `./deploy.sh`, also present in the historical Dockerfile. Wrapper SHA256 `a15ac9589c04baf9da95b08e0e79b5cf1d75ab8dc64e06a5e68e4ceb0ad7c8ea`, eleven lines with `exec "$@"` on line11. Wrapper contents were processed only to return structure/hash, not printed or executed as a new app startup.
+
+Running-container file SHA256 values matched local `git show d9b21b9d7b5c4c259acbe9a5828fdd04ba077ce2:<source-path>` byte hashes exactly:
+
+| Container path | SHA256 |
+| --- | --- |
+| /app/deploy.sh | `4cf8756653b16088b5901ef89b6901123ee35d200b55b90737192c0f53fe3628` |
+| /app/packages/database/scripts/production-sync.js | `26b01a973792f4efdf44d118981d43213286390f8ad0001f917d0986293bffc7` |
+| /app/apps/backend/scripts/grant-admin.js | `d632c5991442bb950d84e72b784be3355263bd4d870b6b2e84adabf40de1048c` |
+| /app/apps/backend/scripts/fix-customer-roles.js | `99605bac85ee40221323f21508c70a0e048a66fc5ba00b36dd59906c3b32d7a0` |
+
+### Meaning and limits
+
+Independent local source review found deploy.sh ignores migration failure and invokes recovery scripts before starting Node. production-sync can reactivate inactive/deleted users, rewrite operational taxonomy/settings and bootstrap accounts; grant-admin promotes fixed identities; fix-customer-roles assigns roles. Bootstrap credential literals exist in historical source and were deliberately not printed. These scripts are not one encompassing transaction. Their presence/configured startup is now supported by live file hashes; the conditional database effects, current credential usability and actual past execution outcome were NOT inspected or inferred.
+
+An ordinary restart or unchanged legacy-image rollback is therefore not an acceptable assumed data-preserving fallback. The current candidate's migration-only/fail-closed startup differs intentionally. This does not prove active compromise, universal image/source equivalence, native performance, API health, or current customer data counts. Empty image revision/digests and a mutable container layer leave whole-artifact provenance unresolved. No fresh mining scan was in scope.
+
+Commands only resolved the target, read narrowly selected Docker metadata/mount destinations, computed hashes of five exact startup files and inspected wrapper structure. No environment values, customer rows, database/Redis queries, application logs, backup/restore, image export/pull, service restart, deployment, migration, seed, firewall, credentials or settings changes occurred. SSH/Docker exec audit events may naturally be recorded; no application script was imported or executed. Before/after startup evidence is unchanged.
+
+Next: obtain separately scoped approval to acquire the exact image privately for offline inspection, identity/checksum binding and startup/runtime review, without launching it or publishing it. Then explicitly designate/review a rollback startup configuration and test retained candidate-created records and attachment bytes on a migrated disposable clone. A direct-node override is a new startup configuration, not normal old-image evidence; do not introduce it silently. Do not restore an old database over new writes. Current authorization does not include acquisition or execution. No production GO.
+
 ## Extended customer/staff/admin and attachment HTTP proof — 2026-09-19
 
 ### Scope and checks
