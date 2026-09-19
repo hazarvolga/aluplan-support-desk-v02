@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Exact-image permission blocker caught locally
+
+Source904376e4 built amd64 but non-root static smoke failed EACCES due archive extraction under umask077. Corrected only source archive permissions, preserving private roots/evidence. Regression RED/GREEN, combined69/69 contracts, actual Git mode probe and independent code/security review pass. New exact-image build/runtime acceptance pending. No application/DB/provider/live/push/deploy; existing Docker volumes untouched. See source-consolidation report for rejected image ID and limits.
+
 ## 2026-09-19 — Minimal non-root image source
 
 Combined non-root + release/restore contract tests68/68 passed, exit0; independent review approved local checkpoint. Whitespace-only fixture change independently confirmed and separated into style commit. Exact image not yet built/run.

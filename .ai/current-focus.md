@@ -1,5 +1,9 @@
 # Current Focus
 
+## Exact-image permission correction — 2026-09-19
+
+First amd64 image904376e4 compiled but static non-root smoke failed EACCES: private umask077 masked extracted source to0600. Rejected image, no complete evidence published. Fixed Git archive mode normalization/extraction only; private0700/0600 protections retained. RED/GREEN and combined69/69 contracts, actual Git mode probe and independent code/security review passed. Next clean-commit rebuild and exact-image permissions, then isolated app/data rehearsal. No production/data/provider access or push/deploy. Details in source-consolidation report.
+
 ## Non-root backend source prepared — 2026-09-19
 
 Final combined regression68/68 passes; independent review approves source-only checkpoint. Prior fixture formatting is retained in a separate style commit. Next exact-image build/runtime acceptance, not production deployment.

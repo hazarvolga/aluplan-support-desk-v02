@@ -1,5 +1,13 @@
 # Local source consolidation — 2026-09-19
 
+## Exact-image first attempt — permission gate caught a blocker
+
+Correction: image preparation now explicitly uses Git `tar.umask=0022` and permission-preserving tar extraction. Regression RED reproduced0600/0700, GREEN12/12; combined non-root/image/restore contracts69/69 pass, exit0. An actual Git archive probe independently confirmed0644 source,0755 executable/directory and0700 private parent. Code/security review approve the scoped correction; changed diff secret scan is clean. Two broad scripts-scan detections were independently classified as existing synthetic RBAC digest fixture false positives, not credentials. No runtime/Dockerfile privilege relaxation. Corrected exact-image acceptance remains pending until rebuilt.
+
+Frozen source `904376e472589ce0c8b6815a21b1d31e4f865242` built successfully as Linux/amd64 (11.18 MB transferred context), but the network-disabled static smoke FAILED with EACCES reading `/app/scripts/verify-migration-integrity.mjs` as node. Image ID: `sha256:c4f2966c9936c487d3d7bd027e8dfba8f1d4a6e3ffc477e60428b1e45d01944e`. This image is rejected; successful compilation is not runtime acceptance. No completed image evidence was published.
+
+Disposable read-only inspection confirmed UID/GID1000, root-owned source files0600 versus generated dist files0644. Root cause: the image-evidence script's protective umask077 also masked Git archive extraction permissions. Fix the archive materialization, not application privilege or code ownership. Private evidence roots remain0700. The failed smoke and permission-inspection containers were removed; no existing volumes, application boot, database, provider, production, push or deployment were involved. A corrected clean revision must be rebuilt and retested before any application/data rehearsal.
+
 ## Minimal non-root backend candidate — 2026-09-19
 
 Final combined source/tooling regression:68/68 passed (5 non-root contracts +63 fake-Docker release/restore contracts), normal exit0. Independent code review approved local checkpoint. No runtime artifact acceptance implied. Prior mail-fixture whitespace-only change was verified with `git diff -w --exit-code` and independent review, and retained in a separate style commit.
