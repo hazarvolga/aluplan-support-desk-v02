@@ -1,5 +1,11 @@
 # Current Focus
 
+## Local strict mail-client patch — 2026-09-19
+
+Final verification: four focused suites /29 tests pass; backend plus new tests TypeScript no-emit0 diagnostics through isolated dependency resolution. Independent code/security review approved local patch only. No full-release build, real TLS handshake or production acceptance claimed.
+
+SMTP now requires TLS and valid certificates; IMAP requires direct TLS, rejects disabled TLS before credentials/network, and reports errors through existing public contracts.13 mocked transport tests pass after RED proof; actual release source tested with isolated existing dependencies and network denied. No live changes, migration, new env or provider switch. See existing mail transport report for evidence and compatibility warning: current documented live TLS-off endpoints cannot accept this candidate. Next isolated wire-level TLS acceptance and separately scoped certificate/image/renewal inventory; no push/deploy authority.
+
 ## Local mail TLS maintenance plan prepared — 2026-09-19
 
 See the top plan section in `issues/2026-09-19-mail-transport-observation.md`. Local SMTP/IMAP both bypass certificate validation; SMTP does not require STARTTLS. No source fix or live change performed this turn. Plan preserves SMTP587, moves IMAP to993 only in coordinated approved maintenance, retains image/volumes, and requires certificate renewal, private off-host recovery, TLS and controlled delivery acceptance. Next: isolated client regression/patch and separately approved read-only certificate/image/renewal inventory. No certificate issuance, DNS edit, restart, settings write, push or deploy authorization.

@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Strict local SMTP/IMAP transport
+
+Final focused run:4suites/29tests passed; backend plus new tests TypeScript no-emit0 diagnostics, using existing isolated generated client. Code and security reviewers approve local commit. Initial scratch dependency-resolution failures corrected without package/source changes. Full-release build and wire-level acceptance not performed.
+
+Two-file minimal patch requires SMTP TLS/certificate validation and rejects plaintext IMAP before credentials/network, with caught config errors and cron guard release. New mocked tests initially6failed/6passed, then13passed including cron recovery. Actual release source tested offline using existing isolated dependencies; no app lifecycle or real data. Source impact review substituted for unavailable GitNexus/Graphify; final security review has no blockers. Mail TLS report records compatibility and remaining real-handshake gates. No live access, push or deploy.
+
 ## 2026-09-19 — Local-only TLS maintenance plan
 
 Rechecked local mail providers and official DMS/Nodemailer documentation. Recorded minimal staged plan in existing mail report, including current client validation bypass, SMTP587 STARTTLS vs direct TLS, coordinated IMAP993 transition, version-pinned server setup, renewal, secure administration, off-host recovery gap, controlled mail-to-ticket acceptance and non-destructive rollback. Historical pending-inspection statements explicitly superseded. No runtime code/config, production access, tests, certificate issuance, restart, push or deployment this turn.
