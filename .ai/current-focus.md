@@ -1,5 +1,9 @@
 # Current Focus
 
+## Synthetic normal NestJS startup passed — 2026-09-19
+
+Exact18929781 backend image booted through unchanged migration/normal entrypoint on NEW emptyPG17+freshRedis, synthetic secrets/LOCAL storage, internal network with restricted DNS, no provider credentials/ports/mounts/customer data. Health ok:DB/Redis/BullMQ/storage/memory up; owned resources removed and absence rechecked. Sample externalTCP/DNS/host-canary egress probes blocked. FreshRedis policy confirmed by owner. Next NEW sanitized mutable Sept17 clone with preboot credential/fingerprint checks; account for cron-created local deltas, not read-only assumptions. Reference sanitizer cannot directly authorize app startup. No push/deploy/live. See source-consolidation for scope/limits.
+
 ## Real A13 restore/migration rehearsal passed — 2026-09-19
 
 Unchanged script + accepted18929781 exact image restored the verified September17 capture into NEW isolated PG17 resources. Protected fingerprint/RBAC/schema checks and second migration no-op passed;180tickets/563messages/114attachment records/1285users retained. Owned resources cleaned; original references unchanged. Private0600 plaintext rehearsal input retained under new0700 release-input path, never Git. No app/Redis/provider/live/push/deploy. Next sanitized mutable clone + freshRedis/blocked egress full-app workflows, attachment bytes and new-write rollback. Overall NO-GO. Source-consolidation report records evidence and limits.

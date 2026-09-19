@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Synthetic normal startup and clean Redis checkpoint
+
+Exact18929781 image reached /api/v1/health ok through normal entrypoint on newemptyPG17+freshRedis8.8.2; DB/Redis/BullMQ/storage/memory up. No customer data, ports, host mounts or provider keys. Internalnetwork/DNS sampled egress probes blocked; synthetic resources removed/rechecked. Owner accepted freshRedis rather than livequeue copy. Two read-only preflights identified strict bootenv requirements and cron mutation risks in copied data. No runtime source changes. Next new sanitized mutable clone + explicit local cron-delta accounting, then actual customer API/browser/attachment/new-write rollback tests. Production stillNO-GO; no live/push/deploy.
+
 ## 2026-09-19 — Real isolated restore/migration acceptance
 
 A13 runrestore-20260919-18929781 exit0 using exact accepted image and verified Sept17 capture. New private input matches original raw/encrypted checksums; source receipts/references unchanged. Snapshot counts180/563/114/1285 preserved; protected fingerprints and reviewed schema/RBAC deltas pass; second migration no-op. Owned PG/network/volume cleaned and absence rechecked. Synthetic bind-permission concern disproved on this Docker Desktop, no code change. Private plaintext input/evidence retained under0700/0600. No app/providers/live/push/deploy. Full app/attachment/new-write rollback and mail/host gates remain open; details in source-consolidation report.
