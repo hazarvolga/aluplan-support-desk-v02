@@ -8,6 +8,7 @@ import {
   readdir,
   readFile,
   rm,
+  stat,
   writeFile,
 } from "node:fs/promises";
 import os from "node:os";
@@ -65,10 +66,22 @@ async function createImageHarness() {
     ),
   ]);
 
+  await chmod(path.join(archiveRoot, "scripts"), 0o755);
+  await chmod(path.join(archiveRoot, "apps/backend/Dockerfile"), 0o644);
+  await chmod(
+    path.join(archiveRoot, "scripts/release-a13-restore-drill.sh"),
+    0o755,
+  );
+
   await executable(
     path.join(fakeBin, "git"),
     `#!/bin/sh
 set -eu
+if [ "$1" = -c ]; then
+  [ "$2" = tar.umask=0022 ] || exit 73
+  printf 'normalized\\n' > "$A13_FAKE_STATE_DIR/archive-mode"
+  shift 2
+fi
 case "$1 $2" in
   'status --short') exit 0 ;;
   'rev-parse HEAD') printf '%s\\n' "$A13_FAKE_GIT_SHA" ;;
@@ -104,7 +117,25 @@ scenario="\${A13_FAKE_IMAGE_SMOKE_SCENARIO:-success}"
 case "$1 $2" in
   'context show') printf 'desktop-linux\\n' ;;
   'context inspect') printf 'unix:///var/run/docker.sock\\n' ;;
-  'build --platform') exit 0 ;;
+  'build --platform')
+    if [ "$scenario" = context-permissions ]; then
+      context=''
+      for argument in "$@"; do context="$argument"; done
+      "$A13_FAKE_NODE_BIN" -e '
+        const fs = require("node:fs");
+        const path = require("node:path");
+        const context = process.argv[1];
+        const mode = p => fs.statSync(p).mode & 0o777;
+        fs.writeFileSync(path.join(process.env.A13_FAKE_STATE_DIR, "context-modes.json"), JSON.stringify({
+          file: mode(path.join(context, "apps/backend/Dockerfile")),
+          directory: mode(path.join(context, "scripts")),
+          executable: mode(path.join(context, "scripts/release-a13-restore-drill.sh")),
+          privateParent: mode(path.dirname(context))
+        }));
+      ' "$context"
+    fi
+    exit 0
+    ;;
   'image inspect')
     case "$*" in
       *Architecture*) printf 'amd64\\n' ;;
@@ -305,6 +336,33 @@ test("exact-image smoke publishes evidence only after successful owned cleanup",
   assert.match(log, new RegExp(`docker rm -f ${smokeContainerId}`));
   assert.match(log, new RegExp(`docker inspect ${smokeContainerId}`));
   assert.equal(await readyExists(harness), true);
+});
+
+test("exact-image context retains readable executable modes while evidence stays private", async () => {
+  const harness = await createImageHarness();
+  const result = runImageSmoke(harness, "context-permissions");
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  const modes = JSON.parse(
+    await readFile(path.join(harness.stateDir, "context-modes.json"), "utf8"),
+  );
+  assert.deepEqual(modes, {
+    file: 0o644,
+    directory: 0o755,
+    executable: 0o755,
+    privateParent: 0o700,
+  });
+  assert.equal(
+    await readFile(path.join(harness.stateDir, "archive-mode"), "utf8"),
+    "normalized\n",
+  );
+  const evidenceRoot = path.join(harness.root, ".private-data/release-evidence/a13-images");
+  const finalDir = path.join(evidenceRoot, `image-${harness.gitSha}`);
+  for (const dir of [path.join(harness.root, ".private-data"), path.dirname(evidenceRoot), evidenceRoot, finalDir]) {
+    assert.equal((await stat(dir)).mode & 0o777, 0o700, dir);
+  }
+  for (const name of ["image.json", "image.json.sha256", "IMAGE_ID", "READY.json"]) {
+    assert.equal((await stat(path.join(finalDir, name))).mode & 0o777, 0o600, name);
+  }
 });
 
 test("exact-image smoke accepts Docker Desktop's exact lowercase removal proof", async () => {
