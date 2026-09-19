@@ -188,12 +188,14 @@ snapshot_dir="${run_dir}/context"
 mkdir -- "${snapshot_dir}"
 chmod 0700 "${snapshot_dir}"
 snapshot_archive="${run_dir}/context.tar"
-run_long "${git_bin}" archive --format=tar --output="${snapshot_archive}" "${git_sha}" \
+# Normalize committed source modes independently of operator Git configuration.
+# Preserve them on extraction without relaxing the private evidence umask.
+run_long "${git_bin}" -c tar.umask=0022 archive --format=tar --output="${snapshot_archive}" "${git_sha}" \
     || fail 'Unable to create the immutable Git build context.'
 [[ -f "${snapshot_archive}" && ! -L "${snapshot_archive}" \
     && "$(file_size "${snapshot_archive}")" -le "${max_build_context_bytes}" ]] \
     || fail 'Immutable Git build context exceeds its size budget.'
-run_long "${tar_bin}" -xf "${snapshot_archive}" -C "${snapshot_dir}" \
+run_long "${tar_bin}" -xpf "${snapshot_archive}" -C "${snapshot_dir}" \
     || fail 'Unable to extract the immutable Git build context.'
 rm -f -- "${snapshot_archive}"
 smoke_container_name="aluplan-a13-image-smoke-${git_sha:0:12}"
