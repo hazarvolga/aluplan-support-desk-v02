@@ -1,5 +1,15 @@
 # Session Summary - 2026-05-13
 
+## Final owner pause — resume in the morning
+
+Owner subsequently said "ok sabah devam ederiz". This supersedes nighttime timing, not the incomplete-copy status. No automated retry or further live action is scheduled; wait for continuation.
+
+## 2026-09-19 — Approved image acquisition paused at owner request
+
+Preflight reverified exact live302229b2… image2,470,925,994 bytes/amd64, unchanged container, server159GiB free and local1.2TiB available. Existing age1.3.1 + fresh private identity; verified-host SSH streamed immutable docker image save through nice gzip1 and local age encryption, no explicit server archive file, remote900s timeout/pipefail. Copy was slow (about96MB uncompressed/38MB compressed in6min); sampled backend1.45%CPU/396.3MiB, no restart. Owner chose stop/night after the duration tradeoff was explained.
+
+Matched export-client PID675037 exact argv before SIGTERM; compressor675038 was absent afterward; pipeline exited1. Backend same image/start2026-09-02T19:03:59.250425823Z/restart0/running. Partial ciphertext63,061,860 bytes retained mode0600 inside0700 directory, explicit INCOMPLETE receipt. No load/extraction/execution, DB change, deploy, restart or automatic retry. Next nighttime timing/new full stream; partial is not a valid backup and cannot be appended/resumed as-is. Offline parser in sibling scratch passed7tests and independent review after TDD fixes to reject PAX/unbounded extensions and nonzero tar tail; never run against the incomplete image. See source-consolidation.
+
 ## 2026-09-19 — Approved live image/startup observation, no mutation
 
 Following explicit owner approval for image identity/startup inspection only, root used existing maintenance SSH identity with BatchMode/IdentitiesOnly/StrictHostKeyChecking and host-key updates disabled. Host vmi3049865; backend-api image302229b2403d… still matches September17 observation. Image amd64/root-default, no revision/RepoDigests; container writable rootfs, nonprivileged, no mounts. Entry point docker-entrypoint.sh and command ./deploy.sh; command independently matched by SHA. All four deploy/recovery-file hashes exactly match historical d9 source, so identified normal-startup recovery/role mutation hazard is now tied to observed container files. Full code/image provenance remains unproven.

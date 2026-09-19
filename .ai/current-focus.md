@@ -1,5 +1,13 @@
 # Current Focus
 
+## Owner paused work until morning — 2026-09-19
+
+Latest owner instruction supersedes the earlier nighttime timing: resume in the morning, not tonight. Transfer is stopped; no automatic execution scheduled. Preserve the incomplete artifact and current local checkpoint; wait for the owner's continuation.
+
+Owner approved exact-image private acquisition, then explicitly chose to stop the slow transfer and leave it for night. Export stream stopped; pipeline exit1. Only the verified `docker image save` client was signalled; application/container/DB untouched. Backend image/start/restart0/running unchanged afterward. No automatic retry scheduled and no further acquisition/execution authority should be inferred from this pause.
+
+Private `.private-data/live-image-20260919.EcoHCh/` contains mode0600 age identity and encrypted INCOMPLETE partial archive63,061,860 bytes, with explicit failure receipt. It is not a backup, a verified image, or a resumable ciphertext stream. Actual layer/config verification was NOT run. Local offline verifier7tests and independent review passed after fixing header/tail validation gaps. Next agree nighttime timing, start a new bounded complete stream, verify all pipeline stages and exact config/layer content hashes before any offline startup review. No image was loaded/extracted/executed. Details in source-consolidation.
+
 ## Authorized live startup inspection confirms rollback hazard — 2026-09-19
 
 Owner explicitly approved read-only image identity/startup inspection. Verified-host SSH to vmi3049865 confirmed backend-api still uses image `302229b2403d…`, Linux/amd64, no OCI revision or RepoDigests. Configured startup is docker-entrypoint.sh → `./deploy.sh`. All four running-container deploy/recovery file SHA256 values exactly match reviewed `d9b21b9d` source. This binds the identified startup hazard to the live container, not the entire image to Git.

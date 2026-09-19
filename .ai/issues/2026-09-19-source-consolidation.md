@@ -1,5 +1,21 @@
 # Local source consolidation — 2026-09-19
 
+## Exact-image acquisition attempted, then owner-paused — 2026-09-19
+
+Latest timing decision: owner subsequently deferred continuation until the morning. This supersedes the earlier night option below. Transfer remains stopped; no automatic retry is scheduled.
+
+Owner explicitly approved a private copy of the exact currently observed backend image for offline inspection, without running it. Preflight confirmed target/container mapping to `sha256:302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644`, size2,470,925,994 bytes, amd64, existing container start/restart unchanged; server159GiB/local1.2TiB free. SSH host checking remained strict; existing age1.3.1 was reused, no installation. A new0700 private directory and0600 age identity were created. Same-directory encryption is controlled local storage, not off-device disaster recovery.
+
+Acquisition used the full immutable ID, remote `timeout900 bash -o pipefail` with `nice15 docker image save | nice15 gzip -1`, streamed over SSH directly into local age encryption. No explicit server archive file or Docker load/create/run occurred. Docker daemon export can still use internal temporary storage/IO; nice on the CLI does not limit daemon IO. No zero-impact claim. All pipeline stages were fail-closed, and destination was named `.partial.age` from the outset.
+
+Throughput was much slower than anticipated: after roughly6min the scoped compressor read96,185,492 bytes and wrote39,583,744 bytes. A2–3hour estimate was communicated as conditional, not a measured completion time. Sampled backend CPU1.45%, memory396.3MiB; running/start/restart0 unchanged. Owner explicitly selected "Aktarımı durdur, geceye bırakalım". Export client PID675037 was signalled SIGTERM only after exact argv matching the immutable-ID save command. Compressor PID675038 was already absent on final check. SSH/encryption pipeline finished exit1; no app/daemon process was signalled.
+
+Final partial `.private-data/live-image-20260919.EcoHCh/image.tar.gz.partial.age`:63,061,860 bytes, mode0600; SHA256 `f5397941e910b2d7b30a3cc722ac9ba7fa359ffa475c6d7095ca151b8dc2a66d`. Directory0700; identity0600. Explicit private `INCOMPLETE.json` records failure/owner stop/no automatic retry. This checksum identifies only the incomplete ciphertext, not a valid Docker image or backup. Actual archive/config/layer verification was not performed. No data deleted; incomplete artifact/key retained privately. Do not append ciphertext or claim resumability; a new complete acquisition is required.
+
+Local preparation only: sibling scratch `tmp/verify_image_archive.py` and `test_verify_image_archive.py` parse an age-decrypted gzip stream without filesystem extraction or Docker loading. Config CONTENT SHA must equal exact image ID; ordered uncompressed layer hashes must match diff_ids. Initial5tests passed; independent review reproduced hidden-PAX metadata and swallowed nonzero-tail gaps. Regression tests failed2, then raw512-byte header allowlisting/bounds and explicit padding/end/drain checks produced7/7 passes; reviewer confirmed fixes and seven additional negative cases. Actual Docker archive format compatibility remains unverified. Unsupported PAX/GNU/special entries deliberately fail closed. This tooling result is not acquisition success.
+
+After stop, live image was unchanged, StartedAt2026-09-02T19:03:59.250425823Z, RestartCount0, statusrunning; final local receipt timestamp18:19:37UTC. No application scripts executed, DB/Redis query or write, provider traffic, credential/config change, deploy/restart/firewall, image publication or new backup. Nighttime resumption is not scheduled automatically; agree timing before a new bounded stream. Current work stops here by owner choice.
+
 ## Authorized read-only live image and startup verification — 2026-09-19
 
 The owner replied "ok go on" to the explicit request for live image identity and startup configuration inspection only. Root alone connected to the recorded167.86.84.107 host with existing maintenance identity, BatchMode, IdentitiesOnly, StrictHostKeyChecking, UpdateHostKeys=no and bounded connect/subprocess timeouts. Hostname matched vmi3049865. No other apps were investigated. Selected detailed metadata timestamps18:00:46.519471–18:02:05.639358UTC; initial target-resolution preceded that window.
