@@ -1,5 +1,9 @@
 # Current Focus
 
+## Sanitized data artifact ready for gated rehearsal — 2026-09-19
+
+NEW isolated clone:62tables/617columns matched hash-bound approvedSept17schema; wronginventory transaction rejected without datachanges; structured credentials cleared with all62 protected fingerprints preserved. Puretool helper5tests/100% measuredcoverage, code/security review passed. Private sanitized dump then passed unchanged A13 restore+migration/no-op with exact18929781 image;180/563/114/1285 counts retained. Ownedresources removed. Artifact `.private-data/release-input/sanitized-20260919-527f2bdff9/` is sensitive, not anonymized or boot-authorized. Next fresh mutable clone+Redis+blockedegress+synthetic customer API tests; do not start old references. Full workflows/attachmentbytes/rollback/mail/host remain open. No live/push/deploy.
+
 ## Synthetic normal NestJS startup passed — 2026-09-19
 
 Exact18929781 backend image booted through unchanged migration/normal entrypoint on NEW emptyPG17+freshRedis, synthetic secrets/LOCAL storage, internal network with restricted DNS, no provider credentials/ports/mounts/customer data. Health ok:DB/Redis/BullMQ/storage/memory up; owned resources removed and absence rechecked. Sample externalTCP/DNS/host-canary egress probes blocked. FreshRedis policy confirmed by owner. Next NEW sanitized mutable Sept17 clone with preboot credential/fingerprint checks; account for cron-created local deltas, not read-only assumptions. Reference sanitizer cannot directly authorize app startup. No push/deploy/live. See source-consolidation for scope/limits.

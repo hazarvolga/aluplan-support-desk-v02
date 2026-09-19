@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Sanitized snapshot and migration compatibility
+
+Pure SQLplan helper+5tests added (100% measuredhelpercoverage); independent code/security review approves local-tool scope. New networknonePG clone verified62tables617columns/schemahash; negativeinventory test rolledback with fullfingerprints unchanged; valid sanitation unsafe0 and62protected tableparity. Newprivate0600dump/0700root, sourceSept17, notanonymized. Exactimage18929781 unchanged A13 restored sanitizeddump and passed bothmigrationpasses/no-op,180/563/114/1285 retained. Resourcescleaned; references/production unchanged. Noapp/Redis/provider starts here. Next syntheticcustomer API tests on newmutable sanitizedclone, no rolegrant bypass, separateCRM/cookie/attachment/rollback proof. Source-consolidation report contains paths/hashes/limits.
+
 ## 2026-09-19 — Synthetic normal startup and clean Redis checkpoint
 
 Exact18929781 image reached /api/v1/health ok through normal entrypoint on newemptyPG17+freshRedis8.8.2; DB/Redis/BullMQ/storage/memory up. No customer data, ports, host mounts or provider keys. Internalnetwork/DNS sampled egress probes blocked; synthetic resources removed/rechecked. Owner accepted freshRedis rather than livequeue copy. Two read-only preflights identified strict bootenv requirements and cron mutation risks in copied data. No runtime source changes. Next new sanitized mutable clone + explicit local cron-delta accounting, then actual customer API/browser/attachment/new-write rollback tests. Production stillNO-GO; no live/push/deploy.
