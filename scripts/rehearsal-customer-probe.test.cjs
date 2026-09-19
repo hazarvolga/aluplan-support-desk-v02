@@ -3,8 +3,24 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const { readFileSync } = require('node:fs');
-const { guard, expectStatus, assertLogin } = require('./rehearsal-customer-probe.cjs');
+const { guard, expectStatus, assertLogin, readProbeRequestTimeout } = require('./rehearsal-customer-probe.cjs');
 const safe = { ALLOW_LOCAL_CUSTOMER_PROBE: '1', NODE_ENV: 'production', DATABASE_URL: 'postgresql://probe:secret@aluplan-customer-a1b2-pg:5432/working_clone' };
+test('probe request timeout defaults to 5000 milliseconds when absent', () => {
+  assert.equal(readProbeRequestTimeout({}), 5000);
+});
+test('probe request timeout accepts explicit bounded integer milliseconds', () => {
+  for (const value of ['5000', '20000', '30000']) {
+    assert.equal(readProbeRequestTimeout({ ALUPLAN_PROBE_REQUEST_TIMEOUT_MS: value }), Number(value));
+  }
+});
+test('probe request timeout rejects invalid values without exposing input or environment secrets', () => {
+  for (const value of ['', ' ', 'private-invalid-timeout-value', 'Infinity', 'NaN', '5000.5', '4999', '0', '-1', '30001']) {
+    assert.throws(
+      () => readProbeRequestTimeout({ ...safe, ALUPLAN_PROBE_REQUEST_TIMEOUT_MS: value }),
+      { name: 'Error', message: 'invalid probe request timeout' },
+    );
+  }
+});
 test('stdin invocation actually executes and rejects absent opt-in', () => {
   const result = spawnSync(process.execPath, ['-'], {
     input: readFileSync(require.resolve('./rehearsal-customer-probe.cjs')),
