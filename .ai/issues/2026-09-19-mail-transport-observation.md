@@ -1,5 +1,17 @@
 # Mail transport observation — 2026-09-19
 
+## Local wire-level transport acceptance — 2026-09-19
+
+Added opt-in `apps/backend/src/email/mail-wire-transport-security.spec.ts` and ephemeral certificate generator `apps/backend/test/mail-tls-fixtures.cjs`. Actual Nodemailer and imap-simple clients call the unchanged application providers, with mocked settings/other DI dependencies only. Synthetic servers bind127.0.0.1 on ephemeral ports; sandbox permits loopback traffic only. No real customer, mailbox, database, DNS/proxy or certificate authority is involved. Test CA trust is provided at process startup using NODE_EXTRA_CA_CERTS, never by disabling validation in product code.
+
+Acceptance matrix: SMTP STARTTLS and implicit TLS successful verify/send with encrypted AUTH; both verify and send reject untrusted, wrong-name and expired certificates before AUTH. Missing STARTTLS rejects a send before AUTH/MAIL/DATA. IMAP direct TLS succeeds with encrypted LOGIN; untrusted/wrong-name/expired certificates fail before LOGIN. Configured IMAP TLS=false rejects both public entrypoints before connection and credential reads.
+
+Final independent rerun:10/10 wire tests passed, normal process exit0; backend/new regression TypeScript check passed with0 diagnostics. Fixture keys were generated only in owned temporary directories and cleaned after the run. Independent code review found no blocking issue. Normal test-case grouping includes multiple certificate/protocol combinations; no full-application coverage claim.
+
+The suite is opt-in via MAIL_TLS_FIXTURE_DIR and process-start trust configuration. Ordinary Jest runs skipping it are NOT wire acceptance. Existing local scratch runner `.aluplan-dependency-check-20260917/tmp/mail-wire-run.cjs` orchestrates ephemeral generation, process-start trust, loopback-only execution and owned-fixture cleanup. No private key or certificate bytes are committed. Dedicated CI wiring and exact Linux/amd64 image execution remain unverified; this local Node24/macOS result does not attest the production Node20 image or DMS interoperability.
+
+These tests supersede the prior statement that wire-level client policy is wholly untested. They do NOT close the actual server certificate/renewal/STARTTLS, sender-authority, full mail-to-ticket delivery or production release gates. No production source changes were required in this step.
+
 ## Local strict-client patch — 2026-09-19 (not deployed)
 
 Changed only `smtp.provider.ts` and `email-inbound.service.ts`: SMTP requires TLS and validates certificates, retaining explicit TLS on465 and STARTTLS mode on587. IMAP rejects an explicitly disabled TLS setting before reading credentials or connecting; enabled/default mode uses direct TLS and certificate verification. Configuration failures now enter existing public error handlers, and the inbound processing guard is acquired before configuration awaits and always released. No new environment variables, schema/migration, provider change, queue retry policy or ticket-processing change.

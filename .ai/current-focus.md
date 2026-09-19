@@ -1,5 +1,11 @@
 # Current Focus
 
+## Stabilization scope frozen — 2026-09-19
+
+Wire-level local client acceptance completed:10/10 opt-in tests pass with real SMTP/IMAP libraries, valid/invalid certificates and no plaintext AUTH; TypeScript0 diagnostics. This is local Node24/macOS loopback evidence, not production Node20/Linux DMS acceptance. See mail transport report. Next bounded step: backend non-root runtime and exact-image isolated rehearsal; do not start live TLS changes on this evidence alone.
+
+Owner deferred customer feature requests. Only demonstrated release-blocking security, compatibility and data-preservation work belongs in this candidate. Fresh local checks:56/56 migration manifest integrity and63/63 A13 safety contracts pass (fake Docker, not restore proof). Docker accessible with no running containers; cached hardened backend is arm64 without a revision label, not the current candidate. Exact backend Dockerfile still defaults to root and boot still applies migrations. See source-consolidation report's updated gate matrix. No production or database access authorized/performed; no containers started or removed. Next complete wire-level TLS acceptance, then bounded non-root/exact-image and isolated data-preserving runtime rehearsal.
+
 ## Local strict mail-client patch — 2026-09-19
 
 Final verification: four focused suites /29 tests pass; backend plus new tests TypeScript no-emit0 diagnostics through isolated dependency resolution. Independent code/security review approved local patch only. No full-release build, real TLS handshake or production acceptance claimed.

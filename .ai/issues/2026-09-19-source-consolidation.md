@@ -1,5 +1,27 @@
 # Local source consolidation — 2026-09-19
 
+## Stabilization-only checkpoint — 2026-09-19
+
+Owner explicitly deferred new customer requests/features. Freeze scope to demonstrated security, compatibility and data-preservation release blockers. Do not expand into redesigns or blanket dependency upgrades. Source-equivalence statements below describe consolidation time; subsequent strict mail-client commits intentionally changed the candidate.
+
+Current audit baseline: `0f86ab2d`, initially clean. Local Docker context `desktop-linux` is accessible; no running containers were listed. Cached `aluplan-backend-security-hotfix:local` is arm64, user `node`, but has no revision label; it is NOT proof for this release. Cached PG17 image is also arm64. No containers/images/volumes started, changed or removed during this audit.
+
+Fresh verification: all56 migration SQL files match the56-entry checksum manifest. This is local file integrity, not live ledger/schema equivalence. Existing A13 safety/image-smoke contract suites passed63/63 with fake Docker and synthetic artifacts; this is tooling regression evidence, NOT a real Docker build, DB restore or runtime rehearsal.
+
+| Gate | Current evidence | Remaining minimum |
+| --- | --- | --- |
+| Mail client | Strict TLS patch and29 focused mock tests previously passed | Real local TLS transport acceptance, then separately approved server compatibility and sender-trust evidence |
+| Backend identity/privilege | Current Dockerfile has no USER directive; old hardened image differs | Small non-root patch with writable-path checks; exact revision-bound Linux/amd64 artifact |
+| Startup/schema | Fail-closed manifest, migration, ledger/schema/RBAC checks exist; PG17 tooling corrected | Fresh disposable PG17 and sanitized clone rehearsal; boot DOES run migrations, so no migration-free release claim |
+| Recovery tools |63 contract tests and56 manifest checks pass | Real current-artifact restore/run evidence; contract tests cannot substitute |
+| Customer workflows | Historical isolated unit results only for broader application | Boot exact candidate with fresh Redis, blocked provider egress and verified sanitized mutable clone; login/reset, customer isolation, ticket/reply/attachment tests |
+| Rollback/data | Existing restore drill checks DB fingerprints and object references only | Prove attachment bytes and rollback app can read new candidate-created writes on migrated schema; never restore stale DB over new writes |
+| Production | No new live inspection this turn | Separate approval for fresh ledger/backup/object parity, actual rollback artifact and host/credential decision; no deployment authorization |
+
+Independent read-only release audit confirmed several historical warnings are now stale: PG17 client selection and fail-closed DR delegation exist; ordinary boot no longer performs seed/repair. However it still applies migrations. Existing A13 smoke and restore explicitly do not start NestJS and do not prove application rollback. Worker/cron initialization requires runtime isolation, not simply blanking a few configuration values. Do not attach raw or old partially sanitized reference data to a running application.
+
+After wire-level mail tests, the next bounded implementation is backend non-root runtime acceptance, followed by exact-image isolated application/data rehearsal. New source test success does not close live mail compatibility or incident recovery. Overall decision remains NO-GO.
+
 ## Result and scope
 
 Canonical-history worktree: `../aluplan-release-candidate-20260919`, branch `security/release-candidate-20260919`, based on `9b5d6870`. Original canonical dirty checkout and isolated candidate are preserved. This worktree is the next release-development source, not an approved production release.

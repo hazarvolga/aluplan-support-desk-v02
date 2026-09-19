@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Stabilization-only release reconciliation
+
+Added opt-in real-client loopback SMTP/IMAP TLS tests plus ephemeral certificate generator;10/10 tests pass and TypeScript0 diagnostics. Trusted success, invalid trust/name/expiry rejection and absence of plaintext AUTH verified using actual provider entrypoints. Temporary test keys cleaned; no production code changes. Local-only Node24/macOS proof; production image/server, delivery and sender-trust gates remain open.
+
+Owner froze new features/customer requests. Independent source audit reconciled stale reports: PG17/fail-closed DR and boot checks exist, but root backend runtime, current amd64 artifact, full application/attachment/new-write rollback acceptance remain open. Fresh56/56 SQL checksum comparison and63/63 A13 fake-Docker contracts pass. Local Docker inventory read only; no running containers, cached old non-root image arm64/no revision. No live access, DB access, deploy, image build, container creation or deletion. Existing source-consolidation report updated rather than creating a duplicate roadmap.
+
 ## 2026-09-19 — Strict local SMTP/IMAP transport
 
 Final focused run:4suites/29tests passed; backend plus new tests TypeScript no-emit0 diagnostics, using existing isolated generated client. Code and security reviewers approve local commit. Initial scratch dependency-resolution failures corrected without package/source changes. Full-release build and wire-level acceptance not performed.
