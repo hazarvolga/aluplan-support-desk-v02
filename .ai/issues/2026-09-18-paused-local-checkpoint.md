@@ -1,5 +1,19 @@
 # Local pause / restore point — 2026-09-18
 
+## Resume verification — 2026-09-19
+
+Local read-only reconciliation completed after owner requested continuation. All six archived artifact hashes match the checkpoint manifest; all 68 preserved canonical dirty files match their extracted copies. Candidate tracked tree remains unchanged at `20b2faf`; canonical HEAD remains `17bb69ff` before this documentation update. Comparison of 885 candidate tracked files against canonical working files finds 20 changed and seven candidate-only files. This is a local-to-local comparison, NOT a fresh production comparison. Previous test results were not rerun.
+
+Independent source-scope review found the isolated candidate is NOT a complete deployment checkout. Its unchanged backend Dockerfile requires omitted `.npmrc`, `packages/database/scripts/`, `scripts/backup-db.sh`, and backend `scripts/deploy.sh` / `migrate-once.sh`. CI workflows, Compose files and some public assets are also absent by design. Never replace the canonical tree with this subset or delete canonical-only files. Required next consolidation: new worktree from canonical Git history, explicitly preserve original source changes and candidate deltas, retain reviewed canonical-only build/ops/assets. Do not execute preserved boot/deploy scripts or copy credential-bearing configuration without review.
+
+Exact candidate backend Dockerfile has no USER directive and retains runtime npm/pnpm/Prisma. Historical non-root/package-manager-free image evidence does NOT describe this Dockerfile. Exact hardened Linux/amd64 image acceptance remains open; passing Nest compilation is not passing Docker build/runtime acceptance.
+
+Mail-source inspection reconfirms `rejectUnauthorized: false` in SMTP and IMAP configuration. Inbound source maps parsed From to an active account and ticket owner, but this is not sender-authentication evidence. Webhook ingress has a signature guard; provider-request authentication must not be confused with proof of the original email sender. No spoofing attempt or production reachability test was made.
+
+Owner confirmed email is actively used and believes the mail system is on the server, but provider/hosting is uncertain. Preserve this workflow. Before changing sender-admission policy, establish the actual receiving provider and trusted ingress/header contract through owner confirmation or separately approved read-only inspection. Do not disable email, trust arbitrary Authentication-Results headers, or create a CRM entitlement flag: CRM membership remains the owner's support eligibility rule.
+
+Next bounded work: canonical-history source consolidation, then isolated TLS regression fix with explicit mail compatibility acceptance and provider-specific sender trust decision. No production, DB, provider, push, deploy, runtime restart or application-code change occurred in this resume verification.
+
 User requested: commit, preserve a restore point, and stop until morning.
 
 ## Saved state
