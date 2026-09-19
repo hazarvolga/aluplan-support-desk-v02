@@ -82,6 +82,13 @@ export const APPROVED_CRON_DECLARATIONS = Object.freeze([
     runtimeSingletonVerified: false,
   },
   {
+    sourceFile: "apps/backend/src/notifications/notifications.gateway.ts",
+    method: "revalidateSessions",
+    // Per-replica security sweep: local sockets only, no ticket writes or email sends.
+    scope: "local-sockets-every-30-seconds",
+    runtimeSingletonVerified: false,
+  },
+  {
     sourceFile: "apps/backend/src/faq/faq.cron.service.ts",
     runtimeSingletonVerified: false,
   },
