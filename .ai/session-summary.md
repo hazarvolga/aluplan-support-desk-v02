@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Corrected amd64 image accepted for static/permission gate
+
+Source18929781 produced immutable imageb802af9e6d9a6819d9721d1705dbe3555d9c20c1ce03a6b22eb61d856060cbd3. Real A13 smoke and defaultUID1000 writable-layer permission/CLI probes passed; private evidence checksum verified.69/69 source/tool contracts. Existing volumes untouched, probes removed. App/DB/provider/production never started/accessed. Next bounded A13 isolated restore prerequisite checks, then full app/Redis/sanitized-data/attachment/new-write rollback proof; mail compatibility/host remain open. No push/deploy. Source-consolidation report holds detail.
+
 ## 2026-09-19 — Exact-image permission blocker caught locally
 
 Source904376e4 built amd64 but non-root static smoke failed EACCES due archive extraction under umask077. Corrected only source archive permissions, preserving private roots/evidence. Regression RED/GREEN, combined69/69 contracts, actual Git mode probe and independent code/security review pass. New exact-image build/runtime acceptance pending. No application/DB/provider/live/push/deploy; existing Docker volumes untouched. See source-consolidation report for rejected image ID and limits.

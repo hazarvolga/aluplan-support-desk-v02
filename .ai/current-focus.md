@@ -1,5 +1,9 @@
 # Current Focus
 
+## Corrected exact-image smoke passed — 2026-09-19
+
+Image from18929781 passed actual amd64 network-none static smoke plus separate defaultUID1000 permission probes: representative code writes denied; uploads/OpenAPI/screens writable; Prisma/Chromium CLI versions work. Private completed image evidence/checksum verified; no running containers remain.69/69 source/tool contracts passed. This is NOT NestJS boot/DB/attachment/rollback acceptance. Next validate local artifact for existing isolated PG17 A13 restore drill, then sanitized mutable clone + freshRedis/provider-blocked full-app rehearsal. No production/data/provider/push/deploy. Exact digest and limits in source-consolidation report.
+
 ## Exact-image permission correction — 2026-09-19
 
 First amd64 image904376e4 compiled but static non-root smoke failed EACCES: private umask077 masked extracted source to0600. Rejected image, no complete evidence published. Fixed Git archive mode normalization/extraction only; private0700/0600 protections retained. RED/GREEN and combined69/69 contracts, actual Git mode probe and independent code/security review passed. Next clean-commit rebuild and exact-image permissions, then isolated app/data rehearsal. No production/data/provider access or push/deploy. Details in source-consolidation report.
