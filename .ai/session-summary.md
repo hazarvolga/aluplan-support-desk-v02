@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Real isolated restore/migration acceptance
+
+A13 runrestore-20260919-18929781 exit0 using exact accepted image and verified Sept17 capture. New private input matches original raw/encrypted checksums; source receipts/references unchanged. Snapshot counts180/563/114/1285 preserved; protected fingerprints and reviewed schema/RBAC deltas pass; second migration no-op. Owned PG/network/volume cleaned and absence rechecked. Synthetic bind-permission concern disproved on this Docker Desktop, no code change. Private plaintext input/evidence retained under0700/0600. No app/providers/live/push/deploy. Full app/attachment/new-write rollback and mail/host gates remain open; details in source-consolidation report.
+
 ## 2026-09-19 — Corrected amd64 image accepted for static/permission gate
 
 Source18929781 produced immutable imageb802af9e6d9a6819d9721d1705dbe3555d9c20c1ce03a6b22eb61d856060cbd3. Real A13 smoke and defaultUID1000 writable-layer permission/CLI probes passed; private evidence checksum verified.69/69 source/tool contracts. Existing volumes untouched, probes removed. App/DB/provider/production never started/accessed. Next bounded A13 isolated restore prerequisite checks, then full app/Redis/sanitized-data/attachment/new-write rollback proof; mail compatibility/host remain open. No push/deploy. Source-consolidation report holds detail.

@@ -1,5 +1,9 @@
 # Current Focus
 
+## Real A13 restore/migration rehearsal passed — 2026-09-19
+
+Unchanged script + accepted18929781 exact image restored the verified September17 capture into NEW isolated PG17 resources. Protected fingerprint/RBAC/schema checks and second migration no-op passed;180tickets/563messages/114attachment records/1285users retained. Owned resources cleaned; original references unchanged. Private0600 plaintext rehearsal input retained under new0700 release-input path, never Git. No app/Redis/provider/live/push/deploy. Next sanitized mutable clone + freshRedis/blocked egress full-app workflows, attachment bytes and new-write rollback. Overall NO-GO. Source-consolidation report records evidence and limits.
+
 ## Corrected exact-image smoke passed — 2026-09-19
 
 Image from18929781 passed actual amd64 network-none static smoke plus separate defaultUID1000 permission probes: representative code writes denied; uploads/OpenAPI/screens writable; Prisma/Chromium CLI versions work. Private completed image evidence/checksum verified; no running containers remain.69/69 source/tool contracts passed. This is NOT NestJS boot/DB/attachment/rollback acceptance. Next validate local artifact for existing isolated PG17 A13 restore drill, then sanitized mutable clone + freshRedis/provider-blocked full-app rehearsal. No production/data/provider/push/deploy. Exact digest and limits in source-consolidation report.

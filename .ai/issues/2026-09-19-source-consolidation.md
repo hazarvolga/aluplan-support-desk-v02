@@ -1,5 +1,21 @@
 # Local source consolidation — 2026-09-19
 
+## Real isolated PG17 restore/migration rehearsal passed — 2026-09-19
+
+Independent security/evidence review verified all58 baseline business fingerprints exactly match corresponding post-migration entries, post-round1/round2 JSON equality, aggregate counts and zero remaining owned Docker resources. Approval is limited to this local drill; schema/RBAC/migration ledger intentionally change, so whole-database identity is not claimed.
+
+Unchanged A13 restore script completed with exit0 using accepted image/source18929781. Run `restore-20260919-18929781`; private evidence under `.private-data/release-evidence/a13-restore/restore-20260919-18929781/`. LOCAL-A13 reports complete, parity verified, cleanup clean; productionGo remains false. This supersedes the pending A13 restore statements below, not application/release gates.
+
+Input is the previously approved September17 attempt-2 capture, NOT fresh live data. Encrypted file size/SHA verified against original receipt; a NEW operator-private0700 input directory holds a0600 decrypted custom dump (141542982bytes), whose SHA matches both original capture and schema approval. The verified archive header identifies pg_dump17.9. Adapted local READY metadata explicitly retains source date, unsanitized status and applicationStartAllowed=false. Original encrypted artifact/key and stopped raw/sanitized reference container were not modified or started. The new plaintext input is sensitive customer data, Git-ignored, retained only for controlled local rehearsal; it is not an anonymized export or off-host backup.
+
+Preflight independent review raised a potential defaultUID1000 versus host0700/0600 bind-read issue. A real synthetic-only probe passed on this Docker Desktop, so no code/permission/root override was made. This result is platform-specific, not portable UID ownership proof.
+
+The drill created its own internal network and fresh PG17 volume/container, published no ports, restored raw baseline, cloned candidate, captured fingerprints and ran migrations twice using the exact non-root backend image. Before/after/second counts remain180tickets,563ticket_messages,114attachment records,1285users. Protected business fingerprints, RAG, object references, sequences, baseline RBAC/schema and reviewed additive changes passed script checks; business table set58->59 reflects the allowed empty faq_entry_sources addition. Second migration explicitly no-op; first/second post fingerprints equal. No NestJS, Redis, worker, email, CRM, AI or storage provider started. Local PG17arm64 differs from deployment architecture/version and is logical compatibility evidence only.
+
+Owned temporary containers/network/volume were removed; fresh label-filtered inventories returned empty. Private evidence retained; ephemeral connection env files removed by script. Existing Docker volumes were not reused or deleted. No production access, push or deploy.
+
+Next: verify a sanitized mutable working clone and fresh Redis with enforced external-traffic isolation before actual application startup. Exercise login/reset/CRM eligibility, customer isolation, tickets/replies and attachment bytes, then designated rollback image against candidate-created writes on the migrated database. Do not restore an old dump over new writes. Attachment bytes were not in this capture; full object parity and fresh release-time backup remain open, as do mail TLS compatibility and host/credential recovery.
+
 ## Corrected exact-image static and permission acceptance — 2026-09-19
 
 Clean source `189297816a84998928a3efb5f5d01f1a19dc65f5` built Linux/amd64 successfully. Immutable image `sha256:b802af9e6d9a6819d9721d1705dbe3555d9c20c1ce03a6b22eb61d856060cbd3` passed the real network-none/read-only A13 smoke:56 migration files match the manifest, PG dump/restore17.11, AWS CLI and shell checks passed; owned smoke container removal verified. Private completed evidence is under `.private-data/release-evidence/a13-images/image-189297816a84998928a3efb5f5d01f1a19dc65f5/`; `image.json.sha256` verified. This supersedes pending-rebuild statements below, not remaining release gates.
