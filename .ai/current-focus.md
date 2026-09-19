@@ -1,5 +1,15 @@
 # Current Focus
 
+## Exact image and restored-data customer HTTP acceptance passed — 2026-09-19
+
+Frozen runtime source3403ae61 produced Linux/amd64 image `sha256:b1126e5cc5c60adff63fb843c40fe89da4450ba40ed8ef75e5c738b42f7239bf`. Static smoke57/57 migration files and separate UID1000/permission probes passed. Real A13 sanitized Sept17 restore/migration passed protected fingerprints, canonical CUSTOMER4, schema/RBAC checks and second-pass no-op;180tickets/563messages/114attachment records/1285users preserved before app boot.
+
+NEW isolated app clone + fresh Redis, synthetic secrets, internal network/restricted DNS, no ports/app mounts: preboot credential assertion0/protected parity; normal production boot/health passed. Actual customer probe22/22 passed: two synthetic customer logins/tickets/persisted replies, own reads/list scoping, cross-customer denial, internal-note denial and missing-CSRF denial. Postprobe182/565/114/1287; no claim all historical row values remained unchanged during scheduled local jobs. All owned resources removed and absence rechecked. Private artifacts remain; production untouched.
+
+Initial5s login probe timed out on arm64-host amd64 emulation; independent bcrypt12 hash5743ms/compare5677ms explained the lower bound. Only test tooling now permits explicit bounded5..30s request timeout, default5s; successful run used20s and measured login12231/12274ms. Same production crypto/runtime unchanged; this is functional acceptance, NOT native production performance or browser-cookie proof.12/12 tool tests and code/security review passed. See source-consolidation for receipts and limits.
+
+Next bounded gate: use the SAME frozen image (no rebuild for documentation/probe-only commits) for actual customer review/staff/admin permission workflows, attachment-byte access and rollback preserving new writes. CRM admission/reset, browser cookies, fresh exact-image vulnerability assessment, mail TLS and host/production preflight remain separate gates. No push/deploy/live authority.
+
 ## CUSTOMER compatibility and ticket authorization fixed locally — 2026-09-19
 
 Added exact CUSTOMER4 database contract and additive migration; no fallback resurrection, seed or user reassignment. Customer-owned PENDING_CUSTOMER_REVIEW remains available for the existing close/review button. Arbitrary status management, merge and bulk update now require recognized staff identity and accessible, nondeleted targets; both merge IDs/all bulk IDs are checked before writes. Published public FAQ remains accessible through its existing endpoint without granting internal FAQ permissions.

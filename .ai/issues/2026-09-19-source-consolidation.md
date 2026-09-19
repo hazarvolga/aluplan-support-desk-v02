@@ -1,5 +1,33 @@
 # Local source consolidation — 2026-09-19
 
+## Exact CUSTOMER image, restore and real customer HTTP acceptance — 2026-09-19
+
+### Frozen artifact and migration-only evidence
+
+- Clean source `3403ae617f4b50cde4d18c2a54015e32a7eba5ce` built by the unchanged reviewed exact-image script as Linux/amd64 image `sha256:b1126e5cc5c60adff63fb843c40fe89da4450ba40ed8ef75e5c738b42f7239bf`. Transferred context11.27MB; OCI revision matched; static smoke57/57 migration checksums, PostgreSQL17 CLI and startup shell checks passed. Runtime Node20.20.2, PostgreSQL client17.11. Image receipt/checksum verified at `.private-data/release-evidence/a13-images/image-3403ae617f4b50cde4d18c2a54015e32a7eba5ce/`. Alpine repository packages are not all version-pinned; the immutable resulting digest, not a later rebuild, is the tested artifact. No fresh vulnerability-count claim.
+- Separate default-user writable-layer/no-network probe: UID1000; five representative root-owned code paths readable but not writable; uploads/OpenAPI/source MJML screens writable. No permission relaxation. Probe removed; this is a focused DAC check, not a recursive permission audit or volume-persistence proof.
+- Actual unchanged A13 runner, run `customer-20260919-3403ae61`, restored the existing sanitized September17 dump into NEW owned baseline/candidate resources. Protected business/RAG/object-reference/sequence/schema/RBAC checks passed; CUSTOMER canonical4 valid; second migration explicit no-op with identical fingerprints. Counts180tickets/563messages/114attachment **records**/1285users preserved. Receipt folder `.private-data/release-evidence/a13-restore/customer-20260919-3403ae61/`; LOCAL-A13/parity/cleanup complete. Owned resources removed, labels rechecked empty. This does not prove attachment bodies or current live totals.
+
+### Full application rehearsal and initial failure
+
+- Scratch runner `../.aluplan-dependency-check-20260917/tmp/customer-image-rehearsal.mjs` creates fresh random-labeled PG volume, internal network, Redis and app only. Synthetic random signing/encryption secrets, disabled original password hashes, no real provider credentials; app no mounts/published ports, restricted DNS. Preboot structured credential assertion0 before and after migration; protected fingerprints match accepted A13 postmigration surfaces. Same immutable image boots through normal migration-gated entrypoint; health200/statusok.
+- Initial run `customer-81e8cd35f934`: first synthetic login exceeded probe5s deadline, DOMException, completedHTTP0; only one fixture user was added locally, no tickets/messages. Never counted as a pass. Cleanup clean. Same-image isolated bcrypt12 measurement: hash5743ms, compare5677ms. Real login verifies password and hashes a refresh token; this explains why5s cannot establish functional acceptance on this arm64-host amd64 emulation. This measurement is NOT native VPS latency.
+- Only `scripts/rehearsal-customer-probe.cjs` tooling changed: default timeout stays5000ms; optional `ALUPLAN_PROBE_REQUEST_TIMEOUT_MS` accepts digit-only safe integer5000..30000; invalid settings rejected before dependencies/DB. Overall120s deadline, bcrypt12, normal login, exact expected statuses and all negative assertions unchanged. Aggregate login latency added without credentials/IDs. Tests first RED3newfail/4existingpass, then12/12 probe+sanitizer pass; independent code review also reran12/12. Scratch runner supplies20000 explicitly and hashes the exact stdin probe source. No application/Dockerfile/migration changes in this phase.
+- Before execution, independent security/code review caught two runner cleanup weaknesses (diagnostic write failure could skip cleanup; CLI creation failure could leave an untracked resource). Both fixed: cleanup always proceeds after guarded diagnostics; attempted targets registered before creation and removed only with exact run-owner label/verified absence. Re-review approved scoped local execution. No product security guard bypass used.
+
+### Successful real HTTP acceptance
+
+Run `customer-cdba19db896d`, evidence `.private-data/release-evidence/customer-cdba19db896d/`, resultPASS/cleanupclean/diagnosticFailedfalse. Exact probe sourceSHA256 `29c098fbe7e48e32b66d2d331de04e7d82032065972da517e4efbf9d2848b7d2`; timeout20000ms; measured logins12231/12274ms.
+
+- 22/22 actual HTTP checks: two synthetic customer logins; two owned ticket creates; own reads; unauthenticated401; other-customer ID and number reads403; spoofed list userId constrained to caller; two own replies persisted with matching sender/ticket/body/public flag; cross-customer reply403; internal-note403; missing-CSRF403. Rejected replies produced no extra message records.
+- Preboot180/563/114/1285, postprobe182/565/114/1287. Added records are local test fixtures. Scheduled application jobs can mutate copied historical records; no full postboot historical-row parity claim is made. Preboot parity and prior migration-only preservation are the data-conservation evidence.
+- Sample externalTCP443 and externalDNS probes failed as expected. These are sampled egress checks, not comprehensive network penetration testing. No ports/app host binds, no production/CRM/mail/R2/AI credentials used.
+- All owned clone/app/Redis/job containers, network and PG volume removed; separate label inventories empty. Original raw/sanitized artifacts and stopped reference resources preserved. Logs/fingerprints remain private0700/0600; customer rows/token/password values were not displayed.
+
+### Decision and next smallest gate
+
+Customer base availability/isolation now has real backend HTTP evidence, not just unit mocks or a health check. Production remains NO-GO. Reuse the frozen3403ae61 image for the next checks; later probe/documentation-only commits do not justify another expensive rebuild. Still required: actual customer own-review and staff/admin permission journeys; real attachment-byte access/parity; rollback preserving newly accepted writes; browser Secure/domain cookie behavior; CRM admission/password reset; fresh exact-image vulnerability assessment; mail transport/server compatibility and host incident/credential preflight. Final production observation/backup/deploy need separate authorization. No production access, restart, seed, migration, firewall, push or deploy occurred in this phase.
+
 ## Local CUSTOMER compatibility/security implementation — 2026-09-19
 
 This implementation supersedes the analysis-only next step below, not its historical evidence. Production is still NO-GO; no production access, migration, settings change, restart, email, push or deploy occurred.

@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Exact customer release image and real HTTP proof
+
+Built frozen3403ae61 Linux/amd64 imageb1126e5cc5c60adff63fb843c40fe89da4450ba40ed8ef75e5c738b42f7239bf; static smoke and separate nonroot permissions passed. A13 runcustomer-20260919-3403ae61 preserved sanitized Sept17 protected data/counts180/563/114/1285, validated CUSTOMER4/schema and second migration no-op. New normal full-app clone/freshRedis customer probe passed22actualHTTP checks with two synthetic customers/tickets/replies and ownership/internal-note/CSRF denials. Preboot credential assertion0 and protected parity; postprobe182/565/114/1287. Owned containers/network/volumes removed and absence verified; original artifacts/references untouched.
+
+First run81e8cd35f934 timed out before any successful HTTP check under5s; cleanup passed. Measured same-image bcrypt12 hash5743ms/compare5677ms on amd64 emulation. Added test-only bounded request timeout with RED3newfail/4existingpass then12/12combinedGREEN; independent review approves. Successful runcdba19db896d used20s, logins12231/12274ms; exact probe source hash recorded separately from runtime image. No password/work-factor/guard/production changes. Scratch runner cleanup issues caught and fixed before execution. Evidence/remaining gates in source-consolidation; no push/deploy/live access. Runtime source remains3403ae61 despite later tool/doc commits; no image rebuild needed for those alone.
+
 ## 2026-09-19 — Local CUSTOMER compatibility and management authorization
 
 Implemented canonical CUSTOMER4 and atomic/additive/idempotent migration preserving role metadata/users; A13 compares only those reviewed additions. Closed transition/link ownership gaps and reviewer-discovered bulk bypass before writes while preserving the actual customer own-ticket review/close-button request. Public FAQ requires no customer FAQ grant. Focused7suites/123tests and full backend + changed/new test typecheck0 pass. Real disposable PostgreSQL17 synthetic proof7/7 validates successful preservation/no-op and failure rollback; no copied customer data used. The owned temporary container/tmpfs was removed and absence verified. Source security review approves local scope; production NO-GO.
