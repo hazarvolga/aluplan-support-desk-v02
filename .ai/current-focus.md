@@ -1,5 +1,9 @@
 # Current Focus
 
+## Mail file-backup gate completed — 2026-09-19
+
+Owner-approved root-only on-host backup `/var/backups/aluplan-mail-20260919-wvS1G5/mail-backup.tgz` includes mail-data/state/config plusCompose/env. gzip/archivecompare/SHA256 and separate extracted persistentfile comparison passed;31transientsockets excluded. Livecopy notatomic, nooffhostcopy or service-restoreproof. Runtime unchanged; noTLS/restart/deploy/DBwrites. EffectiveSMTP/IMAP TLSoff independently confirmed. Existingmailtransport report holds evidence and limits. Next localTLSmaintenance plan, not livechanges; newauthority required for remediation.
+
 ## Mail target correlated, transport prerequisite confirmed — 2026-09-19
 
 Owner screenshot:SMTP587directTLSoff/IMAP143TLSoff atmail.allplan.net.tr. FreshDNS A matchesVPS,MXpoints there; IMAP143CAPABILITY lacksSTARTTLS and advertisesPLAIN/LOGIN. Noauth/messages/datachanges. Browser in owneruse; effectiveTLS/cert and mailbackup checks incomplete. See existing mailtransport report. Next management read-only certificate/backup readiness, then separatelyapproved mailTLSmaintenance; do not deploy strictclientTLS first.

@@ -1,5 +1,34 @@
 # Mail transport observation — 2026-09-19
 
+## Owner-approved protected backup completed — 2026-09-19
+
+Owner explicitly approved on-server mail/config/Compose backup and verification only. No TLS change, restart, deployment, database operation or credential rotation authorized/performed. Existing Coolify host terminal used; shell exited after verification.
+
+Backup directory on VPS: `/var/backups/aluplan-mail-20260919-wvS1G5`.
+Archive: `mail-backup.tgz`, 1,618,614 bytes. SHA-256 is recorded in sibling `SHA256SUMS` and verified successfully twice. Directory ownership/mode observed `root:root 0700`; archive `root:root 0600`. Reports use0600. This is permission-protected, NOT cryptographically encrypted or copied off-host.
+
+Exact sources identified by Docker mounts and Compose label:
+
+- `/var/lib/docker/volumes/q4wgowwo0wwsg0sksg8gkow4_mail-data/_data`
+- `/var/lib/docker/volumes/q4wgowwo0wwsg0sksg8gkow4_mail-state/_data`
+- `/var/lib/docker/volumes/q4wgowwo0wwsg0sksg8gkow4_mail-config/_data`
+- `/data/coolify/services/q4wgowwo0wwsg0sksg8gkow4/docker-compose.yml`
+- Existing regular, non-symlink `.env` alongside Compose (included without displaying contents).
+
+Preflight: source sizes approximately3.8MiB/664KiB/8KiB,159GiB free on filesystem. New unique target created with umask077; no existing backups overwritten. `rsync -aHAX --numeric-ids` copied sources to private staging, retaining owners/permissions/ACLs/xattrs/hardlinks. Compose/env copied; image identity and container start/restart-count saved before/after without dumping environment values.
+
+Verification: gzip integrity passed; GNUtar archive compare against frozen staging passed; SHA256 check passed. Immediate checksum dry-run live-to-staging comparison reported zero changes for all three volumes. This comparison was non-deleting and does not establish atomic snapshot consistency. Image/start-time/restart-count matched before/after; final container observation running=true, restart-count0, start time2026-09-02T19:03:59.002772687Z.
+
+Archive extracted ONLY into fresh backup-local `restore-check/`, not into live paths. Initial comparison logged31 `skipping` notices; staging contains31 Unix sockets. These transient sockets were deliberately not stored by tar. Repeated dry-run checksum/metadata comparison with nonregular-file notices disabled reported zero persistent-file differences (`restore-persistent-compare.log` empty); checksum recheck also passed. No actual rsync deletion was performed (`--delete` occurred only together with `-n` dry-run). Both staging and extracted verification copy retained within0700 parent. No mail body, password, hash of a password, private key or customer filename was printed.
+
+Limits: file-level archive/readback verification, NOT a running mailserver restore rehearsal, atomic application-consistent snapshot, current production ticket-DB backup, encrypted backup, off-host disaster recovery or host-cleanliness proof. New messages after capture are not included. Do not overwrite live volumes from this archive as a casual rollback; preserve newly accepted mail/queue changes. Exact running image not exported. On-host backup alone is insufficient protection against VPS loss or host compromise.
+
+Next gate: prepare certificate/renewal and TLS maintenance plan locally, with pinned currently running image identity and unchanged volume names. Before real TLS changes, separately authorize maintenance scope and controlled mail acceptance test; consider secure off-host backup destination and rehearsal. No automatic latest-image upgrade, port shutdown, password rotation or deploy follows from this backup approval.
+
+## Effective TLS inspection completed before backup
+
+Read-only container queries confirmed Postfix `smtpd_tls_security_level=none`, empty `smtpd_tls_cert_file`, `smtpd_tls_auth_only=no`; Dovecot `ssl=no`, `disable_plaintext_auth=no`. `printenv SSL_TYPE` returned no value. `/etc/letsencrypt` and `/tmp/docker-mailserver/ssl` did not exist at inspection. This does not rule out unrelated certificates elsewhere. Coolify service Scheduled Tasks displayed no configured tasks; other backup mechanisms are not ruled out.
+
 ## Authorized read-only scope
 
 Owner provided Coolify service `q4wgowwo0wwsg0sksg8gkow4` and requested browser inspection before safe release. Existing Firefox authenticated session was used. Compose editor was opened only for reading and closed WITHOUT saving. No settings, restart, deploy, credential, DB or mail-content operation performed. External probes used TCP/TLS, SMTP EHLO and QUIT only; no AUTH, MAIL FROM, RCPT TO or DATA commands.

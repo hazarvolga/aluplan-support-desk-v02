@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Authorized on-host mail backup
+
+Effective Postfix/Dovecot TLSoff confirmed viareadonlyqueries. Explicitbackupapproval used for freshroot0700folder,0600archive of maildata/state/config/Compose/env, no secretcontentdisplay. gzip/tarcompare/SHA256pass; extracted persistentfiles match with31socketexceptions; live-to-stage dryruns zerochanges, runtimeidentityunchanged. File-level only, notatomic/fullrestore/offhost/DBbackup. Shellclosed; noTLS/restart/deploy. Evidence/path/limits in existingmailtransport report. Next prepare separatelyapproved TLSmaintenance and offhost/recoveryacceptance.
+
 ## 2026-09-19 — Mail DNS and IMAP capability follow-up
 
 Correlated owner's masked live settings screenshot with freshDNS A/MX. Credential-free IMAP143CAPABILITY advertisesPLAIN/LOGIN withoutSTARTTLS; no mailboxaccess. Browser simultaneoususerinteraction respected; no furtherUIactions or livechanges. Existing mailtransport report updated with evidence and explicitunverified certificate/backup gates. Noappcode/test/deploy changes.
