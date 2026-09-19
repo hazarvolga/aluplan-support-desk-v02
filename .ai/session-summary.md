@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-19 — Read-only mail service identification
+
+Owner-provided Coolify service read in existingFirefox session: DockerMailserver latest,Runningunknown,persistentmailvolumes. NoCompose save. Unauthenticated external587 EHLO lacksSTARTTLS and advertisesAUTH;993refuses. Noauth/email/datachange. Actualapp mailtarget unknown; independentsecurityreview keeps strictTLSdeployment blocked pendingtarget/certcompatibility. New mailtransport observation report records limitations and narrow nextread-only gate; no runtime edits or releaseapproval.
+
 ## 2026-09-19 — Local canonical-history source checkpoint
 
 Consolidated885candidate source files into separate canonical-history worktree;279canonical-only entries preserved,69changed/addedpaths committed in four scoped batches. Independent code/security reviewers approved mechanical consolidation. Secret/whitespace checks clean. Fresh tests in source-identical isolated candidate: backend149suites/1728pass/1existing skip,frontend47/327pass,bothTypeScriptchecks pass. New worktree itself not installed/booted/built. Initialsymlink-verifier and executable-mode issues corrected without data access. See issues/2026-09-19-source-consolidation.md. No production,DB,provider,push/deploy. Root runtime/mailtrust/TLS/data-rehearsal gates still open.
