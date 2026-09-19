@@ -33,14 +33,13 @@ export class EmailInboundService implements OnModuleInit {
     async handleInboundEmails() {
         if (this.isProcessing) return;
 
-        const config = await this.getImapConfig();
-        if (!config) {
-            this.logger.warn('IMAP not configured, skipping inbound email check');
-            return;
-        }
-
         this.isProcessing = true;
         try {
+            const config = await this.getImapConfig();
+            if (!config) {
+                this.logger.warn('IMAP not configured, skipping inbound email check');
+                return;
+            }
             const connection: any = await imaps.connect({ imap: config });
             await connection.openBox('INBOX');
 
@@ -69,12 +68,11 @@ export class EmailInboundService implements OnModuleInit {
     }
 
     async verifyImap(): Promise<{ available: boolean; message: string }> {
-        const config = await this.getImapConfig();
-        if (!config) {
-            return { available: false, message: 'IMAP not configured' };
-        }
-
         try {
+            const config = await this.getImapConfig();
+            if (!config) {
+                return { available: false, message: 'IMAP not configured' };
+            }
             const connection: any = await imaps.connect({ imap: config });
             connection.end();
             return { available: true, message: 'Connection successful' };
@@ -88,15 +86,20 @@ export class EmailInboundService implements OnModuleInit {
         const host = await this.settings.getValue('email.imap.host');
         if (!host) return null;
 
+        // node-imap autotls can fall back to plaintext when STARTTLS is absent.
+        if ((await this.settings.getValue('email.imap.tls')) === 'false') {
+            throw new Error('IMAP requires direct TLS; configure the TLS port (usually 993) and enable TLS');
+        }
+
         return {
             host,
             port: parseInt((await this.settings.getValue('email.imap.port')) ?? '993', 10),
             user: (await this.settings.getValue('email.imap.user')) ?? '',
             password: (await this.settings.getValue('email.imap.pass')) ?? '',
-            tls: (await this.settings.getValue('email.imap.tls')) !== 'false',
+            tls: true,
             authTimeout: 10000,
             tlsOptions: { 
-                rejectUnauthorized: false,
+                rejectUnauthorized: true,
                 minVersion: 'TLSv1.2'
             }
         };

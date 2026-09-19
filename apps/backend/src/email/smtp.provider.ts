@@ -20,13 +20,13 @@ export class SmtpProvider implements EmailProvider {
             host,
             port,
             secure: isSecure, // true for 465, false for other ports
+            requireTLS: true,
             auth: {
                 user: (await this.settings.getValue('email.smtp.user')) ?? '',
                 pass: (await this.settings.getValue('email.smtp.pass')) ?? '',
             },
             tls: {
-                // Do not fail on invalid certs (common with docker-mailserver/self-signed)
-                rejectUnauthorized: false,
+                rejectUnauthorized: true,
                 // Ensure modern TLS version is used
                 minVersion: 'TLSv1.2'
             }
