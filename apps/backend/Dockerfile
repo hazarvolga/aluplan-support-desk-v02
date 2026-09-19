@@ -103,6 +103,22 @@ RUN chmod +x \
     pg_dump --version | grep -E 'PostgreSQL\) 17\.' && \
     pg_restore --version | grep -E 'PostgreSQL\) 17\.' && \
     aws --version
+
+# Keep application code root-owned; grant only existing runtime write surfaces.
+RUN mkdir -p /app/uploads && \
+    touch /app/openapi.json && \
+    chown node:node /app/uploads /app/openapi.json && \
+    for template_base in \
+        /app/apps/backend/dist/email/templates/mjml \
+        /app/apps/backend/dist/src/email/templates/mjml \
+        /app/apps/backend/src/email/templates/mjml; do \
+        if [ -d "$template_base" ]; then \
+            mkdir -p "$template_base/screens" && \
+            chown -R node:node "$template_base/screens" || exit 1; \
+        fi; \
+    done
+ENV HOME=/home/node
+USER node
 EXPOSE 4000
 ENV PORT=4000
 
