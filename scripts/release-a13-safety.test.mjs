@@ -331,6 +331,26 @@ test("restore drill accepts only the reviewed SUPPORT_AGENT RBAC delta", async (
   assert.match(result.stdout, /local evidence complete/i);
 });
 
+for (const scenario of ["existing-zero", "partial", "new-role"]) {
+  test(`restore drill accepts exact CUSTOMER four-grant delta for ${scenario}`, async () => {
+    const harness = await createA13Harness();
+    const result = runRestore(harness, { A13_FAKE_CUSTOMER_SCENARIO: scenario });
+
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    assert.match(result.stdout, /local evidence complete/i);
+  });
+}
+
+for (const scenario of ["wildcard", "faq-read", "faq-review", "metadata", "assignment-mutation"]) {
+  test(`restore drill rejects CUSTOMER ${scenario} drift`, async () => {
+    const harness = await createA13Harness();
+    const result = runRestore(harness, { A13_FAKE_CUSTOMER_SCENARIO: scenario });
+
+    assert.notEqual(result.status, 0);
+    assert.match(`${result.stdout}\n${result.stderr}`, /protected data|idempotent/i);
+  });
+}
+
 for (const [name, environment] of [
   ["role", { A13_FAKE_RBAC_ROLE_ESCALATION: "1" }],
   ["permission", { A13_FAKE_RBAC_PERMISSION_ESCALATION: "1" }],

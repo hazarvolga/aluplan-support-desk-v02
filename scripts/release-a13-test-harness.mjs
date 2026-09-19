@@ -134,7 +134,43 @@ case "$1 $2" in
         fi
         ;;
       *capture-release-fingerprints.mjs*)
-        if [ -f "$A13_FAKE_STATE_DIR/migrated" ]; then
+        if [ -n "\${A13_FAKE_CUSTOMER_SCENARIO:-}" ]; then
+          "$A13_NODE_BIN" -e '
+            const fs = require("node:fs");
+            const { createHash } = require("node:crypto");
+            const [scenario, marker] = process.argv.slice(1);
+            const migrated = fs.existsSync(marker);
+            const md5 = value => createHash("md5").update(value).digest("hex");
+            const approved = ["kb:read", "ticket:create", "ticket:read", "ticket:update"];
+            const customerRole = { keyDigest: md5("CUSTOMER"), rowDigest: "customer-role-row", stableRowDigest: "customer-stable", mutable: false };
+            const roles = [{ keyDigest: "role", rowDigest: "role-row", mutable: false }];
+            if (scenario !== "new-role" || migrated) roles.push(customerRole);
+            if (migrated && scenario === "metadata") customerRole.rowDigest = "changed-customer-metadata";
+            const assignment = permission => ({ keyDigest: md5("CUSTOMER" + String.fromCharCode(31) + permission), normalizedRoleDigest: md5("CUSTOMER"), permissionDigest: md5(permission), rowDigest: "customer-" + permission });
+            const assignments = [{ keyDigest: "assignment", rowDigest: "assignment-row" }];
+            const customerPermissions = migrated ? [...approved] : (["partial", "assignment-mutation"].includes(scenario) ? ["kb:read"] : []);
+            if (migrated && scenario === "wildcard") customerPermissions.push("*");
+            if (migrated && scenario === "faq-read") customerPermissions.push("faq:read");
+            if (migrated && scenario === "faq-review") customerPermissions.push("faq:review");
+            assignments.push(...customerPermissions.map(assignment));
+            if (migrated && scenario === "assignment-mutation") assignments.find(row => row.permissionDigest === md5("kb:read")).rowDigest = "changed-existing-assignment";
+            const state = migrated ? "new" : "old";
+            const rbac = {
+              roles,
+              permissions: [...approved, "*", "faq:read", "faq:review"].map(permission => ({ keyDigest: md5(permission), rowDigest: "permission-" + permission })),
+              assignments,
+              canonicalValid: migrated,
+              digest: state
+            };
+            process.stdout.write(JSON.stringify({
+              schemaVersion: 1, schema: [{ table: "tickets", columns: ["id"] }], business: [], rbac,
+              rag: [], objectReferences: [], sequences: [],
+              migrationLedger: { present: true, rowCount: migrated ? "2" : "1", digest: state },
+              integrity: { invalidConstraints: "0", invalidIndexes: "0" },
+              full: [{ table: "_prisma_migrations", rowCount: migrated ? "2" : "1", digest: state }], digest: state
+            }));
+          ' "$A13_FAKE_CUSTOMER_SCENARIO" "$A13_FAKE_STATE_DIR/migrated"
+        elif [ -f "$A13_FAKE_STATE_DIR/migrated" ]; then
           if [ "\${A13_FAKE_DATA_DRIFT:-0}" = 1 ]; then
             printf '%s\\n' '{"schemaVersion":1,"schema":[{"table":"tickets","columns":["id"]}],"business":[{"table":"tickets","rowCount":"1","digest":"drift"}],"rbac":{"roles":[],"permissions":[],"assignments":[],"canonicalValid":true,"digest":"new"},"rag":[],"objectReferences":[],"sequences":[],"migrationLedger":{"present":true,"rowCount":"2","digest":"new"},"integrity":{"invalidConstraints":"0","invalidIndexes":"0"},"full":[{"table":"_prisma_migrations","rowCount":"2","digest":"new"}],"digest":"new"}'
           elif [ "\${A13_FAKE_RBAC_DRIFT:-0}" = 1 ]; then
@@ -380,6 +416,7 @@ export function runRestore(harness, envOverrides = {}) {
     "A13_FAKE_SECOND_PENDING",
     "A13_FAKE_DATA_DRIFT",
     "A13_FAKE_RBAC_DRIFT",
+    "A13_FAKE_CUSTOMER_SCENARIO",
     "A13_FAKE_SCHEMA_DRIFT",
     "A13_FAKE_ROUND_ONE_EXIT",
     "A13_FAKE_SOCKET_NO_SUCH",

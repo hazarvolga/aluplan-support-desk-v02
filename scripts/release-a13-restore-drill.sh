@@ -480,6 +480,7 @@ run_backend "${job_names[5]}" "${run_dir}/candidate.env" "${run_dir}/candidate-p
     ["SUPPORT_MANAGER",["faq:review"]],
     ["KB_EDITOR",["faq:review"]],
     ["SUPPORT_AGENT",supportPermissions],
+    ["CUSTOMER",["kb:read","ticket:create","ticket:read","ticket:update"]],
   ]);
   const allowedAssignment=(row)=>{
     for(const [role,permissions] of reviewerGrants)
@@ -501,7 +502,7 @@ run_backend "${job_names[5]}" "${run_dir}/candidate.env" "${run_dir}/candidate-p
   assertPreserved(base.rbac.roles,one.rbac.roles,{allowMutable:true});
   assertPreserved(base.rbac.permissions,one.rbac.permissions);
   assertPreserved(base.rbac.assignments,one.rbac.assignments);
-  assertOnlyAllowedKeysAdded(base.rbac.roles,one.rbac.roles,new Set([md5("SUPPORT_AGENT")]));
+  assertOnlyAllowedKeysAdded(base.rbac.roles,one.rbac.roles,new Set([md5("SUPPORT_AGENT"),md5("CUSTOMER")]));
   assertOnlyAllowedKeysAdded(base.rbac.permissions,one.rbac.permissions,new Set(canonicalPermissions.map(md5)));
   assertOnlyAllowedAssignmentsAdded(base.rbac.assignments,one.rbac.assignments);
   if(one.rbac.canonicalValid!==true) process.exit(17);
