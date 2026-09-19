@@ -1,5 +1,9 @@
 # Current Focus
 
+## Canonical-history source consolidated — 2026-09-19
+
+Active next-release worktree is `aluplan-release-candidate-20260919` on `security/release-candidate-20260919`. See `issues/2026-09-19-source-consolidation.md`. All885candidate source bytes match,279canonical-only entries preserved. Fresh source-equivalent isolated backend149/1728+frontend47/327 and both typechecks passed; new-worktree/runtime-image acceptance remains untested. Original dirty checkout unchanged. Next bounded runtime/mail TLS hardening, verified mail ingress and isolated data-preserving acceptance. No live/push/deploy authority.
+
 ## Active Work
 
 - 2026-08-08 production release readiness preparation is active and **NO-GO**:
