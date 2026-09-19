@@ -197,7 +197,7 @@ export class TicketsController {
         @Param('status') status: TicketStatus,
         @Request() req: any,
     ) {
-        const updated = await this.ticketsService.transition(id, status, req.user.sub);
+        const updated = await this.ticketsService.transition(id, status, req.user);
         this.notificationsGateway.emitTicketUpdated(updated);
         return updated;
     }
@@ -239,7 +239,7 @@ export class TicketsController {
         @Param('parentId') parentId: string,
         @Request() req: any,
     ) {
-        const updated = await this.ticketsService.linkTicket(childId, parentId, req.user.sub);
+        const updated = await this.ticketsService.linkTicket(childId, parentId, req.user);
         this.notificationsGateway.emitTicketUpdated(updated);
         return updated;
     }
@@ -250,7 +250,7 @@ export class TicketsController {
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Close a resolved ticket' })
     async close(@Param('id') id: string, @Request() req: any) {
-        return this.ticketsService.transition(id, TicketStatus.CLOSED, req.user.sub);
+        return this.ticketsService.transition(id, TicketStatus.CLOSED, req.user);
     }
 
     // ─── CSAT FEEDBACK ──────────────────────────

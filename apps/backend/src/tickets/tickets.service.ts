@@ -799,7 +799,17 @@ export class TicketsService {
     // =============================================
     // STATE MACHINE — TRANSITION
     // =============================================
-    async transition(id: string, toStatus: TicketStatus, actorId: string) {
+    async transition(id: string, toStatus: TicketStatus, requester: { sub: string; role: string }) {
+        // The existing customer close button requests review, not arbitrary status control.
+        const customerReview = typeof requester?.role === 'string'
+            && requester.role.trim().toUpperCase() === 'CUSTOMER'
+            && toStatus === TicketStatus.PENDING_CUSTOMER_REVIEW;
+        const allowedAccess = customerReview
+            ? await this.ticketAccess.canAccessTicket(requester, id)
+            : await this.ticketAccess.canManageTicket(requester, id);
+        if (!allowedAccess) {
+            throw new ForbiddenException('Ticket status management is available to authorized support staff only');
+        }
         const ticket = await this.findOne(id);
         const allowed = ALLOWED_TRANSITIONS[ticket.status];
 
@@ -841,7 +851,7 @@ export class TicketsService {
         }
 
         this.logger.log(
-            `🔄 Ticket ${ticket.ticketNumber}: ${ticket.status} → ${toStatus} by ${actorId}`,
+            `🔄 Ticket ${ticket.ticketNumber}: ${ticket.status} → ${toStatus} by ${requester.sub}`,
         );
 
         return updated;
@@ -1112,7 +1122,14 @@ export class TicketsService {
     // =============================================
     // TICKET MERGE / LINK
     // =============================================
-    async linkTicket(childId: string, parentId: string, actorId: string) {
+    async linkTicket(childId: string, parentId: string, requester: { sub: string; role: string }) {
+        const access = await Promise.all([
+            this.ticketAccess.canManageTicket(requester, childId),
+            this.ticketAccess.canManageTicket(requester, parentId),
+        ]);
+        if (!access.every(Boolean)) {
+            throw new ForbiddenException('Ticket merging is available to authorized support staff only');
+        }
         if (childId === parentId) throw new BadRequestException('Cannot link ticket to itself');
 
         const [child, parent] = await Promise.all([
@@ -1136,47 +1153,32 @@ export class TicketsService {
             data: [
                 {
                     ticketId: childId,
-                    senderId: actorId,
+                    senderId: requester.sub,
                     isInternal: true,
                     message: `⚠️ Bilet kapatıldı ve ana bilet #${parent.ticketNumber} ile birleştirildi.`
                 },
                 {
                     ticketId: parentId,
-                    senderId: actorId,
+                    senderId: requester.sub,
                     isInternal: true,
                     message: `🔗 Bilet #${child.ticketNumber} bu bilete alt bilet olarak birleştirildi.`
                 }
             ]
         });
 
-        this.logger.log(`🔗 Ticket ${child.ticketNumber} merged into ${parent.ticketNumber} by agent ${actorId}`);
+        this.logger.log(`🔗 Ticket ${child.ticketNumber} merged into ${parent.ticketNumber} by agent ${requester.sub}`);
         return updatedChild;
     }
 
     // =============================================
     // BULK UPDATE
     // =============================================
-    async bulkUpdate(dto: BulkUpdateTicketDto, requester: any) {
+    async bulkUpdate(dto: BulkUpdateTicketDto, requester: { sub: string; role: string }) {
         const { ticketIds, status, priority, assignedTo } = dto;
-        const actorId = requester.sub;
-
-        // Security check for non-staff roles
-        const requesterRole = (typeof requester.role === 'string' ? requester.role : requester.role?.name)?.toUpperCase();
-        const isStaff = ['ADMIN', 'SUPER-ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'SENIOR_AGENT', 'AGENT'].includes(requesterRole);
-
-        if (!isStaff) {
-            // Verify ownership for all requested tickets
-            const count = await this.prisma.ticket.count({
-                where: {
-                    id: { in: ticketIds },
-                    userId: actorId,
-                    deletedAt: null
-                }
-            });
-            if (count !== ticketIds.length) {
-                throw new ForbiddenException('You do not have permission to update one or more of these tickets');
-            }
+        if (!(await this.ticketAccess.canManageTickets(requester, ticketIds))) {
+            throw new ForbiddenException('Bulk ticket management is available to authorized support staff only');
         }
+        const actorId = requester.sub;
 
         const updateData: Prisma.TicketUpdateInput = {};
         if (status) updateData.status = status;

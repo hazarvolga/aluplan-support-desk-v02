@@ -23,6 +23,24 @@ const STAFF_ROLES = new Set([
 export class TicketAccessService {
     constructor(private readonly prisma: PrismaService) {}
 
+    async canManageTicket(requester: TicketRequester | undefined, ticketId: string): Promise<boolean> {
+        if (!this.isStaffRequester(requester)) return false;
+        return this.canAccessTicket(requester, ticketId);
+    }
+
+    async canManageTickets(requester: TicketRequester | undefined, ticketIds: string[]): Promise<boolean> {
+        if (!this.isStaffRequester(requester)) return false;
+        if (!Array.isArray(ticketIds) || !ticketIds.length || new Set(ticketIds).size !== ticketIds.length) return false;
+        const count = await this.prisma.ticket.count({ where: { id: { in: ticketIds }, deletedAt: null } });
+        return count === ticketIds.length;
+    }
+
+    private isStaffRequester(requester: TicketRequester | undefined): boolean {
+        const requesterId = requester?.id ?? requester?.sub;
+        return typeof requesterId === 'string' && Boolean(requesterId.trim())
+            && STAFF_ROLES.has(this.normalizeRole(requester?.role));
+    }
+
     async canAccessTicket(requester: TicketRequester | undefined, ticketId: string): Promise<boolean> {
         const requesterId = requester?.id ?? requester?.sub;
         if (!requesterId) return false;
