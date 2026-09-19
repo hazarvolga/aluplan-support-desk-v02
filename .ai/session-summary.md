@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## Sanitized full-app boot passed; customer acceptance blocked — 2026-09-19
+
+Exact accepted18929781 backend image booted normally on NEW sanitized Sept17 clone plus fresh Redis; health HTTP200 with DB/Redis/BullMQ/storage/memory up. Preboot structured credential assertion0 and62protected fingerprints matched. No published ports, host binds or real provider credentials; internal Docker network/restricted DNS. Disposable mutable clone only; cron may change local copied records, so postboot business parity is NOT claimed.
+
+Customer probe stopped before fixtures/HTTP: copied CUSTOMER role has0 permissions (ADMIN16, SUPPORT_AGENT16;23permission definitions). Current RbacGuard requires route permissions and JWT authority comes from DB. This is a release compatibility blocker requiring narrow role-policy review, not proof current live service is broken. No roles/permissions were granted to force a pass. No customer login, ticket, reply or isolation acceptance is claimed.
+
+Probe guard tests4/4 pass, including actual stdin execution rejection. Initial stdin invocation silently did not execute and is explicitly excluded from evidence; corrected entrypoint and safe aggregate failure counters verified actual execution (0HTTP checks, AssertionError at role prerequisite). Independent static review covered code/security and persisted-reply proof. Probe uses manual cookie replay, not browser-cookie proof. Raw backend logs were not exposed. New owned app/Redis/PG containers and network were removed; label inventories empty. Original raw/sanitized artifacts and reference resources preserved. No production access, push or deploy. Next inspect minimal CUSTOMER permissions and current-versus-candidate authorization before any RBAC migration; preserve deny boundaries and avoid broad grants.
+
 ## 2026-09-19 — Sanitized snapshot and migration compatibility
 
 Pure SQLplan helper+5tests added (100% measuredhelpercoverage); independent code/security review approves local-tool scope. New networknonePG clone verified62tables617columns/schemahash; negativeinventory test rolledback with fullfingerprints unchanged; valid sanitation unsafe0 and62protected tableparity. Newprivate0600dump/0700root, sourceSept17, notanonymized. Exactimage18929781 unchanged A13 restored sanitizeddump and passed bothmigrationpasses/no-op,180/563/114/1285 retained. Resourcescleaned; references/production unchanged. Noapp/Redis/provider starts here. Next syntheticcustomer API tests on newmutable sanitizedclone, no rolegrant bypass, separateCRM/cookie/attachment/rollback proof. Source-consolidation report contains paths/hashes/limits.
