@@ -1,5 +1,15 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-22 — Exact patched backend artifact and repeated auth gate passed
+
+Built clean source6a0be372fa190cff72fdf8bbfed8db6f33a055cc with existing A13 tooling: Linux/amd64 image6ae3a63850864c28e2dedaafa5056c453dc94fc73b3afd85092302c22b5dbe0c. Context11.55MB; registry/APK downloads occurred, so not an offline build. Dockerfile/lock unchanged but OS packages updated; old vulnerability counts do not apply. Static smoke verified57 migrations, executable/syntax-valid startup scripts and backup tools. Parent checked image receipt hashes/revision/architecture and local image identity.
+
+Private reviewed static inspector715907b8 verified exactly two fixed CSRF warnings in compiled main and absence of old interpolation without app bootstrap; nonroot/networknone/read-only/capdrop container, /app not writable. Four synthetic inspector controls passed. Compiled main hash7c29425aa1f89edef7c19ad05caf2e9d76bd767261efc8b2b1aa99a50021ffef. Existing build-tool tests12/12 and combined focused auth/privacy/tooling tests44/44 passed; no global coverage claim. No tracked product/tooling change this turn.
+
+Preserved baseline private runnerb6b86f72; new runnerd5dcde20 changes only candidate image/SHA plus two comments. New disposable sanitized historical clone run cde676d3cece: preboot migration/protected parity/structured credential clearing passed, all12 browser checks true, unexpected0/proxyErrors0, durable fixturePASS. Counts180/563/114 unchanged, users1285→1286 synthetic only. Reference checksum unchanged. Cleanup verified by receipt and fresh exact-label inventories; sampled egress blocked. Independent reviewer confirmed safe receipts; parent independently asserted values and resource absence. Browser remains devfrontend53f55fae with disclosed redirect/certificate exceptions, not productionfrontend/TLS/dashboard/automatic refresh acceptance. No whole postboot row/attachment-byte preservation claim.
+
+Next exact-image vulnerability gate; installed Trivy0.72.0 found but no cache freshness check or scan performed. Mail transport, historical bytes, new-write/byte forward recovery and approved host/credential/fresh-backup gates remain. Production NO-GO. No production access, push, deploy, provider operation or live DB change. Images/private receipts retained; owned temporary resources removed.
+
 ## 2026-09-22 — Real auth browser aggregate and durable fixture gate passed
 
 Transport diagnosis stayed data-free. Baseline four-login repetitions: one PASS, one FAIL with a single ECONNRESET during closing-context on a socket with6 requests/6 finished responses/0 active, lastClass blocked-dev-diagnostics, requestComplete true and requestAborted false. Candidate changes only intentional403 denial headers to Connection:close; two matched four-login repetitions passed with unexpected0/proxyErrors0. No generic error suppression or upstream/cookie changes. Commit1b625c45; RED15/16→GREEN16/16, combined44/44, independent code/security approval. Scanner: probe0, tests retain exactly2 previously reviewed fixed noncredential JWT strings. No product code modified.

@@ -1,5 +1,13 @@
 # Current Focus
 
+## Patched exact backend built and auth gate passed — 2026-09-22
+
+Supersedes the pending patched-artifact gate below. Clean source6a0be372fa190cff72fdf8bbfed8db6f33a055cc produced Linux/amd64 image `sha256:6ae3a63850864c28e2dedaafa5056c453dc94fc73b3afd85092302c22b5dbe0c`. Existing A13 build/static smoke passed, receipt hashes and local image identity checked. Static compiled inspection verified both fixed CSRF warnings and absence of legacy interpolation without importing/bootstrap. No product source change this turn.
+
+One new isolated run `cde676d3cece` passed all12 real-browser auth/reset checks, unexpected0/proxyErrors0 and durable synthetic-state verification. Historical clone counts180tickets/563messages/114attachment records unchanged; users1285→1286 is one fixture. Original reference checksum unchanged; exact owned containers/network/volume absent after cleanup. Independent receipt review agreed. No live access, push or deploy. This is not current production data, complete row/attachment-byte parity, dashboard/publicTLS/automatic frontend refresh or exact production frontend acceptance.
+
+Next smallest gate: vulnerability assessment of this exact image using the existing pinned scanner, recording advisory DB freshness and impact/reachability decisions. Build downloaded dependencies and updated OS packages despite unchanged Dockerfile/lockfile; previous advisory counts cannot be inherited. No new-image vulnerability scan yet. Existing installed Trivy0.72.0 image is available; cache/freshness unverified. Avoid broad dependency upgrades without demonstrated risk. Mail TLS, historical bytes, write/byte-preserving forward recovery and separately approved host/credential/fresh-backup checks remain. Production NO-GO. See source-consolidation for exact receipts, hashes and test scope.
+
 ## Actual-backend browser auth gate passed; final patched artifact next — 2026-09-22
 
 Supersedes the unresolved browser/transport gate below for the tested artifact. Local run `46931334e73b` passed all 12 functional auth/reset checks, aggregate unexpected=0/proxyErrors=0, and durable synthetic-user DB verification. Old access/refresh were rejected before renewed login; reset replay and old password were rejected; new login/me/cookies worked. Session version incremented once, reset consumed, CUSTOMER authority preserved, no synthetic queued/sent mail. Historical local snapshot counts stayed 180 tickets / 563 messages / 114 attachment records; users1285→1286 solely includes the new synthetic fixture. Counts are NOT current production data or complete postboot row/attachment-byte parity.
