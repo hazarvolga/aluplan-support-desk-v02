@@ -172,7 +172,7 @@ async function bootstrap() {
             const headerToken = req.headers['x-xsrf-token'];
 
             if (!headerToken || headerToken !== csrfToken) {
-                logger.warn(`[CSRF] REJECTED - Header: [${headerToken}], Cookie: [${csrfToken}], Method: ${req.method}, Path: ${req.path}`);
+                logger.warn('[CSRF] REJECTED - CSRF token missing or mismatched');
                 return res.status(403).json({
                     statusCode: 403,
                     message: 'CSRF validation failed',
@@ -182,7 +182,7 @@ async function bootstrap() {
 
             const requestedWith = req.headers['x-requested-with'];
             if (!requestedWith || requestedWith !== 'XMLHttpRequest') {
-                logger.warn(`[CSRF] REJECTED (Missing Header) - Method: ${req.method}, Path: ${req.path}`);
+                logger.warn('[CSRF] REJECTED - Missing required security headers');
                 return res.status(403).json({
                     statusCode: 403,
                     message: 'Missing required security headers',
