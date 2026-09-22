@@ -4,7 +4,7 @@
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const os = require('node:os');
-const FRONTEND = 'http://127.0.0.1:53301';
+const FRONTEND = 'http://localhost:53301';
 const API = 'http://127.0.0.1:53302';
 const TOKEN = 'synthetic-ui-reset-token';
 const PASSWORD = 'Synthetic-Only-93!';
@@ -20,6 +20,23 @@ function allowedHttp(raw) {
     const url = new URL(raw);
     return !url.username && !url.password && url.protocol === 'http:' && [FRONTEND, API].includes(url.origin);
   } catch { return false; }
+}
+function safeLocation(raw) {
+  try {
+    const url = new URL(raw);
+    const origin = url.username || url.password ? 'other' : url.origin === FRONTEND ? 'frontend'
+      : url.origin === 'http://127.0.0.1:53301' ? 'numeric-loopback-alias' : 'other';
+    const pathname = ['/login', '/tr/login', '/en/login', '/de/login', '/tr/reset-password', '/tr/register'].includes(url.pathname)
+      ? url.pathname : 'other';
+    return { origin, pathname };
+  } catch { return { origin: 'other', pathname: 'other' }; }
+}
+function unexpectedHttpCategory(raw, method) {
+  if (!allowedHttp(raw)) return 'http-unapproved-origin';
+  const url = new URL(raw);
+  if (url.origin === API) return 'unmocked-api';
+  return method === 'POST' && raw === `${FRONTEND}/__nextjs_original-stack-frames`
+    ? 'local-dev-diagnostics' : 'frontend-disallowed-method';
 }
 function resolveRuntime(platform, env, uid) {
   if (platform === 'linux') {
@@ -42,7 +59,11 @@ async function main() {
   const { chromium, expect } = require(runtime.modulePath);
   let browser;
   let unexpected = 0;
+  const unexpectedCategories = { 'http-unapproved-origin': 0,
+    'frontend-disallowed-method': 0, 'unmocked-api': 0, 'api-payload-mismatch': 0, worker: 0, websocket: 0 };
+  const recordUnexpected = (category) => { unexpected += 1; unexpectedCategories[category] += 1; };
   let blockedHmr = 0;
+  let blockedLocalDevDiagnostics = 0;
   const results = [];
   let expired = false;
   const deadline = setTimeout(() => { expired = true; void browser?.close(); }, 150_000);
@@ -53,6 +74,7 @@ async function main() {
 
   async function scenario(name, mode, run) {
     let context;
+    let page;
     const requests = [];
     let stage = 'setup';
     const mark = (value) => { stage = value; };
@@ -60,7 +82,7 @@ async function main() {
       assert.equal(expired, false);
       context = await browser.newContext({ serviceWorkers: 'block', acceptDownloads: false, viewport: { width: 1280, height: 900 } });
       assert.deepEqual(await context.cookies(), []);
-      await context.exposeBinding('__probeWorkerBlocked', () => { unexpected += 1; });
+      await context.exposeBinding('__probeWorkerBlocked', () => { recordUnexpected('worker'); });
       await context.addInitScript(() => {
         for (const name of ['Worker', 'SharedWorker']) {
           Object.defineProperty(window, name, { value: class {
@@ -70,16 +92,21 @@ async function main() {
       });
       await context.routeWebSocket('**/*', (socket) => {
         const url = new URL(socket.url());
-        if (url.origin === 'ws://127.0.0.1:53301' && url.pathname === '/_next/webpack-hmr' && !url.username && !url.password) blockedHmr += 1;
-        else unexpected += 1;
+        if (url.origin === FRONTEND.replace('http:', 'ws:') && url.pathname === '/_next/webpack-hmr' && !url.username && !url.password) blockedHmr += 1;
+        else recordUnexpected('websocket');
         socket.close(); // Never connect even the known local development HMR socket.
       });
       await context.route('**/*', async (route) => {
         const request = route.request();
-        if (!allowedHttp(request.url())) { unexpected += 1; return route.abort(); }
+        if (!allowedHttp(request.url())) { recordUnexpected(unexpectedHttpCategory(request.url(), request.method())); return route.abort(); }
         const url = new URL(request.url());
         if (url.origin === FRONTEND) {
-          if (!['GET', 'HEAD'].includes(request.method())) { unexpected += 1; return route.abort(); }
+          if (!['GET', 'HEAD'].includes(request.method()) || url.pathname === '/__nextjs_original-stack-frames') {
+            const category = unexpectedHttpCategory(request.url(), request.method());
+            if (category === 'local-dev-diagnostics') blockedLocalDevDiagnostics += 1;
+            else recordUnexpected(category);
+            return route.abort(); // The verified development endpoint is still never sent.
+          }
           return route.continue();
         }
         const key = `${request.method()} ${url.pathname}`;
@@ -106,19 +133,19 @@ async function main() {
             assert.deepEqual(request.postDataJSON(), { token: TOKEN, newPassword: PASSWORD });
             response = mode === 'failure' ? [400, { message: 'Synthetic reset rejected' }] : [200, { success: true }];
           }
-        } catch { unexpected += 1; return route.abort(); }
-        if (!response) { unexpected += 1; return route.abort(); }
+        } catch { recordUnexpected('api-payload-mismatch'); return route.abort(); }
+        if (!response) { recordUnexpected('unmocked-api'); return route.abort(); }
         requests.push(key); // Metadata only; never retain or print bodies/passwords/tokens.
         return route.fulfill({ status: response[0], contentType: 'application/json',
           headers: { 'Access-Control-Allow-Origin': FRONTEND, 'Access-Control-Allow-Credentials': 'true' },
           body: JSON.stringify(response[1]) });
       });
-      const page = await context.newPage();
+      page = await context.newPage();
       page.setDefaultTimeout(7_000);
       page.setDefaultNavigationTimeout(25_000);
       await run(page, requests, mark);
       results.push({ name, pass: true });
-    } catch { results.push({ name, pass: false, stage }); }
+    } catch { results.push({ name, pass: false, stage, location: safeLocation(page?.url() || '') }); }
     finally { await context?.close(); }
   }
   const countReset = (requests) => requests.filter((key) => key === 'POST /api/v1/auth/reset-password').length;
@@ -206,11 +233,11 @@ async function main() {
     clearTimeout(deadline); clearTimeout(hardDeadline);
   }
   const pass = !expired && unexpected === 0 && results.length === 9 && results.every((result) => result.pass);
-  process.stdout.write(JSON.stringify({ scope: 'synthetic-ui-only', pass, results, unexpectedNetworkOrWorker: unexpected, blockedLocalHmr: blockedHmr }) + '\n');
+  process.stdout.write(JSON.stringify({ scope: 'synthetic-ui-only', pass, results, unexpectedNetworkOrWorker: unexpected, unexpectedCategories, blockedLocalHmr: blockedHmr, blockedLocalDevDiagnostics }) + '\n');
   process.exitCode = pass ? 0 : 1;
 }
 
-module.exports = { validateInvocation, allowedHttp, resolveRuntime, FRONTEND, API };
+module.exports = { validateInvocation, allowedHttp, resolveRuntime, safeLocation, unexpectedHttpCategory, FRONTEND, API };
 if (require.main === module) main().catch(() => {
   process.stdout.write(JSON.stringify({ scope: 'synthetic-ui-only', pass: false, reason: 'setup-or-cleanup-failed', stage: failureStage }) + '\n');
   process.exitCode = 1;
