@@ -1,5 +1,13 @@
 # Current Focus
 
+## Synthetic browser gate blocked by local runner — 2026-09-22
+
+No product changes or production access. Added a reviewed, opt-in synthetic frontend browser probe plus two passing invocation/origin-guard tests. Fresh trusted84c3bfe7 frontend snapshot served login/register/reset routes with HTTP200 under a restrictive filesystem/network sandbox; this is NOT rendered-browser acceptance. Borrowed Node24/dependencies and native dev font fallback are not production artifact proof.
+
+Browser execution is blocked: original macOS network profile denied Chromium's Unix ProcessSingleton bind; narrowly allowing Unix bind retained the successful TCP egress canary, but native Chromium child sandbox initialization then failed with EPERM and GPU/network-service termination. All nine scenarios stopped at setup. Do NOT disable Chromium's native sandbox or remove the OS egress boundary just to obtain passing tests. Owned Next/browser processes were stopped; scratch source/cache retained privately.
+
+Next smallest step: one disposable Linux container with browser and frontend on loopback and `--network none`; no production credentials, customer data, user profile, published ports, Docker socket or host-directory mounts. No compatible browser image is installed yet; separate pinned acquisition/build, narrow Linux dependency/executable-path adaptation and nonroot native-browser-sandbox preflight are required. No privileged/SYS_ADMIN/no-sandbox workaround. Keep API responses synthetic for this first UI gate. Static reset-page Sonner calls versus the mounted Radix Toaster suggest invisible feedback, but this has NOT been verified in a rendered browser or production; do not fix broadly from an unexecuted test. Backend frozen3403ae61/imageb1126e5c remains unchanged; production NO-GO and all existing release gates remain.
+
 ## Forward recovery accepted; synthetic composed auth proof passed — 2026-09-22
 
 Owner accepted the recommended forward-recovery strategy after explicit warning that maintenance can extend; ADR-022 and AGENTS record the policy. Supersedes the pending choice below and the requirement to manufacture an older fallback, NOT backup/restore, write/byte-preserving recovery proof or remaining release gates. No live/push/deploy/old-image execution approval.

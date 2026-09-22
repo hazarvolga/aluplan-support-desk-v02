@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-22 — Browser harness prepared; native sandbox blocks UI execution
+
+Added only scripts/frontend-auth-browser-probe.cjs and its two passing helper tests. Independent code review tightened exact login payload/error assertions and correctly scoped the reset400 case as validation feedback, not expired-token401. Security review approved fixed loopback origins, fresh contexts, blocked service workers/workers/WebSockets/downloads, aggregate-only output and bounded execution. Browser remains native-sandbox-enabled; no user browser profile was reused.
+
+Fresh trusted Git source84c3bfe7 served three auth routes with HTTP200 in a scratch-only Next sandbox. Google font access stayed blocked and dev fallback fonts were used. TCP canaries allowed owned53301/53302 and denied an actively listening53303 with EPERM. Browser network-only profile initially prevented Unix bind; independently reviewed Unix-bind-only exception did not broaden outbound grants. Browser then launched but failed native child sandbox initialization; all nine scenarios failed at setup, before any page assertion. This is an environment blocker, NOT nine product failures and NOT browser acceptance. No security control was disabled to force a pass.
+
+No product code, DB, migration, image execution, provider, production, push or deploy action. Static Sonner/Radix reset-feedback mismatch remains suspected only. Owned frontend stopped and browser/profile processes checked absent; private scratch retained. Next bounded route is one disposable Linux browser/frontend container with `--network none`, preserving native sandbox and synthetic-only inputs; no compatible browser image is currently installed. Separate pinned acquisition/build and minimal Linux dependency/executable-path adaptation must precede runtime preflight. Details and evidence limitations are in source-consolidation.
+
 ## 2026-09-22 — Owner accepted forward recovery; auth acceptance resumed
 
 Owner replied "ok" to the explicit recommendation and extended-maintenance tradeoff. Recorded ADR-022 and aligned AGENTS: no separately hardened older fallback is required for this stabilization release, but restored backups and data-preserving forward recovery still need proof. No deployment, live access, interruption or historical-image execution was authorized.
