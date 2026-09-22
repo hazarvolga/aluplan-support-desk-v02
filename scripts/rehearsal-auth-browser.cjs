@@ -52,7 +52,7 @@ function classifyRequest(raw, method) {
     // Verified Next development getAssetQueryString adds the millisecond request timestamp.
     if (staticAsset && /^\?v=[0-9]{13}$/.test(url.search)) return 'frontend';
     if (url.search && !/^\?_rsc=[A-Za-z0-9_-]{1,100}$/.test(url.search)) return 'reject';
-    if (['/tr/dashboard', '/tr/my-tickets'].includes(url.pathname)) return 'blocked-authenticated-page';
+    if (['/dashboard', '/my-tickets', '/tr/dashboard', '/tr/my-tickets'].includes(url.pathname)) return 'blocked-authenticated-page';
     if (['/login', '/tr/login', '/tr/register', '/tr/reset-password', '/logos/aluplan-logo-white.svg',
       '/logos/Allplan-Authorized-Partner-svg-01.svg', '/favicon.ico'].includes(url.pathname)) return 'frontend';
     return staticAsset ? 'frontend' : 'reject';
@@ -179,6 +179,13 @@ function createProxy(tls, backendHost, fixture, counts) {
       assert.ok(request.url.startsWith('/') && !request.url.startsWith('//'));
       assert.equal(request.headers.authorization, undefined);
       const target = classifyRequest(`${ORIGIN}${request.url}`, request.method);
+      // Both interception layers deny these routes; neither may fetch dashboard data or dev diagnostics.
+      if (target === 'blocked-authenticated-page' || target === 'blocked-dev-diagnostics') {
+        counts[target === 'blocked-authenticated-page' ? 'blockedAuthenticatedPages' : 'blockedDevDiagnostics'] += 1;
+        response.writeHead(403);
+        response.end();
+        return;
+      }
       assert.ok(['frontend', 'backend'].includes(target));
       const body = await readBounded(request, 8192);
       validateBody(new URL(`${ORIGIN}${request.url}`).pathname, request.method, body, fixture);
@@ -427,7 +434,7 @@ async function main() {
   }
 }
 
-module.exports = { validateInvocation, validateFixture, classifyRequest, filterHopHeaders, validateBody, validateLoginResponse, normalizeFrontendRedirect,
+module.exports = { validateInvocation, validateFixture, classifyRequest, filterHopHeaders, validateBody, validateLoginResponse, normalizeFrontendRedirect, createProxy,
   safeLocation, safeFailure, rejectionCategory, captureFailure, ORIGIN };
 if (require.main === module) main().catch(() => {
   if (stage === 'invocation') process.stdout.write(JSON.stringify({ scope: 'local-real-browser-auth', pass: false, stage }) + '\n');

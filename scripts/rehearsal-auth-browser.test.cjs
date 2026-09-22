@@ -109,6 +109,53 @@ test('hop-by-hop and caller forwarding headers are stripped including Connection
   assert.equal(headers['X-Internal'], 'secret');
 });
 
+test('unprefixed post-login pages remain denied with exact method and query bounds', () => {
+  for (const path of ['/dashboard', '/my-tickets', '/tr/dashboard', '/tr/my-tickets']) {
+    for (const method of ['GET', 'HEAD']) {
+      for (const suffix of ['', '?_rsc=abc-123']) {
+        assert.equal(classifyRequest(ORIGIN + path + suffix, method), 'blocked-authenticated-page');
+      }
+      for (const suffix of ['/', '?token=secret', '?_rsc=', '?_rsc=a&x=b', '#secret']) {
+        assert.equal(classifyRequest(ORIGIN + path + suffix, method), 'reject');
+      }
+    }
+    assert.equal(classifyRequest(ORIGIN + path, 'POST'), 'reject');
+    assert.equal(classifyRequest('https://other.invalid' + path, 'GET'), 'reject');
+  }
+});
+
+test('actual proxy handler denies known blocked classes without forwarding or masking other failures', async (t) => {
+  const { createProxy } = require('./rehearsal-auth-browser.cjs');
+  const { Readable } = require('node:stream');
+  let forwarded = 0;
+  t.mock.method(require('node:http'), 'request', () => { forwarded += 1; throw new Error('unexpected upstream'); });
+  const counts = { unexpected: 0, proxyErrors: 0, blockedAuthenticatedPages: 0, blockedDevDiagnostics: 0 };
+  const server = createProxy({}, env.ALUPLAN_BROWSER_BACKEND_HOST, fixture, counts);
+  const invoke = (url, method, headers = {}) => new Promise((resolve, reject) => {
+    const request = Readable.from([]);
+    Object.assign(request, { url, method, rawHeaders: ['Host', 'acceptance.allplan.net.tr:54443'],
+      headers: { host: 'acceptance.allplan.net.tr:54443', ...headers } });
+    let status;
+    const response = { headersSent: false, writeHead(code) { status = code; this.headersSent = true; },
+      end() { try { assert.equal(status, 403); resolve(); } catch (error) { reject(error); } } };
+    server.emit('request', request, response);
+  });
+  for (const path of ['/my-tickets', '/dashboard', '/tr/my-tickets', '/tr/dashboard']) {
+    for (const method of ['GET', 'HEAD']) await invoke(path + '?_rsc=abc', method);
+  }
+  await invoke('/__nextjs_original-stack-frames', 'POST');
+  assert.deepEqual(counts, { unexpected: 0, proxyErrors: 0, blockedAuthenticatedPages: 8, blockedDevDiagnostics: 1 });
+  for (const [path, method, headers] of [
+    ['/my-tickets?token=secret', 'GET', {}], ['/my-tickets', 'POST', {}],
+    ['/__nextjs_original-stack-frames?x=1', 'POST', {}], ['/__nextjs_original-stack-frames', 'GET', {}],
+    ['/my-tickets', 'GET', { authorization: 'secret' }], ['/my-tickets', 'GET', { host: 'other.invalid' }],
+    ['/api/v1/auth/login', 'POST', {}],
+  ]) await invoke(path, method, headers);
+  assert.deepEqual(counts, { unexpected: 7, proxyErrors: 0, blockedAuthenticatedPages: 8, blockedDevDiagnostics: 1 });
+  assert.equal(forwarded, 0);
+  server.close();
+});
+
 test('proxy bodies are restricted to the fixture identity and approved token/password pairs', () => {
   for (const password of [fixture.password, fixture.newPassword]) {
     assert.doesNotThrow(() => validateBody('/api/v1/auth/login', 'POST', JSON.stringify({ email: fixture.email, password }), fixture));
