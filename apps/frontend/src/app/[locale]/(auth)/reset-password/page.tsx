@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
 export const dynamic = "force-dynamic";
 
@@ -29,7 +29,7 @@ function ResetPasswordForm() {
         window.history.replaceState(null, '', window.location.pathname);
         setToken(fragmentToken);
         if (!fragmentToken) {
-            toast.error(t('error_invalid_link'));
+            toast({ title: t('error_invalid_link'), variant: 'destructive' });
             router.push('/login');
         }
     }, [router, t]);
@@ -38,27 +38,27 @@ function ResetPasswordForm() {
         e.preventDefault();
 
         if (!token) {
-            toast.error(t('error_missing_token'));
+            toast({ title: t('error_missing_token'), variant: 'destructive' });
             return;
         }
 
         if (password.length < 8) {
-            toast.error(t('error_length'));
+            toast({ title: t('error_length'), variant: 'destructive' });
             return;
         }
 
         if (password !== confirm) {
-            toast.error(t('error_mismatch'));
+            toast({ title: t('error_mismatch'), variant: 'destructive' });
             return;
         }
 
         setLoading(true);
         try {
             const result = await api.auth.resetPassword(token, password);
-            toast.success(result.message || t('success_message'));
+            toast({ title: result.message || t('success_message') });
             router.push('/login');
         } catch (error: any) {
-            toast.error(error.message || t('error_failed'));
+            toast({ title: error.message || t('error_failed'), variant: 'destructive' });
         } finally {
             setLoading(false);
         }
