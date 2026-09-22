@@ -1,5 +1,13 @@
 # Current Focus
 
+## Exact-image vulnerability inventory complete; targeted remediation remains — 2026-09-22
+
+Local offline Trivy0.72.0 scan of candidate6ae3 and previous LOCAL b112 used the same freshly acquired advisory DB (updated September22 07:24UTC). Both reports have identical finding sets:2Critical/128High/183Medium/23Low; no added/removed findings from the CSRF-log rebuild. Counts are package-location occurrences, not active attacks; the two Criticals are one tar6.2.1 advisory in global npm and pnpm.74High occur in the application dependency tree,7 in globalPrisma,19High+1Critical in npm,28High+1Critical in pnpm. Alpine264packages yielded0findings; no blanket native/Node-runtime security claim. Old0Critical/71High historical counts are not comparable to this pair without the same artifact/DB/scope.
+
+Next smallest remediation: bounded WebSocket dependency patch (engine.io6.6.5, socket.io-parser4.2.5, ws8.18.3; advisory fix candidates6.6.7/4.2.7/8.21.0), existing gateway/session/authorization regressions plus bounded malformed-input controls, then rescan/rebuild as appropriate. Do not bulk-upgrade or remove pnpm/Prisma: current normal startup uses both. Separate next batches: mailparser/nodemailer, document parsers, retained package-manager tar and remaining advisory reachability. Crawler source additionally has privileged URL intake but no wired SsrfGuard and browser no-sandbox; transport/redirect/subresource containment requires a release decision, not dismissal based on admin roles or zero Chromium scan findings.
+
+No code/dependency/lockfile/DB changed. No application image boot, production access/push/deploy or live vulnerability test. Scanner containers removed; images/private archives/reports retained. Evidence `.private-data/release-evidence/vuln-6ae3-20260922-GNSnSY/`. Source mapping completed by explorer; independent security review stopped at usage limit, so no approval claimed. Parent verified artifact descriptor chains, report hashes/counts/comparison and cleanup; full90uniqueHigh/Critical advisory adjudication remains open. Production NO-GO. MailTLS/bytes/forward-recovery/approved-host/fresh-backup gates remain.
+
 ## Patched exact backend built and auth gate passed — 2026-09-22
 
 Supersedes the pending patched-artifact gate below. Clean source6a0be372fa190cff72fdf8bbfed8db6f33a055cc produced Linux/amd64 image `sha256:6ae3a63850864c28e2dedaafa5056c453dc94fc73b3afd85092302c22b5dbe0c`. Existing A13 build/static smoke passed, receipt hashes and local image identity checked. Static compiled inspection verified both fixed CSRF warnings and absence of legacy interpolation without importing/bootstrap. No product source change this turn.

@@ -2,6 +2,9 @@
 
 ## Current release checkpoint — 2026-09-22 (supersedes historical status below)
 
+- Latest gate: exact candidate6ae3 and previousLOCALb112 scanned offline with same freshSeptember22DB/Trivy0.72.0. Identical2Critical/128High/183Medium/23Low;336occurrences,90uniqueHighCriticalIDs. Criticals are tar6.2.1 under npm+pnpm. Source/deps unchanged; no production access/appboot. Private evidencevuln-6ae3-20260922-GNSnSY, full OCIindex→manifest→config identity verified, scanner containers absent.
+- Next smallest patch: engine.io/socket.io-parser/ws with gateway/auth regressions and bounded malformed-input tests; mail/parser and retained tooling separate. Crawler has privileged URL intake but no wiredSSRFguard and no browser sandbox; requires containment decision. Full advisory triage and independent security review incomplete (agents hit usage limit). No scan-clean/readiness claim; productionNO-GO. Prior bullet stating scan pending is now historical.
+
 - Latest artifact supersedes the old3403/b112 limitation below: clean source6a0be372 → Linux/amd64 image6ae3a638; build/static smoke and compiled two-warning CSRF redaction verified. Run cde676d3cece passed all12 real-browser auth/reset checks and durable fixture verification, unexpected0/proxyErrors0. Original reference unchanged; exact owned resources absent after cleanup. No tracked product change in this step.
 - Next: exact-image vulnerability assessment with scanner/advisory DB provenance. OS packages re-resolved during build despite unchanged Dockerfile/lock; older advisory counts do not apply. No new-image scan yet. Historical180/563/114 counts are not live or full content/byte parity. Browser remains localdev53f55fae, not production frontend/TLS/dashboard/automatic refresh proof. Mail/bytes/forward-recovery/approved-host/fresh-backup gates remain; production NO-GO. The remaining bullets describe the preceding checkpoint.
 
