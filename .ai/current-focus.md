@@ -1,5 +1,11 @@
 # Current Focus
 
+## WebSocket dependency patch verified locally; artifact gate next — 2026-09-22
+
+Supersedes the proposed versions below. Local regression checkpoint `0ded9b6d` and dependency checkpoint `2b402a84` pin engine.io6.6.10, socket.io-parser4.2.7 and ws8.21.1 through scoped same-major overrides. Independent security review rejected the initial6.6.7/8.21.0 targets because newer related protocol-mismatch and empty-fragment fixes were required. RED demonstrated those three failing controls; final15/15 dependency tests and46/46 gateway tests pass. Actual RC dependency resolution verified; backend/frontend no-emit typechecks report0 diagnostics using schema-matched sibling generated DB declarations only. No generated client, application source, Dockerfile, schema or migration changed.
+
+Next smallest gate: build this committed source into a new pinned Linux/amd64 backend with existing A13 tooling, then compare its vulnerability inventory using the same advisory DB and repeat bounded artifact acceptance. Existing6ae3 image and its2Critical/128High counts are PRE-patch; neither the image nor production inherits local source changes. Do not claim a reduced image vulnerability count yet. Remaining mail/parser, tooling, crawler containment, persistent-byte/forward-recovery and separately approved host/credential/fresh-backup gates remain. Production NO-GO; no live access/push/deploy. Avoid unrelated upgrades. Detailed proof and limitations in source-consolidation.
+
 ## Exact-image vulnerability inventory complete; targeted remediation remains — 2026-09-22
 
 Local offline Trivy0.72.0 scan of candidate6ae3 and previous LOCAL b112 used the same freshly acquired advisory DB (updated September22 07:24UTC). Both reports have identical finding sets:2Critical/128High/183Medium/23Low; no added/removed findings from the CSRF-log rebuild. Counts are package-location occurrences, not active attacks; the two Criticals are one tar6.2.1 advisory in global npm and pnpm.74High occur in the application dependency tree,7 in globalPrisma,19High+1Critical in npm,28High+1Critical in pnpm. Alpine264packages yielded0findings; no blanket native/Node-runtime security claim. Old0Critical/71High historical counts are not comparable to this pair without the same artifact/DB/scope.

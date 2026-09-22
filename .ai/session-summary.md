@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-22 — Bounded WebSocket remediation and local checkpoints
+
+Test commit `0ded9b6d`; package/lock commit `2b402a84`. engine.io6.6.5→6.6.10, socket.io-parser4.2.5→4.2.7, ws8.18.3→8.21.1. Security review caught that the initially proposed6.6.7/8.21.0 versions still missed protocol-mismatch and empty-fragment fixes. Intermediate RED12pass/3fail became final15/15PASS with unchanged rejection/valid-input controls and tighter finite-cap assertions. Independent code reviewer confirmed installed patched branches and both blocker closures; not a full security rescan. Security follow-up hit thread limit, so no second full security signoff claimed.
+
+Gateway baseline and final46/46PASS. Final run used actual RC dependencies, network-denied macOS sandbox and mocked services; only generated database package borrowed from schema-matched September17 sibling. Backend293/frontend273 root-file no-emit typechecks passed0diagnostics with actual RC dependencies, borrowed matching DB declarations and RC shared-schema source alias. Node24.18.0 local proof, not Linux/amd64 Node20 image proof. Initial gateway setup-resolution errors were corrected via explicit pnpm modulePaths without weakening assertions. Exact pnpm9.15.4 lock generation/frozen install used ignore-scripts and public registry with cleared environment. No app boot, real DB/mail/provider connection or client generation. Staged-diff Gitleaks checks found0 leaks; no blanket secret/security certification.
+
+No app source/schema/migrations/Dockerfile changes. ws7.5.10 dev-tool dependency remains separately tracked; not all workspace advisories cleared. Existing6ae3 exact image and scan are pre-patch. Next rebuild pinned candidate and compare/rescan artifact; mail/parser, tooling/crawler and existing data/host gates remain. No production access, push, deploy or restart. Production NO-GO. Full details in source-consolidation; local checkpoints are not remote backups.
+
 ## 2026-09-22 — Same-database image security comparison; no product edits
 
 Pinned existing Trivy0.72.0 imagecffe3f51, separate DB-only download from officialGHCR (no app archive mount), then nonroot/read-only/capdrop/nnp network-none scanning of Docker-saved candidate6ae3 and previous LOCALb112 archives. No Docker socket, credentials, app bootstrap or DB access. All severities/unfixed retained; ignorefile/dev/null, no ignores or VEX supplied. DB updated07:24UTC/downloaded18:51UTC; scan19:02UTC,11.63hours old and beforeNextUpdate. Exit0 means tool completion, not clean security. Scanner signature was not independently verified; pinned identity only.
