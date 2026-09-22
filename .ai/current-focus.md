@@ -1,5 +1,11 @@
 # Current Focus
 
+## Recovery strategy needs an explicit owner decision — 2026-09-22
+
+Local comparison eliminates prior18929781/b802 as ready fallback: later CUSTOMER migration violates its unchanged exact-ledger-count boot check, and skipping startup reinstates ticket-management authorization defects. Old302229/d9 remains unsuitable as previously documented. Two independent reviews recommend stopping archive engineering and choosing policy, not creating another parser. Product remains3403ae61;14/14 helper/source tests pass on localNode24, not a new app/DB run.
+
+Proposal ONLY: finish release gates and rehearse pinned-candidate replacement/re-entry plus reviewed forward fixes, preserving migrated DB and persistent bytes; explicitly accept possible extended maintenance and no safe older-version fallback. Alternative: separately scope a hardened older-functionality fallback. Owner must choose; existing rollback requirement/NO-GO is NOT waived. No product changes, live access, DB/image execution, push or deploy. Details and writer/mail/backup/escalation boundaries in source-consolidation. Do not resume old-image inspection or implement a backport before this decision.
+
 ## Inert startup config confirmed; safe rollback designation still open — 2026-09-22
 
 Local full-stream metadata read reused the unchanged verifier, passed all existing checks/exit0 and returned only booleans: exact302229image declares expected docker-entrypoint.sh → ./deploy.sh, /app, unspecifiedUser; no Healthcheck key/nonemptyOnBuild; Env present but never exposed. Ciphertext/verifier hashes and private permissions unchanged;27tests pass; product source still3403ae61. No layer-file inspection/load/extraction/execution/live/DB/push/deploy occurred.

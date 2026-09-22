@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-22 — Compared actual fallback options; policy proposal only
+
+Source diff18929781..3403ae61 and independent reviews reject prior localb802 fallback: its unchanged strict migration ledger check rejects the later CUSTOMER migration, while direct-node bypass loses ticket-management safeguards against CUSTOMER4 grants. JWT/RAG hardening is unchanged between these two local candidates; do not confuse them with historicald9. No app/image/DB/live action or source edits. LocalNode24.18.0 helper/source contracts14/14 passed after absent configuredNode20path; no full-app/runtime proof claimed.
+
+Recorded practical proposal in source-consolidation: stop legacy archive engineering; choose owner-approved forward recovery with potentially extended maintenance and preserved writes/bytes, or separately scope a hardened older-functionality fallback. No policy adopted automatically, no rollback gate waived, no execution/deploy approval inferred. Required mail/writer quiescence, persistent-byte recovery, remaining release gates and backup/reconciliation boundaries documented. Await the owner's explicit strategy choice before expanding implementation.
+
 ## 2026-09-22 — Inert startup metadata and rollback security boundary
 
 Unchanged verifier27/27 tests pass. Independently reviewed config-only age/gzip stream,180s bound/pipefail, completed all modern+aux checks and exited0. Image302229 declares expected wrapper/deploy.sh/workdir and unspecifiedUser; no Healthcheck key, no nonemptyOnBuild, Env present. Only booleans printed. Ciphertext/verifier hashes and0700/0600 permissions unchanged. No layer-file inspection, extraction/load/execution, production/DB/Redis/provider access or product edits.
