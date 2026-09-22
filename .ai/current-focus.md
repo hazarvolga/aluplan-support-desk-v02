@@ -1,5 +1,11 @@
 # Current Focus
 
+## Forward recovery accepted; synthetic composed auth proof passed — 2026-09-22
+
+Owner accepted the recommended forward-recovery strategy after explicit warning that maintenance can extend; ADR-022 and AGENTS record the policy. Supersedes the pending choice below and the requirement to manufacture an older fallback, NOT backup/restore, write/byte-preserving recovery proof or remaining release gates. No live/push/deploy/old-image execution approval.
+
+Added one test-only synthetic HTTP composition of actual AuthController/AuthService/access+refresh guards: CRM lookup member/nonmember/unavailable; valid login+refresh → password reset with Redis marker failure → oldaccess401/oldrefresh403/replay401/oldpassword401 → newlogin/access/refresh success with CUSTOMER4 unchanged. In-memory version fault control proves the access denial is not a broken route. New4/4 and complete8authsuites/150tests pass using borrowed matching-lockfile dependencies/Node24 and env-i. This is not exact-image/browser/realDB/provider proof. Product runtime remains frozen3403ae61; only a new spec and docs changed. Next prepare isolated fresh-browser/reset-fragment and migratedDB acceptance without defaultE2E reuse of existing servers/admin storage state. Persistent write/attachment recovery and other release gates remain open. Stop historical archive engineering.
+
 ## Recovery strategy needs an explicit owner decision — 2026-09-22
 
 Local comparison eliminates prior18929781/b802 as ready fallback: later CUSTOMER migration violates its unchanged exact-ledger-count boot check, and skipping startup reinstates ticket-management authorization defects. Old302229/d9 remains unsuitable as previously documented. Two independent reviews recommend stopping archive engineering and choosing policy, not creating another parser. Product remains3403ae61;14/14 helper/source tests pass on localNode24, not a new app/DB run.

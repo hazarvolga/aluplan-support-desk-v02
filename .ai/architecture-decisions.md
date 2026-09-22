@@ -3,6 +3,14 @@
 Durable project decisions live here. Keep each ADR short: context, decision, reason,
 and consequence. Use session summaries for implementation history.
 
+## ADR-022 - Stabilization Release Uses Explicit Forward Recovery
+
+- Date: 2026-09-22
+- Status: Owner accepted strategy after explicit extended-maintenance tradeoff; release and production actions remain separately gated.
+- Context: The archived historical backend has unsafe startup and weaker session authority. The previous local candidate lacks newer ticket-management safeguards and rejects the later migration ledger. Neither is an approved older-version fallback. Hardening a separate legacy version would duplicate release work.
+- Decision: For this stabilization release, prepare and prove recovery using the pinned accepted candidate and narrowly reviewed corrected successors, preserving the migrated database, newly accepted writes and persistent attachment bytes. Do not automatically revert to known-unsafe older images or restore an old/local database. Candidate restart/replacement/re-entry is recovery/persistence evidence, not version rollback. Further historical-image engineering is out of scope unless a concrete new need is approved.
+- Consequence: This supersedes the requirement to produce an older-version fallback for this release, not the requirements for verified backup restoration or data-preserving recovery proof. An outage may extend beyond the planned maintenance target; no bounded recovery time or zero downtime is promised. Define all-writer/mail quiescence, abort/escalation and write-reopening criteria before release. Browser/CRM/reset, mail, object bytes, vulnerabilities and host/credential gates remain. Strategy approval does not authorize live access, image execution, interruption, push or deploy; each applicable operational gate still requires explicit approval.
+
 ## ADR-021 - Preserve CUSTOMER Workflows Through Explicit Database Grants
 
 - Date: 2026-09-19

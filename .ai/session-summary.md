@@ -1,5 +1,14 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-22 — Owner accepted forward recovery; auth acceptance resumed
+
+Owner replied "ok" to the explicit recommendation and extended-maintenance tradeoff. Recorded ADR-022 and aligned AGENTS: no separately hardened older fallback is required for this stabilization release, but restored backups and data-preserving forward recovery still need proof. No deployment, live access, interruption or historical-image execution was authorized.
+
+Read-only acceptance audit found a composition gap: CRM claim/reset service tests and signed-token HTTP guard tests existed separately, but no actual AuthController/AuthService HTTP journey tied password reset to rejection of previously issued access/refresh cookies. Existing7suites/146tests passed freshly with actual RC source and borrowed dependencies/generated client from the existing September17 local environment under Node24.18.0, env-i; no full AppModule, real DB/Redis, browser, CRM/mail provider or image was started.
+
+Added only auth-reset-revocation.http.spec.ts:4/4 composed synthetic HTTP tests pass. Parent independently reran all8authsuites/150tests successfully (8.999s). Positive refresh before reset, Redis marker write failure, exact oldaccess401/oldrefresh403/resetreplay401/oldpassword401, renewed login/refresh and unchanged CUSTOMER grants are checked. An in-memory sessionVersion reversal makes oldaccess work again, proving the negative assertion responds to the intended boundary. CRM member/nonmember/unavailable lookup matrix asserts no session issuance/user mutation. Runtime source unchanged; no production RED claimed because this adds evidence for existing behavior, not a product fix. Test evidence is not browser/realDB/provider/full-main middleware or crypto-performance acceptance. Source-consolidation records limits and next isolated-browser gate.
+
+Independent code/security reviews approved the final test. Reviewer explicitly included the spec and backend sources in a borrowed-resolver TypeScript check:0 diagnostics/noImplicitAny:true. Matching lockfile is not installed-runtime equivalence. Separate local checkpoints preserve test/policy/docs scope; no remote publication.
 ## 2026-09-22 — Compared actual fallback options; policy proposal only
 
 Source diff18929781..3403ae61 and independent reviews reject prior localb802 fallback: its unchanged strict migration ledger check rejects the later CUSTOMER migration, while direct-node bypass loses ticket-management safeguards against CUSTOMER4 grants. JWT/RAG hardening is unchanged between these two local candidates; do not confuse them with historicald9. No app/image/DB/live action or source edits. LocalNode24.18.0 helper/source contracts14/14 passed after absent configuredNode20path; no full-app/runtime proof claimed.
