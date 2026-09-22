@@ -1,5 +1,15 @@
 # Current Focus
 
+## CSRF logs fixed; all12 auth checks true, aggregate gate still fails — 2026-09-22
+
+Product0dc5aac0 removes sensitive request interpolation from exactly two CSRF warnings; regression886ab2eb executes the actual extracted middleware without bootstrap.4/4 pass after RED3fail/1pass, whole-backend borrowed-resolver TypeScript0diagnostics, independent code/security review. No auth decisions/cookie/status/body/env/schema changes. This fix is LOCAL SOURCE ONLY: old3403ae61/b1126e5c image and production do not acquire it automatically.
+
+Data-free real frontend/browser diagnosed Next dev redirect to wrong httpslocalhost53301 authority. Strict test-only adapter3d7a61a9 preserves status/body/cookies and normalizes only the exact frontend login307/308 Location; data-free UI now passes with normalized1/unexpected0/proxyErrors0.13/13 browser-helper tests and41/41 combined focused tests pass. Not production routing/TLS proof.
+
+One subsequent actual-clone run bf0cb00ff119 reached all12 functional assertions: expiry401, real login/me/cookies/refresh, CSRF403/404 control, reset200+redirect, oldaccess401/oldrefresh403 before renewed login, replay401, oldpassword401, newlogin/me200. BUT final unexpected counter4 (two categorized GET other-path RSC requests, two not categorized) fails the aggregate; proxyErrors0, normalizedDevRedirects1. No full acceptance claim; final scoped DB fixture verification/postcounts did not execute. All owned resources cleaned and label inventories empty. Original sanitized September17 reference unchanged; no live access/push/deploy.
+
+Next: data-free reproduction of remaining unexpected requests/cancellations; classify rather than suppress. Then finish aggregate+durable fixture acceptance and build/rehearse a final exact backend image including0dc5aac0. Do not repeat expensive clone runs merely to guess unknown paths. Mail TLS, historical bytes, new-write/byte forward recovery, image vulnerabilities and separately approved host/credential/fresh-backup gates remain open. Production NO-GO.
+
 ## Actual-backend browser acceptance: partial proof, not a pass — 2026-09-22
 
 Local-only continuation now joins the frozen3403ae61/backend imageb1126e5c with the actual frontend, a newly restored sanitized September17 DB clone and fresh Redis. Reference artifacts and production remain untouched. Fixture tooling committed asd8ad410c; no application changes in this batch. New random synthetic CUSTOMER4 identity is the only browser-accessible identity; no customer dashboard is fetched, no provider traffic or mail issuance is allowed.
