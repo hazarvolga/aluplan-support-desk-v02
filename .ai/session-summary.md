@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-22 — Inert startup metadata and rollback security boundary
+
+Unchanged verifier27/27 tests pass. Independently reviewed config-only age/gzip stream,180s bound/pipefail, completed all modern+aux checks and exited0. Image302229 declares expected wrapper/deploy.sh/workdir and unspecifiedUser; no Healthcheck key, no nonemptyOnBuild, Env present. Only booleans printed. Ciphertext/verifier hashes and0700/0600 permissions unchanged. No layer-file inspection, extraction/load/execution, production/DB/Redis/provider access or product edits.
+
+Read-only historicald9 versus frozen3403ae61 JWT strategy reveals missing legacy DB-backed status/sessionVersion/current-role checks and legacy URL-query token acceptance. This extends rollback acceptance beyond ticket counts to security non-regression; not a fresh live exploit finding or archived compiled-code attestation. No safe rollback startup designated. Source-consolidation records a bounded selected-file inspection contract and separate execution approval gate. General extractor/legacy-ID reconstruction/re-download rejected as unnecessary. Existing release blockers remain; no push/deploy.
+
+Independent source review also confirms historical RAG onModuleInit performs column/index DDL and dataset/settings writes; candidate moves that maintenance behind an explicit operation. Therefore direct Node bypass is not sufficient. Deeper image-file inspection is conditional on a concrete fallback decision, not a reason to build a general parser or rehabilitate known-unsafe startup. Three-document scope review approved; no application changes.
+
 ## 2026-09-22 — Scoped modern-image integrity gate closed locally
 
 Added versioned stdin-only Python verifier and synthetic tests; no product code changes. Contract verifies exact config hash, ordered uncompressed layers/diffIDs, Docker/OCI descriptor sizes/digests/order, strict tar/gzip/JSON framing, and bounded V1 auxiliary classification. Legacy IDs are not regenerated: these records are non-authoritative for the pinned manifest-present modern loader. Tags, parent image links, descriptor URLs/unknown fields and unexplained members are rejected. Runtime/legacy-loader safety stays explicitly false.

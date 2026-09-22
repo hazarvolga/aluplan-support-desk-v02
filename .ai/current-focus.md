@@ -1,5 +1,11 @@
 # Current Focus
 
+## Inert startup config confirmed; safe rollback designation still open — 2026-09-22
+
+Local full-stream metadata read reused the unchanged verifier, passed all existing checks/exit0 and returned only booleans: exact302229image declares expected docker-entrypoint.sh → ./deploy.sh, /app, unspecifiedUser; no Healthcheck key/nonemptyOnBuild; Env present but never exposed. Ciphertext/verifier hashes and private permissions unchanged;27tests pass; product source still3403ae61. No layer-file inspection/load/extraction/execution/live/DB/push/deploy occurred.
+
+Historicald9 JWT strategy lacks candidate DB-backed sessionVersion/status/current-role checks and accepts query tokens; RAG onModuleInit additionally invokes column/index DDL and dataset/settings writes even when deploy.sh is bypassed. Candidate separates that maintenance from normal RAG startup. Source comparison, not compiled-image/runtime proof. Thus default old boot AND an unreviewed direct-node bypass are not accepted fallback paths. Rollback must preserve security semantics as well as candidate-created writes and attachment bytes. Next explicitly review/designate a compatible fallback; use bounded selected-file in-memory/hash inspection only where it resolves that decision, not as a generic extractor or attempt to rehabilitate known-unsafe startup. Execution remains separately approved. Details and stop conditions in source-consolidation. Production remains NO-GO.
+
 ## Local modern-image content gate passed — 2026-09-22
 
 Owner continued locally; no new live access, extraction/load/execution or DB action occurred. Versioned verifier and tests added under `scripts/`. Independent reviews plus27/27 synthetic tests passed;237/243 statement lines covered (97.53%, stdlib trace; CLI separately exercised). Real180s-bounded age/gzip verification exited0 at14:58:05UTC: exact302229b2… config,24 ordered layers, OCI index/manifest,53 regular members and24 strictly classified auxiliary records accepted. Core checks were not removed. Compatibility fixes recognize the same zero instant across explicit offsets and only13 source-defined typed-zero fields added to unchanged terminal config.
