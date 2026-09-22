@@ -9,6 +9,35 @@ const fixture = { userId: '12345678-1234-4234-8234-123456789abc',
   newPassword: 'b'.repeat(64), resetToken: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJl',
   expiredToken: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIn0.c2lnbmF0dXJl' };
 
+test('only the exact Next dev login redirect maps back to the isolated browser origin', () => {
+  const { normalizeFrontendRedirect: normalize } = require('./rehearsal-auth-browser.cjs');
+  const normalizeFrontendRedirect = (status, location) => normalize('frontend', 'GET', '/login', status, location);
+  for (const status of [307, 308]) {
+    for (const suffix of ['', '?_rsc=abc-123_X']) {
+      assert.equal(normalizeFrontendRedirect(status, 'https://localhost:53301/tr/login' + suffix), ORIGIN + '/tr/login' + suffix);
+    }
+  }
+  for (const location of [undefined, null, ['/tr/login'], '/tr/login', 'http://localhost:53301/tr/login',
+    'https://localhost:53301/tr/login?token=secret', 'https://localhost:53301/tr/login#token=secret',
+    'https://localhost:53301/tr/login?', 'https://localhost:53301/tr/login?_rsc=',
+    'https://localhost:53301/tr/login?_rsc=' + 'a'.repeat(101),
+    'https://localhost:53301/tr/login?_rsc=a&other=b', 'https://localhost:53301/tr/login/',
+    'https://localhost:53301/en/login', 'https://localhost:53301/tr/dashboard',
+    'https://user@localhost:53301/tr/login', 'https://localhost:53301.example.invalid/tr/login',
+    'https://other.invalid/tr/login', 'https://localhost:53301/tr/../tr/login']) {
+    assert.equal(normalizeFrontendRedirect(307, location), location);
+  }
+  for (const status of [200, 301, 302, 303, 401, 500, undefined]) {
+    assert.equal(normalizeFrontendRedirect(status, 'https://localhost:53301/tr/login'), 'https://localhost:53301/tr/login');
+  }
+  const location = 'https://localhost:53301/tr/login';
+  for (const [target, method, requestPath] of [['backend','GET','/login'], ['frontend','POST','/login'],
+    ['frontend','GET','/tr/login'], ['frontend','GET','/login?token=secret'], ['frontend','GET','/login/']]) {
+    assert.equal(normalize(target, method, requestPath, 307, location), location);
+  }
+  assert.equal(normalize('frontend','HEAD','/login?_rsc=abc',308,location), ORIGIN+'/tr/login');
+});
+
 test('guard requires exact opt-in, Linux, nonroot uid, fixed host shape and no extra arguments', () => {
   assert.equal(validateInvocation(['--run-real-auth-browser'], env, 'linux', 1000), env.ALUPLAN_BROWSER_BACKEND_HOST);
   for (const args of [[], ['--run-real-auth-browser', '--extra'], ['--execute']]) {

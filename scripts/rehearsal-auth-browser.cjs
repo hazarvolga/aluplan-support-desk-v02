@@ -158,6 +158,15 @@ function validateLoginResponse(body, fixture) {
   assert.ok(Object.keys(body.user).every((key) => !/password|token|secret/i.test(key)));
 }
 
+function normalizeFrontendRedirect(target, method, requestPath, statusCode, location) {
+  if (target !== 'frontend' || !['GET', 'HEAD'].includes(method) || ![307, 308].includes(statusCode)
+    || !/^\/login(?:\?_rsc=[A-Za-z0-9_-]{1,100})?$/.test(requestPath)
+    || typeof location !== 'string' || !/^https:\/\/localhost:53301\/tr\/login(?:\?_rsc=[A-Za-z0-9_-]{1,100})?$/.test(location)) return location;
+  // Next dev constructs middleware URLs from its loopback listen address, not forwarded authority.
+  // This exact local transport adapter is NOT proof of production frontend redirect behavior.
+  return location.replace('https://localhost:53301', ORIGIN);
+}
+
 function createProxy(tls, backendHost, fixture, counts) {
   const http = require('node:http');
   const https = require('node:https');
@@ -183,7 +192,13 @@ function createProxy(tls, backendHost, fixture, counts) {
         port: target === 'backend' ? 4000 : 53301, path: request.url, method: request.method,
         headers, agent: false, timeout: REQUEST_MS }, (incoming) => {
         // Preserve Set-Cookie arrays verbatim; never rewrite Domain, Path, Secure or HttpOnly.
-        response.writeHead(incoming.statusCode, filterHopHeaders(incoming.headers));
+        const responseHeaders = filterHopHeaders(incoming.headers);
+        const location = normalizeFrontendRedirect(target, request.method, request.url, incoming.statusCode, responseHeaders.location);
+        if (location !== responseHeaders.location) {
+          counts.normalizedDevRedirects += 1;
+          responseHeaders.location = location;
+        }
+        response.writeHead(incoming.statusCode, responseHeaders);
         incoming.on('error', failUpstream);
         incoming.pipe(response);
       });
@@ -214,7 +229,7 @@ async function main() {
   const { execFileSync } = require('node:child_process');
   const { X509Certificate, createHash } = require('node:crypto');
   let browser, server, temporary, activePage;
-  const counts = { unexpected: 0, proxyErrors: 0, blockedAuthenticatedPages: 0, blockedHmr: 0, blockedDevDiagnostics: 0 };
+  const counts = { unexpected: 0, proxyErrors: 0, blockedAuthenticatedPages: 0, blockedHmr: 0, blockedDevDiagnostics: 0, normalizedDevRedirects: 0 };
   let diagnostics = { step: 'setup', failure: 'none', location: safeLocation('about:blank'), rejectedRequests: {} };
   const recordRejected = (raw, method) => {
     const key = rejectionCategory(raw, method);
@@ -412,7 +427,7 @@ async function main() {
   }
 }
 
-module.exports = { validateInvocation, validateFixture, classifyRequest, filterHopHeaders, validateBody, validateLoginResponse,
+module.exports = { validateInvocation, validateFixture, classifyRequest, filterHopHeaders, validateBody, validateLoginResponse, normalizeFrontendRedirect,
   safeLocation, safeFailure, rejectionCategory, captureFailure, ORIGIN };
 if (require.main === module) main().catch(() => {
   if (stage === 'invocation') process.stdout.write(JSON.stringify({ scope: 'local-real-browser-auth', pass: false, stage }) + '\n');
