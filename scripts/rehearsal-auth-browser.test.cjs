@@ -131,19 +131,23 @@ test('actual proxy handler denies known blocked classes without forwarding or ma
   t.mock.method(require('node:http'), 'request', () => { forwarded += 1; throw new Error('unexpected upstream'); });
   const counts = { unexpected: 0, proxyErrors: 0, blockedAuthenticatedPages: 0, blockedDevDiagnostics: 0 };
   const server = createProxy({}, env.ALUPLAN_BROWSER_BACKEND_HOST, fixture, counts);
-  const invoke = (url, method, headers = {}) => new Promise((resolve, reject) => {
+  const invoke = (url, method, headers = {}, knownDenial = false) => new Promise((resolve, reject) => {
     const request = Readable.from([]);
     Object.assign(request, { url, method, rawHeaders: ['Host', 'acceptance.allplan.net.tr:54443'],
       headers: { host: 'acceptance.allplan.net.tr:54443', ...headers } });
-    let status;
-    const response = { headersSent: false, writeHead(code) { status = code; this.headersSent = true; },
-      end() { try { assert.equal(status, 403); resolve(); } catch (error) { reject(error); } } };
+    let status, responseHeaders;
+    const response = { headersSent: false, writeHead(code, value) { status = code; responseHeaders = value; this.headersSent = true; },
+      end() { try {
+        assert.equal(status, 403);
+        assert.deepEqual(responseHeaders, knownDenial ? { connection: 'close' } : undefined);
+        resolve();
+      } catch (error) { reject(error); } } };
     server.emit('request', request, response);
   });
   for (const path of ['/my-tickets', '/dashboard', '/tr/my-tickets', '/tr/dashboard']) {
-    for (const method of ['GET', 'HEAD']) await invoke(path + '?_rsc=abc', method);
+    for (const method of ['GET', 'HEAD']) await invoke(path + '?_rsc=abc', method, {}, true);
   }
-  await invoke('/__nextjs_original-stack-frames', 'POST');
+  await invoke('/__nextjs_original-stack-frames', 'POST', {}, true);
   assert.deepEqual(counts, { unexpected: 0, proxyErrors: 0, blockedAuthenticatedPages: 8, blockedDevDiagnostics: 1 });
   for (const [path, method, headers] of [
     ['/my-tickets?token=secret', 'GET', {}], ['/my-tickets', 'POST', {}],
@@ -153,6 +157,19 @@ test('actual proxy handler denies known blocked classes without forwarding or ma
   ]) await invoke(path, method, headers);
   assert.deepEqual(counts, { unexpected: 7, proxyErrors: 0, blockedAuthenticatedPages: 8, blockedDevDiagnostics: 1 });
   assert.equal(forwarded, 0);
+  server.close();
+});
+
+test('proxy client errors remain fatal counters including connection resets', () => {
+  const { createProxy } = require('./rehearsal-auth-browser.cjs');
+  const counts = { unexpected: 0, proxyErrors: 0 };
+  const server = createProxy({}, env.ALUPLAN_BROWSER_BACKEND_HOST, fixture, counts);
+  let destroyed = 0;
+  for (const code of ['ECONNRESET', 'HPE_INVALID_EOF_STATE', 'HPE_HEADER_OVERFLOW']) {
+    server.emit('clientError', Object.assign(new Error('synthetic'), { code }), { destroy() { destroyed++; } });
+  }
+  assert.equal(counts.proxyErrors, 3);
+  assert.equal(destroyed, 3);
   server.close();
 });
 

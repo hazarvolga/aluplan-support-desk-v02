@@ -182,7 +182,8 @@ function createProxy(tls, backendHost, fixture, counts) {
       // Both interception layers deny these routes; neither may fetch dashboard data or dev diagnostics.
       if (target === 'blocked-authenticated-page' || target === 'blocked-dev-diagnostics') {
         counts[target === 'blocked-authenticated-page' ? 'blockedAuthenticatedPages' : 'blockedDevDiagnostics'] += 1;
-        response.writeHead(403);
+        // End denied connections gracefully rather than retaining an idle dev-diagnostic socket.
+        response.writeHead(403, { connection: 'close' });
         response.end();
         return;
       }
