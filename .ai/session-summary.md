@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-22 — Data-free post-login classification repaired, transport error retained
+
+Checkpoint50cfa072 changes only auth-browser test tooling. Synthetic successful CUSTOMER login reproduced exact unprefixed /my-tickets GET with bounded RSC and exact POST Next dev diagnostics failing proxy route assertion. Both remain denied: unprefixed authenticated routes now have the same blocked category as localized routes; actual proxy403-denies known blocked classes before body/upstream, after host/auth-header checks. Unexpected variants still fail. New test invokes actual server handler without a listening socket and proves zero upstream calls, positive blocked counters, and seven malformed/unknown/body failures. RED13pass2fail→GREEN15/15; combined focused43/43. Independent named code/security review approved; no product change.
+
+Two post-fix four-login data-free repeats: rejected paths0, proxy-handler assertions0, unexpected0; both overall FAIL on proxyErrors1. Last repeat identifies server clientError ECONNRESET, not an upstream failure. Context-close causality not yet proven; no suppression, no full-clone retry, no full-browser pass. Owned network-none/read-only/nonroot/native-sandbox diagnostic container04baa489… label20260922-b removed after exact ownership check; label inventory empty. No DB/Redis/provider/live traffic or new image build. Original artifacts unchanged. Probe Gitleaks clean; test scan retains exactly the two previously reviewed fixed noncredential JWT strings at9/10. No blanket scanner-clean or whole-project coverage claim.
+
+Next: bounded data-free socket/lifecycle correlation, then aggregate + durable fixture acceptance. Frozen backend3403/b112 still lacks source CSRF log fix0dc5aac0; existing exact-image script can rebuild but dependency networking is not guaranteed absent. Detailed current gate and evidence in source-consolidation. Production NO-GO; no push/deploy.
+
 ## 2026-09-22 — Scoped CSRF log defect fixed; dev redirect cause reproduced
 
 Actual inline middleware regression RED3fail/1pass→GREEN4/4; product commit0dc5aac0 changes only two warnings to fixed reasons, preserving CSRF decisions/cookies/responses. Test commit886ab2eb uses TS AST extraction without bootstrap/DB/network. Independent code/security approval, clean test/product Gitleaks, whole-backend borrowed-resolver TypeScript0diagnostics. No new env/schema/dependency. Frozen3403ae61/b112 image does not include the fix; final candidate needs rebuilding.

@@ -1,5 +1,13 @@
 # Current Focus
 
+## Post-login route diagnosis fixed; transport lifecycle still open — 2026-09-22
+
+Local tooling checkpoint50cfa072: data-free actual frontend/browser reproduced unprefixed GET /my-tickets RSC rejection and proxy assertion on the exact POST /__nextjs_original-stack-frames route. Exact unprefixed /my-tickets and /dashboard GET/HEAD are now classified as intentionally blocked; proxy returns403 for either known blocked class after host/header checks and before body/upstream. No dashboard forwarding, cancellation exemption or generic-counter suppression. RED13/15→GREEN15/15, combined43/43, independent code/security review approved.
+
+Two corrected four-login synthetic repeats had zero unexpected requests/proxy-handler assertions, but each aggregate still FAILED with proxyErrors1. The instrumented repeat isolated server clientError ECONNRESET; causality with page/context teardown remains UNPROVEN. This is not evidence of a production auth defect or full acceptance. No new customer-data clone run or backend rebuild. Exact owned diagnostic container removed; original reference and live systems untouched. Existing all12 functional checks from bf0cb00ff119 remain historical partial evidence, not a new pass; final durable fixture verification still pending.
+
+Next bounded step: correlate transport error with owned request/socket/browser lifecycle in a data-free test; do not blanket-ignore ECONNRESET. Then complete actual-backend aggregate/durable-state acceptance and rebuild/rehearse exact backend including0dc5aac0. Existing build tool is suitable but NOT guaranteed offline/cached (source COPY invalidates dependency layer); registry access must be accurately scoped. Mail TLS, historical attachment bytes, new-write/byte forward recovery, artifact vulnerabilities and approved host/credential/fresh-backup gates remain. Production NO-GO; no live/push/deploy authority.
+
 ## CSRF logs fixed; all12 auth checks true, aggregate gate still fails — 2026-09-22
 
 Product0dc5aac0 removes sensitive request interpolation from exactly two CSRF warnings; regression886ab2eb executes the actual extracted middleware without bootstrap.4/4 pass after RED3fail/1pass, whole-backend borrowed-resolver TypeScript0diagnostics, independent code/security review. No auth decisions/cookie/status/body/env/schema changes. This fix is LOCAL SOURCE ONLY: old3403ae61/b1126e5c image and production do not acquire it automatically.
