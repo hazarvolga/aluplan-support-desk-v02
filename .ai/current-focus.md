@@ -1,5 +1,15 @@
 # Current Focus
 
+## Actual-backend browser auth gate passed; final patched artifact next — 2026-09-22
+
+Supersedes the unresolved browser/transport gate below for the tested artifact. Local run `46931334e73b` passed all 12 functional auth/reset checks, aggregate unexpected=0/proxyErrors=0, and durable synthetic-user DB verification. Old access/refresh were rejected before renewed login; reset replay and old password were rejected; new login/me/cookies worked. Session version incremented once, reset consumed, CUSTOMER authority preserved, no synthetic queued/sent mail. Historical local snapshot counts stayed 180 tickets / 563 messages / 114 attachment records; users1285→1286 solely includes the new synthetic fixture. Counts are NOT current production data or complete postboot row/attachment-byte parity.
+
+Tooling `1b625c45` adds Connection:close only to intentionally denied403 responses. Data-free A/B correlated a baseline ECONNRESET with context teardown on an idle socket with6/6 responses finished; two four-login candidate repeats passed without exceptions. All clientError codes remain fatal. RED15/16→GREEN16/16; combined44/44; independent code/security review approved. No application code changes this turn.
+
+Evidence `.private-data/release-evidence/auth-browser-46931334e73b/`: frozen backend3403ae61/imageb1126e5c and browser53f55fae; this backend still lacks source-only CSRF log fix0dc5aac0. Local dev frontend uses the disclosed narrow redirect adapter/single-SPKI certificate exception. Dashboard rendering, frontend automatic refresh and public TLS are explicitly NOT accepted by this test. Reference dump hash unchanged; sampled egress checks passed; all exact owned containers/network/volume removed and fresh label inventories empty. No live access/push/deploy.
+
+Next smallest release gate: use existing exact-image tooling to build a clean, pinned Linux/amd64 backend containing0dc5aac0, verify compiled redaction and rehearse that immutable artifact. Do not reuse this older image's pass as final-artifact acceptance. Dependency downloads may be needed; no offline-build claim. Mail TLS, historical attachment bytes, new-write/byte forward recovery, exact artifact vulnerability decisions and separately approved host/credential/fresh-backup gates remain. Production NO-GO.
+
 ## Post-login route diagnosis fixed; transport lifecycle still open — 2026-09-22
 
 Local tooling checkpoint50cfa072: data-free actual frontend/browser reproduced unprefixed GET /my-tickets RSC rejection and proxy assertion on the exact POST /__nextjs_original-stack-frames route. Exact unprefixed /my-tickets and /dashboard GET/HEAD are now classified as intentionally blocked; proxy returns403 for either known blocked class after host/header checks and before body/upstream. No dashboard forwarding, cancellation exemption or generic-counter suppression. RED13/15→GREEN15/15, combined43/43, independent code/security review approved.

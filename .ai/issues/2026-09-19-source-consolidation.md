@@ -1,5 +1,35 @@
 # Local source consolidation — 2026-09-19
 
+## Real-backend auth acceptance passed after bounded transport correction — 2026-09-22
+
+Local continuation from33234787. No production access/change, push, deploy, existing-service restart, live DB/Redis/provider connection or production data overwrite. A new disposable local clone alone was migrated and modified for the synthetic fixture; original reference untouched. No product code change in this batch.
+
+### Evidence-driven transport correction
+
+The data-free diagnostic added finite lifecycle phases and per-TLS-socket state in an in-memory instrumented copy of the actual proxy. Baseline repetition A1:4 logins PASS; A2:4 logins completed but aggregate FAIL with one clientError ECONNRESET during `2:wait-navigation:closing-context`. Socket12 had6 requests/6 finished responses/0 active, lastClass blocked-dev-diagnostics, requestComplete=true, requestAborted=false, destroyed=true/writable=false. This supports the observed idle-connection teardown correlation, not an application authentication failure or proof about every earlier reset.
+
+Single-variable B: add `Connection: close` only on known intentional403 denial responses, retaining normal response.end(), guards, no upstream forwarding and all error counters. B1(in-memory change) and B2(tracked exact source) each completed4 logins with unexpected0/proxyErrors0,9 authenticated-page denials and1 dev-diagnostic denial. These bounded observations are not a claim that all possible races are eliminated. Private manual aggregate receipt `transport-ab-summary.json` explicitly identifies itself as a summary, not a raw trace. Diagnostic SHA256`4b17417e3d912ab78b266da7c6f6ed755bdf749290c7358115780e922340993c`.
+
+Tooling commit `1b625c45`. Actual proxy-handler test asserts headers only on known denials; seven negative cases still fail, no forwarding. Additional injected ECONNRESET/parser error cases still increment proxyErrors and destroy the bad sockets. RED15pass/1fail→GREEN16/16; combined44/44; independent code/security review approved. Probe SHA256`6ab3e7982785998b15d44cc7663f25a007663e2aa27151e264323a8077d12f5c`, tests`864ffef24bd8a564ef3342a649d9362cb4c2c093b06144e18aa0fe0af10540f1`. Gitleaks probe0; tests exactly2 known unchanged synthetic noncredential JWT constants, no suppression. Graph report/CLI unavailable; direct call-site/diff analysis used for this tooling-only scope.
+
+Data-free container `d97e2afaea2cf3d3eecc5eef5bea5ff42bd3f4218e1c98664a2725764d33376d`, labelcom.aluplan.auth.route=20260922-c: networknone, UID1000, read-only, native sandbox, reviewed seccomp, no mounts/ports/customer data. First warmup raced server startup and failed before any test; subsequent bounded warmup200. Exact owned container removed and label absence verified; no network/volume created by diagnostic. Images/private diagnostic retained.
+
+### One real-backend clone rehearsal: PASS
+
+Evidence: `.private-data/release-evidence/auth-browser-46931334e73b/`. Unchanged reviewed runner SHA256`b6b86f72f89e3a432ffa317a2067ab0bc43b2a669c43509cfe125c7b38090907`. Frozen backend3403ae617f4b50cde4d18c2a54015e32a7eba5ce/image`sha256:b1126e5cc5c60adff63fb843c40fe89da4450ba40ed8ef75e5c738b42f7239bf`. Browser`sha256:53f55fae1e26cd2d5d3ad59462b788728fe5e94fbabfe8d2131c0a5e01d4afb5` extends verified cached26448454… via probe-only COPY, --pull=false/--network=none, no dependency install. No frontend product rebuild or final backend build.
+
+All12 real browser/backend checks passed: expired reset401; UI login200; cookie attributes; real/me200; browser-native refresh200; missing-CSRF403 versus valid-CSRF routing404; valid UI reset200; old access401 and old refresh403 before renewed login; replay401; old password401; new UI login/me200. Aggregate pass=true/stagecomplete, unexpected0, proxyErrors0, blockedAuthenticatedPages4, blockedHmr6, blockedDevDiagnostics1, normalizedDevRedirects1. Parent re-read final receipt after cleanup and asserted all12 booleans and both zero counters.
+
+Durable fixture verification now executed and passed: session version increased exactly once, reset consumed, new password hash matches/old does not, canonical CUSTOMER authority preserved, zero synthetic QUEUED/SENT email records. Pre/post counts:180 tickets/563 messages/114 attachment records unchanged; users1285→1286 is the one synthetic fixture. These describe the September17 local snapshot, NOT current live counts. Protected migration/preboot fingerprints and zero structured credentials passed. No full postboot historical-row or attachment-byte parity claim; normal local background jobs can run.
+
+Preboot/backend/browser sampled internetTCP, externalDNS and all resolved host-canary addresses blocked. Internal owned network/new PG volume/fresh Redis, run-local secrets and native-sandbox browser isolation preserved. This is sampled evidence, not exhaustive network proof. Raw backend logs deliberately not retained. Cleanup receipt clean; parent separately verified empty container/network/volume inventories for exact labelcom.aluplan.customer.rehearsal=46931334e73b. Reference dump rehashed unchanged: `c7a2aeb8969841e8e17e07e6e43241d3fb768a358f017e9716aeb08a11e673c4`.
+
+### Closed gate and remaining boundaries
+
+This closes the scoped real-backend browser auth/reset + durable synthetic-state gate for the tested artifacts. It does not certify production readiness, complete customer dashboards, automatic frontend refresh behavior, actual CRM/forgot-password/email issuance, public PKI/TLS, cross-origin deployment, exact production frontend, all historical records or attachment bytes. The disclosed strict Next development redirect adapter and single-SPKI local certificate exception remain test-only.
+
+The tested backend does NOT contain source-only CSRF warning fix0dc5aac0. Next smallest step is existing clean-HEAD immutable Linux/amd64 build/static smoke, compiled-redaction verification and artifact-specific rehearsal. Build dependency downloads may occur; do not claim fully cached/offline. Existing mailTLS, historical bytes, new-write/byte forward recovery(ADR-022), exact-image vulnerabilities and separately approved host/credential/fresh-backup gates remain. Production NO-GO; no push/deploy approval.
+
 ## Post-login route denial consistency; unresolved transport lifecycle — 2026-09-22
 
 Local continuation from60adc69f; tooling commit50cfa072. No production access/change, push/deploy, customer-data clone, DB/Redis/provider operation or image build in this scope. Original sanitized reference unchanged.

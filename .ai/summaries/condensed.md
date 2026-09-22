@@ -1,5 +1,13 @@
 # Condensed Project Memory
 
+## Current release checkpoint — 2026-09-22 (supersedes historical status below)
+
+- Canonical working checkout: `aluplan-release-candidate-20260919`, branch `security/release-candidate-20260919`; latest tooling checkpoint `1b625c45`. Existing architecture and release scope retained; no production/push/deploy authority from "continue".
+- Actual-backend browser run `46931334e73b` passed all12 auth/reset assertions plus durable fixture verification, unexpected0/proxyErrors0. Test-only graceful close on known403 denials resolved the observed idle-connection teardown failure in two bounded synthetic repeats; no counter suppression. Combined44 focused tests passed.
+- Evidence applies to older backend3403ae61/imageb112 and local dev frontend/browser53f55fae, NOT final release artifacts. Backend source-only CSRF log fix0dc5aac0 still needs exact Linux/amd64 build/rehearsal. Browser uses a bounded dev redirect adapter and scoped local certificate exception; dashboard/publicTLS/automatic frontend refresh remain outside this gate.
+- Historical sanitized September17 reference unchanged. Pre/post clone counts180tickets/563messages/114attachment records; users1285→1286 is one test identity. Owned test resources removed and absence verified. No live access or customer-data overwrite; no whole-dataset/attachment-byte preservation claim from counts alone.
+- Next: existing exact-image build and final-artifact verification. Remaining release gates include mail transport, attachment bytes, new-write/byte forward recovery under ADR-022, vulnerability decisions and separately approved host/credential/fresh backup checks. Production NO-GO. Use current-focus/session-summary/source-consolidation for evidence; the older RAG/status notes below are historical, not current validation.
+
 ## Project Purpose
 
 Aluplan Support Desk is an AI-assisted ticket system for Allplan/BIM support workflows. It combines a NestJS backend, Next.js frontend, PostgreSQL/Prisma database, pgvector retrieval, knowledge pool imports, and customer-facing ticket flows.
