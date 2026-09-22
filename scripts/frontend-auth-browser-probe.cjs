@@ -9,6 +9,7 @@ const API = 'http://127.0.0.1:53302';
 const TOKEN = 'synthetic-ui-reset-token';
 const PASSWORD = 'Synthetic-Only-93!';
 const EMAIL = 'synthetic-ui@example.invalid';
+let failureStage = 'invocation';
 
 function validateInvocation(args, env) {
   assert.equal(env.FRONTEND_AUTH_PROBE, 'synthetic-ui-only');
@@ -20,11 +21,25 @@ function allowedHttp(raw) {
     return !url.username && !url.password && url.protocol === 'http:' && [FRONTEND, API].includes(url.origin);
   } catch { return false; }
 }
+function resolveRuntime(platform, env, uid) {
+  if (platform === 'linux') {
+    assert.equal(env.FRONTEND_AUTH_PROBE_RUNTIME, 'isolated-linux');
+    assert.ok(Number.isInteger(uid) && uid > 0);
+    return { modulePath: '/work/apps/frontend/node_modules/@playwright/test', launchOptions: {} };
+  }
+  assert.equal(platform, 'darwin');
+  return {
+    modulePath: path.resolve(__dirname, '../../aluplan-security-candidate-20260917/apps/frontend/node_modules/@playwright/test'),
+    launchOptions: { executablePath: path.join(os.homedir(), 'Library/Caches/ms-playwright/chromium-1208/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing') },
+  };
+}
 
 async function main() {
   validateInvocation(process.argv.slice(2), process.env);
-  const { chromium, expect } = require(path.resolve(__dirname,
-    '../../aluplan-security-candidate-20260917/apps/frontend/node_modules/@playwright/test'));
+  failureStage = 'runtime-validation';
+  const runtime = resolveRuntime(process.platform, process.env, process.getuid?.());
+  failureStage = 'playwright-import';
+  const { chromium, expect } = require(runtime.modulePath);
   let browser;
   let unexpected = 0;
   let blockedHmr = 0;
@@ -118,8 +133,9 @@ async function main() {
     await page.getByRole('button', { name: 'ŞİFREYİ GÜNCELLE', exact: true }).click();
   };
   try {
+    failureStage = 'browser-launch';
     browser = await chromium.launch({ headless: true, chromiumSandbox: true, timeout: 20_000,
-      executablePath: path.join(os.homedir(), 'Library/Caches/ms-playwright/chromium-1208/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'),
+      ...runtime.launchOptions,
       args: ['--disable-background-networking', '--disable-component-update', '--disable-sync', '--no-first-run', '--disable-quic'],
     });
     await scenario('login-invalid-credentials', 'login', async (page, requests, mark) => {
@@ -185,6 +201,7 @@ async function main() {
       await expect(page).toHaveURL(`${FRONTEND}/tr/reset-password`);
     });
   } finally {
+    if (browser) failureStage = 'browser-cleanup';
     await browser?.close();
     clearTimeout(deadline); clearTimeout(hardDeadline);
   }
@@ -193,8 +210,8 @@ async function main() {
   process.exitCode = pass ? 0 : 1;
 }
 
-module.exports = { validateInvocation, allowedHttp, FRONTEND, API };
+module.exports = { validateInvocation, allowedHttp, resolveRuntime, FRONTEND, API };
 if (require.main === module) main().catch(() => {
-  process.stdout.write(JSON.stringify({ scope: 'synthetic-ui-only', pass: false, reason: 'setup-or-cleanup-failed' }) + '\n');
+  process.stdout.write(JSON.stringify({ scope: 'synthetic-ui-only', pass: false, reason: 'setup-or-cleanup-failed', stage: failureStage }) + '\n');
   process.exitCode = 1;
 });
