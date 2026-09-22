@@ -1,5 +1,33 @@
 # Local source consolidation — 2026-09-19
 
+## Scoped modern-image content acceptance passed — 2026-09-22
+
+This supersedes the pending exporter-format gate below, not the production NO-GO or unsafe historical-startup finding. Owner continued LOCAL work only. No production connection, DB/Redis access, provider interaction, Docker load/run, filesystem extraction, restart, deployment or publication occurred in this step. Frozen application source3403ae61 remains unchanged.
+
+### Minimal acceptance policy and why
+
+[Pinned Moby modern load code](https://raw.githubusercontent.com/moby/moby/v28.5.1/image/tarexport/load.go) reconstructs the image from manifest.json, its exact config and ordered layers; V1 compatibility loading is a separate fallback. Therefore this gate binds modern image content and classifies the unused auxiliary records, rather than reimplementing Go legacy-ID serialization. This source explains the policy, not the exact server Docker version or universal loader safety.
+
+`scripts/verify_image_archive.py` accepts only the observed single Linux/amd64 mixed Docker/OCI export class with uncompressed layer members. It enforces strict raw512-byte tar framing, no links/PAX/GNU/special entries/path traversal/duplicate members, strict UTF8 JSON without duplicate keys/nonfinite numbers,8GiB/4096member and1MiB-each/8MiB-total metadata limits, full gzip drain, exact config SHA, all layer hashes/diffIDs, exact OCI/Docker descriptor sizes/order and no role collision. Nonempty tags/repositories/parent-image links, descriptor URLs/unknown fields and unexplained members fail closed. Remaining blobs must be exactly one bounded content-addressed V1-shaped JSON per layer in one complete unique-ID parent chain, with strict top-level fields, intermediate defaults and terminal projection checks.
+
+The auxiliary chain is structural classification, NOT proof that its IDs derive from the selected layers. A same-shape forged chain remains possible; it is intentionally non-authoritative to this modern-content policy. Whole-ciphertext hash pins received bytes but does not prove clean-host/source provenance. Result always states auxiliarySemanticsVerified:false, legacyLoadSupported:false and safeToRun:false. Inner layer filesystem safety, extraction/load safety and runtime behavior are not tested here.
+
+### TDD, review and real-format corrections
+
+Initial test-first missing-module RED preceded implementation. Independent code/security review reproduced and fixed three parser/projection gaps with failing regressions: false/0 equivalence, numeric exponent overflow, and bytes-mode JSON accepting UTF16/32/BOM. First real archive run then rejected an overly literal intermediate epoch timestamp; aggregate-only diagnostics proved all23 records represented epoch0 and had default configs. [Go time.Unix](https://raw.githubusercontent.com/golang/go/go1.24.8/src/time/time.go) preserves Local, so strict RFC3339 zero-INSTANT comparison now accepts valid explicit offsets while rejecting nonzero nanoseconds, invalid/unknown/absent offsets. No timestamp values were printed.
+
+The same diagnostic found terminal config19keys versus core6keys: all6 identical, none missing,13 added zero defaults. [Moby container.Config](https://raw.githubusercontent.com/moby/moby/v28.5.1/api/types/container/config.go) defines these materialized non-omitempty fields. A fixed13-field typed-default allowlist now handles that representation only; all core keys must remain present and typed-equal. Unknown/nonzero/wrong-type additions reject. Both corrections received failing tests before implementation and independent approval; no general legacy serializer or extra runtime dependency was introduced.
+
+Final27/27 synthetic tests pass; parent independently measured237/243 statement lines=97.53% with stdlib trace, six CLI lines exercised separately by subprocess tests. Independent reviewer reports213 additional offset/default-type assertions passing. These are helper-tool metrics, not project-wide security coverage. Final verifier SHA256 `1fa54f1f68aed99a83d526f5b2796b0e4ad6475f8748c9b46302029d1f61c3c3`; tests SHA256 `32f5db6391c485bc3f539cdd1c2ecc23521fd86fa7741e966155f53bec54bdf3`. Original scratch verifier/diagnostic and September19 partial were not changed.
+
+### Actual artifact result and next gate
+
+Reviewed final verifier ran locally with180s alarm over the entire age-decrypted gzip stream under pipefail, exit0 at2026-09-22T14:58:05UTC. Exact image `sha256:302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644`:24 layers,24 auxiliary records,53 regular members,2,612,821,654 member bytes; modernImageContentVerified:true and archiveStructureAccepted:true. No contents were extracted or executed; output contained aggregate results only.
+
+Renamed the unchanged867,825,356-byte ciphertext inside private0700 directory to `.private-data/live-image-20260922.TfOHUZ/image.modern-content-verified.tar.gz.age`; mode0600 and SHA256 `fb05985352e1ccf87c36bd0ff933ea3d37067d7d65900ef565c7349725f81517` rechecked. New0600 `MODERN-CONTENT-VERIFIED.json` records actual result, code/test/artifact hashes and limits. `PENDING.json` is retained as historical evidence and marked superseded, with the current name. Key stays0600; same-directory storage is not an off-device backup. No copy needs retransmission and no artifact was deleted.
+
+Next bounded task is an inert selected-startup inspection contract and explicit safe rollback configuration review, not ordinary historical deploy.sh boot. Image load/extraction/execution require separate reviewed authorization. Later isolated rehearsal must retain candidate-created writes and attachment bytes on the migrated schema, never rewind production/local candidate data to an old dump. Browser/CRM-reset, historical object bytes, exact-image vulnerabilities, mail TLS, fresh release-time backup and host/credential decisions remain separate release gates. Production remains NO-GO. Do not reopen full legacy-ID serialization merely to inflate this integrity gate.
+
 ## Resumed exact-image acquisition — 2026-09-22
 
 Owner resumed the paused private acquisition. Parent alone used strict verified-host SSH with the existing maintenance identity. Fresh preflight matched backend-api short ID `9ea92d99bfbd`, exact image `sha256:302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644`, declared size2,470,925,994 bytes/Linux-amd64, running/start2026-09-02T19:03:59.250425823Z/restart0. A4MiB synthetic SSH-only read took4.75s; this was a rough link observation, not an image-export throughput guarantee. A fresh private0700 directory and0600 age identity were created; the old September19 partial was not reused or overwritten.

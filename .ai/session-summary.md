@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-22 — Scoped modern-image integrity gate closed locally
+
+Added versioned stdin-only Python verifier and synthetic tests; no product code changes. Contract verifies exact config hash, ordered uncompressed layers/diffIDs, Docker/OCI descriptor sizes/digests/order, strict tar/gzip/JSON framing, and bounded V1 auxiliary classification. Legacy IDs are not regenerated: these records are non-authoritative for the pinned manifest-present modern loader. Tags, parent image links, descriptor URLs/unknown fields and unexplained members are rejected. Runtime/legacy-loader safety stays explicitly false.
+
+TDD plus independent review caught/fixed boolean-number projection, exponent overflow and non-UTF8 JSON acceptance. First real stream then exposed two legitimate exporter representations:23 epoch timestamps with local offsets, and13 typed-zero terminal config fields omitted in the core's6-key JSON. Added strict zero-instant and exact13-default tests before fixes; no core values changed/missing. Final27/27 tests,97.53% statement coverage; independent reviewer reports213 additional offset/type assertions.
+
+Actual final stream exited0 at14:58:05UTC;302229b2… image,24 layers,24 auxiliary records,53 regular members accepted under modern-only scope. Ciphertext SHA unchanged; renamed to image.modern-content-verified.tar.gz.age inside existing private0700 directory; new0600 receipt and superseded old receipt retain limits. Original September19 partial and scratch tools preserved. No production connection, DB access, Docker load/run, extraction, restart, deploy or push. Next inert startup/rollback contract; execution remains separately gated. Production NO-GO is unchanged.
+
 ## 2026-09-22 — Private live-image copy acquired; full acceptance still gated
 
 Owner resumed the paused exact-image copy. A fresh0700 private directory/key0600, strict SSH, immutable302229b2… image ID, remote3600s bounded save/gzip and local age/pipefail completed exit0 at14:19:02UTC. Ciphertext867,825,356 bytes; SHA256 `fb05985352e1ccf87c36bd0ff933ea3d37067d7d65900ef565c7349725f81517`. Old September19 incomplete copy preserved. Postflight14:21:08UTC: same backend image/start2026-09-02T19:03:59.250425823Z/restart0/running. No deploy/restart, DB/Redis access, extraction/load/execution, configuration change or publication.

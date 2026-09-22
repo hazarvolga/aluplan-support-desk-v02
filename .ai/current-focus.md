@@ -1,5 +1,13 @@
 # Current Focus
 
+## Local modern-image content gate passed — 2026-09-22
+
+Owner continued locally; no new live access, extraction/load/execution or DB action occurred. Versioned verifier and tests added under `scripts/`. Independent reviews plus27/27 synthetic tests passed;237/243 statement lines covered (97.53%, stdlib trace; CLI separately exercised). Real180s-bounded age/gzip verification exited0 at14:58:05UTC: exact302229b2… config,24 ordered layers, OCI index/manifest,53 regular members and24 strictly classified auxiliary records accepted. Core checks were not removed. Compatibility fixes recognize the same zero instant across explicit offsets and only13 source-defined typed-zero fields added to unchanged terminal config.
+
+Scope is modern-image-content integrity plus bounded archive structure, NOT legacy-ID equivalence, host cleanliness, source provenance or runtime/rollback safety. Explicit result: auxiliarySemanticsVerified:false, legacyLoadSupported:false, safeToRun:false. Ciphertext hash unchanged; renamed to `.private-data/live-image-20260922.TfOHUZ/image.modern-content-verified.tar.gz.age`, with private `MODERN-CONTENT-VERIFIED.json`; old pending receipt is marked superseded. Details, hashes and primary-source policy rationale in source-consolidation.
+
+Next: review an inert startup inspection contract and explicitly designate a safe rollback startup path. Any image loading, extraction, execution or isolated runtime rehearsal requires a separate reviewed step/approval; never normal-boot historical deploy.sh or overwrite production with a local/old DB. Do not reopen legacy serializer work or re-download the image merely to seek broader theoretical proof. Runtime product source remains frozen at3403ae61. No push/deploy authority; production remains NO-GO until runtime/new-write/attachment/browser/mail/host release gates are met.
+
 ## Resumed private image acquisition completed; format verification pending — 2026-09-22
 
 Owner resumed the paused acquisition. Fresh read-only preflight: same backend-api container/image302229b2…, same September2 start/restart0/running; image size2,470,925,994 bytes; synthetic4MiB SSH read4.75s. NEW strict-SSH/gzip/age stream with disclosed3600s remote timeout completed exit0 at14:19:02UTC. Private ciphertext867,825,356 bytes, directory0700/key/archive0600; old September19 partial unchanged. Destination `.private-data/live-image-20260922.TfOHUZ/image.tar.gz.partial.age` deliberately retains pending name.
