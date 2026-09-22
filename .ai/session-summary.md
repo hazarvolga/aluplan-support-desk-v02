@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-22 — Actual isolated browser RED/GREEN; one-page reset feedback fix
+
+Local continuation only. Pinned native Linux/arm64 Playwright1.58.2 image acquired; actual Playwright browser preflight passed as UID1000 with native sandbox, network none, all capabilities dropped, no-new-privileges and read-only root. Reviewed seccomp derivative adds only chroot syscall allowance; this is a disclosed narrow syscall-surface expansion, not privileged/no-sandbox execution. Source/dependencies staged without secrets; online install was manifest-only, scripts disabled; app-source build/runtime offline.
+
+Initial UI5/9 had22 localhost-normalization fixture requests plus5 blocked dev diagnostics. Canonical localhost frontend and exact blocked diagnostic classification corrected the harness, not product routing. Clean RED7/9 then isolated the two genuine reset error-visibility failures (unexpected0). Product commit98c21bed changes only the reset page's unmounted Sonner calls to the mounted Radix API. Same9 assertions GREEN9/9; blockedHMR9/devDiagnostics3, unexpected0. Full frontend tsc --noEmit --incremental false exit0 in the same container; seven harness tests pass. Independent code/security reviews and changed-diff Gitleaks passed. Tooling commit2cc00aab; documentation/checkpoint follows.
+
+Valid-reset proof covers fragment scrub, exact payload/onePOST and redirect, not success-toast visibility. API is synthetic; real backend/cookie/TLS/migratedDB and reset401 acceptance remain open. Node24/nativearm64 dev artifact is not productionamd64 frontend proof. Backend runtime/image unchanged, frontend has one reviewed page fix. All nine owned disposable containers removed; no existing containers/volumes/images removed. Private staging/cache retained. No production, DB/Redis/provider, push/deploy/restart/migration. Next: smallest actual-backend browser acceptance contract using the existing sanitized clone and enforced provider isolation; remaining mail/bytes/forward-recovery/host release gates unchanged, NO-GO.
+
 ## 2026-09-22 — Browser harness prepared; native sandbox blocks UI execution
 
 Added only scripts/frontend-auth-browser-probe.cjs and its two passing helper tests. Independent code review tightened exact login payload/error assertions and correctly scoped the reset400 case as validation feedback, not expired-token401. Security review approved fixed loopback origins, fresh contexts, blocked service workers/workers/WebSockets/downloads, aggregate-only output and bounded execution. Browser remains native-sandbox-enabled; no user browser profile was reused.

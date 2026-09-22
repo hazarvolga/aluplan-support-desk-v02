@@ -1,5 +1,13 @@
 # Current Focus
 
+## Isolated browser gate passed; reset feedback fixed locally — 2026-09-22
+
+Supersedes the runner-blocked status below. Actual nonroot native-sandbox Playwright in a read-only, network-none Linux/arm64 test container completed all nine synthetic-API frontend scenarios. Clean RED:7/9, with only invisible password-mismatch and reset400 feedback failures; GREEN:9/9 after changing only reset-password page notification calls to the existing mounted Radix toaster. Same assertions; unexpected requests/workers0. Seven harness helper tests and full frontend TypeScript check passed. Independent code/security reviews approved; local commits2cc00aab(tooling),98c21bed(page). No shared notification redesign.
+
+This is rendered frontend/synthetic-API proof, NOT real backend/browser cookie/TLS, migratedDB, success-toast visibility, expired/replayed reset401, exact production frontend build or full production readiness. Backend runtime3403ae61/imageb1126e5c remains unchanged; frontend now includes the one-page fix. The Linux test runner uses pinned Playwright1.58.2/Node24.13.0, no host mounts/ports/secrets/customer data. A separately reviewed seccomp derivative allows only one additional syscall(chroot) for Chromium's user-namespace sandbox; no capability addition or sandbox disabling. Details and failed setup attempts are retained in source-consolidation.
+
+All nine owned temporary test containers were removed; test images and private staging retained. No live, DB/Redis/provider, push, deploy, restart or migration action. Next smallest gate: review and prepare existing isolated sanitized-clone acceptance to compose actual candidate backend with browser auth/reset; preserve provider-egress isolation and fresh contexts, no raw customer DB boot or reuse of production cookies. Mail TLS, historical attachment bytes, write/byte-preserving forward recovery and host/credential/fresh-backup release gates still remain. Production NO-GO.
+
 ## Synthetic browser gate blocked by local runner — 2026-09-22
 
 No product changes or production access. Added a reviewed, opt-in synthetic frontend browser probe plus two passing invocation/origin-guard tests. Fresh trusted84c3bfe7 frontend snapshot served login/register/reset routes with HTTP200 under a restrictive filesystem/network sandbox; this is NOT rendered-browser acceptance. Borrowed Node24/dependencies and native dev font fallback are not production artifact proof.
