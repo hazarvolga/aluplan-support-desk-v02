@@ -1,5 +1,13 @@
 # Current Focus
 
+## Resumed private image acquisition completed; format verification pending — 2026-09-22
+
+Owner resumed the paused acquisition. Fresh read-only preflight: same backend-api container/image302229b2…, same September2 start/restart0/running; image size2,470,925,994 bytes; synthetic4MiB SSH read4.75s. NEW strict-SSH/gzip/age stream with disclosed3600s remote timeout completed exit0 at14:19:02UTC. Private ciphertext867,825,356 bytes, directory0700/key/archive0600; old September19 partial unchanged. Destination `.private-data/live-image-20260922.TfOHUZ/image.tar.gz.partial.age` deliberately retains pending name.
+
+First offline verifier rejected extra-member allowlist after complete gzip drain, exact config SHA and24 ordered layer diff_ids passed. Separately reviewed bounded structural diagnostic exited0: all blob addresses match content, OCI index/single manifest binds exact config and same24 uncompressed layers. Remaining24 blobs are captured JSON objects with24 id/23 parent/24 created+container_config+os keys; one config+architecture, consistent with upstream exporter legacy metadata. Counts are NOT legacy-ID validation or full allowlist acceptance.18/18 combined synthetic tests pass. No full-image acceptance/rollback readiness claim; acquired-verification-pending receipt retained. Next close this narrow exporter-format acceptance gap locally before any approved offline startup/rollback work; no re-download or runtime redesign needed.
+
+Postflight14:21:08UTC: same image/start/restart0/running; server159GiB free. No load/extraction/execution, deploy/restart, DB access or publication. Do not repeat acquisition, boot old image or relax checks merely to pass. Exact details/tool hashes and limits in source-consolidation.
+
 ## Owner paused work until morning — 2026-09-19
 
 Latest owner instruction supersedes the earlier nighttime timing: resume in the morning, not tonight. Transfer is stopped; no automatic execution scheduled. Preserve the incomplete artifact and current local checkpoint; wait for the owner's continuation.

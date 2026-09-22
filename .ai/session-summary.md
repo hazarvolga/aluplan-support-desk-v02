@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-22 — Private live-image copy acquired; full acceptance still gated
+
+Owner resumed the paused exact-image copy. A fresh0700 private directory/key0600, strict SSH, immutable302229b2… image ID, remote3600s bounded save/gzip and local age/pipefail completed exit0 at14:19:02UTC. Ciphertext867,825,356 bytes; SHA256 `fb05985352e1ccf87c36bd0ff933ea3d37067d7d65900ef565c7349725f81517`. Old September19 incomplete copy preserved. Postflight14:21:08UTC: same backend image/start2026-09-02T19:03:59.250425823Z/restart0/running. No deploy/restart, DB/Redis access, extraction/load/execution, configuration change or publication.
+
+Initial strict verifier rejected25 extra blobs after config and24 ordered layer hashes/gzip completion passed. A separately tested/reviewed bounded offline structural diagnostic completed exit0: all content addresses valid; OCI layout/index/single manifest bind the same expected config and24 uncompressed layers. Zero gzip member blobs; remaining24 captured JSON objects have legacy-compatible key counts (24id/23parent/24created+container_config+os; one config+architecture).18/18 combined tests pass; independent code/security reviews approved diagnostics only. Actual legacy-ID relationships/full allowlist acceptance remain unproved. Do not call this safe rollback, clean host or release approval. Artifact retains `.partial.age` plus an explicit acquired-verification-pending receipt; no duplicate acquisition needed. Next bounded local exporter-format acceptance, then separately reviewed startup/rollback path. Detailed evidence in source-consolidation.
+
 ## Final owner pause — resume in the morning
 
 Owner subsequently said "ok sabah devam ederiz". This supersedes nighttime timing, not the incomplete-copy status. No automated retry or further live action is scheduled; wait for continuation.
