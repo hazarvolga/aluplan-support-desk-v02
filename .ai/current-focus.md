@@ -1,5 +1,9 @@
 # Current Focus
 
+## Mail maintenance candidate locally verified — 2026-09-23
+
+Candidate1365aa2a pins existing DMS image, adds3TLS env values and one dedicated read-only certificate bind. Actual offline Compose merge against Sep23 private backup preserves all existing ports/volumes/other rendered fields; no secret output. Independent pinned-image review requires fresh same-image container rather than assuming restart reverses disabled TLS settings. No live access/change this turn. Activation remains NO-GO until current Coolify merge, deployed client/cache/worker behavior, drain/window and renewal handoff are verified and maintenance explicitly approved. Next bounded read-only deployed topology evidence; full details in TLS plan.
+
 ## Protected one-domain export ready, not active — 2026-09-23
 
 Explicitly approved on-host export completed at /data/aluplan-mail-tls-bru9sghg root700/files600. Exact sole mail domain, trust/expiry/key match/bytes/public443fingerprint verified. Shared ACME source and proxy/mail identities unchanged; key never sent to Mac/Git/output. No mount/mailTLS/settings/restart/timer/DB/deploy. Next exact maintenance diff and failure-safe handoff, separate activation approval. Full evidence in TLS plan.

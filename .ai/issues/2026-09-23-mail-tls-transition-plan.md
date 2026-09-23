@@ -2,6 +2,18 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Local maintenance candidate verified, activation still blocked — 2026-09-23
+
+Candidate commit 1365aa2a adds only .ai/issues/2026-09-23-mail-tls-compose-overlay.candidate.yaml. It pins the already examined DMS digest, adds SSL_TYPE/manual and the two certificate paths, and binds only /data/aluplan-mail-tls-bru9sghg read-only at /etc/aluplan-mail-tls with create_host_path:false. No image upgrade or full ACME-store mount.
+
+Actual local docker compose config --format json comparison against the private Sep23 backed-up Compose/.env passed: after accounting for those exact changes, the complete rendered configuration is identical. Existing three named data volumes, ports and remaining environment/topology are preserved. Private rendered values stayed in process memory and were not printed or saved. Structural assertions, Gitleaks candidate scan and git diff --check passed. No service was started. This proves the backup-based merge only, not the current Coolify-rendered configuration.
+
+Independent review of the pinned local image confirmed submission requires encryption and Dovecot defaults to ssl=required when IMAP is enabled. However, the empty-SSL_TYPE startup branch can rewrite these settings to none/no, and the manual branch does not explicitly reverse all those changes. Therefore a restart of the existing container is not an established activation method: plan a fresh container from the same pinned image with exactly the existing named volumes, then inspect effective settings. No local emulator override belongs in production. Backup filename inventory did not include postfix-master.cf; current live custom overrides remain unverified.
+
+Activation remains NO-GO pending bounded current Coolify merge/override verification, deployed client/process/cache compatibility, a defined poller/queue drain and maintenance window, controlled mail acceptance/rollback checks, and a safe renewal handoff. Local strict-TLS clients do not prove deployed clients work. Finite SMTP retries and absence of an independent IMAP pause mean maintenance must not be assumed harmless. Do not introduce broad pause infrastructure or alter live settings automatically.
+
+This preparation turn made no live connection/change, application-code change, mailbox/DB operation, push or deploy. Next safe scope is read-only deployed mail-client/worker topology and cache/queue evidence, followed by an exact maintenance proposal and separate explicit activation approval.
+
 ## Approved one-domain private export verified — 2026-09-23
 
 Owner explicitly approved reading shared certificate storage (including its other private material) solely to extract mail.allplan.net.tr on-host. No keys/certificate store copied to Mac/Git/output. One-shot script sent over verified SSH stdin, executed python3 -I without optimization; not installed as a service/task or production publisher.

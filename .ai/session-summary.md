@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Local mail maintenance candidate, no activation — 2026-09-23
+
+Committed1365aa2a config-only overlay: existing pinned image/3TLS env/dedicated read-only bind with missing-source creation disabled. Structural and actual Docker Compose rendered-JSON comparison passed against private Sep23 backup without exposing values; existing ports/three data volumes/other fields retained. Gitleaks/diff checks passed. Independent local image review found restart alone cannot be assumed to reverse disabled-TLS rewrites: require fresh same-image container and effective-config checks during separately approved maintenance. Current deployed clients/cache/queue/drain remain unverified gates. No live access, application-code change, service start, DB/mailbox operation, push or deploy this turn.
+
 ## Approved private certificate preparation — 2026-09-23
 
 Owner explicitly authorized shared ACME read/one-domain export. Fresh root700 /data/aluplan-mail-tls-bru9sghg contains mail-only chain/key/public receipt600. On-host cryptographic/hostname/trust/byte checks passed, matching public443leaf; source unchanged and no service identity changes. Independent review conditions applied (root-owner guard/python-I). No secrets transferred offhost or displayed. Existing site statuses unchanged; no mount/TLS activation/restart/settings/DB/automation/deploy. Runbook records path/fingerprint and next separate maintenance gate.
