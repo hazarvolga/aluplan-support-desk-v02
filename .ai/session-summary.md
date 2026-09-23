@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Coolify source UI read-only confirmation — 2026-09-23
+
+Used existing Firefox session to inspect exact mail service Source Compose and Deployable Compose. Confirmed logical/prefixed volume mapping and selected ports/env/image agreement, not byte equality. Closed editor without text entry or save; no restart/deploy/secrets. Recorded persistence boundary and full-source-vs-overlay distinction in TLS plan. Next local safe startup/re-entry/drain planning; no repeated Compose audit needed absent drift. Existing HTTP panel transport noted without changing access.
+
 ## Current generated mail Compose compatibility — 2026-09-23
 
 Read-only on-host docker compose config comparison at16:46:51Z proves exact candidate delta against current generated disk Compose/.env, secret values never output. Runtime data mount identities and published ports match; mail start/restarts unchanged. No config installed or DB/queue/service mutation. Added reviewed coordinated maintenance proposal to existing TLS plan. Coolify saved editor definition, exact stop/drain/re-entry and renewal owner/procedure still gates; server TLS alone does not fix permissive live clients. No application-code changes, push or deploy.

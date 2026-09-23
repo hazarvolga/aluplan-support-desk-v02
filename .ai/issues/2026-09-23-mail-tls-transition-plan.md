@@ -2,6 +2,18 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Saved Coolify source confirmed through UI — 2026-09-23
+
+Read-only Firefox inspection of the exact q4wgowwo0wwsg0sksg8gkow4 service, aluplan-support-mailservise, opened Edit Compose File and its source/deployable views. No editor text entered, Validate/Save/Restart/Stop clicked, environment secrets opened or credentials entered. Only presentation controls changed; editor closed without saving.
+
+Saved source contains mailserver:latest, hostname mail/domainname allplan.net.tr, ports25/587/993/143, logical volumes mail-data/mail-state/mail-config and localtime:ro. Environment has OVERTAKE_IP_CHECK=1, ENABLE_SPAMASSASSIN=0, ENABLE_CLAMAV=0, ENABLE_FAIL2BAN=0; no TLS additions. restart:always. UI explicitly states volume names receive the service UUID prefix on save. Deployable view shows the exact q4wgowwo0wwsg0sksg8gkow4-prefixed three volume names and external service network previously observed on host. Selected fields agree; no byte-for-byte browser/export equivalence claim.
+
+This identifies the saved source and its generated volume mapping. Future authorized changes belong in Source Compose with logical volume names retained; never paste the generated prefixed Compose back as source or replace the complete source with the overlay-only candidate. Keep existing settings, ports and logical volume declarations; add only reviewed image pin/TLS variables/read-only bind. Coolify persistence of a future edit is not proven until that separately approved edit is saved and re-read; no save was performed here.
+
+Current UI status Running(unknown) is not a mail health test. Panel uses existing HTTP:8000 connection; no security interstitial bypass or new credentials submitted. Secure administration transport remains a separate hardening item, not permission to alter panel access now.
+
+Source identification gate is closed. Remaining execution gates are exact all-writer drain/safe application re-entry, verified client release compatibility, renewal handoff/owner, and controlled maintenance acceptance. Next local task: audit the current startup/re-entry evidence and define the minimum bounded interruption/recovery sequence; no more repeated Compose inventory is needed unless configuration changes.
+
 ## Current generated Compose compatibility proved — 2026-09-23
 
 At2026-09-23T16:46:51Z, scoped SSH inspection resolved the running mail container's Compose labels to /data/coolify/services/q4wgowwo0wwsg0sksg8gkow4/docker-compose.yml. docker compose config rendered this current disk configuration and its .env, then rendered the exact candidate supplied through stdin. Entire normalized JSON matched after only the pinned image, three TLS variables and dedicated read-only bind additions. Private values/output remained on host in process memory; nothing was installed or printed in full.

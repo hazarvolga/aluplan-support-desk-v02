@@ -1,5 +1,9 @@
 # Current Focus
 
+## Saved Coolify source identified — 2026-09-23
+
+Firefox source/deployable Compose views confirm logical mail volumes map to exact existing UUID-prefixed volumes; ports/env/image match prior selected evidence. No edits/save/validate/restart/stop. Editor closed. Future patch belongs in source, preserving logical names; never paste generated Compose or overlay alone as full source. Source-location gate closed; next local startup/re-entry and minimum drain/interruption plan, then renewal/client acceptance gates. No activation authorized.
+
 ## Current Compose merge verified; maintenance sequence drafted — 2026-09-23
 
 Current on-host generated Compose plus stdin candidate config-only render exactly matches intended imagepin/3TLSenv/read-onlybind changes. Existing3named volumes/localtime identities and25/587/993/143 bindings match runtime; no mutation/restart. Independent review accepts proposal only: editable Coolify source persistence, exact all-writer drain/safe backend re-entry and renewal handoff remain. Server TLS alone does not fix live client certificate validation. TLS plan now records coordinated6step sequence, interruption honesty and ADR022 forward-recovery limits. Next inspect saved editable service definition, no activation.
