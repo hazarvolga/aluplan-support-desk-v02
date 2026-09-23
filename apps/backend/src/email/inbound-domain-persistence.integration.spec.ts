@@ -213,6 +213,40 @@ run('actual inbound domain persistence and post-commit failure boundaries', () =
         expect(notified).not.toHaveBeenCalled();
     });
 
+    it('holds a committed reply when the post-commit recipient lookup rejects, without replaying it', async () => {
+        const department = await db.department.create({ data: {
+            name: 'Synthetic Recipient Lookup', slug: `synthetic-${randomUUID()}`,
+        } });
+        const ticket = await tickets.create({ subject: `Recipient failure ${randomUUID()}`,
+            departmentId: department.id } as never, userId);
+        await db.ticket.update({ where: { id: ticket.id }, data: { status: 'PENDING_CUSTOMER' } });
+        const id = `<${randomUUID()}@example.invalid>`;
+        const subject = `[${ticket.ticketNumber}] Synthetic reply`;
+        // Only this query rejection is injected. Domain writes and held state use real PostgreSQL.
+        const lookup = jest.spyOn(db.user, 'findMany').mockRejectedValueOnce(new Error('Synthetic recipient query failure'));
+        const notified = jest.fn();
+        events.on('ticket.message_added', notified);
+        try {
+            expect(await deliver(subject, id)).toBe(false);
+            expect(lookup).toHaveBeenCalledTimes(1);
+            expect(lookup).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({ teamMembers: { some: { team: { departmentId: department.id } } } }),
+            }));
+        } finally { lookup.mockRestore(); }
+        const messages = await db.ticketMessage.findMany({ where: { ticketId: ticket.id } });
+        expect(messages).toHaveLength(1);
+        expect(await db.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toHaveProperty('status', 'OPEN');
+        expect(await db.attachment.count({ where: { messageId: messages[0].id } })).toBe(0);
+        const claim = await db.inboundEmailLog.findUniqueOrThrow({ where: { messageId: id } });
+        expect(claim).toMatchObject({ processed: false, ticketId: ticket.id });
+        expect(claim.error).toContain('PROCESSING_FAILED');
+        expect(claim.error).not.toContain('ticketMessageId');
+        expect(notified).not.toHaveBeenCalled();
+        expect(await deliver(subject, id)).toBe(false);
+        expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(1);
+        expect(await db.attachment.count({ where: { messageId: messages[0].id } })).toBe(0);
+    });
+
     it('accepts both distinct customer replies that read PENDING_CUSTOMER concurrently', async () => {
         const ticket = await tickets.create({ subject: `Concurrent replies ${randomUUID()}` } as never, userId);
         await db.ticket.update({ where: { id: ticket.id }, data: { status: 'PENDING_CUSTOMER' } });
