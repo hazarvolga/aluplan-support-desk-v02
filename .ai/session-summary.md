@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-23 — Mail reachability/compatibility triage, no mail code changes
+
+Following artifactcheckpointf8b3a9f5/tagrestore/websocket-image-20260923, read-only explorer traced both actual Nodemailer resolutions and independent security reviewer assessed next scope. Inbound simpleParser uses nested7.0.13 addressparser before eligibility; no explicit app raw-size/attachment-count cap. Direct6.10.1 SMTP/Gmail accepts onlyfrom/to/subject/html/text, so arbitraryraw/file-fetch and SMTP-only nested findings require separate reachability classification, not blanket exploit claims. markSeen:true fetch occurs before parsing/processing; processMail catches failures, risking missed UNSEEN retry. Physical deletion or current live loss is NOT demonstrated. Historical143/tlsfalse versus localdirectTLS remains a releasecompatibility gate, not permission to weakenTLS.
+
+Primary maintainer advisory confirms addressparser quadratic DoS below9.1.0; current upstreammailparser3.9.28 pins10.0.10 (Node>=20), and Nodemailer10 introduces TypeScript/dualmodule layout changes. No target blindly selected/installed. Existing focused9suites/105tests passed, pending0: SMTP/IMAPsecurity, inboundservice/eligibility/attachments/bounce, two emailservice suites andprocessor. ActualRCdependencies, env-i/Node24/macOSnetworkdenied, schema-matched borrowedDBclient and RCshared-schema alias as previous checks. Expected mock errors do not indicate real connections. WireTLS suite was deliberately not included; no realSMTP/IMAP or new parser/advisory/ack-order regression run yet. Next bounded test-first characterization before separate dependency/reliability patches; no production/dependency/app edits.
+
 ## 2026-09-23 — Exact WebSocket-patched artifact and same-DB scan verified
 
 Built clean source2e9c7ebf3aafdbeb9b0a80e834a965466be0bf94 into Linux/amd64 image76432eedde218de943045dc46320801ca7b6816e6a62d8fcb6f2ce14b8cb0d50. Existing build tool12/12tests and static smoke passed57migrationfiles/backup-tool versions/startup syntax. Registry/APK access and build lifecycle scripts occurred; not an offline build. No app bootstrap or customer DB used; generated Prisma client stays inside image. No tracked product/dependency changes this phase.

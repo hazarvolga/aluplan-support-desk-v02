@@ -1,10 +1,12 @@
 # Current Focus
 
-## Patched exact image verified; mail dependency triage next — 2026-09-23
+## Patched exact image verified; mail characterization tests next — 2026-09-23
 
 Clean source2e9c7ebf produced Linux/amd64 image76432eed; A13 static smoke passed. Same15 WebSocket controls against actual old/new images: old7pass/8expectedfail → new15/15pass, Node20.20.2, networknone/no app bootstrap. Compiled CSRF redaction and nonroot/app permissions still pass. Same pinnedTrivy0.72.0/frozenSeptember22DB:2Critical/128High/183Medium/23Low →2Critical/123High/182Medium/23Low. Exactly6expected findings removed,0added; no unrelated finding changed. Independent security evidence review verified identity, hashes, versions and comparison. Evidencevuln-ws-20260922-amWugP; scanner/test containers absent. No live/DB/push/deploy action or product edits in this phase.
 
 Next smallest batch: inspect mailparser/nodemailer advisory preconditions and compatibility, then bounded synthetic-mail tests before selecting versions. Preserve mail-to-ticket, never connect real mailbox or force major overrides blindly. Remaining2Critical are the same tar advisory under globalnpm/pnpm; application69High and tooling54High still require decisions, not count-based dismissal. Newimage full browser/DB/mail acceptance is NOT inherited from6ae3; complete after the narrowly scoped remaining fixes. Crawler containment, bytes/new-write forward recovery, frontend and separately approved host/credential/fresh-backup gates remain. Production NO-GO.
+
+Mail triage now complete, no dependency/source change: directnodemailer6.10.1 versus mailparser3.9.3→nested7.0.13. Inbound addressparser runs BEFORE sender eligibility; CRM restriction does not contain parser DoS. markSeen:true at fetch plus caught processing failures may remove retry eligibility; no physical deletion/current-live loss demonstrated. Existing focused9suites/105tests PASS (mocked, networkdenied, RCdeps+borrowedmatchingDBclient), not missing-case acceptance. Next add tiny synthetic actual-parser/SMTPcompile controls and mocked failure/ack-order RED tests, then separately review coherent upstream dependency pins and acknowledgment fix. Current upstreammailparser3.9.28 declaresnodemailer10.0.10; candidate only, not installed/approved. Nodemailer10 changes Node/module/types contracts, so do not blindly override7→9/10. Historical IMAP143/tlsfalse conflicts with local directTLS requirement; current live configuration remains unverified and must not be changed from a screenshot.
 
 ## WebSocket dependency patch verified locally; artifact gate next — 2026-09-22
 

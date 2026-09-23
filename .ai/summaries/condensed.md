@@ -5,6 +5,7 @@
 - WebSocket patch source2e9c7ebf is now in exact Linux/amd64 image76432eed. Static smoke passed; actual-image15tests RED7pass/8fail onold6ae3→GREEN15/15 onnew. CompiledCSRF/log and nonroot/app-write boundary unchanged. No app bootstrap/currentcustomerdata.
 - Same Trivy0.72.0/frozenDB:2C128H183M23L→2C123H182M23L, exactly6removed/0added. Independent identity/report/test evidence reviewPASS; privateevidencevuln-ws-20260922-amWugP retained and ownedcontainers removed. TwoCriticals remain globalnpm/pnpm tar; not production-ready.
 - Next mailparser/nodemailer compatibility/advisory review and synthetic tests; no realmailbox. Remaining document/tooling/crawler, exactartifact browser/DB/mail, attachmentbytes/newwrite forwardrecovery and separately approved host/credential/freshbackup gates remain. Local-only; no push/deploy or live action authorized by "continue".
+- Mail triage completed after artifactcheckpointf8b3a9f5:9mockedsuites/105tests pass; no mailchanges. Nestedaddressparser precedes CRMeligibility, markSeen-before-processing risks retryloss, historic143/tlsfalse conflicts with localdirectTLS (liveunverified). Next actualparser/compile and ack-failure characterization tests, then separately reviewed pins/fix. mailparser3.9.28→nodemailer10.0.10 is an upstream candidate, not accepted/installed; no blind majoroverride.
 
 ## Current release checkpoint — 2026-09-22 (supersedes historical status below)
 
