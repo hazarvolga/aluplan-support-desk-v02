@@ -26,7 +26,7 @@ const mailFixture = (threaded: boolean, count = 2) => ({
 
 describe.each([true, false])('inbound attachment durability, threaded=%s', (threaded) => {
     const prisma = {
-        inboundEmailLog: { findUnique: jest.fn(), upsert: jest.fn(), update: jest.fn() },
+        inboundEmailLog: { findUnique: jest.fn(), create: jest.fn(), updateMany: jest.fn() },
         ticket: { findUnique: jest.fn() },
         user: { findUnique: jest.fn() },
         attachment: { create: jest.fn() },
@@ -34,15 +34,17 @@ describe.each([true, false])('inbound attachment durability, threaded=%s', (thre
     };
     const tickets = { addMessage: jest.fn(), create: jest.fn() };
     const storage = { uploadFile: jest.fn() };
-    const connection = { openBox: jest.fn(), search: jest.fn(), end: jest.fn() };
+    const connection = { openBox: jest.fn(), search: jest.fn(), addFlags: jest.fn(), end: jest.fn() };
     let service: EmailInboundService;
     let logError: jest.SpyInstance;
     beforeEach(() => {
         jest.resetAllMocks();
         logError = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
         prisma.inboundEmailLog.findUnique.mockResolvedValue(null);
-        prisma.inboundEmailLog.upsert.mockResolvedValue({ id: 'inbound-fixture', error: 'stale-error' });
-        prisma.inboundEmailLog.update.mockResolvedValue({});
+        prisma.inboundEmailLog.create.mockImplementation(async ({ data }) => ({ id: 'inbound-fixture', ...data }));
+        prisma.inboundEmailLog.updateMany.mockResolvedValue({ count: 1 });
+        connection.openBox.mockResolvedValue({ uidvalidity: 1 });
+        connection.addFlags.mockResolvedValue(undefined);
         prisma.ticket.findUnique.mockResolvedValue({ id: 'ticket-fixture', userId: 'customer-fixture' });
         prisma.user.findUnique.mockResolvedValue({ id: 'customer-fixture', status: 'ACTIVE', deletedAt: null, role: { name: 'CUSTOMER' } });
         prisma.attachment.create.mockResolvedValue({ id: 'attachment-fixture' });
@@ -62,9 +64,10 @@ describe.each([true, false])('inbound attachment durability, threaded=%s', (thre
         );
     });
     afterEach(() => jest.restoreAllMocks());
-    const savedData = () => prisma.inboundEmailLog.update.mock.calls.at(-1)?.[0].data;
+    const savedData = () => prisma.inboundEmailLog.updateMany.mock.calls.at(-1)?.[0].data;
     const expectFailureMarker = (count: number) => {
-        expect(savedData()).toMatchObject({ processed: true, ticketId: 'ticket-fixture', error: `INBOUND_ATTACHMENT_FAILURE count=${count} ticketMessageId=message-fixture` });
+        expect(savedData()).toMatchObject({ processed: true, ticketId: 'ticket-fixture', error: expect.stringContaining('INBOUND_ATTACHMENT_FAILURE') });
+        expect(JSON.parse(savedData().error.slice('INBOUND_DONE_V1:'.length))).toMatchObject({ failedAttachmentCount: count, ticketMessageId: 'message-fixture' });
         expect(savedData().processedAt).toBeInstanceOf(Date);
         expect(JSON.stringify(savedData())).not.toMatch(/private-name|example.invalid|provider-secret|private content/);
         expect(JSON.stringify(logError.mock.calls)).not.toMatch(/private-name|example.invalid|provider-secret|private content/);
@@ -90,17 +93,21 @@ describe.each([true, false])('inbound attachment durability, threaded=%s', (thre
         expectFailureMarker(2);
         expect(prisma.attachment.create).not.toHaveBeenCalled();
     });
-    it.each([0, 2])('clears stale errors when %s attachments complete successfully', async (count) => {
+    it.each([0, 2])('records verified completion when %s attachments complete successfully', async (count) => {
         (simpleParser as jest.Mock).mockResolvedValue(mailFixture(threaded, count));
         await service.handleInboundEmails();
-        expect(savedData()).toMatchObject({ processed: true, error: null });
+        expect(savedData()).toMatchObject({ processed: true, error: expect.stringMatching(/^INBOUND_DONE_V1:/) });
+        expect(savedData().error).not.toContain('INBOUND_ATTACHMENT_FAILURE');
         expect(storage.uploadFile).toHaveBeenCalledTimes(count);
     });
     it('keeps an existing processed failure marker without recreating the ticket or message', async () => {
-        prisma.inboundEmailLog.findUnique.mockResolvedValue({ processed: true, error: 'INBOUND_ATTACHMENT_FAILURE count=1 ticketMessageId=message-fixture' });
+        prisma.inboundEmailLog.create.mockRejectedValue({ code: 'P2002' });
+        prisma.inboundEmailLog.findUnique.mockImplementation(async ({ where }) => where.messageId === 'synthetic-message-id'
+            ? { id: 'inbound-fixture', processed: true, error: 'INBOUND_ATTACHMENT_FAILURE count=1 ticketMessageId=message-fixture' }
+            : null);
         await service.handleInboundEmails();
-        expect(prisma.inboundEmailLog.update).not.toHaveBeenCalled();
-        expect(prisma.inboundEmailLog.upsert).not.toHaveBeenCalled();
+        expect(savedData().error).toMatch(/^INBOUND_HOLD_V1:/);
+        expect(connection.addFlags).not.toHaveBeenCalled();
         expect(tickets.addMessage).not.toHaveBeenCalled();
         expect(tickets.create).not.toHaveBeenCalled();
         expect(prisma.ticketMessage.create).not.toHaveBeenCalled();

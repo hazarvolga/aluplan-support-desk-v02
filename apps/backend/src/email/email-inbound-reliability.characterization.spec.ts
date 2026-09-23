@@ -1,9 +1,7 @@
 /**
- * KNOWN-GAP CHARACTERIZATION, NOT RELEASE ACCEPTANCE.
- * Green tests reproduce current unsafe behavior; they do not certify retry safety.
+ * Local safety regressions for shared intake claims and acknowledgement ordering.
  * Real intake methods run with synthetic IMAP, parser, storage and database doubles.
  * Post-commit counters model an ambiguous service failure, not a real DB transaction.
- * Replace the corresponding gap assertions when an approved reliability fix lands.
  */
 import { Logger } from '@nestjs/common';
 import imaps from 'imap-simple';
@@ -45,6 +43,18 @@ function createHarness() {
     let commits = { tickets: 0, replies: 0 };
     const prisma = {
         inboundEmailLog: {
+            create: jest.fn(async ({ data }) => {
+                if (logs.has(data.messageId)) throw Object.assign(new Error('Synthetic unique conflict'), { code: 'P2002' });
+                const row = { id: `log-${logs.size}`, ...data };
+                logs.set(data.messageId, { ...row });
+                return { ...row };
+            }),
+            updateMany: jest.fn(async ({ where, data }) => {
+                const row = [...logs.values()].find((item) => Object.entries(where).every(([key, value]) => (item as Record<string, unknown>)[key] === value));
+                if (!row) return { count: 0 };
+                logs.set(row.messageId, { ...row, ...data });
+                return { count: 1 };
+            }),
             findUnique: jest.fn(async ({ where }) => {
                 const row = logs.get(where.messageId);
                 return row ? { ...row } : null;
@@ -83,8 +93,9 @@ function createHarness() {
     };
     const storage = { uploadFile: jest.fn().mockResolvedValue('synthetic-object') };
     const connection = {
-        openBox: jest.fn().mockResolvedValue(undefined),
+        openBox: jest.fn().mockResolvedValue({ uidvalidity: 1 }),
         search: jest.fn().mockResolvedValue([rawItem(1)]),
+        addFlags: jest.fn().mockResolvedValue(undefined),
         end: jest.fn(),
     };
     const service = new EmailInboundService(
@@ -105,7 +116,7 @@ function createHarness() {
     };
 }
 
-describe('inbound reliability: known-gap characterization, not acceptance', () => {
+describe('inbound reliability: shared claims and safe acknowledgement', () => {
     beforeEach(() => {
         jest.resetAllMocks();
         jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
@@ -113,7 +124,25 @@ describe('inbound reliability: known-gap characterization, not acceptance', () =
     });
     afterEach(() => jest.restoreAllMocks());
 
-    it('documents current early-seen and batch-abort gap when the first parser call fails', async () => {
+    it('holds malformed webhook text without domain writes', async () => {
+        const h = createHarness();
+        await expect(h.webhook.handleInboundEmailWebhook({
+            from: 'customer@example.invalid', messageId, subject: { invalid: true }, text: 'body',
+        })).resolves.toBe('held');
+        expect(h.counts()).toEqual({ tickets: 0, replies: 0 });
+        expect([...h.logs.values()][0].error).toContain('INVALID_INPUT');
+    });
+
+    it('holds mail when UIDVALIDITY is unavailable', async () => {
+        const h = createHarness();
+        h.connection.openBox.mockResolvedValue({ uidvalidity: 0 });
+        await h.service.handleInboundEmails();
+        expect(simpleParser).not.toHaveBeenCalled();
+        expect(h.connection.addFlags).not.toHaveBeenCalled();
+        expect([...h.logs.values()][0].error).toContain('MISSING_IDENTITY');
+    });
+
+    it('does not mark fetched mail seen and continues after a parser failure', async () => {
         const h = createHarness();
         h.connection.search.mockResolvedValue([rawItem(1), rawItem(2)]);
         (simpleParser as jest.Mock).mockRejectedValueOnce(new Error('Synthetic parse failure'));
@@ -121,17 +150,19 @@ describe('inbound reliability: known-gap characterization, not acceptance', () =
         await h.service.handleInboundEmails();
 
         expect(h.connection.search).toHaveBeenCalledWith(['UNSEEN'], {
-            bodies: ['HEADER', 'TEXT', ''], markSeen: true,
+            bodies: ['HEADER', 'TEXT', ''], markSeen: false,
         });
         expect(h.connection.search.mock.invocationCallOrder[0]).toBeLessThan(
             (simpleParser as jest.Mock).mock.invocationCallOrder[0],
         );
-        expect(simpleParser).toHaveBeenCalledTimes(1);
+        expect(simpleParser).toHaveBeenCalledTimes(2);
         expect(simpleParser).toHaveBeenCalledWith('synthetic raw 1');
-        expect(h.counts()).toEqual({ tickets: 0, replies: 0 });
+        expect(h.counts()).toEqual({ tickets: 1, replies: 0 });
+        expect(h.connection.addFlags).toHaveBeenCalledTimes(1);
+        expect(h.connection.addFlags).toHaveBeenCalledWith(2, '\\Seen');
     });
 
-    it.each(['search', 'parse'])('documents current connection cleanup gap after %s failure', async (stage) => {
+    it.each(['search', 'parse'])('closes the connection after %s failure without acknowledgement', async (stage) => {
         const h = createHarness();
         if (stage === 'search') h.connection.search.mockRejectedValueOnce(new Error('Synthetic search failure'));
         else (simpleParser as jest.Mock).mockRejectedValueOnce(new Error('Synthetic parse failure'));
@@ -139,10 +170,11 @@ describe('inbound reliability: known-gap characterization, not acceptance', () =
         await h.service.handleInboundEmails();
 
         expect(imaps.connect).toHaveBeenCalledTimes(1);
-        expect(h.connection.end).not.toHaveBeenCalled();
+        expect(h.connection.end).toHaveBeenCalledTimes(1);
+        expect(h.connection.addFlags).not.toHaveBeenCalled();
     });
 
-    it('documents current duplicate-ticket gap after a mocked write commits then throws on repeated delivery', async () => {
+    it('holds ambiguous ticket creation instead of replaying a committed write', async () => {
         const h = createHarness();
         h.tickets.create.mockImplementation(async () => {
             h.commitTicket();
@@ -152,12 +184,13 @@ describe('inbound reliability: known-gap characterization, not acceptance', () =
         await h.deliver();
         await h.deliver();
 
-        expect(h.counts()).toEqual({ tickets: 2, replies: 0 });
+        expect(h.counts()).toEqual({ tickets: 1, replies: 0 });
         expect(h.logs.size).toBe(1);
-        expect(h.logs.get(messageId)).toMatchObject({ processed: false, error: 'Synthetic post-commit failure' });
+        expect(h.logs.get(messageId)?.processed).toBe(false);
+        expect(h.logs.get(messageId)?.error).toMatch(/^INBOUND_HOLD_V1:/);
     });
 
-    it('documents current duplicate-reply gap after a mocked write commits then throws on repeated delivery', async () => {
+    it('holds ambiguous reply creation instead of replaying a committed write', async () => {
         const h = createHarness();
         h.tickets.addMessage.mockImplementation(async () => {
             h.commitReply();
@@ -167,7 +200,7 @@ describe('inbound reliability: known-gap characterization, not acceptance', () =
         await h.deliver(mail('Re: [SUP-123]'));
         await h.deliver(mail('Re: [SUP-123]'));
 
-        expect(h.counts()).toEqual({ tickets: 0, replies: 2 });
+        expect(h.counts()).toEqual({ tickets: 0, replies: 1 });
         expect(h.logs.size).toBe(1);
         expect(h.logs.get(messageId)?.processed).toBe(false);
     });
@@ -180,8 +213,8 @@ describe('inbound reliability: known-gap characterization, not acceptance', () =
 
         expect(h.counts()).toEqual({ tickets: 1, replies: 0 });
         expect(h.prisma.ticketMessage.create).toHaveBeenCalledTimes(1);
-        expect(h.logs.get(messageId)).toMatchObject({ processed: true, error: null });
-        expect(h.prisma.inboundEmailLog.upsert).toHaveBeenCalledTimes(1);
+        expect(h.logs.get(messageId)?.processed).toBe(true);
+        expect(h.logs.get(messageId)?.error).toMatch(/^INBOUND_DONE_V1:/);
     });
 
     it('documents the existing partial-attachment marker preventing replay of an already-created message', async () => {
@@ -197,37 +230,91 @@ describe('inbound reliability: known-gap characterization, not acceptance', () =
         expect(h.counts()).toEqual({ tickets: 1, replies: 0 });
         expect(h.storage.uploadFile).toHaveBeenCalledTimes(1);
         expect(h.prisma.attachment.create).not.toHaveBeenCalled();
-        expect(h.logs.get(messageId)).toMatchObject({
-            processed: true, error: 'INBOUND_ATTACHMENT_FAILURE count=1 ticketMessageId=initial-message',
-        });
+        expect(h.logs.get(messageId)?.processed).toBe(true);
+        expect(h.logs.get(messageId)?.error).toContain('INBOUND_ATTACHMENT_FAILURE');
     });
 
-    it('documents current cross-channel race gap: one unique log does not stop two writes', async () => {
+    it('shares one claim across concurrent IMAP and webhook delivery', async () => {
         const h = createHarness();
-        let arrivals = 0;
+        let entered!: () => void;
         let release!: () => void;
-        const bothReads = new Promise<void>((resolve) => { release = resolve; });
-        h.prisma.inboundEmailLog.findUnique.mockImplementation(async ({ where }) => {
-            const row = h.logs.get(where.messageId);
-            const snapshot = row ? { ...row } : null;
-            arrivals += 1;
-            if (arrivals === 2) release();
-            await bothReads;
-            return snapshot;
+        const started = new Promise<void>((resolve) => { entered = resolve; });
+        const gate = new Promise<void>((resolve) => { release = resolve; });
+        h.tickets.create.mockImplementation(async () => {
+            entered();
+            await gate;
+            return h.commitTicket();
         });
+        const poll = h.service.handleInboundEmails();
+        await started;
+        const webhook = h.webhook.handleInboundEmailWebhook({
+            from: 'customer@example.invalid', subject: 'Synthetic request', text: 'Synthetic body', messageId,
+        });
+        // Drain a bounded event-loop turn while the first business write is blocked.
+        await new Promise<void>((resolve) => setImmediate(resolve));
+        release();
 
-        await Promise.all([
-            h.service.handleInboundEmails(),
-            h.webhook.handleInboundEmailWebhook({
-                from: 'customer@example.invalid', subject: 'Synthetic request', text: 'Synthetic body', messageId,
-            }),
-        ]);
+        await Promise.all([poll, webhook]);
 
-        expect(arrivals).toBe(2);
         expect(h.logs.size).toBe(1);
-        expect(h.prisma.inboundEmailLog.upsert).toHaveBeenCalledTimes(2);
-        expect(h.counts()).toEqual({ tickets: 2, replies: 0 });
+        expect(h.counts()).toEqual({ tickets: 1, replies: 0 });
         expect(h.logs.get(messageId)?.processed).toBe(true);
+    });
+
+    it('acknowledges only after successful processing is durably recorded', async () => {
+        const h = createHarness();
+        let entered!: () => void;
+        let release!: () => void;
+        const started = new Promise<void>((resolve) => { entered = resolve; });
+        const gate = new Promise<void>((resolve) => { release = resolve; });
+        h.tickets.create.mockImplementation(async () => {
+            entered();
+            await gate;
+            return h.commitTicket();
+        });
+        h.connection.addFlags.mockImplementation(async () => {
+            expect(h.logs.get(messageId)?.processed).toBe(true);
+        });
+        const poll = h.service.handleInboundEmails();
+        await started;
+        expect(h.connection.addFlags).not.toHaveBeenCalled();
+        release();
+        await poll;
+        expect(h.connection.addFlags).toHaveBeenCalledWith(1, '\\Seen');
+    });
+
+    it('leaves ambiguous writes unacknowledged across repeated polls', async () => {
+        const h = createHarness();
+        h.tickets.create.mockImplementation(async () => {
+            h.commitTicket();
+            throw new Error('Synthetic post-commit failure');
+        });
+        await h.service.handleInboundEmails();
+        await h.service.handleInboundEmails();
+        expect(h.counts()).toEqual({ tickets: 1, replies: 0 });
+        expect(h.connection.addFlags).not.toHaveBeenCalled();
+        expect(h.connection.end).toHaveBeenCalledTimes(2);
+    });
+
+    it('retries acknowledgement without replaying business writes after a flag failure', async () => {
+        const h = createHarness();
+        h.connection.addFlags.mockRejectedValueOnce(new Error('Synthetic flag failure'));
+        await h.service.handleInboundEmails();
+        await h.service.handleInboundEmails();
+        expect(h.counts()).toEqual({ tickets: 1, replies: 0 });
+        expect(h.connection.addFlags).toHaveBeenCalledTimes(2);
+        expect(h.logs.get(messageId)?.processed).toBe(true);
+        expect(h.connection.end).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not acknowledge or replay a write when its completion record fails', async () => {
+        const h = createHarness();
+        h.prisma.inboundEmailLog.updateMany.mockRejectedValueOnce(new Error('Synthetic completion failure'));
+        await h.service.handleInboundEmails();
+        await h.service.handleInboundEmails();
+        expect(h.counts()).toEqual({ tickets: 1, replies: 0 });
+        expect(h.connection.addFlags).not.toHaveBeenCalled();
+        expect(h.logs.get(messageId)?.processed).toBe(false);
     });
 
     it('documents the existing in-flight reset control allowing another poll after an error', async () => {
@@ -240,6 +327,6 @@ describe('inbound reliability: known-gap characterization, not acceptance', () =
         expect(imaps.connect).toHaveBeenCalledTimes(2);
         expect(h.connection.search).toHaveBeenCalledTimes(2);
         expect(h.counts()).toEqual({ tickets: 1, replies: 0 });
-        expect(h.connection.end).toHaveBeenCalledTimes(1);
+        expect(h.connection.end).toHaveBeenCalledTimes(2);
     });
 });

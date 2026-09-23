@@ -15,7 +15,7 @@ describe('OmniChannelService', () => {
         {
           provide: PrismaService,
           useValue: {
-            inboundEmailLog: { findUnique: jest.fn(), upsert: jest.fn(), update: jest.fn() },
+            inboundEmailLog: { findUnique: jest.fn(), create: jest.fn(), updateMany: jest.fn() },
             ticket: { findUnique: jest.fn() },
             user: { findUnique: jest.fn(), create: jest.fn() },
           },
@@ -44,7 +44,8 @@ describe('OmniChannelService', () => {
 
   it('should ignore delivery status notifications without creating a ticket', async () => {
     prismaService.inboundEmailLog.findUnique.mockResolvedValue(null);
-    prismaService.inboundEmailLog.upsert.mockResolvedValue({ id: 'log-bounce' });
+    prismaService.inboundEmailLog.create.mockImplementation(async ({ data }) => ({ id: 'log-bounce', ...data }));
+    prismaService.inboundEmailLog.updateMany.mockResolvedValue({ count: 1 });
 
     await service.handleInboundEmailWebhook({
       from: 'MAILER-DAEMON@mail.allplan.net.tr',
@@ -64,11 +65,11 @@ describe('OmniChannelService', () => {
     expect(ticketsService.create).not.toHaveBeenCalled();
     expect(ticketsService.addMessage).not.toHaveBeenCalled();
     expect(prismaService.user.create).not.toHaveBeenCalled();
-    expect(prismaService.inboundEmailLog.update).toHaveBeenCalledWith({
-      where: { id: 'log-bounce' },
+    expect(prismaService.inboundEmailLog.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({ id: 'log-bounce', processed: false }),
       data: expect.objectContaining({
         processed: true,
-        error: 'Ignored delivery status notification',
+        error: expect.stringContaining('IGNORED_DSN'),
       }),
     });
   });

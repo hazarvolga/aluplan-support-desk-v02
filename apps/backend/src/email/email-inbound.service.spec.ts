@@ -14,8 +14,8 @@ describe('EmailInboundService', () => {
     const mockPrismaService = {
         inboundEmailLog: {
             findUnique: jest.fn(),
-            upsert: jest.fn(),
-            update: jest.fn(),
+            create: jest.fn(),
+            updateMany: jest.fn(),
         },
         ticket: {
             findUnique: jest.fn(),
@@ -69,6 +69,7 @@ describe('EmailInboundService', () => {
         ticketsService = module.get<TicketsService>(TicketsService);
 
         jest.clearAllMocks();
+        mockPrismaService.inboundEmailLog.updateMany.mockResolvedValue({ count: 1 });
     });
 
     it('should be defined', () => {
@@ -79,7 +80,7 @@ describe('EmailInboundService', () => {
         it('should extract SUP-12345 from standard subject and call addMessage', async () => {
             // Mock the log creation
             mockPrismaService.inboundEmailLog.findUnique.mockResolvedValue(null);
-            mockPrismaService.inboundEmailLog.upsert.mockResolvedValue({ id: 'log-1' });
+            mockPrismaService.inboundEmailLog.create.mockImplementation(async ({ data }) => ({ id: 'log-1', ...data }));
 
             // Mock finding a ticket with SUP-12345
             mockPrismaService.ticket.findUnique.mockImplementation(({ where }) => {
@@ -111,7 +112,7 @@ describe('EmailInboundService', () => {
 
         it('should create a new ticket for an eligible existing account if no correct SUP tag is found', async () => {
             mockPrismaService.inboundEmailLog.findUnique.mockResolvedValue(null);
-            mockPrismaService.inboundEmailLog.upsert.mockResolvedValue({ id: 'log-2' });
+            mockPrismaService.inboundEmailLog.create.mockImplementation(async ({ data }) => ({ id: 'log-2', ...data }));
 
             mockPrismaService.user.findUnique.mockResolvedValue({ id: 'new-user-1', email: 'new@example.com', status: 'ACTIVE', deletedAt: null, role: { name: 'CUSTOMER' } });
 
@@ -135,7 +136,7 @@ describe('EmailInboundService', () => {
 
         it('should ignore delivery status notifications without creating a ticket', async () => {
             mockPrismaService.inboundEmailLog.findUnique.mockResolvedValue(null);
-            mockPrismaService.inboundEmailLog.upsert.mockResolvedValue({ id: 'log-bounce' });
+            mockPrismaService.inboundEmailLog.create.mockImplementation(async ({ data }) => ({ id: 'log-bounce', ...data }));
 
             const mockMail = {
                 from: { value: [{ address: 'MAILER-DAEMON@mail.allplan.net.tr' }] },
@@ -156,11 +157,11 @@ describe('EmailInboundService', () => {
             expect(mockTicketsService.create).not.toHaveBeenCalled();
             expect(mockTicketsService.addMessage).not.toHaveBeenCalled();
             expect(mockPrismaService.user.create).not.toHaveBeenCalled();
-            expect(mockPrismaService.inboundEmailLog.update).toHaveBeenCalledWith({
-                where: { id: 'log-bounce' },
+            expect(mockPrismaService.inboundEmailLog.updateMany).toHaveBeenCalledWith({
+                where: expect.objectContaining({ id: 'log-bounce', processed: false }),
                 data: expect.objectContaining({
                     processed: true,
-                    error: 'Ignored delivery status notification',
+                    error: expect.stringContaining('IGNORED_DSN'),
                 }),
             });
         });

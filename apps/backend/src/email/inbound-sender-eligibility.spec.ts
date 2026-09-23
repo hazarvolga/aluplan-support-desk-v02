@@ -30,7 +30,7 @@ const ineligible = [
 
 describe.each(['imap', 'webhook'] as const)('%s sender eligibility boundary', (channel) => {
     const prisma = {
-        inboundEmailLog: { findUnique: jest.fn(), upsert: jest.fn(), update: jest.fn() },
+        inboundEmailLog: { findUnique: jest.fn(), create: jest.fn(), updateMany: jest.fn() },
         ticket: { findUnique: jest.fn() }, user: { findUnique: jest.fn(), create: jest.fn() },
         role: { findFirst: jest.fn() }, ticketMessage: { create: jest.fn() }, attachment: { create: jest.fn() },
     };
@@ -42,7 +42,8 @@ describe.each(['imap', 'webhook'] as const)('%s sender eligibility boundary', (c
         jest.resetAllMocks();
         jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
         prisma.inboundEmailLog.findUnique.mockResolvedValue(null);
-        prisma.inboundEmailLog.upsert.mockResolvedValue({ id: 'log-fixture' });
+        prisma.inboundEmailLog.create.mockImplementation(async ({ data }) => ({ id: 'log-fixture', ...data }));
+        prisma.inboundEmailLog.updateMany.mockResolvedValue({ count: 1 });
         prisma.ticket.findUnique.mockResolvedValue({ id: 'ticket-fixture', userId: 'sender-fixture' });
         prisma.user.findUnique.mockResolvedValue(eligible);
         prisma.user.create.mockResolvedValue({ id: 'provisioned-fixture' });
@@ -52,8 +53,8 @@ describe.each(['imap', 'webhook'] as const)('%s sender eligibility boundary', (c
         tickets.create.mockResolvedValue({ id: 'ticket-fixture' });
         storage.uploadFile.mockResolvedValue('tickets/fixture');
         (imaps.connect as jest.Mock).mockResolvedValue({
-            openBox: jest.fn(), end: jest.fn(),
-            search: async () => [{ attributes: { uid: 1 }, parts: [{ which: '', body: 'synthetic raw email' }] }],
+            openBox: jest.fn().mockResolvedValue({ uidvalidity: 1 }), end: jest.fn(), addFlags: jest.fn().mockResolvedValue(undefined),
+            search: async () => [{ attributes: { uid: 1 }, parts: [{ which: '', body: 'synthetic raw email' }, { which: 'HEADER', body: { 'message-id': ['fixture-email-id'] } }] }],
         });
         imap = new EmailInboundService(prisma as unknown as PrismaService,
             { getValue: async (key: string) => key === 'email.imap.host' ? 'imap.example.invalid' : undefined } as unknown as SettingsService,
@@ -72,7 +73,7 @@ describe.each(['imap', 'webhook'] as const)('%s sender eligibility boundary', (c
         it.each(ineligible)('rejects %s sender before domain writes', async (_name, sender) => {
             prisma.user.findUnique.mockResolvedValue(sender);
             await deliver(threaded);
-            expect(prisma.inboundEmailLog.update).toHaveBeenCalledWith({ where: { id: 'log-fixture' }, data: { error: 'INBOUND_SENDER_NOT_ELIGIBLE' } });
+            expect(prisma.inboundEmailLog.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ id: 'log-fixture', processed: false }), data: expect.objectContaining({ error: expect.stringContaining('INBOUND_SENDER_NOT_ELIGIBLE') }) }));
             expect(tickets.addMessage).not.toHaveBeenCalled();
             expect(tickets.create).not.toHaveBeenCalled();
             expect(prisma.ticketMessage.create).not.toHaveBeenCalled();
@@ -86,13 +87,13 @@ describe.each(['imap', 'webhook'] as const)('%s sender eligibility boundary', (c
             if (threaded) expect(tickets.addMessage).toHaveBeenCalledWith('ticket-fixture', expect.any(Object), 'sender-fixture', channel === 'imap' ? 'CUSTOMER' : 'customer');
             else expect(tickets.create).toHaveBeenCalledWith(expect.any(Object), 'sender-fixture');
             expect(prisma.user.create).not.toHaveBeenCalled();
-            expect(prisma.inboundEmailLog.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ processed: true, ticketId: 'ticket-fixture' }) }));
+            expect(prisma.inboundEmailLog.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ processed: true, ticketId: 'ticket-fixture' }) }));
         });
     });
     it('keeps downstream message authorization rejection observable without attachment writes', async () => {
         tickets.addMessage.mockRejectedValue(new ForbiddenException('Ticket access denied'));
         await deliver(true);
-        expect(prisma.inboundEmailLog.update).toHaveBeenCalledWith({ where: { id: 'log-fixture' }, data: { error: 'Ticket access denied' } });
+        expect(prisma.inboundEmailLog.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ id: 'log-fixture', processed: false }), data: expect.objectContaining({ error: expect.stringContaining('PROCESSING_FAILED') }) }));
         expect(storage.uploadFile).not.toHaveBeenCalled();
         expect(prisma.attachment.create).not.toHaveBeenCalled();
     });
@@ -100,7 +101,7 @@ describe.each(['imap', 'webhook'] as const)('%s sender eligibility boundary', (c
         prisma.user.findUnique.mockResolvedValue({ ...eligible, role: { name: role } });
         prisma.ticket.findUnique.mockResolvedValue({ id: 'ticket-fixture', userId: 'different-owner' });
         await deliver(true);
-        expect(prisma.inboundEmailLog.update).toHaveBeenCalledWith({ where: { id: 'log-fixture' }, data: { error: 'INBOUND_TICKET_OWNER_MISMATCH' } });
+        expect(prisma.inboundEmailLog.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ id: 'log-fixture', processed: false }), data: expect.objectContaining({ error: expect.stringContaining('INBOUND_TICKET_OWNER_MISMATCH') }) }));
         expect(tickets.addMessage).not.toHaveBeenCalled();
         expect(tickets.create).not.toHaveBeenCalled();
         expect(prisma.ticketMessage.create).not.toHaveBeenCalled();
