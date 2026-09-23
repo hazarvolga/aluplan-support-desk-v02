@@ -3,6 +3,13 @@
 Durable project decisions live here. Keep each ADR short: context, decision, reason,
 and consequence. Use session summaries for implementation history.
 
+## ADR-023 - Ambiguous Inbound Deliveries Require Review
+
+- Date: 2026-09-23
+- Status: Owner accepted policy; local implementation pending final release gates.
+- Decision: Both inbound paths must acquire the same durable unique claim before ticket effects; completion is conditional on claim ownership. Only matching completed delivery can be acknowledged automatically. Pending, failed, conflicting or legacy deliveries are held for authenticated operator review without automatic lease expiry/replay. Preserve source mail and partial-attachment evidence.
+- Consequence: Legitimate support mail may wait for reconciliation. Read-only review API does not provide automatic recovery. All writers must adopt the protocol together during approved quiescence; old writers bypass these fences. No schema change now; exact artifact, real isolated database tests, operational review and publication/production approvals remain required. This is not exactly-once delivery or zero-loss certification.
+
 ## ADR-022 - Stabilization Release Uses Explicit Forward Recovery
 
 - Date: 2026-09-22
