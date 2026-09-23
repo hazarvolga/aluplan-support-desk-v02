@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Atomic reply write checkpoint — 2026-09-23
+
+Implemented transaction around reply insert and required reopen/first-SLA writes, preserving pre-read authorization/sanitization and postcommit recipients/events. Real PG2RED then8GREEN; overlapping valid replies preserved after independent review correction. Existing75ticket+125intake tests green, changed-fileTS0 after test-mock typing correction. No schema/env/live changes. Synthetic fixture cleaned. Testsaf6e17bd/product3acd9cb7. Remaining before/aftercommit ambiguity and operational recovery gates explicitly open in TLS plan; not production acceptance.
+
 ## Held intake correlation correction — 2026-09-23
 
 Implemented minimal known-ID/evidence retention in existing hold CAS for both IMAP and webhook. No TicketsService, schema, lifecycle or auto-replay change. Six assertions failed first; final125focused tests and4actualPG tests passed. New PG constraint-injection proves retained ticket correlation after rejected initial message. Corrected direct-event test interpretation against actual Nest wrapper; unknown-before-return/message recovery still open. Independent code/security reviewed; test/product commits1ae587eb/db3c7529. Temporary synthetic fixture cleaned; no live/customer access or publication. Next scoped message/status atomicity proof; production NO-GO unchanged.

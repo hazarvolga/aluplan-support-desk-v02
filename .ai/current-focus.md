@@ -1,5 +1,9 @@
 # Current Focus
 
+## Reply transaction checkpoint — 2026-09-23
+
+Local addMessage now commits reply+required reopen/SLA writes atomically. Real PG first reproduced two partial-write failures, final8/8 passes including overlapping replies and stale-closed guard. Independent review caught/fixed overstrict reopen predicate; final source/test review approved. Ticket75+intake125regressions and changed-fileTS0. Testsaf6e17bd/product3acd9cb7, no live/push/deploy. Next consolidate remaining manual-recovery/source gates and actual postcommit recipient-query boundary; no broad automatic replay/outbox redesign. TLS plan records limitations. Production NO-GO remains.
+
 ## Known held-intake linkage preserved — 2026-09-23
 
 Local IMAP/webhook correction retains returned ticket/message IDs and partial-attachment evidence under unchanged exact-owner hold CAS. No automatic replay/ACK or TicketsService/schema change. Six RED assertions before patch; focused125/125 and realPG4/4 green; changed-fileTS0; independent code/security review passed. Nest @OnEvent suppresses listener errors by default, so prior direct synchronous injection is not live propagation evidence. Before-return IDs/process-crash/reconciliation gaps remain. Next reproduce actual addMessage post-insert status-write failure and assess bounded transaction correction. Tests1ae587eb/productdb3c7529; no live access/push/deploy. Details in TLS transition plan.

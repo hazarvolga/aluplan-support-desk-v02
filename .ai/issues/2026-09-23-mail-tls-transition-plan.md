@@ -2,6 +2,22 @@
 
 Status: PLAN ONLY. No production mutation approved or executed. Application deployment remains NO-GO.
 
+## Reply and required ticket writes are atomic locally — 2026-09-23
+
+Scoped TicketsService.addMessage change only: insert reply + applicable customer reopen/first-response timestamp updates share one interactive Prisma transaction. Authorization and sanitization stay before it; recipient lookup and event dispatch stay after commit. Same API signature, no env/dependency/schema/migration change, no automatic retries.
+
+- Real PostgreSQL constraint injections first failed twice as expected: rejected reopen/SLA update left one committed reply. After correction, both reject cases leave zero reply rows and unchanged ticket state/timestamp, with no message-added event.
+- Guarded reopen accepts the same nondeleted owner's PENDING_CUSTOMER or OPEN ticket. Independent review caught initial too-narrow predicate rejecting the second legitimate simultaneous customer reply; corrected before final checkpoint. Deterministic synchronized authorized reads + two real transactions prove both distinct replies persist and state is OPEN.
+- Stale pending snapshot followed by CLOSED update causes rollback, not reopen. First-response write uses null/deletedAt predicates so an established timestamp is not overwritten; later sequential staff reply preserves it.
+- Full local domain suite8/8 passed on a refreshed, empty, internal-network tmpfs PG17 fixture with real Prisma7.4.2/current schema. Existing75ticket/internal-note/security tests and125intake tests passed. Changed-file TypeScript diagnostics0 after correcting self-referential test-mock inference. These are not whole-project coverage, HTTP/E2E, PrismaService lifecycle/extension or exact Node20/Linux artifact acceptance.
+- Existing source callsite impact review: web/API tickets.controller, IMAP EmailInboundService, OmniChannel webhook. GitNexus CLI/tool and Graphify report were unavailable in this candidate checkout; no automated graph-completeness claim.
+- Code reviewer re-reviewed concurrent fix and test drainage/cleanup, approved within scope, no additional security issue. Additional independent planner security-review invocation hit agent thread limit. No dedicated full security audit claimed.
+- Test commitaf6e17bd; product commit3acd9cb7. Owned synthetic container/network removed, temporary files cleaned and bounded relay expired (no listener remaining). No live/customer access, remote push or deploy.
+
+Limits deliberately retained: no general closure/ownership linearization for every status; authorization still uses a pre-transaction read. Recipient-query or direct synchronous event failure after commit can still produce an ambiguous returned outcome. New-ticket + initial-message atomicity, object-store writes, crash/ambiguous-commit recovery, source retrieval and operator reconciliation are NOT fixed by this slice. Reverting this source patch would restore the demonstrated partial-write risk; no data rollback or unsafe historical image is proposed.
+
+Next: consolidate the remaining intake/recovery gates against the accepted manual-review policy and test the actual post-commit recipient-query boundary before choosing any additional code. Do not expand into a generic outbox/automatic replay without demonstrated need. Production remains NO-GO pending the separately recorded operational and release gates.
+
 ## Known domain correlation retained on hold — 2026-09-23
 
 Bounded local correction, not full partial-commit recovery. IMAP and webhook now carry returned ticket/message identities into the existing owner-fenced hold update. An existing thread ID is retained only after sender eligibility and owner checks. Unknown identities remain absent; no lookup by subject/body, automatic replay, new acknowledgment, schema, dependency or TicketsService change.
