@@ -213,7 +213,7 @@ run('actual inbound domain persistence and post-commit failure boundaries', () =
         expect(notified).not.toHaveBeenCalled();
     });
 
-    it('holds a committed reply when the post-commit recipient lookup rejects, without replaying it', async () => {
+    it('holds intake before domain writes when recipient lookup rejects, without automatic replay', async () => {
         const department = await db.department.create({ data: {
             name: 'Synthetic Recipient Lookup', slug: `synthetic-${randomUUID()}`,
         } });
@@ -234,17 +234,15 @@ run('actual inbound domain persistence and post-commit failure boundaries', () =
             }));
         } finally { lookup.mockRestore(); }
         const messages = await db.ticketMessage.findMany({ where: { ticketId: ticket.id } });
-        expect(messages).toHaveLength(1);
-        expect(await db.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toHaveProperty('status', 'OPEN');
-        expect(await db.attachment.count({ where: { messageId: messages[0].id } })).toBe(0);
+        expect(messages).toHaveLength(0);
+        expect(await db.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toHaveProperty('status', 'PENDING_CUSTOMER');
         const claim = await db.inboundEmailLog.findUniqueOrThrow({ where: { messageId: id } });
         expect(claim).toMatchObject({ processed: false, ticketId: ticket.id });
         expect(claim.error).toContain('PROCESSING_FAILED');
         expect(claim.error).not.toContain('ticketMessageId');
         expect(notified).not.toHaveBeenCalled();
         expect(await deliver(subject, id)).toBe(false);
-        expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(1);
-        expect(await db.attachment.count({ where: { messageId: messages[0].id } })).toBe(0);
+        expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(0);
     });
 
     it('accepts both distinct customer replies that read PENDING_CUSTOMER concurrently', async () => {

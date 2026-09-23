@@ -555,6 +555,36 @@ describe('TicketsService', () => {
         });
 
         describe('addMessage', () => {
+            it('resolves department recipients before writing and preserves the successful event payload', async () => {
+                const ticket = { id: 'tik1', status: 'OPEN', userId: 'user1', departmentId: 'dep1' };
+                prisma.ticket.findFirst.mockResolvedValue(ticket);
+                prisma.user.findMany.mockResolvedValue([{ email: 'one@example.invalid' }, { email: 'two@example.invalid' }]);
+                prisma.ticketMessage.create.mockResolvedValue({ id: 'msg1' });
+                await service.addMessage('tik1', { message: 'hello' }, 'user1', 'CUSTOMER');
+                expect(prisma.user.findMany).toHaveBeenCalledWith({
+                    where: { teamMembers: { some: { team: { departmentId: 'dep1' } } }, role: { name: { not: 'CUSTOMER' } } },
+                    select: { email: true },
+                });
+                expect(prisma.user.findMany.mock.invocationCallOrder[0]).toBeLessThan(prisma.ticketMessage.create.mock.invocationCallOrder[0]);
+                expect(eventEmitter.emit).toHaveBeenCalledWith('ticket.message_added', {
+                    ticket, message: { id: 'msg1' }, recipientEmail: 'one@example.invalid,two@example.invalid', userName: 'Destek Ekibi',
+                });
+            });
+
+            it.each([
+                ['user1', 'CUSTOMER', 'assigned@example.invalid', 'Assigned Agent'],
+                ['agent1', 'AGENT', 'customer@example.invalid', 'Customer'],
+            ])('preserves direct recipient routing for %s', async (senderId, role, recipientEmail, userName) => {
+                const ticket = { id: 'tik1', status: 'OPEN', userId: 'user1', departmentId: 'dep1',
+                    slaRespondedAt: new Date(), assignee: { email: 'assigned@example.invalid', fullName: 'Assigned Agent' },
+                    creator: { email: 'customer@example.invalid', fullName: 'Customer' } };
+                prisma.ticket.findFirst.mockResolvedValue(ticket);
+                prisma.ticketMessage.create.mockResolvedValue({ id: 'msg1' });
+                await service.addMessage('tik1', { message: 'hello' }, senderId, role);
+                expect(prisma.user.findMany).not.toHaveBeenCalled();
+                expect(eventEmitter.emit).toHaveBeenCalledWith('ticket.message_added', expect.objectContaining({ recipientEmail, userName }));
+            });
+
             it.each(['CUSTOMER', 'AGENT'])(
                 'rejects forged inline attachment keys before any write for %s',
                 async (role) => {
