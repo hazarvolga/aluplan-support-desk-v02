@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PrismaClient } from '@aluplan/database';
@@ -10,6 +10,8 @@ import { TicketAccessService } from '../common/services/ticket-access.service';
 import { PiiMaskingService } from '../common/services/pii-masking.service';
 import { StorageService } from '../common/services/storage.service';
 import { EmailInboundService } from './email-inbound.service';
+import { simpleParser } from 'mailparser';
+import { inboundFingerprint, INBOUND_DONE_PREFIX } from './inbound-email-claim';
 
 jest.mock('../prisma/prisma.service', () => ({ PrismaService: class {} }));
 jest.mock('../settings/settings.service', () => ({ SettingsService: class {} }));
@@ -243,6 +245,73 @@ run('actual inbound domain persistence and post-commit failure boundaries', () =
         expect(notified).not.toHaveBeenCalled();
         expect(await deliver(subject, id)).toBe(false);
         expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(0);
+    });
+
+    it('rehearses single-writer attachment repair from retained synthetic MIME without replay or clearing review evidence', async () => {
+        const id = `<${randomUUID()}@example.invalid>`;
+        const subject = `Retained source ${randomUUID()}`;
+        const original = Buffer.from([
+            `From: ${email}`, 'To: support@example.invalid', `Message-ID: ${id}`, `Subject: ${subject}`,
+            'MIME-Version: 1.0', 'Content-Type: multipart/mixed; boundary="synthetic-boundary"', '',
+            '--synthetic-boundary', 'Content-Type: text/plain; charset=utf-8', '', 'Synthetic repair body',
+            '--synthetic-boundary', 'Content-Type: application/octet-stream',
+            'Content-Disposition: attachment; filename="proof.bin"', 'Content-Transfer-Encoding: base64', '',
+            bytes.toString('base64'), '--synthetic-boundary--', '',
+        ].join('\r\n'));
+        const sourcePath = join(directory, `${randomUUID()}.eml`);
+        const hash = (value: Buffer) => createHash('sha256').update(value).digest('hex');
+        const sourceHash = hash(original);
+        await writeFile(sourcePath, original, { flag: 'wx', mode: 0o600 });
+        const parsed = await simpleParser(await readFile(sourcePath));
+        const failUpload = jest.spyOn(storage, 'uploadFile').mockRejectedValueOnce(new Error('Synthetic unavailable storage'));
+        try {
+            expect(await (inbound as unknown as { processMail: (mail: unknown, id: string) => Promise<boolean> })
+                .processMail(parsed, id)).toBe(true); // Existing partial-attachment acknowledgment policy.
+            expect(failUpload).toHaveBeenCalledTimes(1);
+        } finally { failUpload.mockRestore(); }
+        const claim = await db.inboundEmailLog.findUniqueOrThrow({ where: { messageId: id } });
+        expect(claim.error).toMatch(/^INBOUND_DONE_V1:/);
+        const marker = JSON.parse(claim.error!.slice(INBOUND_DONE_PREFIX.length));
+        expect(marker).toMatchObject({ note: 'INBOUND_ATTACHMENT_FAILURE', failedAttachmentCount: 1 });
+        const message = await db.ticketMessage.findUniqueOrThrow({ where: { id: marker.ticketMessageId } });
+        expect(message).toMatchObject({ ticketId: claim.ticketId, senderId: userId });
+        expect(await db.attachment.count({ where: { messageId: message.id } })).toBe(0);
+
+        // Test-only, one operator and no competing writer. NOT a production recovery command.
+        const repairMissingAttachment = async (source: Buffer) => {
+            if (hash(source) !== sourceHash) throw new Error('SOURCE_HASH_MISMATCH');
+            const mail = await simpleParser(source);
+            const from = Array.isArray(mail.from) ? undefined : mail.from?.value[0]?.address;
+            if (mail.messageId !== id || from !== email || mail.attachments.length !== 1) throw new Error('SOURCE_IDENTITY_MISMATCH');
+            const fingerprint = inboundFingerprint({ messageId: id, from, subject: mail.subject ?? '',
+                body: mail.text || mail.html || '', attachments: mail.attachments });
+            if (fingerprint !== marker.fingerprint) throw new Error('SOURCE_FINGERPRINT_MISMATCH');
+            expect(await db.inboundEmailLog.findUniqueOrThrow({ where: { messageId: id } })).toEqual(claim);
+            expect(await db.ticket.findUniqueOrThrow({ where: { id: message.ticketId } })).toMatchObject({ userId, deletedAt: null });
+            const attachment = mail.attachments[0];
+            const existing = await db.attachment.findMany({ where: { messageId: message.id } });
+            if (existing.length) {
+                expect(existing).toHaveLength(1);
+                expect(await storage.getFile(existing[0].url)).toEqual(attachment.content);
+                return;
+            }
+            const key = await storage.uploadFile({ buffer: attachment.content, originalname: attachment.filename!,
+                mimetype: attachment.contentType } as Express.Multer.File, `tickets/${message.ticketId}/messages/${message.id}`);
+            expect(await storage.getFile(key)).toEqual(attachment.content);
+            await db.attachment.create({ data: { messageId: message.id, fileName: attachment.filename!,
+                fileSize: attachment.size, mimeType: attachment.contentType, url: key } });
+        };
+        await expect(repairMissingAttachment(Buffer.concat([original, Buffer.from('tampered')]))).rejects.toThrow('SOURCE_HASH_MISMATCH');
+        expect(await db.attachment.count({ where: { messageId: message.id } })).toBe(0);
+        await repairMissingAttachment(await readFile(sourcePath));
+        await repairMissingAttachment(await readFile(sourcePath));
+        expect(await db.ticket.count({ where: { subject } })).toBe(1);
+        expect(await db.ticketMessage.count({ where: { ticketId: message.ticketId } })).toBe(1);
+        const attachments = await db.attachment.findMany({ where: { messageId: message.id } });
+        expect(attachments).toHaveLength(1);
+        expect(hash((await storage.getFile(attachments[0].url))!)).toBe(hash(bytes));
+        expect(hash(await readFile(sourcePath))).toBe(sourceHash);
+        expect(await db.inboundEmailLog.findUniqueOrThrow({ where: { messageId: id } })).toEqual(claim);
     });
 
     it('accepts both distinct customer replies that read PENDING_CUSTOMER concurrently', async () => {
