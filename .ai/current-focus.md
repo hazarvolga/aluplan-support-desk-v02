@@ -1,5 +1,9 @@
 # Current Focus
 
+## Actual local certificate renewal passed — 2026-09-23
+
+Test99b506fe: pinned isolated DMS served new valid leaf on SMTP/IMAP;5invalid variants rejected preserving old served leaf;unchanged no-op;container not restarted/watcher RUNNING. Watcher pause/copy/resume single-writer test only, not crash-safe production exporter. Independent review corrected Docker-local enforcement and timeout cleanup; final rerun approved/passed, remote override rejected, owned fixtures removed. No real keys/ACME/live/DB. Next exact proxy route ownership/conflict evidence and StageA reviewed diff, separate approval before real issuance.
+
 ## Certificate issuance/renewal scope frozen — 2026-09-23
 
 Existing TLS plan now has reviewed StageA certificate-only preparation and separately approved StageB mail maintenance. No executable/live change. Prefer existing HTTP01; never add mail host to frontend/WordPress or mount full ACME store into mailserver. Host exporter necessarily reads shared private material; exact permission required. Local synthetic renewal publication/key-pair/watcher proof next, before auto-publisher or real issuance. Dynamic route ownership/topology and operator alert/drain remain explicit unknowns; no infrastructure expansion.

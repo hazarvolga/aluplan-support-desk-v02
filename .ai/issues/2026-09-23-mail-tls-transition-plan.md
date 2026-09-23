@@ -2,6 +2,33 @@
 
 Status: TLS transition not executed. Explicitly approved backup-only writes completed as recorded below; no live service/configuration/DB mutation. Application deployment remains NO-GO.
 
+## Synthetic certificate renewal rehearsal passed — 2026-09-23
+
+New test-only harness apps/backend/test/mail-renewal-rehearsal.cjs, commit99b506fe. Explicit MAIL_RENEWAL_REHEARSAL=synthetic-local-only opt-in, local macOS Docker Desktop Unix socket pinned, remote Docker overrides refused before access. Pinned public DMS v15.1.0 amd64 image; fresh internal network, no published ports, only disposable synthetic config/cert/public-CA mounts. No real key/ACME/mailbox/backup/customer/DB or production access.
+
+Final strengthened run passed nine recorded checks:
+1. Initial trusted synthetic leaf presented by actual SMTP587 STARTTLS and IMAP993.
+2. Mismatched private key rejected before publication; previous leaf remained on both protocols.
+3. Wrong-hostname certificate rejected; previous leaf preserved.
+4. Expired certificate rejected; previous leaf preserved.
+5. Untrusted certificate rejected; previous leaf preserved.
+6. Truncated certificate rejected; previous leaf preserved.
+7. Identical pair is a no-op.
+8. New valid same-CA leaf/key published; both protocols presented its new SHA256 fingerprint with actual chain/hostname verification.
+9. Container start/restart identity unchanged and changedetector RUNNING after renewal.
+
+Test-local publication validates chain/purpose/name/time/key match first, stops and confirms changedetector STOPPED, replaces the pair, then starts it. Existing DMS watcher performs reload. This single-writer successful path is NOT a production publisher: no crash-between-copy recovery, concurrent writer/other reload coordination, publisher recovery after I/O failure, ongoing alerting or actual Traefik export/CA renewal proof. No mailbox authentication/send/receive roundtrip in this test; previous tests retain their own scope.
+
+Local emulator-only dovecot.cf default_vsz_limit1G allowed amd64 on ARM; container RAM768MiB/2CPU. This override must not enter production. Normal daemon capabilities were retained (not privileged); helper hash container network-none/read-only/cap-drop/nnp. CA private key was never mounted into DMS; only leaf pair and public CA were.
+
+Two initial fixture-tooling attempts failed before mailserver startup: macOS LibreSSL lacks passwd-6 and verify_hostname options. Synthetic hash now uses an isolated named/labelled helper; hostname validation uses Node X509.checkHost alongside OpenSSL chain/purpose/time checks. These failures are not application RED tests or certificate-rejection evidence.
+
+Independent code/security review found and corrected local-target enforcement and timeout-after-create cleanup gaps. Final review approved test scope; final full rerun passed. Remote DOCKER_HOST negative control rejected before Docker access. All exact owned container/helper/network names are token-label-checked during independent cleanup attempts; uncertainty fails and retains files. Parent final labelled container/network inventories empty. Owned temporary synthetic keys/accounts were removed; no user/customer files or images deleted. Node syntax check and Gitleaks file scan passed.
+
+Reproduce with Node24: MAIL_RENEWAL_REHEARSAL=synthetic-local-only node apps/backend/test/mail-renewal-rehearsal.cjs on local Docker Desktop. Runtime helpers are real, but this does not certify exact production Node/Linux application image or complete recovery/security readiness. No product/schema/env changes, push or deploy.
+
+Next bounded step: exact proxy dynamic-route ownership/conflict metadata and reviewed certificate-only StageA diff. Existing watcher capability and successful local renewal are now demonstrated; do not repeat them as unknown, but keep crash-safe production publication and distinct StageA/StageB approvals open. No real issuance/private-key extraction/automatic publisher authorized by this rehearsal.
+
 ## Narrow certificate change sheet — proposal, 2026-09-23
 
 Local planning and independent security review only. This is NOT executable configuration, CA issuance approval or a production-ready renewal implementation. Avoid mixing application release, mail image upgrade, DNS migration, firewall work or unrelated vulnerability remediation into this slice.
