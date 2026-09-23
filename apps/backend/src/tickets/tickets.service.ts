@@ -1034,6 +1034,24 @@ export class TicketsService {
             throw new BadRequestException('message cannot be empty');
         }
 
+        let recipientEmail = ticket.userId === senderId ? ticket.assignee?.email : (ticket.creator?.email || undefined);
+        let userName = ticket.userId === senderId ? (ticket.assignee?.fullName || 'Temsilci') : (ticket.creator?.fullName || 'Müşteri');
+
+        // Resolve recipients before writes so a lookup failure cannot leave a committed reply.
+        if (ticket.userId === senderId && !recipientEmail && ticket.departmentId) {
+            const deptAgents = await this.prisma.user.findMany({
+                where: {
+                    teamMembers: { some: { team: { departmentId: ticket.departmentId } } },
+                    role: { name: { not: 'CUSTOMER' } }
+                },
+                select: { email: true }
+            });
+            if (deptAgents.length > 0) {
+                recipientEmail = deptAgents.map(a => a.email).join(',');
+                userName = 'Destek Ekibi';
+            }
+        }
+
         // Keep the reply and its required ticket updates atomic. No external effects in tx.
         const message = await this.prisma.$transaction(async (tx) => {
             const created = await tx.ticketMessage.create({
@@ -1065,24 +1083,6 @@ export class TicketsService {
             }
             return created;
         });
-
-        let recipientEmail = ticket.userId === senderId ? ticket.assignee?.email : (ticket.creator?.email || undefined);
-        let userName = ticket.userId === senderId ? (ticket.assignee?.fullName || 'Temsilci') : (ticket.creator?.fullName || 'Müşteri');
-
-        // Unassigned fallback: If customer replied and no agent is assigned, notify department agents
-        if (ticket.userId === senderId && !recipientEmail && ticket.departmentId) {
-            const deptAgents = await this.prisma.user.findMany({
-                where: {
-                    teamMembers: { some: { team: { departmentId: ticket.departmentId } } },
-                    role: { name: { not: 'CUSTOMER' } }
-                },
-                select: { email: true }
-            });
-            if (deptAgents.length > 0) {
-                recipientEmail = deptAgents.map(a => a.email).join(',');
-                userName = 'Destek Ekibi';
-            }
-        }
 
         this.eventEmitter.emit('ticket.message_added', {
             ticket,
