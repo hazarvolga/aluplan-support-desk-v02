@@ -2,6 +2,8 @@ import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TicketsService } from '../tickets/tickets.service';
 import { isDeliveryStatusNotification } from '../email/email-bounce.util';
+import { createHash } from 'node:crypto';
+import { claimInbound, completeInbound, holdInbound, recordInboundHold } from '../email/inbound-email-claim';
 
 @Injectable()
 export class OmniChannelService {
@@ -13,50 +15,48 @@ export class OmniChannelService {
     ) { }
 
     async handleInboundEmailWebhook(payload: any) {
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+            throw new Error('INVALID_INBOUND_PAYLOAD');
+        }
         // Extract basic mail info (assuming a generic/Mailgun/Resend style payload)
         const from = payload.from || payload.sender;
         const subject = payload.subject || 'No Subject';
         const body = payload.text || payload.body || payload['stripped-text'] || 'Empty Message';
-        const messageId = payload.messageId || payload['Message-Id'] || `webhook-${Date.now()}`;
+        const messageId = payload.messageId || payload['Message-Id'];
         const headers = payload.headers || payload.Headers || payload;
 
-        if (!from) {
-            this.logger.warn('Inbound webhook missing "from" field.');
-            return;
-        }
-
-        // Check if duplicate
-        const existing = await this.prisma.inboundEmailLog.findUnique({
-            where: { messageId },
-        });
-
-        if (existing && existing.processed) return;
-
-        const log = await this.prisma.inboundEmailLog.upsert({
-            where: { messageId },
-            update: {},
-            create: {
-                messageId,
-                from,
-                subject,
-                processed: false,
-            },
-        });
-
-        if (isDeliveryStatusNotification({ from, subject, body, headers })) {
-            await this.prisma.inboundEmailLog.update({
-                where: { id: log.id },
-                data: {
-                    processed: true,
-                    processedAt: new Date(),
-                    error: 'Ignored delivery status notification',
-                },
+        if (typeof from !== 'string' || !from || typeof messageId !== 'string' || !messageId.trim()) {
+            await recordInboundHold(this.prisma, {
+                key: `webhook-hold:${createHash('sha256').update(JSON.stringify([from, subject, body])).digest('hex')}`,
+                reason: 'MISSING_IDENTITY',
             });
-            this.logger.warn(`Ignored delivery status notification ${messageId} from ${from}`);
-            return;
+            return 'held';
         }
+        if (typeof subject !== 'string' || typeof body !== 'string') {
+            await recordInboundHold(this.prisma, {
+                key: `webhook-invalid:${createHash('sha256').update(JSON.stringify([messageId, from, subject, body])).digest('hex')}`,
+                reason: 'INVALID_INPUT',
+            });
+            return 'held';
+        }
+        const isDsn = isDeliveryStatusNotification({ from, subject, body, headers });
+        let claim;
+        try {
+            claim = await claimInbound(this.prisma, { messageId, from, subject, body, classification: isDsn ? 'dsn' : 'message' });
+        } catch (error) {
+            if (!(error instanceof Error) || error.message !== 'INVALID_INBOUND_IDENTITY') throw error;
+            await recordInboundHold(this.prisma, {
+                key: `webhook-invalid:${createHash('sha256').update(JSON.stringify([messageId, from, subject, body])).digest('hex')}`,
+                reason: 'INVALID_INPUT',
+            });
+            return 'held';
+        }
+        if (claim.kind !== 'claimed') return claim.kind === 'done' ? 'completed' : 'held';
 
         try {
+            if (isDsn) {
+                return await completeInbound(this.prisma, claim, { reason: 'IGNORED_DSN' }) ? 'completed' : 'held';
+            }
             const sender = await this.prisma.user.findUnique({
                 where: { email: from }, include: { role: true },
             });
@@ -95,22 +95,15 @@ export class OmniChannelService {
                 ticketId = newTicket.id;
             }
 
-            // Mark as processed
-            await this.prisma.inboundEmailLog.update({
-                where: { id: log.id },
-                data: {
-                    processed: true,
-                    ticketId,
-                    processedAt: new Date(),
-                },
-            });
-            this.logger.log(`Processed inbound email ${messageId} -> Ticket ${ticketId}`);
+            return await completeInbound(this.prisma, claim, { ticketId }) ? 'completed' : 'held';
         } catch (error: any) {
-            this.logger.error(`Failed to process email ${messageId}: ${error.message}`);
-            await this.prisma.inboundEmailLog.update({
-                where: { id: log.id },
-                data: { error: error.message },
-            });
+            this.logger.error('Inbound webhook processing failed; review required before replay.');
+            const reason = error instanceof ForbiddenException &&
+                ['INBOUND_SENDER_NOT_ELIGIBLE', 'INBOUND_TICKET_OWNER_MISMATCH'].includes(error.message)
+                ? error.message as 'INBOUND_SENDER_NOT_ELIGIBLE' | 'INBOUND_TICKET_OWNER_MISMATCH'
+                : 'PROCESSING_FAILED';
+            await holdInbound(this.prisma, claim, reason);
+            return 'held';
         }
     }
 }

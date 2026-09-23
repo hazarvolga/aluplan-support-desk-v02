@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body, Param, Res, HttpStatus, UseGuards, Req, NotFoundException, BadRequestException, Logger, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Param, Res, HttpStatus, UseGuards, Req, NotFoundException, BadRequestException, Logger, UnauthorizedException, Header } from '@nestjs/common';
 import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -18,6 +18,7 @@ import { RedisService } from '../redis/redis.service';
 
 
 import { EmailInboundService } from './email-inbound.service';
+import { INBOUND_HOLD_PREFIX, summarizeInboundState } from './inbound-email-claim';
 
 
 @Controller('email')
@@ -43,6 +44,41 @@ export class EmailController {
   @Post('admin/imap/verify')
   async verifyImap() {
     return this.emailInboundService.verifyImap();
+  }
+
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @RequirePermissions('settings:read')
+  @Header('Cache-Control', 'no-store')
+  @Get('admin/inbound/review')
+  async getInboundReview(@Query('limit') limit = '50', @Query('cursor') cursor?: string) {
+    if (typeof limit !== 'string' || !/^[1-9]\d{0,2}$/.test(limit) || Number(limit) > 100) {
+      throw new BadRequestException('limit must be an integer between 1 and 100');
+    }
+    if (cursor !== undefined && (typeof cursor !== 'string'
+      || !/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(cursor))) {
+      throw new BadRequestException('cursor must be a UUID');
+    }
+    const take = Number(limit);
+    const rows = await this.prisma.inboundEmailLog.findMany({
+      where: { OR: [
+        { processed: false }, { error: { startsWith: INBOUND_HOLD_PREFIX } },
+        { error: { contains: 'INBOUND_ATTACHMENT_FAILURE' } },
+      ] },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: take + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      select: { id: true, messageId: true, from: true, subject: true, processed: true,
+        ticketId: true, createdAt: true, processedAt: true, error: true },
+    });
+    const page = rows.slice(0, take);
+    return {
+      items: page.map(row => ({
+        id: row.id, messageId: row.messageId, from: row.from, subject: row.subject,
+        processed: row.processed, ticketId: row.ticketId, createdAt: row.createdAt,
+        processedAt: row.processedAt, ...summarizeInboundState(row),
+      })),
+      nextCursor: rows.length > take ? page[page.length - 1].id : null,
+    };
   }
 
   @Public()
