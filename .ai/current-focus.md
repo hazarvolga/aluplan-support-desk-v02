@@ -1,5 +1,9 @@
 # Current Focus
 
+## Local Dovecot blocker diagnosed — 2026-09-23
+
+Controlled comparison reproduced Rosetta mmap failure/SIGTRAP at256MiB virtual-address limit only for amd64, not native arm64. Temporary local-only Dovecot1GiB virtual-address override (container RAM still768MiB) allowed actual amd64 SMTP235/IMAPOK, verified TLS1.3 and a synthetic attachment-byte-preserving send/retrieve with UNSEEN retained. Cross-container plaintext IMAP rejected PRIVACYREQUIRED; SMTP AUTH530. No production/config/product changes. TLS plan records exact evidence/limits. Next actual candidate-client integration with isolated state; no application/DB/claim/backup acceptance claimed. Production remains NO-GO.
+
 ## Local mail TLS rehearsal — 2026-09-23
 
 Partial proof only: existing wire suite10/10 passed; pinned v15.1.0 amd64 config digest matches previously recorded live ID. Isolated actual-server SMTP STARTTLS negotiated verified TLS1.3 and rejected plaintext AUTH530. Dovecot subprocess signal5/startup failures block SMTP authenticated login and IMAP; arm64-host emulation is suspected, not proven. No complete delivery/retrieval proof. See TLS transition plan local checkpoint for exact evidence and exclusions. Next diagnose locally without relaxing isolation; no production access/change, push or deploy. Production remains NO-GO.

@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Local Dovecot diagnosis and mail round-trip — 2026-09-23
+
+Identified controlled Rosetta address-space failure at Dovecot's256MiB default, corroborated by native arm64 comparison. Local-only1GiB virtual-address override resolved amd64 daemon startup while retaining768MiB container RAM and isolation. Actual SMTP/IMAP authentication and synthetic message/binary-attachment round-trip passed, UNSEEN preserved; cross-container plaintext IMAP rejected. No application ticket/DB integration, native-amd64 execution or production acceptance claimed. See TLS transition plan for exact observations and temporary setup differences. No product/live/publication changes; independent reviewer unavailable(thread limit).
+
 ## Local mail TLS rehearsal — 2026-09-23
 
 Existing synthetic wire tests passed10/10 under loopback-only sandbox. Downloaded immutable official v15.1.0 amd64 image and matched manifest config digest to earlier live ID. Fresh isolated test container demonstrated SMTP STARTTLS/verified TLS1.3 and plaintext AUTH530 rejection, but Dovecot subprocess failures (signal5) prevented authenticated SMTP/IMAP success. Emulation root cause unproven; no mail round-trip acceptance. Detailed setup, limits and next gate recorded in `.ai/issues/2026-09-23-mail-tls-transition-plan.md`. No product changes, production access or publication. Dedicated reviewer unavailable due thread limit.

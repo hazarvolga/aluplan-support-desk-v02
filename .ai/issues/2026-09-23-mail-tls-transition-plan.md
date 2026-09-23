@@ -2,6 +2,21 @@
 
 Status: PLAN ONLY. No production mutation approved or executed. Application deployment remains NO-GO.
 
+## Local emulator diagnosis and transport proof — 2026-09-23
+
+Supersedes the local Dovecot startup blocker below, not the remaining release gates.
+
+- Reproduced amd64 Dovecot child startup failure in a fresh isolated container. `default_vsz_limit` is256M. A bounded Python `subprocess.run` of `/usr/lib/dovecot/log --help` with `RLIMIT_AS=268435456` returned-5 and `rosetta error: mmap_anonymous_rw mmap failed, size=1000`. With inherited unlimited address space or1GiB it returned89 (expected invalid-option exit, not service success). Native arm64 build under the same pinned multi-platform digest returned89 at256MiB too. These are diagnostic argument-parsing probes, not daemon acceptance.
+- On the synthetic amd64 server only, stopped the supervised Dovecot process and started `dovecot -o default_vsz_limit=1G`. This is a temporary emulator accommodation, NOT a production change or recommendation. Container RAM remained805306368bytes (768MiB), CPU2, default capabilities/security profile, no privileged mode, no published ports. The internal network contained only the two owned synthetic containers. No global Docker restart/settings changes.
+- Actual amd64 Postfix/Dovecot test using Python stdlib with fixture CA and hostname validation: SMTP587 plaintext AUTH530; STARTTLS TLS1.3; encrypted SMTP authentication235; no refused recipient. IMAP993 authenticationOK. One unique synthetic Message-ID delivered and retrieved; one binary attachment was byte-for-byte equal, and BODY.PEEK/read-only retrieval preserved UNSEEN. No deletion/expunge was requested. This is a server transport/attachment test, NOT application ticket/claim/DB integration or persistent-volume recovery proof.
+- Native arm64 comparison server with unmodified256M limit completed SMTP authentication235 and IMAP authenticationOK. This supports the observed Rosetta/address-space-limit cause; arm64 is not the production artifact substitute.
+- From the separate native peer, amd64 IMAP143 advertised LOGINDISABLED and rejected LOGIN with PRIVACYREQUIRED. No loopback-security exception was used to claim plaintext IMAP rejection. An initial probe had a local capabilities string/bytes conversion error; only the corrected rejection probe counts.
+- Directly launching Dovecot child binaries without their master's descriptors produced unrelated expected bootstrap/panic errors; those are not counted as a reproduction of the service failure. The controlled address-space comparison plus successful bounded daemon override is the relevant evidence.
+- No product code, dependency, schema, live system, real credential, customer message, push or deployment change. Dedicated independent review again unavailable due agent-thread limit. The public ARM image was downloaded only for local comparison.
+- Cleanup verified: both owned test containers were stopped and removed, followed by their internal network. Only synthetic disposable messages/configuration were discarded; public images and temporary fixture certificates remain available locally. No unrelated container or volume was removed.
+
+Next: connect the hardened candidate's actual mail clients to the isolated server, validate source/attachment and duplicate/hold behavior with disposable application state, and retain exact Node20/Linux artifact acceptance as a separate gate. A synthetic server pass does not prove current live certificate compatibility, renewal, writer pause/cache refresh, backups, webhook source retention or production readiness. Do not copy the emulator override into production.
+
 ## Local rehearsal checkpoint — 2026-09-23
 
 Local preparation and partial rehearsal executed; the production sequence below remains a plan, not an approved change script.
