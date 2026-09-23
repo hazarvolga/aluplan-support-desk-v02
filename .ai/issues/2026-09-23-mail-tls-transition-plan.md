@@ -2,6 +2,16 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Approved nonsecret settings and queue counts — 2026-09-23
+
+Owner explicitly approved the narrow DB/Redis metadata scope. At2026-09-23T16:44:45Z, a parameterized SELECT inside BEGIN READ ONLY queried exactly seven allowlisted settings. Secret-classified values were suppressed in SQL; no password, username, customer row or mailbox content selected. Transaction ended with ROLLBACK. Direct pg/ioredis clients only; no application bootstrap, worker or BullMQ Queue construction.
+
+Confirmed DB values: provider smtp; SMTP mail.allplan.net.tr:587/secure=false; IMAP mail.allplan.net.tr:143/tls=false. All seven keys present. This confirms persisted settings, not an inspection of process-local cache contents. SMTP secure=false on587 is not itself proof that STARTTLS is forbidden; actual negotiation remains untested.
+
+Compiled module inspection found no custom prefix declaration in the inspected app/email modules. Against the configured Redis endpoint and bull:email keys: wait0, active0, paused0, delayed0, failed0, prioritized0, waiting-children0, completed964; meta exists and paused flag absent. Only LLEN/ZCARD/EXISTS/HEXISTS commands were used; no payloads, job IDs, failure texts or job options read. Counts are a non-atomic point-in-time observation, NOT a drain/fence, successful recipient-delivery proof or assurance against new jobs arriving. Completed964 is retained queue history, not ticket count or all-time delivery total.
+
+No DB/Redis application-data writes, queue pause/retry/delete, settings change, mailbox authentication, mail send, restart, push or deploy. Normal connection/diagnostic overhead occurred. Existing mail settings must not be independently toggled: strict local IMAP needs direct TLS993 with verified server TLS; coordinate cache refresh and all writers during separately approved maintenance. Next prepare current Coolify configuration comparison and an exact maintenance/acceptance sequence; empty queue now does not authorize activation. No new architecture or retry changes.
+
 ## Scoped live client audit — 2026-09-23
 
 Owner continued the proposed read-only client/topology inspection. Verified SSH inspected selected compiled code, process names and effective mail TLS settings only. No application module imported/executed, DB/Redis payload queried, mailbox login, health-button authentication, settings write, restart or deploy. Diagnostic processes ran; service identities remained unchanged.

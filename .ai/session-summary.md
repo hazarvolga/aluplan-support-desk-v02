@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Approved DB/Redis metadata inspection — 2026-09-23
+
+Seven allowlisted nonsecret mail settings read via parameterized SELECT in READ ONLY transaction then ROLLBACK; SQL suppresses secret-classified values. Confirms SMTP587 securefalse/IMAP143 tlsfalse at mail.allplan.net.tr. Direct read-only Redis count commands show no pending/active/failed jobs,964retained completed at16:44:45Z. No payload/jobID/password/mailbox read, no app bootstrap or writes/restart/deploy. Point-in-time counts do not prove quiescence or actual mail delivery. Existing TLS plan updated; next exact coordinated maintenance proposal and current Coolify comparison, not immediate activation.
+
 ## Read-only live mail-client compatibility audit — 2026-09-23
 
 Compared selected live compiled SMTP/IMAP/settings/queue code to local candidate. Live accepts invalid certs and optional plaintext; effective mailserver TLS remains disabled. backend-api one node snapshot/start/restarts unchanged; not all-client proof. Queue module3s default overridden by actual enqueue2s in both versions, independently cross-checked and initial commentary corrected. No settings values/DB/Redis payloads/mailbox content read, no production mutation, app edits or deploy. Next nonsecret settings/aggregate queue and Coolify merge scope, then coordinated maintenance proposal. Existing TLS runbook updated; no absolute uptime/data-loss guarantee.

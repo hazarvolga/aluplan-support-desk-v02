@@ -1,5 +1,9 @@
 # Current Focus
 
+## Nonsecret live settings and empty pending queue confirmed — 2026-09-23
+
+Approved narrow READ ONLY DB query confirms smtp/mail.allplan.net.tr:587 secure=false and IMAP samehost143 tls=false. At16:44:45Z email queue wait/active/paused/delayed/failed/prioritized/waiting-children all0, retained completed964, not paused. Counts only, no messages/passwords/job IDs; no writes/restarts/deploy. Snapshot is not a maintenance fence or delivery proof. Next current Coolify comparison and exact coordinated maintenance proposal; TLS activation remains separately gated. Details in TLS plan.
+
 ## Live client comparison confirms coordinated maintenance required — 2026-09-23
 
 Read-only compiled-code/process/effective-mail-config inspection: live SMTP/IMAP certificate checks disabled, mailserver TLS none/no, one node process observed in backend-api (not exhaustive writer inventory). Actual enqueue override2s/5attempts matches local; module default3s is not effective normal-job policy. Independent review caught this distinction and it was verified live. No DB/Redis contents/settings/login/send/restart/deploy. Next narrowly scoped nonsecret settings and aggregate queue evidence plus current Coolify merge/other-client ownership; separate approval before state access/maintenance. TLS plan records limits.
