@@ -1,5 +1,11 @@
 # Current Focus
 
+## Patched exact image verified; mail dependency triage next — 2026-09-23
+
+Clean source2e9c7ebf produced Linux/amd64 image76432eed; A13 static smoke passed. Same15 WebSocket controls against actual old/new images: old7pass/8expectedfail → new15/15pass, Node20.20.2, networknone/no app bootstrap. Compiled CSRF redaction and nonroot/app permissions still pass. Same pinnedTrivy0.72.0/frozenSeptember22DB:2Critical/128High/183Medium/23Low →2Critical/123High/182Medium/23Low. Exactly6expected findings removed,0added; no unrelated finding changed. Independent security evidence review verified identity, hashes, versions and comparison. Evidencevuln-ws-20260922-amWugP; scanner/test containers absent. No live/DB/push/deploy action or product edits in this phase.
+
+Next smallest batch: inspect mailparser/nodemailer advisory preconditions and compatibility, then bounded synthetic-mail tests before selecting versions. Preserve mail-to-ticket, never connect real mailbox or force major overrides blindly. Remaining2Critical are the same tar advisory under globalnpm/pnpm; application69High and tooling54High still require decisions, not count-based dismissal. Newimage full browser/DB/mail acceptance is NOT inherited from6ae3; complete after the narrowly scoped remaining fixes. Crawler containment, bytes/new-write forward recovery, frontend and separately approved host/credential/fresh-backup gates remain. Production NO-GO.
+
 ## WebSocket dependency patch verified locally; artifact gate next — 2026-09-22
 
 Supersedes the proposed versions below. Local regression checkpoint `0ded9b6d` and dependency checkpoint `2b402a84` pin engine.io6.6.10, socket.io-parser4.2.7 and ws8.21.1 through scoped same-major overrides. Independent security review rejected the initial6.6.7/8.21.0 targets because newer related protocol-mismatch and empty-fragment fixes were required. RED demonstrated those three failing controls; final15/15 dependency tests and46/46 gateway tests pass. Actual RC dependency resolution verified; backend/frontend no-emit typechecks report0 diagnostics using schema-matched sibling generated DB declarations only. No generated client, application source, Dockerfile, schema or migration changed.

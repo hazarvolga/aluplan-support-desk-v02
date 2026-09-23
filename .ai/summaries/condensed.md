@@ -1,5 +1,11 @@
 # Condensed Project Memory
 
+## Current release checkpoint — 2026-09-23 (supersedes historical status below)
+
+- WebSocket patch source2e9c7ebf is now in exact Linux/amd64 image76432eed. Static smoke passed; actual-image15tests RED7pass/8fail onold6ae3→GREEN15/15 onnew. CompiledCSRF/log and nonroot/app-write boundary unchanged. No app bootstrap/currentcustomerdata.
+- Same Trivy0.72.0/frozenDB:2C128H183M23L→2C123H182M23L, exactly6removed/0added. Independent identity/report/test evidence reviewPASS; privateevidencevuln-ws-20260922-amWugP retained and ownedcontainers removed. TwoCriticals remain globalnpm/pnpm tar; not production-ready.
+- Next mailparser/nodemailer compatibility/advisory review and synthetic tests; no realmailbox. Remaining document/tooling/crawler, exactartifact browser/DB/mail, attachmentbytes/newwrite forwardrecovery and separately approved host/credential/freshbackup gates remain. Local-only; no push/deploy or live action authorized by "continue".
+
 ## Current release checkpoint — 2026-09-22 (supersedes historical status below)
 
 - Latest gate: exact candidate6ae3 and previousLOCALb112 scanned offline with same freshSeptember22DB/Trivy0.72.0. Identical2Critical/128High/183Medium/23Low;336occurrences,90uniqueHighCriticalIDs. Criticals are tar6.2.1 under npm+pnpm. Source/deps unchanged; no production access/appboot. Private evidencevuln-6ae3-20260922-GNSnSY, full OCIindex→manifest→config identity verified, scanner containers absent.

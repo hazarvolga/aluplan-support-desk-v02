@@ -1,5 +1,36 @@
 # Local source consolidation — 2026-09-19
 
+## WebSocket patch verified in exact image and frozen-DB comparison — 2026-09-23
+
+No tracked application/dependency/Dockerfile/schema change in this step. Aluplan skill kept the work on existing A13 tooling and narrow regressions; stale reference assumptions about ARM64/PG16/globalSSRF protection were not applied over actual code. No production access, application bootstrap, DB/Redis/mail/provider connection, migration, push or deploy. Registry/APK dependency downloads and lifecycle scripts ran only inside build stages; not an offline build.
+
+### Artifact identity and bounded execution
+
+- Clean source `2e9c7ebf3aafdbeb9b0a80e834a965466be0bf94`; image OCIindex `sha256:76432eedde218de943045dc46320801ca7b6816e6a62d8fcb6f2ce14b8cb0d50`, uniqueLinux/amd64manifest `sha256:bf725f1f9f2158f4908333c26c02143624b8ac437fb4a6c69896dd6df32ce9e6`, config/TrivyImageID `sha256:06d1fc63794a352d47c2e6326b0d9da3f4eaa44e8617bddc2a5b7d8890e0988d`. Independent reviewer verified metadata descriptorSHA/size, source label, legacyConfig/orderedlayer mapping and reportDiffIDs. This does not certify every package's upstream provenance.
+- Build context11.60MB from cleanGitarchive; existing helper12/12tests and A13smoke passed57canonicalmigrationfiles, startup syntax/executability, PostgreSQL17.11 backup tools andAWSCLI2.32.7. Prisma client generated only in build/image; no database needed. Receipt `.private-data/release-evidence/a13-images/image-2e9c7ebf3aafdbeb9b0a80e834a965466be0bf94/image.json`, SHA256 `8436413c42cf4ea80fb2dd3afacda32cf6337d511307e84a92c0783464da821b`, READY/sha file verified. productionGo:false retained.
+- Immutable oldLOCAL6ae3 and new76432 each ran unchanged `scripts/websocket-dependency-security.test.cjs` supplied overstdin, explicit `/app/apps/backend/package.json` anchor, Node20.20.2, nodeuser/networknone/read-only/capdropALL/no-new-privileges,256MB/1CPU/64PIDs/tiny tmpfs. No host mounts, sockets exposed, credentials or app bootstrap. Old15tests=7pass/8expectedfail; new15/15PASS; valid-input controls passed both. Failures are precisely missing parser/fragment/protocol/polling defenses, not setup errors. This is a bounded library regression, not a real Socket.IO network-handshake or full notification workflow test.
+- Existing static inspector715907b8 passed two fixedCSRFwarnings/legacyabsence/nonroot/unwritable root-owned/app. CompiledmainSHA `7c29425aa1f89edef7c19ad05caf2e9d76bd767261efc8b2b1aa99a50021ffef` unchanged. Rootfilesystem read-only is a test setting, not a claim production has that mount policy.
+
+### Like-for-like vulnerability result
+
+New evidence `.private-data/release-evidence/vuln-ws-20260922-amWugP/`, parent0700/archive+reports0600. `input/backend.tar` SHA `5567bbd6e70e63c240d453c48601c3f761921d61451df5da38ed70dffacb142c`. `output/report.json` SHA `b10b4fbc606da16c10dadcfa9eb68543ff8f44f5a9258f46f01983af010afca1`, created2026-09-22T19:36:56.60630884Z. `baseline-tests.tap` SHA160ca948dcf37e1e9a193a88fe7d5590cab6ddc904d06a5707c1c5a98277fd5e; `patched-tests.tap` SHA59b37b56976861eafb13fb319f1881cd0ff4c8b3860f1fbcb17ca4bbdc60d7dc. Static result `output/compiled-csrf.json` retained.
+
+Same installed/pinned Trivy0.72.0 imagecffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f. Copied only frozenDB/metadata from baseline into a new private cache; hashes before/after remained2997907145348bf098c6210bd63951258f8adb469d6f8a30adf07a83be4e21e3 and9fcb0e24a89d5674d62a7bf7e1f7c40ede3312ead0197a8f4ec126c6d9e9cd2c. DBupdatedSeptember22 07:24UTC/nextSeptember23 07:24UTC; no refreshed advisory set during comparison. Scan: networknone, nonroot501:20, readonlyroot/capdrop/nnp,4GB/2CPU/128PIDs/2GBtmpfs; archiveinputreadonly/cache+outputonly, no Dockersocket. Same vuln/offline/skipDB+Java+checkupdate/disabletelemetry/skipversion/ignorefiledevnull/allseverities/unfixedincluded/listall/JSON/10min flags. Exit0 means completed inventory, not safe.
+
+| Severity | Before6ae3 | After76432 |
+|---|---:|---:|
+| Critical | 2 | 2 |
+| High | 128 | 123 |
+| Medium | 183 | 182 |
+| Low | 23 | 23 |
+| Total occurrences | 336 | 330 |
+
+Complete finding tuples(advisory/package/path/version/severity/fix): added0, removed6, all other findings identical. Removed engine.ioCVE-2026-59724/59725, parserCVE-2026-33151/69185, wsCVE-2026-48779/45736 (5High+1Medium). Inventory and TAP confirm6.6.10/4.2.7/8.21.1 with Socket.IO4.8.3 unchanged. Newer protocol-mismatch/empty-fragment fixes are additionally covered by tests, not assumed covered by the frozenDB. RemainingHigh split application69/globalPrisma7/npm19/pnpm28; twoCritical occurrences remain same tar6.2.1 advisory undernpm/pnpm. Neither automatically publicRCE nor accepted residual risk; reachability/remediation decisions remain. No broad native-runtime or whole-workspace security claim.
+
+Parent verified receipt hashes/counts/delta; independent security reviewer verified identity/source/version/test/report chains and approved this bounded evidence. Owned static/test/scanner containers auto-removed, fresh exactlabel/name inventories empty; no customnetworks/volumes created. Private archives/cache/reports retained, baseline untouched. Buildscript removed only owned temporary context/smoke container. Existing actual-browser12/12 applies to previous6ae3, NOT automatically to new76432; no new fullapp/DB/browser/mail/customer-data proof this turn. Production NO-GO.
+
+Next smallest batch: mailparser/nodemailer call-path/advisory/compatibility triage with synthetic mail regressions before version selection. Do not open realmailbox, mutate seen flags, sendmail, force major overrides or remove required pnpm/Prisma just to reduce counts. Keep document parsing, crawler containment, persistentbyte/newwrite ADR022 recovery, finalartifact/frontend acceptance and separately approved host/credential/freshbackup gates open.
+
 ## Same-major WebSocket patch; source proof, not deployed-artifact acceptance — 2026-09-22
 
 Local continuation from `4eab995a`. No production SSH/API/read/write, DB/Redis/provider/mailbox, push/deploy/restart/firewall or migration operation. No application boot. Aluplan skill guided preservation of existing customer/session/notification contracts and targeted tests; no architecture expansion. Graph report/GitNexus unavailable; direct dependency/source-path inspection used instead. Existing release NO-GO is unchanged.

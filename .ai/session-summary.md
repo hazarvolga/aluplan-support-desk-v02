@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-23 — Exact WebSocket-patched artifact and same-DB scan verified
+
+Built clean source2e9c7ebf3aafdbeb9b0a80e834a965466be0bf94 into Linux/amd64 image76432eedde218de943045dc46320801ca7b6816e6a62d8fcb6f2ce14b8cb0d50. Existing build tool12/12tests and static smoke passed57migrationfiles/backup-tool versions/startup syntax. Registry/APK access and build lifecycle scripts occurred; not an offline build. No app bootstrap or customer DB used; generated Prisma client stays inside image. No tracked product/dependency changes this phase.
+
+Networknone/nonroot/read-only actual-image WebSocket tests: old6ae3=7pass/8expectedfail, new76432=15pass/0fail. Same unchanged test; no skipped/cancelled. Static compiled CSRF inspector stillpasses2safe warnings, legacyabsence, root-owned unwritable/app; mainhash unchanged7c29425a. Parent and independent reviewer verified new OCIindex→manifest→config/source/receipt/report identities and unchanged frozenDBhash. Raw report createdSeptember22 19:36:56UTC (this closing record September23local).
+
+Same scanner0.72.0 and advisoryDB:336→330findingoccurrences,2C128H183M23L→2C123H182M23L. Removed6 expected engine/parser/ws findings, added0, no unrelated finding changed. Application69High; globalPrisma7High/npm19High+1Critical/pnpm28High+1Critical remain. No whole security/browser/data-preservation claim; production NO-GO. Original baseline evidence untouched, newprivateevidencevuln-ws-20260922-amWugP retained0700/reports0600. Owned smoke/test/scannercontainers absent; no customnetworks/volumes. No live, DB, provider, push or deploy action. Next maildependency compatibility/advisory triage, keeping mailbox untouched; existing other release gates remain.
+
 ## 2026-09-22 — Bounded WebSocket remediation and local checkpoints
 
 Test commit `0ded9b6d`; package/lock commit `2b402a84`. engine.io6.6.5→6.6.10, socket.io-parser4.2.5→4.2.7, ws8.18.3→8.21.1. Security review caught that the initially proposed6.6.7/8.21.0 versions still missed protocol-mismatch and empty-fragment fixes. Intermediate RED12pass/3fail became final15/15PASS with unchanged rejection/valid-input controls and tighter finite-cap assertions. Independent code reviewer confirmed installed patched branches and both blocker closures; not a full security rescan. Security follow-up hit thread limit, so no second full security signoff claimed.
