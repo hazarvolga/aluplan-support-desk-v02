@@ -1,0 +1,17 @@
+# REVIEW CANDIDATE ONLY. Not installed; not standalone Compose.
+# Apply through the verified Coolify source of truth only after maintenance approval.
+# No application deployment, DNS/firewall change, credential rotation or new named volume.
+services:
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver@sha256:af51b15dd3fc72153c0e90eb7692bb5e3a463212d87959a80fa7aa89b617d44a
+    environment:
+      SSL_TYPE: manual
+      SSL_CERT_PATH: /etc/aluplan-mail-tls/fullchain.pem
+      SSL_KEY_PATH: /etc/aluplan-mail-tls/privkey.pem
+    volumes:
+      - type: bind
+        source: /data/aluplan-mail-tls-bru9sghg
+        target: /etc/aluplan-mail-tls
+        read_only: true
+        bind:
+          create_host_path: false
