@@ -1,5 +1,11 @@
 # Current Focus
 
+## Live mail read-only findings — 2026-09-23
+
+Explicitly approved configuration-only inspection completed viaSSH; no settings/restart/deploy/testmail or customercontentread. Source-consolidation topsection records exactscope/limits. LiveIMAP143/tlsfalse confirmed; Dovecotssl=no/disable_plaintext_auth=no; maildataonpersistentvolume andselectedautoexpunge0. Persistence isnotbackup/recoveryproof. Ports publishedallinterfaces, externalreachabilitynotprobed. Livewebhookcontroller lacks expectedrouteguard/signaturefile andglobalguard inspectedisthrottler; upstreamaccess/callersunknown, no exploitprobe. Thereforewebhookunusednotproven.
+
+CurrentlocaldirectTLScandidate would beincompatiblewithoutapprovedmailtransportwork; productionNO-GO. Nextplan TLS/certificatecompatibility and identifyactualwebhookroute/callers withseparatelyscopedmetadata-only evidence; do notflipTLSblindly,disableingressorbuildanarchivewithoutneed. Secretsnotprinted/decrypted. Existing175testproofunchanged; no newtests/sourcechanges. Independentsecurityagentunavailable(threadlimit).
+
 ## Webhook outcome mitigation checkpoint — 2026-09-23
 
 Explicit completed alone returns success; held/unknown resolves to fixed503. Controller10/10, combined17suites175tests, backend294roots0diagnostics; controller-only coverage100%. Synthetic/networkdenied proof, not realHTTP/provider/DB proof. No schema/dependency/live/push/deploy changes. Dedicated reviewer unavailable; final acceptance open. Detailed evidence and source-retention decision tree in source-consolidation top section.

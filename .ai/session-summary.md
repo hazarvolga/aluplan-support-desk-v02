@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## Live mail read-only findings — 2026-09-23
+
+Explicitly approved configuration-only inspection completed viaSSH; no settings/restart/deploy/testmail or customercontentread. Source-consolidation topsection records exactscope/limits. LiveIMAP143/tlsfalse confirmed; Dovecotssl=no/disable_plaintext_auth=no; maildataonpersistentvolume andselectedautoexpunge0. Persistence isnotbackup/recoveryproof. Ports publishedallinterfaces, externalreachabilitynotprobed. Livewebhookcontroller lacks expectedrouteguard/signaturefile andglobalguard inspectedisthrottler; upstreamaccess/callersunknown, no exploitprobe. Thereforewebhookunusednotproven.
+
+CurrentlocaldirectTLScandidate would beincompatiblewithoutapprovedmailtransportwork; productionNO-GO. Nextplan TLS/certificatecompatibility and identifyactualwebhookroute/callers withseparatelyscopedmetadata-only evidence; do notflipTLSblindly,disableingressorbuildanarchivewithoutneed. Secretsnotprinted/decrypted. Existing175testproofunchanged; no newtests/sourcechanges. Independentsecurityagentunavailable(threadlimit).
+
 ## Webhook false-success mitigation — 2026-09-23
 
 Local controller now acknowledges only explicit completed; held/unknown outcomes throw fixed503 INBOUND_EMAIL_REVIEW_REQUIRED. No automatic replay, provider request, payload archive, schema, configuration or shared intake change. Successful completion retains200/success; signature guard remains required. This supersedes only the unconditional-success portion of the previous HIGH finding. Source-retention/manual-recovery remains HIGH and production NO-GO:503 cannot establish provider retry/retention or reconstruct absent bodies/attachments.
