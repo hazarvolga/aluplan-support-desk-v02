@@ -1,5 +1,37 @@
 # Local source consolidation — 2026-09-19
 
+## Mail dependency remediation and compatibility evidence — 2026-09-23
+
+Supersedes version-candidate-only statements in the preceding historical triage below. Local test commit bcc84323 and patch f73a6902; no remote publication. Scope: backend mailparser3.9.28, nodemailer10.0.10, generated pnpm9.15.4 lock subtree, type-only SMTP import adaptation and regression controls. Lifecycle scripts disabled during public-registry install; frozen-lock install passed. Existing root/package engine>=20 is broader than new transitive html-to-text10.0.1 requirement>=20.19.0; target DockerNode20.20.2 satisfies declared floor, but artifact runtime acceptance is still required. No runtime mail configuration or IMAP acknowledgment change.
+
+### Decision and compatibility
+
+- [Maintainer security policy](https://github.com/nodemailer/nodemailer/security) supports latest Nodemailer major10, not backported9.x. [Mailparser3.9.28 manifest](https://raw.githubusercontent.com/nodemailer/mailparser/v3.9.28/package.json) pins nodemailer10.0.10; both application paths now resolve that exact version. This is an upstream-coherent pair, not an arbitrary nested override.
+- Nodemailer10 has bundled declarations and dual module layout. Actual backend check caught2TS2503 in smtp.provider.ts; explicit named Transporter/TransportOptions type imports correct it. Matching existing spec uses namedTransporter. Independent compiler comparison confirms unchanged emittedJS for both files. Retained@types/nodemailer6.4.22 does not override actual bundled module declarations.
+- Expected lock-only subtree includes mailsplit/libmime/encoding/iconv/linkify/html-to-text and its selector/parser dependencies. No unrelated package upgrades; no schemas, migrations, env, secrets, mail provider settings, queue retries or sender eligibility changed. Knowledge-pool-parser dynamic mailparser import is an additional affected consumer, covered at module/fixture level.
+
+### Bounded verification
+
+| Check | Evidence and limits |
+|---|---|
+| Original actual-dependency controls | Before6PASS/2expectedFAIL; after8/8PASS. Both direct6.10.1/nested7.0.13 copy8256elements for128addresses; patched10.0.10 copies0. Input2193bytes, child hard2s/SIGKILL,256MiB V8heap (not RSS cap),64KiB output and emptyenv. Tests only advisory concat accumulator, not all complexity paths. |
+| Additional compatibility controls | Five added after install, no RED claim: HTML-only Turkish text fallback, named dynamic import, SMTP587/465 and GmailOAuth2 construction/options/close without provider communication. Total new harness13/13. |
+| Preserved behavior | Actual MIME parser/stream compilation preserves Turkish names/subject/body, groupedaddresses, threading, exact8byte synthetic attachment and CRLF/envelope controls. No customer message used. |
+| Existing mocked tests |9suites/105PASS before and after patch/type adaptation, including sender eligibility, ownership, attachment and queue behavior. Expected synthetic error logs are not live failures. |
+| Existing real wireTLS |10/10PASS with actual nodemailer/imap-simple and mocked application dependencies. LoopbackSMTPSTARTTLS/directTLS encryptedAUTH/send; wronghostname/expired/untrusted cert rejected beforeAUTH/LOGIN; absentSTARTTLS rejected; IMAPtlsfalse fails before credential read/connection. Only synthetic local listeners/credentials. |
+| Typecheck and prior patch |Actual RC backend293roots/0diagnostics after fix; existingWebSocket15/15. Actual localNode24.18.0/TS5.9.3. No whole-project coverage/build or Node20artifact claim. |
+| Review and secrets |TDD agent, independent security version/harness/lock review, code-reviewer final code/security pass; source/testGitleaks no leaks. New harness file284lines. No GitNexus tool available; direct service/provider/queue/knowledge-parser call-path review. |
+
+Tests run without inherited credentials; offline harness/mocked suites network denied. Wire tests explicitly allow localhost only; first invalid sandboxIP syntax rejected before execution, corrected localhost syntax passed. Ephemeral owned testCA/key directory was removed after each attempt; no system CA installation. Test-only disableFileAccess/disableUrlAccess flags are not newly added production controls; provider currently projects onlyfrom/to/subject/html/text.
+
+Generated Prisma client absent in RC after ignore-scripts install: Jest/typecheck used verified schema-matched sibling generated DB package/declarations only, RC dependencies and RC shared-schema source. No application bootstrap, DB read/write or Prisma generation. These are not current production data/delivery/security proofs.
+
+### Remaining gate and next bounded work
+
+The existing immutable image76432/source2e9c7ebf is PRE-mail-patch. No new build or vulnerability scan in this phase; do not infer finding reductions or transfer source results to image/production. Its historical same-DB2Critical/123High inventory remains the last measured artifact result, not this new source's scan.
+
+Next separately characterize failure acknowledgment, cleanup and duplicate prevention with mocked IMAP before a minimal fix. markSeen:true before success, swallowed processing errors, absent general parser resource bounds and historicIMAP143/tlsfalse mismatch remain open. Never infer current live config or enable plaintext from screenshot evidence. Then consolidate final Node20.20.2/amd64 build, fresh security inventory and bounded artifact acceptance; retain crawler, attachments/newwrites forward recovery and separately authorized host/credentials/freshbackups. No real mailbox, production access, push, restart, deploy or customer data mutation. Production NO-GO.
+
 ## Mail dependency reachability and compatibility triage — 2026-09-23
 
 Read-only source/package inspection and primary maintainer advisory lookup after artifactcheckpointf8b3a9f5. No mail dependency/application/configuration edit, provider switch, mailbox access, mail sending, seen-flag write, DB action or live inspection. Explorer traced paths; independent security reviewer agreed on a test-first narrow scope. Current LOCAL candidate image remains76432/source2e9c7ebf.

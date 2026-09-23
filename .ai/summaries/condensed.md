@@ -2,6 +2,9 @@
 
 ## Current release checkpoint — 2026-09-23 (supersedes historical status below)
 
+- Latest mail source patch f73a6902 / tests bcc84323: exactmailparser3.9.28+nodemailer10.0.10, minimal namedtype-only SMTP imports. Original8controls RED6pass/2fail→8pass;5newcompatibilitycontrols total13pass; mockedmail105pass, loopbackwireTLS10pass, WebSocket15pass, backend293roots/0typeerrors. Independentreview/Gitleaks pass. Actual localNode24 with disclosed matchingborrowedDBdeclarations, not Node20image or provider delivery proof.
+- Existing76432image and2C123H are PRE-mail-patch; no newimage/rescan/production action. Next separate mockedIMAPfailure/ack/idempotence characterization and minimal reliabilityfix. markSeen-before-success/resourcebounds/historicalTLSconfig remain open; productionNO-GO. The older mail-triage-only bullet below is superseded.
+
 - WebSocket patch source2e9c7ebf is now in exact Linux/amd64 image76432eed. Static smoke passed; actual-image15tests RED7pass/8fail onold6ae3→GREEN15/15 onnew. CompiledCSRF/log and nonroot/app-write boundary unchanged. No app bootstrap/currentcustomerdata.
 - Same Trivy0.72.0/frozenDB:2C128H183M23L→2C123H182M23L, exactly6removed/0added. Independent identity/report/test evidence reviewPASS; privateevidencevuln-ws-20260922-amWugP retained and ownedcontainers removed. TwoCriticals remain globalnpm/pnpm tar; not production-ready.
 - Next mailparser/nodemailer compatibility/advisory review and synthetic tests; no realmailbox. Remaining document/tooling/crawler, exactartifact browser/DB/mail, attachmentbytes/newwrite forwardrecovery and separately approved host/credential/freshbackup gates remain. Local-only; no push/deploy or live action authorized by "continue".

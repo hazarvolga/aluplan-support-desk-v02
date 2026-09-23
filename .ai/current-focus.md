@@ -1,5 +1,13 @@
 # Current Focus
 
+## Mail dependency patch verified locally; acknowledgment safety next — 2026-09-23
+
+Local test checkpoint bcc84323 and patch f73a6902: exact mailparser3.9.28 + nodemailer10.0.10 replace both vulnerable direct6.10.1 and nested7.0.13 paths. Original bounded actual-parser tests RED6pass/2fail → GREEN8/8; five additional compatibility controls make13/13. Both old paths copied8256 array elements for128addresses; patched paths copied0. Existing mail9suites/105tests and real loopbackTLS10/10 pass; previous WebSocket15/15 still pass. Backend no-emit293files/0diagnostics after a named type-only import adaptation; emitted provider/spec JS unchanged. Independent code/security review approved this bounded diff; Gitleaks found no leaks in changed-source/test scans.
+
+All checks used local Node24.18.0, actual RC dependencies and disclosed schema-matched sibling DB declarations where needed. No app bootstrap, DB/customer records, real mailbox/provider, production access, push or deploy. Exact Node20.20.2 image rebuild/scan/acceptance remains pending; existing76432 image does NOT contain this mail patch. Its2Critical/123High inventory is pre-mail-patch and must not be relabeled.
+
+Next smallest batch: characterize parse/process/attachment failures and successful acknowledgment in mocked IMAP tests, then minimal retry/idempotence/cleanup fix separately. markSeen-before-processing remains unresolved, as do parser resource limits and historical IMAP143/tlsfalse compatibility. Do not weaken TLS or infer current live settings from old screenshots. Retain remaining artifact, crawler, attachment-byte/forward-recovery and separately approved host/credential/fresh-backup gates. Production NO-GO.
+
 ## Patched exact image verified; mail characterization tests next — 2026-09-23
 
 Clean source2e9c7ebf produced Linux/amd64 image76432eed; A13 static smoke passed. Same15 WebSocket controls against actual old/new images: old7pass/8expectedfail → new15/15pass, Node20.20.2, networknone/no app bootstrap. Compiled CSRF redaction and nonroot/app permissions still pass. Same pinnedTrivy0.72.0/frozenSeptember22DB:2Critical/128High/183Medium/23Low →2Critical/123High/182Medium/23Low. Exactly6expected findings removed,0added; no unrelated finding changed. Independent security evidence review verified identity, hashes, versions and comparison. Evidencevuln-ws-20260922-amWugP; scanner/test containers absent. No live/DB/push/deploy action or product edits in this phase.
