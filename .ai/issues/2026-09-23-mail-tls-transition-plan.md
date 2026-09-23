@@ -2,6 +2,48 @@
 
 Status: TLS transition not executed. Explicitly approved backup-only writes completed as recorded below; no live service/configuration/DB mutation. Application deployment remains NO-GO.
 
+## Narrow certificate change sheet — proposal, 2026-09-23
+
+Local planning and independent security review only. This is NOT executable configuration, CA issuance approval or a production-ready renewal implementation. Avoid mixing application release, mail image upgrade, DNS migration, firewall work or unrelated vulnerability remediation into this slice.
+
+### Selected direction and rejected shortcuts
+
+Prefer the existing Traefik letsencrypt HTTP-01 resolver over a second certificate daemon or new DNS credentials. This is conditional on a nonconflicting, persistently managed dynamic route being supported by current Coolify/proxy configuration. Do not stop the shared proxy or commandeer80/443 for standalone Certbot. Do not add the mail hostname to the support frontend/WordPress router merely to obtain a certificate; avoid repeating the earlier host-routing collision.
+
+Shared acme.json remains owned by Traefik. A narrowly controlled host-side export can read it and emit only the dedicated mail certificate/key. This exporter necessarily has access to ALL private keys in the shared input: filtering output is NOT least-privilege input isolation. Owner must approve that exact private-material access. No new external upload, private key in Git/logs, Docker socket in mailserver, or whole ACME store mounted into mailserver.
+
+### Stage A — certificate preparation, separate approval
+
+1. Complete remaining metadata preflight: exact HTTPS entrypoint name, file-provider enabled/watch and managed directory, file ownership, Coolify persistence, existing exact-host router conflicts, external HTTP-01 reachability and A/AAAA/CAA compatibility. Current VPS-side A lookup alone does not prove external CA reachability. Do not guess these values into an executable patch.
+2. Propose one uniquely named TLS router with exact Host(mail.allplan.net.tr), explicit letsencrypt resolver and only that domain. Its HTTP service must be a verified inert response, never the support backend, mail ports, proxy dashboard or admin UI. Review rendered config/diff locally before placement. If a proxy restart/static change is required, stop and rescope; this plan does not authorize one.
+3. On explicit issuance/config approval, request a dedicated public certificate. CT publication of the hostname is expected. Issuance modifies shared ACME state but must not rewrite/delete other entries. Failure leaves mail configuration and volumes untouched. Removing the proposed route is not an instruction to revoke certificates or roll back the shared ACME store.
+4. First export only after separate explicit key-access approval. Fixed input and exact hostname selector; root-owned non-user-writable code/config, no user-controlled shell arguments. Reject ambiguous/multiple matches, unrelated SANs, invalid chain/hostname/validity/key pair, malformed or partial input. Do not overwrite the input or log private values. Stage in a new private versioned directory; key0600, parent0700. No mailserver mount or automatic publisher enabled yet.
+5. Record only public fingerprint/expiry, protected paths and validation outcome. Do not infer mail endpoint readiness from443 certificate success. No mail credentials/settings change or authenticated mail test in Stage A.
+
+### Local renewal acceptance before automation
+
+Use only synthetic certificates/keys and disposable isolated DMS v15.1.0; no real ACME store or customer backup. Prove first pair, second valid pair, mismatched key, wrong hostname, expired/untrusted certificate, truncated input and unchanged input behavior. Assert rejected replacements keep the previous valid pair and report failure; successful replacement must actually be presented by both SMTP STARTTLS and IMAP TLS.
+
+Directory mounting avoids single-file inode staleness, but an atomic symlink rename alone does NOT prove two separate certificate/key opens see the same generation. Rehearse coordinated publisher/watcher behavior and ownership/mount visibility; choose the smallest proven publication/reload method before enabling automation. Do not invent zero-downtime guarantees. No automatic publication until this proof passes.
+
+Renewal ownership must be assigned: Traefik handles CA renewal; a reviewed host-side scheduled task handles the one-domain handoff; the existing DMS mechanism reloads the services. Each is a distinct success gate. Proposed checks: daily certificate expiry/fingerprint observation, alert below21days remaining and on failed handoff, urgent escalation below7days; recipient/channel/operator must be explicitly chosen, not assumed. No new monitoring platform needed if an existing alert channel suffices.
+
+### Stage B — approved mail maintenance only
+
+Freeze exact same-image Compose diff: dedicated read-only TLS DIRECTORY mount, SSL_TYPE=manual and explicit chain/key paths; preserve all mail/state/config volumes and unrelated service settings. Pin verified image provenance; never pull latest opportunistically.
+
+Before execution, verify the deployed client/process topology, cache refresh and actual drain/pause strategy. Existing finite SMTP retries prohibit assuming a mail outage queues forever. Brief mail interruption must be explicitly accepted; don't disable host/password as a makeshift pause. Preserve newly accepted messages/jobs. App DB and settings recovery evidence remains required separately; the mail archive is not a ticket DB backup.
+
+Coordinate IMAP993/TLStrue and SMTP587/STARTTLS, certificate validation and eventual plaintext-auth rejection across ALL known clients. No password rotation until encrypted paths work and the local secret-handling fix is accepted in its own release scope. Do not combine unapproved application deployment with mail maintenance. Mail transport can be enabled while legacy clients still exist only under an explicitly bounded compatibility-risk decision, never by silently weakening the target.
+
+Acceptance: correct hostname/chain/expiry on mail endpoints; no plaintext credential fallback; approved synthetic send/retrieve/reply/attachment roundtrip; preserved originals/queue; named operator watches failures. Abort on wrong cert, unidentified client, unproven drain or data/queue discrepancy. Keep customer data; no mailbox/DB restore-over-live or automatic rollback to plaintext.
+
+### Review and next action
+
+Independent security reviewer found direction reasonable but explicitly NOT executable; confirmed remaining route ownership, broad exporter input privilege, certificate/key race, mount/readability, failure alert and client acceptance gates. The next local implementation is a small synthetic handoff/renewal rehearsal, not live issuance and not a universal certificate-management platform. Finalize live change scope only after remaining metadata and this proof; obtain distinct Stage A and Stage B approvals.
+
+References checked2026-09-23: [Traefik v3.6 ACME](https://doc.traefik.io/traefik/v3.6/reference/install-configuration/tls/certificate-resolvers/acme/) for router-driven domains, HTTP-01 port80 and automatic renewal; [DMS TLS guidance](https://docker-mailserver.github.io/docker-mailserver/edge/config/security/ssl/) for manual certificates and directory mount considerations. DMS edge docs are design guidance only; previously inspected exact v15.1.0 image source remains version-specific evidence.
+
 ## Approved public certificate/renewal metadata check — 2026-09-23
 
 Scoped read-only SSH on verified vmi3049865, observation2026-09-23T16:02:07Z onward. No private key or acme.json content read, mailbox authentication, customer content, database access, issuance, DNS/config writes, restart, push or deploy.

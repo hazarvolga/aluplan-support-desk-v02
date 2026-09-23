@@ -1,5 +1,9 @@
 # Current Focus
 
+## Certificate issuance/renewal scope frozen — 2026-09-23
+
+Existing TLS plan now has reviewed StageA certificate-only preparation and separately approved StageB mail maintenance. No executable/live change. Prefer existing HTTP01; never add mail host to frontend/WordPress or mount full ACME store into mailserver. Host exporter necessarily reads shared private material; exact permission required. Local synthetic renewal publication/key-pair/watcher proof next, before auto-publisher or real issuance. Dynamic route ownership/topology and operator alert/drain remain explicit unknowns; no infrastructure expansion.
+
 ## Live certificate blocker confirmed — 2026-09-23
 
 Approved public metadata-only inspection: mail config uses localhost snakeoil cert; mail.allplan.net.tr resolves to VPS but443 presents TRAEFIK DEFAULT CERT and fails normal trust/name verification. Existing proxy HTTP-01 resolver/port80 found; no private ACME/key contents read. Not proof no alternate unserved cert exists. Container identities unchanged; no issuance/config/DB/restart/deploy. Next narrow reviewed issuance/renewal handoff proposal using existing resolver; explicit approval before any CA/key/route change. Details in TLS plan.

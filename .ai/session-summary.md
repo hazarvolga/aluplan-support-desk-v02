@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Reviewed narrow certificate change sheet — 2026-09-23
+
+Prepared staged issuance/one-domain export and later mail maintenance proposal in existing TLS plan. Primary Traefikv3.6/DMS guidance checked; independent security review completed. Shared ACME read privilege, pair-publication race, Coolify route ownership and drain/alert gates remain explicit. No live reads/writes, CA issuance, key access, product code or new test run this turn. Next synthetic local renewal rehearsal; separate approvals before each production stage.
+
 ## Public certificate metadata inspection — 2026-09-23
 
 Scoped live read-only SSH verified localhost mail cert, default Traefik HTTPS cert for mail hostname, current DNS and existing proxy HTTP-01 resolver. Only public cert metadata and selected runtime arguments/file stats; ACME contents/private keys untouched. Normal443 validation failed; separate diagnostic leaf inspection sent no HTTP/auth. No live changes; mail/proxy restart counts unchanged. TLS plan records evidence and proposed narrow issuance/renewal scope; production NO-GO remains.
