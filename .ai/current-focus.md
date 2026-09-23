@@ -1,5 +1,9 @@
 # Current Focus
 
+## Mail password secrecy fixed locally — 2026-09-23
+
+Exact IMAP/SMTP passwords encrypted on explicit save despite caller false; default responses/cache masked. Legacy mail reads/masked saves preserve DB and internal plaintext compatibility; no read-time migration added.35settings/64combined tests pass, corrected schema-matched typecheck0, diff secret scan clean, independent combined code/security review clear. Tests7bd17b46/product1157cc28. Whole-service line coverage74.26%, not80%/full readiness. No frontend/live/schema/env/push/deploy change. Next scoped cert/renewal/deployed cache evidence; limits and empty-password follow-up in TLS plan.
+
 ## TLS refresh audit exposes IMAP secret-classification gap — 2026-09-23
 
 Local pinned DMS source supports manual certificate content detection and Postfix/Dovecot reload; not actual renewal proof. Independent local application audit confirms process-local settings cache and no independent mail pause control; finite SMTP retries preclude assuming harmless maintenance. Frontend secretKeys and backend fallback omit email.imap.pass, allowing newly entered password to be nonsecret. Current live storage NOT inspected. Next bounded regression-first known-mail-secret classification correction before rotation, then scoped cert/renewal/topology evidence. No live access or code changes this turn; details in TLS plan.

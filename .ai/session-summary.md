@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Narrow mail-secret fix — 2026-09-23
+
+Regression-first8RED then final35settings/64combined GREEN. SettingsService enforces exact mail-password classification despite false and masks legacy values without read-time DB conversion. Existing internal reads and masked saves preserved. Independent combined review approved; additional legacy-mask cases added. Older typecheck harness failed missing generated declarations; identical-schema sibling mapping rerun0diagnostics including spec. Whole-file coverage below80% explicitly recorded, diff Gitleaks clean. Tests7bd17b46/product1157cc28; no live/frontend/schema/env/publication actions. Next return to TLS metadata gate, not new architecture.
+
 ## Local mail renewal/client audit — 2026-09-23
 
 Inspected exact pinned public DMS image scripts without daemon/network/mounts; existing manual-cert change watcher/reload confirmed at source level only. Independent explorer audited local app cache/pause paths and found concrete missing IMAP password secret classification in frontend/backend. No live credential/plaintext inference. Next minimal regression-first correction recorded in TLS plan; new live cert metadata scope requested, not performed. No code/tests/live mutation; temporary inspection containers removed.

@@ -2,6 +2,21 @@
 
 Status: TLS transition not executed. Explicitly approved backup-only writes completed as recorded below; no live service/configuration/DB mutation. Application deployment remains NO-GO.
 
+## Mail password classification fixed locally — 2026-09-23
+
+Bounded server-side correction in SettingsService only. Exact email.imap.pass/email.smtp.pass now override caller isSecret=false for encryption on explicit saves and masking on default responses/caches. Stored isSecret still determines decryption, preserving historical unflagged plaintext internally. Those exact mail keys are deliberately excluded from preexisting read-time automatic secret migration: reads and masked saves do not rewrite old credentials. Existing other secret-key migration behavior remains unchanged. Frontend's IMAP classification hint remains unchanged; server enforcement is authoritative, tested against its false flag.
+
+- Regression-first8failures/21passes before product patch. Final settings35/35, combined settings/mail5suites64/64 passed in network-denied synthetic/macOS Node24 harness. Real DB, actual cryptographic storage and live mail were not exercised (Prisma/Crypto mocked).
+- Independent combined code/security review found no blocking issue; recommended legacy-unflagged masked-save tests added and passed. Dedicated additional code-reviewer launch failed agent-thread limit; no separate second review claimed.
+- Initial older typecheck harness failed977diagnostics because RC generated database declarations are absent. Explicit identical-schema sibling declaration mapping resolved that harness problem: backend plus explicitly included settings spec0diagnostics, rerun after final test edits. No client generation or schema edits; not a clean installed production-image build.
+- SettingsService whole-file coverage75.93%statements/67.52%branches/96.29%functions/74.26%lines. This does not satisfy the overall80% target or certify whole-project coverage; unrelated AI validation branches were not expanded merely to inflate this small security patch. Earlier opt-in wire suite was skipped in broad matching; final64 explicitly selected tests have no skips, and no new wire acceptance is claimed.
+- Changed diff Gitleaks scan found no leaks. GitNexus CLI/tool unavailable; source-level settings/controller/mail callsite impact inspected. No UI/runtime change; no frontend browser acceptance claimed.
+- Test commit7bd17b46; product1157cc28. No new env vars, schema/migration, customer/production reads or writes, credential rotation, push or deploy. Source-only revert needs no data rollback but reintroduces missing mail-secret enforcement.
+
+Limits retained: authorized ADMIN/SUPERUSER decrypt=true API intentionally still returns plaintext; this patch does not claim secrets can never be retrieved via API. Historical plaintext values, if any, remain unchanged until an explicitly authorized save/rotation. Existing CryptoService empty-string roundtrip behavior remains a follow-up: UI filters empty values, but direct API empty-password saves need a separate regression-first decision. No claim that current live passwords are plaintext or this patch is deployed.
+
+Next return to scoped public certificate/renewal metadata and exact deployed process/cache evidence, then reviewed TLS maintenance. Avoid expanding this fix into a new secret manager or cross-process cache redesign. Production NO-GO remains.
+
 ## Local renewal and client-refresh audit — 2026-09-23
 
 Read-only inspection only this turn. Public pinned v15.1.0 amd64 image inspected with overridden shell entrypoint, network none, read-only root, dropped capabilities/nnp and bounded resources; no mail daemon, live volume or secret mounted. Temporary inspection containers auto-removed and absence verified. Existing image digest above remains unchanged; no new image pull.
