@@ -2,6 +2,20 @@
 
 Status: TLS transition not executed. Explicitly approved backup-only writes completed as recorded below; no live service/configuration/DB mutation. Application deployment remains NO-GO.
 
+## Approved public certificate/renewal metadata check — 2026-09-23
+
+Scoped read-only SSH on verified vmi3049865, observation2026-09-23T16:02:07Z onward. No private key or acme.json content read, mailbox authentication, customer content, database access, issuance, DNS/config writes, restart, push or deploy.
+
+- Mailserver Postfix smtpd_tls_cert_file is empty. Dovecot ssl_cert points to /etc/ssl/certs/ssl-cert-snakeoil.pem; public x509 metadata confirms self-issued CN/SANlocalhost, valid2025-08-12 through2035-08-10. This cannot validate mail.allplan.net.tr.
+- Current DNS resolution from VPS returned167.86.84.107 for mail.allplan.net.tr. Verified TLS handshake to hostname:443 failed SSLCertVerificationError. Separate diagnostic public-cert-only handshake (no HTTP request/auth/credential; validation bypass limited to inspection) identified self-issued TRAEFIK DEFAULT CERT with a traefik.default SAN, not mail.allplan.net.tr. This443 observation does NOT prove SMTP/IMAP endpoint behavior or global absence of an unserved matching certificate.
+- coolify-proxy runtime arguments configure letsencrypt HTTP-01=true, entrypoint=http, http.address=:80 and ACME storage=/traefik/acme.json. Mount source/data/coolify/proxy; host acme.json exists0600/103303bytes. Contents intentionally not opened because they include private material. No DNS/TLS challenge arguments observed. Existing issuance mechanism is identified, not successful challenge/renewal for the mail hostname.
+- Conventional /etc/letsencrypt/live/mail.allplan.net.tr/fullchain.pem and renewal/mail.allplan.net.tr.conf absent. Narrow timer-name search returned no certbot/acme/letsencrypt result. This is not exhaustive absence of alternate certificates/jobs and is not evidence against Traefik's internal renewal.
+- Final mail/proxy running/start times and restart counts unchanged (both0 restarts). No mail protocol probes or tests executed.
+
+Decision: do not enable TLS checkboxes against these certificates. Smallest candidate is reuse the existing HTTP-01 resolver for a dedicated mail-host certificate, without proxy shutdown, port takeover or mailserver version upgrade. This is a proposal only: prove exact routing/config diff, challenge reachability and bounded certificate-to-mailserver renewal handoff before issuance. Mailserver must receive only its own chain/key in a protected read-only directory, never the full multi-domain ACME store. Certificate issuance and any extraction/private-key access, route/config change or renewal hook need explicit scoped approval; public CA issuance also publishes the hostname in certificate-transparency records.
+
+Next prepare/review one narrow issuance-and-renewal change sheet with the current proxy topology and separate mail TLS maintenance boundary. No claim that metadata alone closes certificate readiness, operator pause, deployed cache behavior, webhook custody or application release gates.
+
 ## Mail password classification fixed locally — 2026-09-23
 
 Bounded server-side correction in SettingsService only. Exact email.imap.pass/email.smtp.pass now override caller isSecret=false for encryption on explicit saves and masking on default responses/caches. Stored isSecret still determines decryption, preserving historical unflagged plaintext internally. Those exact mail keys are deliberately excluded from preexisting read-time automatic secret migration: reads and masked saves do not rewrite old credentials. Existing other secret-key migration behavior remains unchanged. Frontend's IMAP classification hint remains unchanged; server enforcement is authoritative, tested against its false flag.

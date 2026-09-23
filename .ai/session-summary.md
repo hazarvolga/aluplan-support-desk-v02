@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Public certificate metadata inspection — 2026-09-23
+
+Scoped live read-only SSH verified localhost mail cert, default Traefik HTTPS cert for mail hostname, current DNS and existing proxy HTTP-01 resolver. Only public cert metadata and selected runtime arguments/file stats; ACME contents/private keys untouched. Normal443 validation failed; separate diagnostic leaf inspection sent no HTTP/auth. No live changes; mail/proxy restart counts unchanged. TLS plan records evidence and proposed narrow issuance/renewal scope; production NO-GO remains.
+
 ## Narrow mail-secret fix — 2026-09-23
 
 Regression-first8RED then final35settings/64combined GREEN. SettingsService enforces exact mail-password classification despite false and masks legacy values without read-time DB conversion. Existing internal reads and masked saves preserved. Independent combined review approved; additional legacy-mask cases added. Older typecheck harness failed missing generated declarations; identical-schema sibling mapping rerun0diagnostics including spec. Whole-file coverage below80% explicitly recorded, diff Gitleaks clean. Tests7bd17b46/product1157cc28; no live/frontend/schema/env/publication actions. Next return to TLS metadata gate, not new architecture.

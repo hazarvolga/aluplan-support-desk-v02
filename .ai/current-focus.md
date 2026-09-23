@@ -1,5 +1,9 @@
 # Current Focus
 
+## Live certificate blocker confirmed — 2026-09-23
+
+Approved public metadata-only inspection: mail config uses localhost snakeoil cert; mail.allplan.net.tr resolves to VPS but443 presents TRAEFIK DEFAULT CERT and fails normal trust/name verification. Existing proxy HTTP-01 resolver/port80 found; no private ACME/key contents read. Not proof no alternate unserved cert exists. Container identities unchanged; no issuance/config/DB/restart/deploy. Next narrow reviewed issuance/renewal handoff proposal using existing resolver; explicit approval before any CA/key/route change. Details in TLS plan.
+
 ## Mail password secrecy fixed locally — 2026-09-23
 
 Exact IMAP/SMTP passwords encrypted on explicit save despite caller false; default responses/cache masked. Legacy mail reads/masked saves preserve DB and internal plaintext compatibility; no read-time migration added.35settings/64combined tests pass, corrected schema-matched typecheck0, diff secret scan clean, independent combined code/security review clear. Tests7bd17b46/product1157cc28. Whole-service line coverage74.26%, not80%/full readiness. No frontend/live/schema/env/push/deploy change. Next scoped cert/renewal/deployed cache evidence; limits and empty-password follow-up in TLS plan.
