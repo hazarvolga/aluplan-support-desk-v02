@@ -208,6 +208,101 @@ describe('SettingsService', () => {
         });
     });
 
+    describe.each(['email.imap.pass', 'email.smtp.pass'])('mail credential %s', (key) => {
+        const plaintext = 'synthetic-mail-password';
+        const stored = (isSecret: boolean) => ({
+            id: 'mail-setting', key, isSecret,
+            value: isSecret ? `encrypted-${plaintext}` : plaintext,
+        });
+
+        function mockWrites() {
+            prisma.setting.findUnique.mockResolvedValue(null);
+            prisma.setting.findMany.mockResolvedValue([]);
+            prisma.setting.upsert.mockImplementation(({ create }: any) => Promise.resolve({ id: 'mail-setting', ...create }));
+            prisma.$transaction.mockImplementation((operations: Array<Promise<unknown>>) => Promise.all(operations));
+        }
+
+        it.each(['single', 'bulk'])('forces encryption despite isSecret false in %s save and masks response/cache reads', async (mode) => {
+            mockWrites();
+            const input = { key, value: plaintext, isSecret: false };
+            const result = mode === 'single'
+                ? await service.upsert(input)
+                : (await service.bulkUpsert({ settings: [input] }))[0];
+
+            expect(crypto.encrypt).toHaveBeenCalledWith(plaintext);
+            expect(prisma.setting.upsert).toHaveBeenCalledWith(expect.objectContaining({
+                create: expect.objectContaining({ key, value: `encrypted-${plaintext}`, isSecret: true }),
+                update: expect.objectContaining({ value: `encrypted-${plaintext}`, isSecret: true }),
+            }));
+            expect(result).toEqual(expect.objectContaining({ key, value: '********', isSecret: true }));
+            expect(await service.get(key)).toEqual(expect.objectContaining({ value: '********', isSecret: true }));
+            expect(await service.getValue(key)).toBe(plaintext);
+        });
+
+        it.each([
+            ['single', true], ['bulk', true], ['single', false], ['bulk', false],
+        ] as const)('preserves password on masked %s save with stored secret flag %s', async (mode, isSecret) => {
+            prisma.setting.findUnique.mockImplementation(() => Promise.resolve(stored(isSecret)));
+            prisma.setting.findMany.mockResolvedValue([stored(isSecret)]);
+            prisma.$transaction.mockImplementation((operations: Array<Promise<unknown>>) => Promise.all(operations));
+            const input = { key, value: '********', isSecret: false };
+            const result = mode === 'single'
+                ? await service.upsert(input)
+                : (await service.bulkUpsert({ settings: [input] }))[0];
+
+            expect(result.value).toBe('********');
+            expect(await service.getValue(key)).toBe(plaintext);
+            expect(prisma.setting.upsert).not.toHaveBeenCalled();
+            expect(prisma.setting.update).not.toHaveBeenCalled();
+            expect(crypto.encrypt).not.toHaveBeenCalled();
+        });
+
+        it.each(['get', 'getAll'])('masks historical unflagged password through %s without read-time migration', async (mode) => {
+            prisma.setting.findUnique.mockImplementation(() => Promise.resolve(stored(false)));
+            prisma.setting.findMany.mockImplementation(() => Promise.resolve([stored(false)]));
+            const result = mode === 'get' ? await service.get(key) : (await service.getAll())[0];
+
+            expect(result).toEqual(expect.objectContaining({ key, value: '********', isSecret: true }));
+            expect(await service.get(key)).toEqual(expect.objectContaining({ value: '********', isSecret: true }));
+            expect(await service.getValue(key)).toBe(plaintext);
+            expect(prisma.setting.update).not.toHaveBeenCalled();
+            expect(prisma.setting.upsert).not.toHaveBeenCalled();
+            expect(crypto.encrypt).not.toHaveBeenCalled();
+            expect(crypto.decrypt).not.toHaveBeenCalled();
+        });
+
+        it.each(['get', 'getAll'])('keeps existing encrypted password usable through %s without writes', async (mode) => {
+            prisma.setting.findUnique.mockImplementation(() => Promise.resolve(stored(true)));
+            prisma.setting.findMany.mockImplementation(() => Promise.resolve([stored(true)]));
+            const result = mode === 'get' ? await service.get(key) : (await service.getAll())[0];
+
+            expect(result.value).toBe('********');
+            expect(await service.getValue(key)).toBe(plaintext);
+            expect(crypto.decrypt).toHaveBeenCalledWith(`encrypted-${plaintext}`);
+            expect(crypto.encrypt).not.toHaveBeenCalled();
+            expect(prisma.setting.update).not.toHaveBeenCalled();
+            expect(prisma.setting.upsert).not.toHaveBeenCalled();
+        });
+
+        it('retains historical plaintext for an internal cold read without automatic migration', async () => {
+            prisma.setting.findUnique.mockImplementation(() => Promise.resolve(stored(false)));
+            expect(await service.getValue(key)).toBe(plaintext);
+            expect(await service.get(key)).toEqual(expect.objectContaining({ value: '********', isSecret: true }));
+            expect(prisma.setting.update).not.toHaveBeenCalled();
+            expect(prisma.setting.upsert).not.toHaveBeenCalled();
+            expect(crypto.encrypt).not.toHaveBeenCalled();
+            expect(crypto.decrypt).not.toHaveBeenCalled();
+        });
+    });
+
+    it.each(['email.imap.host', 'email.smtp.host'])('keeps %s non-secret', async (key) => {
+        prisma.setting.upsert.mockImplementation(({ create }: any) => Promise.resolve({ id: 'host-setting', ...create }));
+        const result = await service.upsert({ key, value: 'mail.example.test', isSecret: false });
+        expect(result).toEqual(expect.objectContaining({ value: 'mail.example.test', isSecret: false }));
+        expect(await service.getValue(key)).toBe('mail.example.test');
+        expect(crypto.encrypt).not.toHaveBeenCalled();
+    });
+
     describe('getValue', () => {
         it('should return plaintext value for a setting', async () => {
             const dbSetting = { id: 's1', key: 'val.key', value: 'plain', isSecret: false };
