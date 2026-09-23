@@ -34,8 +34,9 @@ describe('StorageService upload durability', () => {
         send.mockResolvedValue({});
         (S3Client as jest.Mock).mockImplementation(() => ({ send }));
         (fs.ensureDir as jest.Mock).mockResolvedValue(undefined);
-        (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
+        (fs.writeFile as unknown as jest.Mock).mockResolvedValue(undefined);
     });
+    afterEach(() => jest.restoreAllMocks());
     async function expectUnavailable(operation: Promise<string>) {
         const error = await operation.catch((caught) => caught);
         expect(error).toBeInstanceOf(ServiceUnavailableException);
@@ -45,10 +46,22 @@ describe('StorageService upload durability', () => {
     }
     it('returns the existing key contract only after PutObject succeeds', async () => {
         const key = await service('S3').uploadFile(fixture, 'tickets/message-fixture');
-        expect(key).toMatch(/^tickets\/message-fixture\/\d+-fixture\.txt$/);
+        expect(key).toMatch(/^tickets\/message-fixture\/\d+-[0-9a-f-]{36}-fixture\.txt$/);
         expect(send).toHaveBeenCalledWith(expect.any(PutObjectCommand));
         expect(send.mock.calls[0][0].input).toMatchObject({ Bucket: 'fixture-bucket', Key: key, Body: fixture.buffer });
         expect(fs.writeFile).not.toHaveBeenCalled();
+    });
+    it('uses distinct S3 keys for same-name uploads at the same timestamp', async () => {
+        jest.spyOn(Date, 'now').mockReturnValue(123456789);
+        const storage = service('S3');
+        const keys = await Promise.all([
+            storage.uploadFile(fixture, 'tickets/message-fixture'),
+            storage.uploadFile({ ...fixture, buffer: Buffer.from('different bytes') }, 'tickets/message-fixture'),
+        ]);
+        expect(new Set(keys).size).toBe(2);
+        expect(send.mock.calls.map(([command]) => command.input.Key).sort()).toEqual([...keys].sort());
+        expect(send.mock.calls[0][0].input.Body).toEqual(fixture.buffer);
+        expect(send.mock.calls[1][0].input.Body).toEqual(Buffer.from('different bytes'));
     });
     it('does not acknowledge success while PutObject is still pending', async () => {
         let release!: () => void;
