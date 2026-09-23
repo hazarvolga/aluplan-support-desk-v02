@@ -1,5 +1,9 @@
 # Current Focus
 
+## Current Compose merge verified; maintenance sequence drafted — 2026-09-23
+
+Current on-host generated Compose plus stdin candidate config-only render exactly matches intended imagepin/3TLSenv/read-onlybind changes. Existing3named volumes/localtime identities and25/587/993/143 bindings match runtime; no mutation/restart. Independent review accepts proposal only: editable Coolify source persistence, exact all-writer drain/safe backend re-entry and renewal handoff remain. Server TLS alone does not fix live client certificate validation. TLS plan now records coordinated6step sequence, interruption honesty and ADR022 forward-recovery limits. Next inspect saved editable service definition, no activation.
+
 ## Nonsecret live settings and empty pending queue confirmed — 2026-09-23
 
 Approved narrow READ ONLY DB query confirms smtp/mail.allplan.net.tr:587 secure=false and IMAP samehost143 tls=false. At16:44:45Z email queue wait/active/paused/delayed/failed/prioritized/waiting-children all0, retained completed964, not paused. Counts only, no messages/passwords/job IDs; no writes/restarts/deploy. Snapshot is not a maintenance fence or delivery proof. Next current Coolify comparison and exact coordinated maintenance proposal; TLS activation remains separately gated. Details in TLS plan.

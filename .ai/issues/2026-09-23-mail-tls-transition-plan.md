@@ -2,6 +2,25 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Current generated Compose compatibility proved — 2026-09-23
+
+At2026-09-23T16:46:51Z, scoped SSH inspection resolved the running mail container's Compose labels to /data/coolify/services/q4wgowwo0wwsg0sksg8gkow4/docker-compose.yml. docker compose config rendered this current disk configuration and its .env, then rendered the exact candidate supplied through stdin. Entire normalized JSON matched after only the pinned image, three TLS variables and dedicated read-only bind additions. Private values/output remained on host in process memory; nothing was installed or printed in full.
+
+Current three named mounts (/var/mail, /var/mail-state, /tmp/docker-mailserver) and /etc/localtime bind identities match the rendered configuration. Published25/587/993/143 bindings match. Mail image remains sha256:4f5093c251b61d5691f5ccfd3f90fcbf505585bfd045546430d282e5417658c8, started2026-09-02T19:03:59.002772687Z/restarts0. No up/restart/pull or source file write. This closes the current generated-disk merge gate, NOT the Coolify editor/database source-of-truth persistence gate; do not hand-edit generated Compose and assume redeploy preserves it.
+
+### Coordinated maintenance proposal — not executable authorization
+
+1. Before scheduling activation: confirm Coolify's editable source matches this generated service, identify all mail clients/writers, finish the exact safe application refresh/startup path and certificate renewal handoff. No blind restart of current backend deploy.sh. Assign operator, maintenance window, stop/escalation point and explicit extended-maintenance acceptance under ADR-022.
+2. At the approved window: take and verify fresh scoped recovery copies; retain newly accepted ticket writes and attachment/mail bytes. Recheck queue states. Use a separately reviewed writer-stop/drain sequence, not empty-queue observation or blank credentials as a fence. If independent mail quiescence cannot be achieved with existing mechanisms, disclose the required application interruption; do not promise uninterrupted web service.
+3. Through the verified Coolify source, use the pinned existing mail image and exact persistent volumes with the reviewed TLS additions; recreate the container, do not upgrade or reset volumes. Verify effective configuration and trusted SMTP587 STARTTLS/IMAP993 certificates before any credential-bearing test.
+4. Coordinate IMAP host/993/tls=true and SMTP host/587/secure=false (STARTTLS, not implicit TLS) with the accepted application artifact and all process caches. Settings changes and cache refresh/startup are separately approved actions; no direct blind DB patch. Do not deploy the entire local candidate merely to activate server TLS before its release gates pass.
+5. Run an explicitly approved controlled sender/recipient test covering one intake, reply and attachment, then verify queue catch-up and duplicate avoidance. Retained failed jobs need investigation; never mass replay as a default. Reopen writers only after agreed acceptance checks.
+6. On failure: preserve sources, queues and newly written data; keep affected intake held under the approved recovery procedure and communicate service impact. No automatic plaintext downgrade, historical unsafe image, old DB/mail restore-over-live, or deletion. Use forward recovery per ADR-022; do not call container re-entry version rollback.
+
+Independent review accepted this as a gated proposal only. Server TLS activation alone does not repair live clients' rejectUnauthorized:false; full verified-client acceptance requires the reviewed hardened application artifact and its separate release gates. Renewal must have a named owner, exact protected publication procedure and expiry/failure escalation before maintenance closure. Exact process/command/drain/re-entry steps remain unresolved, not implied by this numbered sequence.
+
+Next smallest action: inspect the Coolify editable service definition read-only and resolve the exact existing stop/drain/cache-refresh path. No new orchestration platform, broad retry refactor or production activation is authorized by this proposal.
+
 ## Approved nonsecret settings and queue counts — 2026-09-23
 
 Owner explicitly approved the narrow DB/Redis metadata scope. At2026-09-23T16:44:45Z, a parameterized SELECT inside BEGIN READ ONLY queried exactly seven allowlisted settings. Secret-classified values were suppressed in SQL; no password, username, customer row or mailbox content selected. Transaction ended with ROLLBACK. Direct pg/ioredis clients only; no application bootstrap, worker or BullMQ Queue construction.
