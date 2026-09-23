@@ -1,5 +1,9 @@
 # Current Focus
 
+## Narrow retained-MIME repair rehearsal — 2026-09-23
+
+Test-only single-writer known-message/missing-attachment repair passed with realPG/LOCAL bytes: retained MIME hash+fingerprint checked, tamper rejected, second serial repair no duplicate, claim evidence untouched. Suite10/10, changedfileTS0, independent review approved; test29182054. Not production tool/operator closure/concurrency/source-provider proof. Partial attachment currently returns processed=true, so source custody must cover Seen/acknowledged mail too. Next bounded source-custody/operator audit/fencing acceptance; production access separately approved. No live/product changes.
+
 ## Recipient ordering fix verified — 2026-09-23
 
 Moved unchanged addMessage recipient resolution before transaction, after authorization/content validation. Events stay aftercommit. Order regression RED then203focused/9realPG GREEN; changedfileTS0; independent review approved. Query rejection now leaves no message/status change, still holds/no replay. Tests d3756d51/product e1ff2f0b. No schema/env/live/publication changes; synthetic fixture cleaned. Next retained-source/manual-reconciliation acceptance from TLS plan, not more speculative architecture. Production NO-GO unchanged.

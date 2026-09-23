@@ -2,6 +2,21 @@
 
 Status: PLAN ONLY. No production mutation approved or executed. Application deployment remains NO-GO.
 
+## Retained-source attachment rehearsal — 2026-09-23
+
+Test-only, explicitly single-writer proof for ONE known message with ONE missing attachment. New synthetic MIME is retained in a no-clobber mode0600 temporary file BEFORE intake, then reparsed with actual mailparser. Storage failure is injected once; ticket/message/partial-attachment marker persist through real services/PostgreSQL. Test-local manual procedure verifies whole-source SHA256, Message-ID, sender, canonical input fingerprint, marker message ID, current ticket ownership and unchanged claim before filling only the missing attachment. LOCAL storage bytes are compared and hashed. Second serial invocation does not add a row/object; tampered source is rejected before attachment writes.
+
+Final domain suite10/10 passed; changed-fileTS0; independent test review approved. Test commit29182054. No product/schema/env change, provider/live/customer access, push or deploy. Owned synthetic tmpfs database/network removed, relay terminated, and temporary source/attachment files cleaned. Those discarded files contain no customer data.
+
+Important limits:
+- This is not a production recovery command or completed operator workflow. The helper exists only inside the opt-in test. No claim state or historical error is cleared; repaired item deliberately remains reviewable.
+- Existing partial-attachment policy returns success and processed=true with INBOUND_ATTACHMENT_FAILURE metadata. Therefore neither UNSEEN-only retention nor HTTP non-2xx retry can be assumed to protect this case. Retained source must also cover partially completed/acknowledged mail.
+- Recovery source was created/retained by the test, NOT retrieved from a live mailbox/webhook provider. Production source retrieval, retention policy and protected custody remain unverified.
+- Only serial repeated repair is proven; no concurrent-operator fencing, storage/DB crash-window recovery, generalized multi-attachment identity mapping, unknown-message identification, durable operator audit or complete negative-identity test matrix is claimed.
+- Real PG uses the same disposable schema-snapshot/Prisma setup recorded below, not a production migration, backup restore or exact Node20/Linux release-artifact proof.
+
+Next gate is a bounded operator/source-custody design and proof, not more automatic replay: determine how original MIME including Seen/partially completed mail is retained/retrieved; provide immutable source identity and an audited repair decision; preserve operator exclusivity and current-state checks before writes. Any production metadata/mail access needs separately scoped permission. Until that path is demonstrated, do not call manual recovery ready or approve deployment. Avoid promoting the test-local check-then-insert procedure into a public API or executable production script.
+
 ## Recipient lookup moved before writes — 2026-09-23
 
 Implemented the bounded ordering correction in TicketsService.addMessage. Existing recipient routing block is unchanged except its explanatory comment and placement: after authorization/validation/sanitization, before the reply transaction. Events remain after commit. No schema/env/dependency/API or retry change.

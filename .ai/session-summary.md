@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Synthetic retained-source repair rehearsal — 2026-09-23
+
+Completed narrow known-message missing-attachment test: retained synthetic MIME, actual parsing and PostgreSQL, injected upload failure, hash/fingerprint/identity checks, targeted LOCAL attachment repair, serial no-duplicate repeat and tamper refusal. Domain10/10 and changedfileTS0; independent review approved; test29182054. Original claim/error remains unchanged. No production-ready repair tool or provider retention evidence. Existing partial-attachment ACK policy explicitly recorded in TLS plan; source custody must include Seen/completed cases. Synthetic fixture removed; no live/customer/product/publication changes.
+
 ## Recipient ordering correction — 2026-09-23
 
 Completed user-approved concrete fix: unchanged recipient lookup moved ahead of reply writes after auth/validation; notification dispatch remains aftercommit. Tests first caught old ordering, final203focused+9realPG passed; changedfileTS0 and independent review clear. Specific partial-write window closed, other recovery gates remain. Tests d3756d51/product e1ff2f0b, docs in TLS plan. No live/customer access, push or deploy; only owned synthetic fixtures discarded.
