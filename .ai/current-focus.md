@@ -1,5 +1,9 @@
 # Current Focus
 
+## Recipient-query boundary and recovery gates — 2026-09-23
+
+Test-only9/9realPG suite green with explicitly injected recipient lookup rejection: reply/status committed, attachment absent, held known ticket but unknown message ID, no replay. Not fixed. Independent test review approved; newfileTS0. Existing review API is listing, not source retrieval or recovery. TLS plan now has bounded reconciliation matrix and separates blocking source/repair/operator evidence from deferred generic outbox/automatic retry. Next smallest code candidate: recipient lookup before transaction, preserving aftercommit events and successful routing. No product/live/customer/push/deploy change.
+
 ## Reply transaction checkpoint — 2026-09-23
 
 Local addMessage now commits reply+required reopen/SLA writes atomically. Real PG first reproduced two partial-write failures, final8/8 passes including overlapping replies and stale-closed guard. Independent review caught/fixed overstrict reopen predicate; final source/test review approved. Ticket75+intake125regressions and changed-fileTS0. Testsaf6e17bd/product3acd9cb7, no live/push/deploy. Next consolidate remaining manual-recovery/source gates and actual postcommit recipient-query boundary; no broad automatic replay/outbox redesign. TLS plan records limitations. Production NO-GO remains.

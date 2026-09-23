@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Recovery consolidation checkpoint — 2026-09-23
+
+Added/reviewed postcommit recipient-query fault characterization; real persistence suite9/9 and changedfileTS0. No product change: committed reply/missing attachment/held claim remains explicit. Existing TLS plan consolidated manual reconciliation evidence gates; operator list is not recovery proof. No new queue/outbox/replay. Next scoped recipient-query ordering fix, then bounded source/reconciliation acceptance. Owned synthetic fixture removed; no live or customer access/publication.
+
 ## Atomic reply write checkpoint — 2026-09-23
 
 Implemented transaction around reply insert and required reopen/first-SLA writes, preserving pre-read authorization/sanitization and postcommit recipients/events. Real PG2RED then8GREEN; overlapping valid replies preserved after independent review correction. Existing75ticket+125intake tests green, changed-fileTS0 after test-mock typing correction. No schema/env/live changes. Synthetic fixture cleaned. Testsaf6e17bd/product3acd9cb7. Remaining before/aftercommit ambiguity and operational recovery gates explicitly open in TLS plan; not production acceptance.

@@ -2,6 +2,31 @@
 
 Status: PLAN ONLY. No production mutation approved or executed. Application deployment remains NO-GO.
 
+## Recovery gate consolidation and recipient-query proof — 2026-09-23
+
+Test-only checkpoint. Real PostgreSQL domain suite9/9 passed, changed-file TypeScript diagnostics0, independent test review approved. The new test injects ONLY db.user.findMany rejection at the department-recipient query; it is not a PostgreSQL outage simulation. Actual ticket/message/hold writes remain real. Result: reply and OPEN state committed; attachment absent; claim held with ticketId but no ticketMessageId; no event and no duplicate on retry. No product fix is claimed. No production/customer access or publication. Owned synthetic container/network/files cleaned and relay terminated.
+
+Smallest next code candidate: resolve notification recipients after existing authorization/sanitization but before the message transaction. A recipient-query failure would then leave no new message/status write. Keep provider/event effects after commit, do not swallow failed work, and retain existing source/hold policy. Requires an updated failure regression plus successful recipient-routing regression before implementation acceptance.
+
+### Manual reconciliation acceptance matrix (plan, NOT executable recovery)
+
+| Observed state | Required evidence before correction | Safe decision boundary |
+|---|---|---|
+| Held; ticket/message proven absent | Recoverable original MIME + attachments; correct sender/account; all relevant writers fenced; fresh exact DB evidence | Only a separately reviewed, authorized one-message recovery; never clear claim and blindly rerun ingress |
+| Ticket known, initial message missing | Original source matches immutable fingerprint; ticket ownership verified; no already-created message | Plan targeted missing-message/attachment completion, not second ticket |
+| Ticket known, message ID unknown | Exact source plus durable write correlation; subject/body/time alone are NOT identity | Hold until identity is established; no guessed linkage, deletion or replay |
+| Message known, attachment missing | Exact expected bytes/hash and authorized message binding; current object/DB inventory | Repair only missing object/link after separate proof; never resend whole email |
+| Identity conflict, interrupted owner, or ambiguous commit | Retained source variants, current claim snapshot and all-writer state | Escalate/manual investigation; no lease expiry or automatic retry |
+
+Current admin/inbound/review is JWT + settings:read + no-store, bounded read-only projection. It exposes ticketId but not marker message ID/count or raw source. It neither retrieves source nor performs reconciliation nor proves a responsible operator observes holds. The fingerprint is identity evidence, not recoverable content. A proposed checklist is not a proven recovery mechanism.
+
+Release-blocking evidence still required:
+1. Original source and attachment retrieval/retention for each active ingress, particularly currently unverified webhook provider use. An HTTP503 alone is not source custody.
+2. A bounded synthetic rehearsal of operator identification, separately authorized targeted repair, duplicate protection, attachment byte comparison and final state verification. Any future repair must keep identity/CAS fences and audit; generic ticket APIs may trigger notifications, so they are not an assumed safe repair shortcut.
+3. Named operational ownership and review cadence for held mail; coordinated independent-writer pause during transition; actual backup/restore and exact-artifact gates already listed below.
+
+Deferred by design: generic outbox, automatic retries/lease takeover, new broker, universal exactly-once architecture and a new recovery dashboard. Existing manual-review policy can avoid these only when the above operational proof exists. Remaining pre-return/commit-response ambiguity and postcommit event effects stay explicit. Production NO-GO remains; do not reopen fixed issues or treat every hypothetical failure as a new architecture project.
+
 ## Reply and required ticket writes are atomic locally — 2026-09-23
 
 Scoped TicketsService.addMessage change only: insert reply + applicable customer reopen/first-response timestamp updates share one interactive Prisma transaction. Authorization and sanitization stay before it; recipient lookup and event dispatch stay after commit. Same API signature, no env/dependency/schema/migration change, no automatic retries.
