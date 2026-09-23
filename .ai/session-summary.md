@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Exact certificate-only route proposal — 2026-09-23
+
+Scoped live configuration read found actual Traefik3.6.7, watched file directory/ownership, no exact mail rule among22Docker rules, only low-priority file catch-all. Mac DNS/HTTP metadata checks completed, not actual CA proof. Existing TLS plan contains exact new-file YAML using verified noop@internal418 and StageA1 approval boundary plus before/after/rollback checks. Independent plan review completed. No key/ACME contents, mail data, settings writes, restart, issuance, push or deploy.
+
 ## Synthetic DMS renewal proof — 2026-09-23
 
 Added200-line opt-in local-only harness99b506fe. Final9checks pass: initial SMTP/IMAP leaf,5bad pairs rejected,unchanged no-op,new leaf on both protocols,unchanged container identity/watcher running. Real TLS handshakes; no mail content/auth. Test-only controlled watcher stop/copy/start, not production crash/concurrency proof. Independent review found/fixed endpoint/cleanup issues, final review approved. Node syntax/Gitleaks pass; negative Docker override rejected; labelled fixtures removed. TLS plan records emulator/tooling limits and next certificate-only metadata/diff gate. No production access/product changes/push/deploy.

@@ -1,5 +1,9 @@
 # Current Focus
 
+## Stage A1 exact route ready for owner approval — 2026-09-23
+
+Read-only confirms Traefik3.6.7 file watch, https entrypoint, dynamic uid9999/gid0, absent target and no mail-host match among22Docker rules; sole dynamic catch-all priority-1000. External Mac HTTP80 reachable404. TLS plan now contains exact new mail-only priority100/noop@internal YAML and narrow issuance approval/acceptance/withdrawal scope. No live writes or CA issuance. Next explicit StageA1 owner approval; no mail restart/key export/DB/deploy included.
+
 ## Actual local certificate renewal passed — 2026-09-23
 
 Test99b506fe: pinned isolated DMS served new valid leaf on SMTP/IMAP;5invalid variants rejected preserving old served leaf;unchanged no-op;container not restarted/watcher RUNNING. Watcher pause/copy/resume single-writer test only, not crash-safe production exporter. Independent review corrected Docker-local enforcement and timeout cleanup; final rerun approved/passed, remote override rejected, owned fixtures removed. No real keys/ACME/live/DB. Next exact proxy route ownership/conflict evidence and StageA reviewed diff, separate approval before real issuance.

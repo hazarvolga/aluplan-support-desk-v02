@@ -2,6 +2,43 @@
 
 Status: TLS transition not executed. Explicitly approved backup-only writes completed as recorded below; no live service/configuration/DB mutation. Application deployment remains NO-GO.
 
+## Stage A1 exact certificate-only proposal — 2026-09-23
+
+User approved continuation of scoped read-only routing inspection, not installation/issuance. Live proxy binary reports3.6.7. CLI confirms only Docker/file provider arguments, https=:443, http=:80, directory=/traefik/dynamic/, watch=true. Host dynamic directory /data/coolify/proxy/dynamic is0700 uid9999/gid0. Proposed target absent. One visible regular YAML file default_redirect_503.yaml: PathPrefix(/), entrypoints http/https, priority-1000. Across22Docker router-rule labels (including stopped container inventory), no mail.allplan.net.tr match or broader HostRegexp/non-Host rule candidate found. These are bounded source/config observations, not complete live router API proof or future Coolify persistence assurance.
+
+Mac-side DNS: mail A167.86.84.107; AAAA and CAA at mail and CAA at parent allplan.net.tr returned NOERROR/empty answer. Higher ancestor/authoritative CAA policy not exhaustively resolved; no claim of universal CA eligibility. Mac HTTP GET to mail:80 reached167.86.84.107 and returned404. This demonstrates reachability from this Mac, NOT a successful CA HTTP-01 challenge. Proxy start/restart unchanged; no special keys, ACME body or mail content read.
+
+Proposed NEW target only: /data/coolify/proxy/dynamic/aluplan-mail-certificate.yaml. Do NOT install until the owner explicitly approves this Stage A1 scope.
+
+```yaml
+http:
+  routers:
+    aluplan-mail-certificate:
+      entryPoints:
+        - https
+      rule: "Host(`mail.allplan.net.tr`)"
+      priority: 100
+      service: noop@internal
+      tls:
+        certResolver: letsencrypt
+        domains:
+          - main: mail.allplan.net.tr
+```
+
+This exact-host rule does not route mail traffic or other hostnames. Existing catch-all priority-1000 is lower. noop@internal is implemented in the exact upstream Traefikv3.6.7 source as an empty HTTP418 response; it does not expose a backend/dashboard. Traefik obtains/stores a certificate through its existing resolver; this step is not certificate export to DMS or mail TLS activation.
+
+### Authorized-action boundary to present to owner
+
+Stage A1 approval would authorize only: preflight revalidation, creation of the one named nonsecret dynamic file, resulting Let's Encrypt request/shared ACME update and public Certificate Transparency hostname publication, bounded public TLS/status verification. No mailserver restart/settings, credential rotation, private-key read/export, DB action, DNS/firewall change or application deployment. Explicitly preserve all existing dynamic files/router labels and shared proxy process.
+
+Before placement recheck exact target absent, route conflicts, resolver/entrypoints and directory ownership; capture known application-host response baselines and nonsecret configuration fingerprints. Publish complete content with no overwrite and atomic visibility from a same-filesystem staging location outside watched YAML names. Keep owner9999/gid0 and0644 for this nonsecret file, parent unchanged. Do not chmod/chown any existing path. A failed/partial write must not become a watched YAML file.
+
+Acceptance: trusted chain and exact mail hostname on443 plus418, absence of errors affecting unrelated router loading, and comparable before/after responses for allplan.net.tr, api.allplan.net.tr health and aluplan.net.tr. No authenticated customer probes. If existing route behavior changes, certificate remains invalid or ACME reports error, stop; do not loop issuance or modify resolver/global settings.
+
+Withdraw only the new owned file when needed, after verifying content matches this candidate; preserve a local copy of the nonsecret proposal. Withdrawal does not revoke a certificate, undo CT publication/rate-limit effects, or roll back shared ACME state; never delete/revert acme.json. Coolify future regeneration persistence and ongoing certificate-to-DMS handoff remain later acceptance gates, not claims from this read-only turn.
+
+Independent reviewer accepted exact-host/noop design with preflight and before/after checks; no production permission inferred. Source: [Traefik3.6.7 internal handler](https://raw.githubusercontent.com/traefik/traefik/v3.6.7/pkg/server/service/internalhandler.go), [file provider](https://doc.traefik.io/traefik/v3.6/reference/install-configuration/providers/others/file/). Next decision is explicit owner approval for Stage A1, not another redesign or combined mail maintenance.
+
 ## Synthetic certificate renewal rehearsal passed — 2026-09-23
 
 New test-only harness apps/backend/test/mail-renewal-rehearsal.cjs, commit99b506fe. Explicit MAIL_RENEWAL_REHEARSAL=synthetic-local-only opt-in, local macOS Docker Desktop Unix socket pinned, remote Docker overrides refused before access. Pinned public DMS v15.1.0 amd64 image; fresh internal network, no published ports, only disposable synthetic config/cert/public-CA mounts. No real key/ACME/mailbox/backup/customer/DB or production access.
