@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Local mail TLS rehearsal — 2026-09-23
+
+Existing synthetic wire tests passed10/10 under loopback-only sandbox. Downloaded immutable official v15.1.0 amd64 image and matched manifest config digest to earlier live ID. Fresh isolated test container demonstrated SMTP STARTTLS/verified TLS1.3 and plaintext AUTH530 rejection, but Dovecot subprocess failures (signal5) prevented authenticated SMTP/IMAP success. Emulation root cause unproven; no mail round-trip acceptance. Detailed setup, limits and next gate recorded in `.ai/issues/2026-09-23-mail-tls-transition-plan.md`. No product changes, production access or publication. Dedicated reviewer unavailable due thread limit.
+
 ## Mail TLS planning checkpoint — 2026-09-23
 
 Owner accepted staged planning plus bounded read-only metadata investigation. New plan: .ai/issues/2026-09-23-mail-tls-transition-plan.md. Current mail image v15.1.0 identified by immutable digest; configured public certificate is self-signed localhost, not mail.allplan.net.tr. SMTP submission override also explicitly disables TLS security. Live clients disable certificate validation. Backend broad API route labels show gzip only; webhook usage remains UNKNOWN, and bounded proxy configuration checks found no access-log setup. No absence-of-traffic claim.

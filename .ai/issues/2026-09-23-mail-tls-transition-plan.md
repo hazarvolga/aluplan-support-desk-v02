@@ -2,6 +2,22 @@
 
 Status: PLAN ONLY. No production mutation approved or executed. Application deployment remains NO-GO.
 
+## Local rehearsal checkpoint — 2026-09-23
+
+Local preparation and partial rehearsal executed; the production sequence below remains a plan, not an approved change script.
+
+- Existing `mail-wire-transport-security.spec.ts`: 10/10 passed with synthetic two-day certificates, cleared environment and macOS sandbox permitting loopback only. Actual application SMTP/IMAP clients talk to synthetic protocol servers; application dependencies/DB are mocked. Node24/macOS proof is not exact Node20/Linux release-image acceptance. An initial invocation skipped all tests because the fixture variable was malformed; only the corrected 10/10 run counts.
+- Pulled the pinned public repository digest, Linux/amd64. Its platform manifest is `sha256:c341669e6cbb012c34e8c4a86af27d6415bed485e0a2b66fb18c9ed60a4c4302`; config digest is `sha256:4f5093c251b61d5691f5ccfd3f90fcbf505585bfd045546430d282e5417658c8`, matching the previously recorded live image ID. The local containerd image-store inspect ID is the platform manifest, not that config digest.
+- Exact v15.1.0 container used only a synthetic mailbox/password, read-only synthetic leaf key/certificate/CA mounts and fresh container storage. No production volume, credential, mailbox, application bootstrap or customer data. Internal Docker network confirmed, one member, no published ports, no privileged mode or extra capabilities. Spam/antivirus/Fail2ban/update/DKIM/DMARC/SPF services were disabled for transport isolation; this is not production configuration parity.
+- `--network none` attempts failed on hostname/IP-interface discovery; an internal isolated bridge allowed setup. No external network was enabled for the server. No image version upgrade or security-profile relaxation was attempted.
+- Effective local configuration: Dovecot `ssl=required`, `disable_plaintext_auth=yes`; Postfix submission `smtpd_tls_security_level=encrypt`.
+- Actual SMTP587 probe using Python stdlib inside the container: STARTTLS advertised, AUTH not advertised before encryption, plaintext AUTH rejected with530, CA/localhost-verified TLS1.3 established.
+- **BLOCKED / NOT PASSED:** Dovecot log/auth/imap-login/anvil subprocess failures, including signal5. SMTP authenticated login subsequently disconnected (`no SASL authentication mechanisms` in server log); IMAP993 reset the connection. The machine/engine are arm64/aarch64 running the amd64 image; emulation is a hypothesis, not established root cause. No authenticated delivery, retrieval, attachment round-trip or historical-client compatibility proof was obtained.
+- Dedicated security review could not start because of the agent-thread limit. No product code, live access/write, restart, deployment or push in this turn.
+- Cleanup confirmed: disposable mailserver stopped/removed and isolated network removed. Synthetic mailbox existed only in that discarded container; no customer data or persistent production storage was removed. Public pinned image and temporary two-day synthetic certificate fixtures remain local for repeatability.
+
+Next bounded step: diagnose the Dovecot subprocess failure locally without disabling isolation or certificate validation. If confirmed emulator-specific, require a separately scoped isolated native-amd64 rehearsal rather than using production as a test environment. Keep application release NO-GO until secure authentication and source-preserving round-trip pass.
+
 ## Verified basis
 
 - Docker Mailserver image version: v15.1.0.
