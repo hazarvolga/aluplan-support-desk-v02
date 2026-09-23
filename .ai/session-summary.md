@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Approved live mail metadata audit — 2026-09-23
+
+Completed scoped configuration/volume/retention/backup metadata inspection on verified vmi3049865. Persistent volumes and selected autoexpunge0 confirmed; disk19%; mail container start/restarts unchanged. Sep19 on-host archive exists0600/1618614bytes; no current archive-content/checksum validation or newer/off-host backup proof. Narrow schedule scan cannot establish all retention or backup behavior. TLS remains disabled globally. No mail bodies/attachments, mailbox login, customer DB, test send, live writes/restart/deploy/push. Full evidence/limits/next approval boundary recorded in TLS plan; no code or tests changed.
+
 ## Synthetic retained-source repair rehearsal — 2026-09-23
 
 Completed narrow known-message missing-attachment test: retained synthetic MIME, actual parsing and PostgreSQL, injected upload failure, hash/fingerprint/identity checks, targeted LOCAL attachment repair, serial no-duplicate repeat and tamper refusal. Domain10/10 and changedfileTS0; independent review approved; test29182054. Original claim/error remains unchanged. No production-ready repair tool or provider retention evidence. Existing partial-attachment ACK policy explicitly recorded in TLS plan; source custody must include Seen/completed cases. Synthetic fixture removed; no live/customer/product/publication changes.

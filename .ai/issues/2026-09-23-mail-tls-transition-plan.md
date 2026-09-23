@@ -2,6 +2,24 @@
 
 Status: PLAN ONLY. No production mutation approved or executed. Application deployment remains NO-GO.
 
+## Approved live mail custody metadata inspection — 2026-09-23
+
+Owner approved configuration/retention/volume/backup metadata reads only. SSH host identity vmi3049865 verified; observation began 2026-09-23 14:05:19 UTC. No mailbox login, customer body/attachment read, DB access, test send, configuration write, restart, deployment or publication.
+
+Current evidence:
+- Mail container mailserver-q4wgowwo0wwsg0sksg8gkow4 running, started 2026-09-02T19:03:59.002772687Z, restart count0 before/after. Image sha256:4f5093c251b61d5691f5ccfd3f90fcbf505585bfd045546430d282e5417658c8.
+- Named mail-config/mail-data/mail-state volumes mounted at /tmp/docker-mailserver, /var/mail and /var/mail-state. Maildir root/cur/new directories exist; no individual messages enumerated.
+- Selected effective Dovecot autoexpunge and autoexpunge_max_mails entries all0. Global ssl=no and disable_plaintext_auth=no remain an unresolved transport risk; nested listener ssl values differ. No protocol/authentication probe performed.
+- Filesystem194G total,36G used,159G available,19% usage. This observation does not support a disk-full explanation.
+- /var/backups/aluplan-mail-20260919-wvS1G5 exists root:root0700; mail-backup.tgz is1618614bytes, root:root0600, mtime2026-09-19 13:41:08 +0200. SHA256SUMS and zero-byte restore-persistent-compare.log exist0600. Only this aluplan-mail-* directory was found at /var/backups depth1.
+- Archive contents/hash were NOT read or retested. Earlier capture/readback proof is recorded in 2026-09-19-mail-transport-observation.md, not newly reproduced here. This on-host backup cannot cover subsequent mail or protect against loss/compromise of the same host.
+- Bounded host schedule scan checked17files. Candidates were package dpkg backup and a root cron backup reference; the latter had no direct mail/database/Coolify/remote-copy-tool match. Its implementation and success remain unknown. Selected systemd timer-name scan found dpkg-db-backup only.
+- Container schedule candidates include /etc/cron.d/dovecot-purge.disabled and package dpkg. A disabled-name file is not proof of execution or absence of other deletion paths. Checked default mailbox Sieve paths absent; other user/global Sieve locations were not exhaustively inspected.
+
+Decision: persistent source location is identified, but retention/retrieval and current protected backup are NOT proven. No evidence here establishes data loss, complete retention, absence of all backup jobs, or complete host cleanliness. Manual/client expunge, indirect scripts, other backup locations/provider snapshots and active webhook source custody remain unverified. Current code/tests unchanged; no new test result or release acceptance.
+
+Smallest next gate: separately scoped fresh protected mail backup/custody and an isolated byte-verified recovery rehearsal, including Seen/partially completed source. Agree destination/encryption/retention and access scope before reading/copying customer content or creating a backup. Do not add an archive platform, change TLS settings blindly, auto-replay held intake or deploy. Operator ownership and bounded repair acceptance remain open; production NO-GO unchanged.
+
 ## Retained-source attachment rehearsal — 2026-09-23
 
 Test-only, explicitly single-writer proof for ONE known message with ONE missing attachment. New synthetic MIME is retained in a no-clobber mode0600 temporary file BEFORE intake, then reparsed with actual mailparser. Storage failure is injected once; ticket/message/partial-attachment marker persist through real services/PostgreSQL. Test-local manual procedure verifies whole-source SHA256, Message-ID, sender, canonical input fingerprint, marker message ID, current ticket ownership and unchanged claim before filling only the missing attachment. LOCAL storage bytes are compared and hashed. Second serial invocation does not add a row/object; tampered source is rejected before attachment writes.

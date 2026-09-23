@@ -1,5 +1,9 @@
 # Current Focus
 
+## Live source-custody metadata checkpoint — 2026-09-23
+
+Approved read-only SSH inspection: persistent mail volumes, selected autoexpunge0, disk19%, container unchanged. Only selected-path Sep19 on-host mail archive verified by metadata, not current checksum/contents or fresh/off-host recoverability. Cron candidate remains unclassified; no exhaustive retention/backup absence claim. Global mail TLS disabled remains known risk. No customer content/DB access or production mutation. Detailed evidence and limits in TLS plan. Next separately scoped fresh protected backup/source custody plus isolated restore proof; deployment NO-GO unchanged.
+
 ## Narrow retained-MIME repair rehearsal — 2026-09-23
 
 Test-only single-writer known-message/missing-attachment repair passed with realPG/LOCAL bytes: retained MIME hash+fingerprint checked, tamper rejected, second serial repair no duplicate, claim evidence untouched. Suite10/10, changedfileTS0, independent review approved; test29182054. Not production tool/operator closure/concurrency/source-provider proof. Partial attachment currently returns processed=true, so source custody must cover Seen/acknowledged mail too. Next bounded source-custody/operator audit/fencing acceptance; production access separately approved. No live/product changes.
