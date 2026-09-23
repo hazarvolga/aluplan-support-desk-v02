@@ -1,5 +1,9 @@
 # Current Focus
 
+## Real PostgreSQL claim checkpoint — 2026-09-23
+
+Actual Prisma7.4.2 + PG17.10 focused table test4/4: contending unique inserts/observed lock wait, terminal CAS/stale-owner rejection, payload collision evidence preservation, pending owner after client replacement. Existing46regressions pass. Dedicated code/security review led to complete async-operation drainage fix in test only. Synthetic isolated tmpfs DB, no live/customer access. Detailed evidence/limits in TLS plan. Next actual ticket/message/storage persistence and ambiguous post-commit failure proof; no full application/backup/crash durability claim. Production NO-GO remains.
+
 ## Actual candidate mail-client checkpoint — 2026-09-23
 
 New opt-in DMS intake test3/3 passed on a clean synthetic mailbox, with actual SMTP/IMAP/parser/service/claim code and explicit fake persistence. Parsed attachment bytes preserved; successful re-poll did not repeat ticket/upload calls; injected ticket failure retained UNSEEN source and did not auto-replay. Existing46focused tests passed, new-file TS diagnostics0. This is NOT realDB/storage/CRM/concurrency acceptance. Detailed boundaries/setup in TLS transition plan. Next disposable PostgreSQL and actual persistence proof, not deployment. No live changes.

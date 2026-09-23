@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## PostgreSQL claim concurrency proof — 2026-09-23
+
+Added real PrismaPg/PG17 isolated claim integration tests, final4/4 plus existing46/46. Schema-matched inbound log table only, no fake delegates. Observed real lock contention and owner fencing; completed conflicting payload retains ticket/attachment-failure metadata. Graceful client replacement leaves pending claim held. Independent review found and corrected test failure-path draining; no product edits. TLS plan records image/schema identity and proof boundaries. Real ticket/message/storage transactions, DB restart/crash durability and full application release gates remain unproven. No production/publication changes.
+
 ## Candidate client integration with isolated DMS — 2026-09-23
 
 Added opt-in3test integration suite using actual app SMTP/IMAP/MIME/intake/claim code against pinned amd64 mailserver; persistence services are synthetic doubles. Clean final run3/3, existing focused46/46, new-file TS0. Proved byte-preserving parser-to-storage boundary, duplicate re-poll fencing and failed-write UNSEEN retention/hold. Internal network/no final published ports; bounded raw-TLS loopback relay used. No product or live changes. TLS plan contains limitations; real PostgreSQL/actual storage/exact-release-image gates remain open.
