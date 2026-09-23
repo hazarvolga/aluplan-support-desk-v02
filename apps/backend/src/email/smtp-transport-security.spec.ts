@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 import { SettingsService } from '../settings/settings.service';
 import { SmtpProvider } from './smtp.provider';
 
@@ -24,7 +24,7 @@ describe('SMTP transport security', () => {
         provider = new SmtpProvider({ getValue: jest.fn(async (key: string) => values[key]) } as unknown as SettingsService);
         sendMail = jest.fn().mockResolvedValue({ messageId: 'test-message' });
         verify = jest.fn().mockResolvedValue(true);
-        createTransport.mockReturnValue({ sendMail, verify } as unknown as nodemailer.Transporter);
+        createTransport.mockReturnValue({ sendMail, verify } as unknown as Transporter);
     });
 
     it.each(['send', 'healthCheck'] as const)('%s requires STARTTLS and validates the certificate on port 587', async (operation) => {

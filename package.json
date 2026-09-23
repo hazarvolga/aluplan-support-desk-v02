@@ -10,6 +10,7 @@
     "test:all": "turbo test",
     "test:e2e": "pnpm --filter @aluplan/frontend test:e2e",
     "test:security:websocket": "node --test scripts/websocket-dependency-security.test.cjs",
+    "test:security:mail": "node --test scripts/mail-dependency-security.test.cjs",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "db:generate": "turbo db:generate",
