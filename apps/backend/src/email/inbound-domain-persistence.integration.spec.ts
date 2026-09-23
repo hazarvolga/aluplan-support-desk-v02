@@ -146,4 +146,100 @@ run('actual inbound domain persistence and post-commit failure boundaries', () =
         expect(await deliver(subject, id)).toBe(false);
         expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(1);
     });
+
+    it('rolls back the reply when PostgreSQL rejects the customer reopen update', async () => {
+        const ticket = await tickets.create({ subject: `Reopen rejection ${randomUUID()}` } as never, userId);
+        await db.ticket.update({ where: { id: ticket.id }, data: { status: 'PENDING_CUSTOMER' } });
+        const id = `<${randomUUID()}@example.invalid>`;
+        const subject = `[${ticket.ticketNumber}] Synthetic reply`;
+        const notified = jest.fn();
+        events.on('ticket.message_added', notified);
+        await db.$executeRaw`ALTER TABLE tickets ADD CONSTRAINT synthetic_reject_reopen
+            CHECK (status <> 'OPEN') NOT VALID`;
+        try { expect(await deliver(subject, id)).toBe(false); }
+        finally { await db.$executeRaw`ALTER TABLE tickets DROP CONSTRAINT synthetic_reject_reopen`; }
+        expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(0);
+        expect(await db.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toHaveProperty('status', 'PENDING_CUSTOMER');
+        expect(notified).not.toHaveBeenCalled();
+        expect(await db.inboundEmailLog.findUniqueOrThrow({ where: { messageId: id } }))
+            .toMatchObject({ processed: false, ticketId: ticket.id });
+        expect(await deliver(subject, id)).toBe(false);
+        expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(0);
+    });
+
+    it('rolls back a staff reply if the first-response timestamp update is rejected', async () => {
+        const role = await db.role.create({ data: { name: 'AGENT' } });
+        const agent = await db.user.create({ data: { email: 'synthetic-agent@example.invalid',
+            fullName: 'Synthetic Agent', passwordHash: 'not-a-login-hash', roleId: role.id, status: 'ACTIVE' } });
+        const ticket = await tickets.create({ subject: `SLA rejection ${randomUUID()}` } as never, userId);
+        const notified = jest.fn();
+        events.on('ticket.message_added', notified);
+        await db.$executeRaw`ALTER TABLE tickets ADD CONSTRAINT synthetic_reject_sla
+            CHECK (sla_responded_at IS NULL) NOT VALID`;
+        try {
+            await expect(tickets.addMessage(ticket.id, { message: 'Synthetic staff reply' }, agent.id, 'AGENT'))
+                .rejects.toThrow();
+        } finally { await db.$executeRaw`ALTER TABLE tickets DROP CONSTRAINT synthetic_reject_sla`; }
+        expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(0);
+        expect(await db.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toHaveProperty('slaRespondedAt', null);
+        expect(notified).not.toHaveBeenCalled();
+        const message = await tickets.addMessage(ticket.id, { message: 'Synthetic staff reply' }, agent.id, 'AGENT');
+        expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(1);
+        expect(await db.ticket.findUniqueOrThrow({ where: { id: ticket.id } }))
+            .toHaveProperty('slaRespondedAt', expect.any(Date));
+        expect(notified).toHaveBeenCalledWith(expect.objectContaining({ message: expect.objectContaining({ id: message.id }) }));
+        const firstResponse = (await db.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).slaRespondedAt;
+        await tickets.addMessage(ticket.id, { message: 'Synthetic follow-up' }, agent.id, 'AGENT');
+        expect((await db.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).slaRespondedAt).toEqual(firstResponse);
+    });
+
+    it('does not reopen a ticket closed between the authorized read and the write', async () => {
+        const ticket = await tickets.create({ subject: `Stale reopen ${randomUUID()}` } as never, userId);
+        await db.ticket.update({ where: { id: ticket.id }, data: { status: 'PENDING_CUSTOMER' } });
+        const read = tickets.findOne.bind(tickets);
+        const staleRead = jest.spyOn(tickets, 'findOne').mockImplementationOnce(async (...args) => {
+            const snapshot = await read(...args);
+            await db.ticket.update({ where: { id: ticket.id }, data: { status: 'CLOSED' } });
+            return snapshot;
+        });
+        const notified = jest.fn();
+        events.on('ticket.message_added', notified);
+        try {
+            await expect(tickets.addMessage(ticket.id, { message: 'Synthetic stale reply' }, userId, 'CUSTOMER'))
+                .rejects.toThrow();
+        } finally { staleRead.mockRestore(); }
+        expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(0);
+        expect(await db.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toHaveProperty('status', 'CLOSED');
+        expect(notified).not.toHaveBeenCalled();
+    });
+
+    it('accepts both distinct customer replies that read PENDING_CUSTOMER concurrently', async () => {
+        const ticket = await tickets.create({ subject: `Concurrent replies ${randomUUID()}` } as never, userId);
+        await db.ticket.update({ where: { id: ticket.id }, data: { status: 'PENDING_CUSTOMER' } });
+        const read = tickets.findOne.bind(tickets);
+        let release!: () => void;
+        const gate = new Promise<void>(resolve => { release = resolve; });
+        let arrivals = 0;
+        const synchronizedRead = jest.spyOn(tickets, 'findOne').mockImplementation(async (...args) => {
+            try {
+                const snapshot = await read(...args);
+                expect(snapshot.status).toBe('PENDING_CUSTOMER');
+                arrivals += 1;
+                if (arrivals === 2) release();
+                await gate;
+                return snapshot;
+            } catch (error) { release(); throw error; }
+        });
+        const notified = jest.fn();
+        events.on('ticket.message_added', notified);
+        try {
+            const results = await Promise.allSettled(['First concurrent reply', 'Second concurrent reply'].map(message =>
+                tickets.addMessage(ticket.id, { message }, userId, 'CUSTOMER')));
+            expect(results.map(result => result.status)).toEqual(['fulfilled', 'fulfilled']);
+        } finally { release(); synchronizedRead.mockRestore(); }
+        const messages = await db.ticketMessage.findMany({ where: { ticketId: ticket.id } });
+        expect(messages.map(message => message.message).sort()).toEqual(['First concurrent reply', 'Second concurrent reply']);
+        expect(await db.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toHaveProperty('status', 'OPEN');
+        expect(notified).toHaveBeenCalledTimes(2);
+    });
 });

@@ -2,9 +2,13 @@ import { ForbiddenException } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 
 function fixture() {
-    const prisma = {
+    const delegates = {
         ticketMessage: { create: jest.fn(async ({ data }) => ({ id: 'synthetic-message', ...data })) },
         ticket: { update: jest.fn() },
+    };
+    const prisma = {
+        ...delegates,
+        $transaction: jest.fn(async (callback: (tx: typeof delegates) => Promise<unknown>) => callback(delegates)),
     };
     const events = { emit: jest.fn() };
     const service = new TicketsService(
