@@ -1,5 +1,9 @@
 # Current Focus
 
+## Fresh off-VPS mail copy verified — 2026-09-23
+
+Owner authorized unencrypted storage on this Mac. New VPS checkpoint copied to private0700 /Users/hazarvolgaekiz/aluplan-mail-backup-20260923-2hskQt outside Git. Archive0600/1621978bytes, SHA256 matched;237regular files/3905939bytes restored inertly and verified. One archived symlink not materialized; transient special sources excluded. Final three-volume dry-run drift0, Compose/env equal, container unchanged. Not atomic/runtime/ACL/DB recovery proof; no live service/config/DB writes or deploy. Full evidence in TLS plan. Next bounded certificate/renewal and client compatibility gate; avoid expanding backup architecture. Production NO-GO remains.
+
 ## Live source-custody metadata checkpoint — 2026-09-23
 
 Approved read-only SSH inspection: persistent mail volumes, selected autoexpunge0, disk19%, container unchanged. Only selected-path Sep19 on-host mail archive verified by metadata, not current checksum/contents or fresh/off-host recoverability. Cron candidate remains unclassified; no exhaustive retention/backup absence claim. Global mail TLS disabled remains known risk. No customer content/DB access or production mutation. Detailed evidence and limits in TLS plan. Next separately scoped fresh protected backup/source custody plus isolated restore proof; deployment NO-GO unchanged.

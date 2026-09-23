@@ -1,6 +1,22 @@
 # Mail transport transition plan — 2026-09-23
 
-Status: PLAN ONLY. No production mutation approved or executed. Application deployment remains NO-GO.
+Status: TLS transition not executed. Explicitly approved backup-only writes completed as recorded below; no live service/configuration/DB mutation. Application deployment remains NO-GO.
+
+## Fresh mail backup on owner Mac — 2026-09-23
+
+Owner explicitly selected this Mac and declined archive encryption. Fresh private VPS staging/archive created, transferred over verified SSH/SCP, then inert local regular-file readback verified. No live service/configuration writes, restart, mail login/send, DB operation, push or deploy. Copying/hashing necessarily read customer mail and configuration bytes, but no bodies, attachment/customer filenames or secret values were displayed.
+
+- VPS checkpoint: /var/backups/aluplan-mail-20260923-dq1P6P; capture started2026-09-23T14:31:45Z, final verification2026-09-23T14:33:43Z. Sources: exact previously validated mail-data/mail-state/mail-config volumes and service docker-compose.yml/.env. New staging only; existing backups untouched.
+- Mac directory: /Users/hazarvolgaekiz/aluplan-mail-backup-20260923-2hskQt, outside Git, owner hazarvolgaekiz,0700. Archive mail-backup.tgz0600,1621978bytes; unencrypted by owner choice. SSH encrypted the transfer, not storage. File permissions are not encryption; no FileVault claim. Private extracted readback also remains locally; retain both pending explicit cleanup.
+- Archive SHA256 aeff9da90f02c018890c1ab9fefb405f0ee9590f0d699381c1205f438509df06 matched remote manifest and local bytes. Remote gzip integrity and GNUtar staging comparison passed.
+- Initial drift check correctly stopped on31 nonregular-file skip notices (no stderr). Categorized without exposing filenames. Recheck with NONREG0 suppressed only those notices: checksum/metadata dry-run comparison showed0 persistent differences for each of three volumes; deletion detection enabled ONLY with dry-run. Compose/env byte comparisons passed. This sequential live check is not an atomic snapshot.
+- Container image/start/restart/running identity unchanged before/after. No existing file deleted. Source rsync excluded device/special files; transient nonregular entries are not a persistent-file recovery guarantee.
+- Local fresh restore-check materialized237regular files,3905939bytes; every file matched archived SHA256/length. One symlink remains stored in archive but was not materialized;0hardlinks/0special archive entries. Local output uses0700/0600, not original ownership/ACL restoration. No runtime started, no network-enabled restored service, no live restore.
+- Local verifier rejected synthetic traversal, normalized duplicates, non-directory parent conflicts and checksum mismatch; valid synthetic case passed. Independent security review found no blocker for this bounded small archive. Verifier is not a general-purpose hostile/large-archive tool; member limits are applied after metadata parsing.
+
+Result: fresh off-VPS, unencrypted owner-controlled mail/config file copy with transfer and regular-byte recovery evidence. NOT a ticket-DB backup, complete application disaster recovery, atomically consistent mailserver snapshot, ongoing retention policy, host-cleanliness proof or deployment approval. Messages accepted after capture are outside this checkpoint. Backup scripts and private reports remain outside Git in the Mac directory.
+
+Next: return to the bounded TLS certificate/renewal/client compatibility gate; do not create more backup infrastructure. A real mail runtime restore with production data remains separately scoped and must never start a second active sender/intake. Application release still requires the recorded DB/attachment/exact-artifact gates and explicit deployment approval.
 
 ## Approved live mail custody metadata inspection — 2026-09-23
 

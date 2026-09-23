@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Owner-approved Mac mail backup — 2026-09-23
+
+Fresh private VPS staging/archive plus SCP to owner-selected unencrypted Mac destination completed. Transfer checksum and inert237regular-file byte readback passed; final persistent source drift0 and container unchanged. Initial31nonregular skip notices were investigated before completion, not ignored as data drift. Archive1symlink retained but not materialized; original metadata/runtime/atomic consistency not proven. No live restart/config/DB/mail send/deploy. No backups removed; Mac archive and private readback retained outside Git. TLS plan records paths/hash/times/limitations. Independent script security review and5synthetic verifier cases passed; application code/tests unchanged.
+
 ## Approved live mail metadata audit — 2026-09-23
 
 Completed scoped configuration/volume/retention/backup metadata inspection on verified vmi3049865. Persistent volumes and selected autoexpunge0 confirmed; disk19%; mail container start/restarts unchanged. Sep19 on-host archive exists0600/1618614bytes; no current archive-content/checksum validation or newer/off-host backup proof. Narrow schedule scan cannot establish all retention or backup behavior. TLS remains disabled globally. No mail bodies/attachments, mailbox login, customer DB, test send, live writes/restart/deploy/push. Full evidence/limits/next approval boundary recorded in TLS plan; no code or tests changed.
