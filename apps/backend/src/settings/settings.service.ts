@@ -96,7 +96,11 @@ export class SettingsService {
     }
 
     private isSecretKey(key: string): boolean {
-        return this.secretKeyPatterns.some((pattern) => pattern.test(key));
+        return this.isMailPasswordKey(key) || this.secretKeyPatterns.some((pattern) => pattern.test(key));
+    }
+
+    private isMailPasswordKey(key: string): boolean {
+        return key === 'email.imap.pass' || key === 'email.smtp.pass';
     }
 
     private resolveSecretFlag(key: string, requested?: boolean): boolean {
@@ -111,7 +115,9 @@ export class SettingsService {
     }
 
     private async securePlaintextSecret<T extends { key: string; value: string; isSecret: boolean }>(setting: T): Promise<T> {
-        if (setting.isSecret || !this.isSecretKey(setting.key)) {
+        // Legacy mail passwords remain readable without introducing a read-time DB rewrite.
+        // Explicit saves encrypt them; API responses and caches still classify them as secrets.
+        if (setting.isSecret || this.isMailPasswordKey(setting.key) || !this.isSecretKey(setting.key)) {
             return setting;
         }
 
@@ -256,15 +262,10 @@ export class SettingsService {
 
         // Hydrate cache
         this.cache.set(key, plaintext);
-        this.secretCache.set(key, setting.isSecret);
+        const isSecret = this.resolveSecretFlag(key, setting.isSecret);
+        this.secretCache.set(key, isSecret);
 
-        if (setting.isSecret && !decrypt) {
-            setting.value = '********';
-        } else {
-            setting.value = plaintext;
-        }
-
-        return setting;
+        return { ...setting, value: isSecret && !decrypt ? '********' : plaintext, isSecret };
     }
 
     /**
@@ -288,6 +289,7 @@ export class SettingsService {
 
         return securedSettings.map((s) => {
             let value = s.value;
+            const isSecret = this.resolveSecretFlag(s.key, s.isSecret);
             if (s.isSecret) {
                 try {
                     const plaintext = this.crypto.decrypt(s.value);
@@ -302,9 +304,9 @@ export class SettingsService {
                 }
             } else {
                 this.cache.set(s.key, s.value);
-                this.secretCache.set(s.key, false);
+                this.secretCache.set(s.key, isSecret);
             }
-            return { ...s, value };
+            return { ...s, value: isSecret && !decrypt ? '********' : value, isSecret };
         });
     }
 
