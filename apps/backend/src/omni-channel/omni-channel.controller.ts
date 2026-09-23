@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Logger, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Logger, UseGuards, ServiceUnavailableException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { OmniChannelService } from './omni-channel.service';
 import { Public } from '../auth/decorators/public.decorator';
@@ -18,7 +18,15 @@ export class OmniChannelController {
     @ApiOperation({ summary: 'Receive inbound email webhook (e.g., Mailgun, Resend)' })
     async handleInboundEmail(@Body() payload: any) {
         this.logger.debug(`Received inbound email webhook payload`);
-        await this.omniChannelService.handleInboundEmailWebhook(payload);
+        const outcome = await this.omniChannelService.handleInboundEmailWebhook(payload);
+        // A durable hold marker is not recoverable message content. Do not acknowledge it.
+        // Provider retention and manual recovery remain separate release requirements.
+        if (outcome !== 'completed') {
+            throw new ServiceUnavailableException({
+                code: 'INBOUND_EMAIL_REVIEW_REQUIRED',
+                message: 'Inbound email requires operator review; delivery not acknowledged.',
+            });
+        }
         return { success: true };
     }
 }
