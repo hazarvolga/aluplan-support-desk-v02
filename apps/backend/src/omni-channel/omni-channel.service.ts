@@ -53,6 +53,8 @@ export class OmniChannelService {
         }
         if (claim.kind !== 'claimed') return claim.kind === 'done' ? 'completed' : 'held';
 
+        let ticketId: string | null = null;
+        let ticketMessageId: string | null = null;
         try {
             if (isDsn) {
                 return await completeInbound(this.prisma, claim, { reason: 'IGNORED_DSN' }) ? 'completed' : 'held';
@@ -66,7 +68,6 @@ export class OmniChannelService {
 
             // Thread detection - Support both [#SUP-123] and [SUP-123] formats
             const ticketMatch = subject.match(/\[#?SUP-(\d+)\]/i);
-            let ticketId = null;
 
             if (ticketMatch) {
                 const ticketNumber = `SUP-${ticketMatch[1]}`;
@@ -77,11 +78,12 @@ export class OmniChannelService {
                     }
                     const role = 'customer'; // Default to customer role for webhook senders
 
-                    await this.ticketsService.addMessage(ticket.id, {
+                    ticketId = ticket.id;
+                    const message = await this.ticketsService.addMessage(ticket.id, {
                         message: body,
                         isInternal: false,
                     }, sender.id, role);
-                    ticketId = ticket.id;
+                    ticketMessageId = message.id;
                 }
             }
 
@@ -102,7 +104,7 @@ export class OmniChannelService {
                 ['INBOUND_SENDER_NOT_ELIGIBLE', 'INBOUND_TICKET_OWNER_MISMATCH'].includes(error.message)
                 ? error.message as 'INBOUND_SENDER_NOT_ELIGIBLE' | 'INBOUND_TICKET_OWNER_MISMATCH'
                 : 'PROCESSING_FAILED';
-            await holdInbound(this.prisma, claim, reason);
+            await holdInbound(this.prisma, claim, reason, { ticketId, ticketMessageId });
             return 'held';
         }
     }

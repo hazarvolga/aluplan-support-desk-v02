@@ -176,6 +176,9 @@ export class EmailInboundService implements OnModuleInit {
         }
         if (claim.kind !== 'claimed') return claim.kind === 'done';
 
+        let ticketId: string | null = null;
+        let ticketMessageId: string | null = null;
+        let failedAttachmentCount = 0;
         try {
             if (isDsn) {
                 return await completeInbound(this.prisma, claim, { reason: 'IGNORED_DSN' });
@@ -189,9 +192,6 @@ export class EmailInboundService implements OnModuleInit {
 
             // Logic: Ticket Threading
             const ticketMatch = subject.match(/\[(SUP-\d+)\]/);
-            let ticketId = null;
-            let ticketMessageId: string | null = null;
-            let failedAttachmentCount = 0;
 
             if (ticketMatch) {
                 const ticketNumber = ticketMatch[1];
@@ -201,12 +201,12 @@ export class EmailInboundService implements OnModuleInit {
                         throw new ForbiddenException('INBOUND_TICKET_OWNER_MISMATCH');
                     }
 
+                    ticketId = ticket.id;
                     const message = await this.ticketsService.addMessage(ticket.id, {
                         message: body,
                         isInternal: false,
                         channel: CommunicationChannel.EMAIL,
                     }, sender.id, 'CUSTOMER');
-                    ticketId = ticket.id;
                     ticketMessageId = message.id;
 
                     // Handle attachments for threaded message
@@ -291,7 +291,7 @@ export class EmailInboundService implements OnModuleInit {
                 ['INBOUND_SENDER_NOT_ELIGIBLE', 'INBOUND_TICKET_OWNER_MISMATCH'].includes(error.message)
                 ? error.message as 'INBOUND_SENDER_NOT_ELIGIBLE' | 'INBOUND_TICKET_OWNER_MISMATCH'
                 : 'PROCESSING_FAILED';
-            await holdInbound(this.prisma, claim, reason);
+            await holdInbound(this.prisma, claim, reason, { ticketId, ticketMessageId, failedAttachmentCount });
             return false;
         }
     }

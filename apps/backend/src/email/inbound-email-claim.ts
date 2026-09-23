@@ -134,10 +134,23 @@ export async function completeInbound(db: InboundDb, claim: InboundClaim, outcom
     return result.count === 1;
 }
 
-export async function holdInbound(db: InboundDb, claim: InboundClaim, reason: string): Promise<boolean> {
+export async function holdInbound(db: InboundDb, claim: InboundClaim, reason: string, outcome: {
+    ticketId?: string | null; ticketMessageId?: string | null; failedAttachmentCount?: number;
+} = {}): Promise<boolean> {
+    // Internal, returned or ownership-checked IDs only. Unknown IDs must not erase evidence.
+    const failedAttachmentCount = outcome.failedAttachmentCount ?? 0;
     const result = await db.inboundEmailLog.updateMany({
         where: { id: claim.id, processed: false, error: claim.marker },
-        data: { error: INBOUND_HOLD_PREFIX + JSON.stringify({ fingerprint: claim.fingerprint, reason: safeReason(reason) }) },
+        data: {
+            ...(outcome.ticketId ? { ticketId: outcome.ticketId } : {}),
+            error: INBOUND_HOLD_PREFIX + JSON.stringify({
+                fingerprint: claim.fingerprint, reason: safeReason(reason),
+                ...(outcome.ticketMessageId ? { ticketMessageId: outcome.ticketMessageId } : {}),
+                ...(Number.isSafeInteger(failedAttachmentCount) && failedAttachmentCount > 0 ? {
+                    note: 'INBOUND_ATTACHMENT_FAILURE', failedAttachmentCount,
+                } : {}),
+            }),
+        },
     });
     return result.count === 1;
 }
