@@ -2,6 +2,19 @@
 
 Status: TLS transition not executed. Explicitly approved backup-only writes completed as recorded below; no live service/configuration/DB mutation. Application deployment remains NO-GO.
 
+## Local renewal and client-refresh audit — 2026-09-23
+
+Read-only inspection only this turn. Public pinned v15.1.0 amd64 image inspected with overridden shell entrypoint, network none, read-only root, dropped capabilities/nnp and bounded resources; no mail daemon, live volume or secret mounted. Temporary inspection containers auto-removed and absence verified. Existing image digest above remains unchanged; no new image pull.
+
+- Image /usr/local/bin/helpers/change-detection.sh:24-76 includes SSL_CERT_PATH/SSL_KEY_PATH in manual-mode content checks. check-for-changes.sh:148-170 invokes _setup_ssl on matching changes; :74-82 reloads Postfix and Dovecot; :214 defaults polling to2seconds. helpers/ssl.sh:223-267 copies mounted files into internal /etc/dms/tls and protects the key0600. This is source-level reload support, NOT issuance, live watcher health, successful renewal or atomic certificate/key replacement proof. Do not publish partially updated key/certificate pairs or mount the whole multi-domain ACME secret store.
+- Independent explorer verified local SettingsService caches indefinitely in process-local Maps (:11-12,223-258). Admin save updates only that process (:53-70,330-375); no cross-process mail invalidation found. SMTP builds a transporter per send (smtp.provider.ts:12-37); IMAP creates connections on minute polls (email-inbound.service.ts:34-46,117-136). Active polls can keep old settings; direct DB writes bypass cache. Deployed artifact/process topology is not established by this local evidence.
+- No independent inbound/outbound pause control found in inspected application source. Blank host is not a safe pause/drain mechanism. Outbound retries are finite (email.service.ts:146-155:5attempts/exponential2s), so mail downtime cannot be assumed harmless indefinite buffering. Health buttons authenticate; not metadata-only inspection.
+- Concrete local security prerequisite found: frontend admin/settings/page.tsx:250-278 secretKeys includes email.smtp.pass but omits email.imap.pass; IMAP save includes it at:1552. Backend settings.service.ts:13-23 secret-name fallback omits .pass and bulk upsert:334-355 can persist newly entered IMAP password with isSecret=false. Existing masked unchanged values are skipped, so this does NOT prove any current live secret is plaintext. No credentials/DB were read.
+
+Next smallest local correction: regression-first server-side classification of known mail password settings, with matching frontend handling, preserving masked/unchanged values and existing secret encryption behavior. No blind rewrite of existing settings or live credential rotation. Treat as bounded secret-handling bug, not a new secret-management platform. Then finish exact certificate/renewal and process topology metadata evidence under scoped production read approval. Public cert SAN/issuer/expiry plus renewal configuration inspection requested separately; no such new live access occurred in this turn.
+
+No product/test changes or fresh regression results in this audit; no deployment approval. Prior backup and synthetic acceptance remain their recorded scope only.
+
 ## Fresh mail backup on owner Mac — 2026-09-23
 
 Owner explicitly selected this Mac and declined archive encryption. Fresh private VPS staging/archive created, transferred over verified SSH/SCP, then inert local regular-file readback verified. No live service/configuration writes, restart, mail login/send, DB operation, push or deploy. Copying/hashing necessarily read customer mail and configuration bytes, but no bodies, attachment/customer filenames or secret values were displayed.

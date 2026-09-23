@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Local mail renewal/client audit — 2026-09-23
+
+Inspected exact pinned public DMS image scripts without daemon/network/mounts; existing manual-cert change watcher/reload confirmed at source level only. Independent explorer audited local app cache/pause paths and found concrete missing IMAP password secret classification in frontend/backend. No live credential/plaintext inference. Next minimal regression-first correction recorded in TLS plan; new live cert metadata scope requested, not performed. No code/tests/live mutation; temporary inspection containers removed.
+
 ## Owner-approved Mac mail backup — 2026-09-23
 
 Fresh private VPS staging/archive plus SCP to owner-selected unencrypted Mac destination completed. Transfer checksum and inert237regular-file byte readback passed; final persistent source drift0 and container unchanged. Initial31nonregular skip notices were investigated before completion, not ignored as data drift. Archive1symlink retained but not materialized; original metadata/runtime/atomic consistency not proven. No live restart/config/DB/mail send/deploy. No backups removed; Mac archive and private readback retained outside Git. TLS plan records paths/hash/times/limitations. Independent script security review and5synthetic verifier cases passed; application code/tests unchanged.

@@ -1,5 +1,9 @@
 # Current Focus
 
+## TLS refresh audit exposes IMAP secret-classification gap — 2026-09-23
+
+Local pinned DMS source supports manual certificate content detection and Postfix/Dovecot reload; not actual renewal proof. Independent local application audit confirms process-local settings cache and no independent mail pause control; finite SMTP retries preclude assuming harmless maintenance. Frontend secretKeys and backend fallback omit email.imap.pass, allowing newly entered password to be nonsecret. Current live storage NOT inspected. Next bounded regression-first known-mail-secret classification correction before rotation, then scoped cert/renewal/topology evidence. No live access or code changes this turn; details in TLS plan.
+
 ## Fresh off-VPS mail copy verified — 2026-09-23
 
 Owner authorized unencrypted storage on this Mac. New VPS checkpoint copied to private0700 /Users/hazarvolgaekiz/aluplan-mail-backup-20260923-2hskQt outside Git. Archive0600/1621978bytes, SHA256 matched;237regular files/3905939bytes restored inertly and verified. One archived symlink not materialized; transient special sources excluded. Final three-volume dry-run drift0, Compose/env equal, container unchanged. Not atomic/runtime/ACL/DB recovery proof; no live service/config/DB writes or deploy. Full evidence in TLS plan. Next bounded certificate/renewal and client compatibility gate; avoid expanding backup architecture. Production NO-GO remains.
