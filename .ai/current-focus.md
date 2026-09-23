@@ -1,5 +1,9 @@
 # Current Focus
 
+## Live client comparison confirms coordinated maintenance required — 2026-09-23
+
+Read-only compiled-code/process/effective-mail-config inspection: live SMTP/IMAP certificate checks disabled, mailserver TLS none/no, one node process observed in backend-api (not exhaustive writer inventory). Actual enqueue override2s/5attempts matches local; module default3s is not effective normal-job policy. Independent review caught this distinction and it was verified live. No DB/Redis contents/settings/login/send/restart/deploy. Next narrowly scoped nonsecret settings and aggregate queue evidence plus current Coolify merge/other-client ownership; separate approval before state access/maintenance. TLS plan records limits.
+
 ## Mail maintenance candidate locally verified — 2026-09-23
 
 Candidate1365aa2a pins existing DMS image, adds3TLS env values and one dedicated read-only certificate bind. Actual offline Compose merge against Sep23 private backup preserves all existing ports/volumes/other rendered fields; no secret output. Independent pinned-image review requires fresh same-image container rather than assuming restart reverses disabled TLS settings. No live access/change this turn. Activation remains NO-GO until current Coolify merge, deployed client/cache/worker behavior, drain/window and renewal handoff are verified and maintenance explicitly approved. Next bounded read-only deployed topology evidence; full details in TLS plan.

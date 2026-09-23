@@ -2,6 +2,21 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Scoped live client audit — 2026-09-23
+
+Owner continued the proposed read-only client/topology inspection. Verified SSH inspected selected compiled code, process names and effective mail TLS settings only. No application module imported/executed, DB/Redis payload queried, mailbox login, health-button authentication, settings write, restart or deploy. Diagnostic processes ran; service identities remained unchanged.
+
+- backend-api image sha256:302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644, started2026-09-02T19:03:59.250425823Z/restarts0. Process-name snapshot shows deploy.sh and one node process in that container. Other opaque application containers exist: this is NOT proof there are no other mail clients/writers.
+- Live SMTP compiled code creates a transporter with setting-driven secure:isSecure and rejectUnauthorized:false, without requireTLS/ignoreTLS option. STARTTLS success is not established by this source inspection.
+- Live IMAP compiled code uses setting-driven tls (false permitted), rejectUnauthorized:false, EVERY_MINUTE and process-local isProcessing. Current DB setting values were not read; earlier UI screenshot is not fresh configuration evidence.
+- Live settings code contains a Map cache and get/set/delete paths, no TTL token. No live cache introspection or cross-process refresh proof.
+- Both live and local email.module use5attempts/exponential3000ms defaults; BOTH actual EmailService enqueue paths override to5attempts/exponential2000ms. Module default alone was initially reported in commentary and corrected after independent review. Four nominal waits total30seconds, excluding execution/queue/initial-delay time. Actual existing job options/counts/states were not read. removeOnFail:false is retention, not automatic retry after exhaustion.
+- Mail effective postconf smtpd_tls_security_level=none and doveconf ssl=no; custom /tmp/docker-mailserver/postfix-master.cf absent at inspection. Mail image/start/restarts match prior checkpoint. No claim of exhaustive custom-config or other-client inventory.
+
+Independent local explorer confirmed strict-TLS candidate versus permissive live code: local SMTP requires TLS/cert validation; local IMAP requires direct TLS, so retaining port143 while only enabling the TLS flag is not a valid transition. Cache/poller coordination and finite retries remain blocking. No retry redesign or new infrastructure is justified by this inspection.
+
+Next bounded evidence needed: selected nonsecret current mail settings (provider/host/port/TLS only), aggregate email queue states/options without payloads, current rendered Coolify configuration and other mail-client ownership. Any DB/Redis access must be explicitly scoped; no general mailbox/customer dump. Then propose one coordinated maintenance sequence with queue preservation and controlled acceptance; do not activate TLS or deploy independently. Application release and mail activation remain NO-GO.
+
 ## Local maintenance candidate verified, activation still blocked — 2026-09-23
 
 Candidate commit 1365aa2a adds only .ai/issues/2026-09-23-mail-tls-compose-overlay.candidate.yaml. It pins the already examined DMS digest, adds SSL_TYPE/manual and the two certificate paths, and binds only /data/aluplan-mail-tls-bru9sghg read-only at /etc/aluplan-mail-tls with create_host_path:false. No image upgrade or full ACME-store mount.

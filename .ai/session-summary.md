@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Read-only live mail-client compatibility audit — 2026-09-23
+
+Compared selected live compiled SMTP/IMAP/settings/queue code to local candidate. Live accepts invalid certs and optional plaintext; effective mailserver TLS remains disabled. backend-api one node snapshot/start/restarts unchanged; not all-client proof. Queue module3s default overridden by actual enqueue2s in both versions, independently cross-checked and initial commentary corrected. No settings values/DB/Redis payloads/mailbox content read, no production mutation, app edits or deploy. Next nonsecret settings/aggregate queue and Coolify merge scope, then coordinated maintenance proposal. Existing TLS runbook updated; no absolute uptime/data-loss guarantee.
+
 ## Local mail maintenance candidate, no activation — 2026-09-23
 
 Committed1365aa2a config-only overlay: existing pinned image/3TLS env/dedicated read-only bind with missing-source creation disabled. Structural and actual Docker Compose rendered-JSON comparison passed against private Sep23 backup without exposing values; existing ports/three data volumes/other fields retained. Gitleaks/diff checks passed. Independent local image review found restart alone cannot be assumed to reverse disabled-TLS rewrites: require fresh same-image container and effective-config checks during separately approved maintenance. Current deployed clients/cache/queue/drain remain unverified gates. No live access, application-code change, service start, DB/mailbox operation, push or deploy this turn.
