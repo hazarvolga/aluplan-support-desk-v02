@@ -1,6 +1,23 @@
 # Mail transport transition plan — 2026-09-23
 
-Status: TLS transition not executed. Explicitly approved backup-only writes completed as recorded below; no live service/configuration/DB mutation. Application deployment remains NO-GO.
+Status: Approved Stage A1 certificate-only proxy routing/issuance completed. Mail TLS transition NOT executed; no mail settings/restart, private-key export or DB mutation. Application deployment remains NO-GO.
+
+## Stage A1 applied and verified — 2026-09-23
+
+Owner explicitly approved the proposed certificate-only action. Installed exactly /data/coolify/proxy/dynamic/aluplan-mail-certificate.yaml at2026-09-23T16:24:23Z, owner9999:0/mode0644. SHA256 be7c79ac419b4628378df45627a62ec6efd71403bb8920e4b418496f130d4209 matches the documented YAML. Existing target absent; complete staged file published by exclusive hardlink (no overwrite), not a partial write into watched YAML.
+
+Remote private staging /data/coolify/proxy/.aluplan-mail-cert-XHauy0 retains candidate hardlink and default-before.yaml; no secrets stored there. Local nonsecret candidate /tmp/aluplan-cert-stage-a1-VWz5oo retained. Initial preflight intentionally stopped before writes because an overstrict all-files count included non-Traefik Caddyfile. Corrected check restricted to YAML/TOML and reconfirmed no target conflict; Caddyfile untouched.
+
+Observed acceptance:
+- Trusted client handshake and hostname verification PASS for mail.allplan.net.tr:443; expected HTTP418 from noop@internal.
+- Public leaf issuer Let's Encrypt YR1, sole SANmail.allplan.net.tr, notBefore2026-09-23T15:26:06Z, notAfter2026-12-22T15:26:05Z.
+- Before/after status: allplan.net.tr root307; api.allplan.net.tr/api/v1/health200; aluplan.net.tr200. These are bounded unauthenticated status checks, not full customer workflow proof. Initial /health probe404 was wrong-prefix baseline, corrected to /api/v1/health before installation.
+- Preexisting default_redirect_503.yaml hash unchanged:88c2a2923a7939139e5448c65bd25d4df434d4b6f0c6bc6ad8f40b7c29065dfb.
+- Proxy and mailserver remain running with prior Sep2 start times and restart count0. Bounded proxy log tail since installation had no error markers; this is not comprehensive logging/traffic assurance.
+
+Scope: one new public routing file and resulting Traefik-managed ACME issuance/storage. No manual ACME JSON access or mutation, private-key read/export, DNS/firewall action, mail settings, credentials, restart, customer DB/mailbox operation, application deploy or Git push. Issuance/CT effects cannot be undone by merely withdrawing the route. No rollback needed or performed.
+
+Critical distinction: HTTPS443 certificate readiness is now verified; SMTP/IMAP still use their prior configuration and are NOT claimed secure by this step. Existing renewal resolver capability is not proof of a completed renewal or safe certificate-to-DMS handoff. Next separately authorized scope is one-domain protected key/chain export plus production-safe renewal publication design, followed by distinct mail maintenance approval. Do not mount the full ACME store into DMS or activate auto-publishing based solely on this success.
 
 ## Stage A1 exact certificate-only proposal — 2026-09-23
 

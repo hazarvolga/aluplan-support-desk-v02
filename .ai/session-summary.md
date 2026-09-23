@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Approved certificate-only production change completed — 2026-09-23
+
+StageA1 one exact-host dynamic YAML published atomically/exclusively; existing Traefik issued trusted mail.allplan.net.tr cert (Let's Encrypt YR1, expiry2026-12-22).HTTPS418verified, existing root/API/oldsite statuses unchanged, existing config checksum/start/restarts unchanged. Initial preflight stopped safely on non-YAML Caddyfile count; corrected no unrelated writes. No key/ACME body read/export, mail TLS activation, DB, restart, application deployment or push. Full scope and artifact paths in TLS plan; next key handoff and mail maintenance remain separately gated.
+
 ## Exact certificate-only route proposal — 2026-09-23
 
 Scoped live configuration read found actual Traefik3.6.7, watched file directory/ownership, no exact mail rule among22Docker rules, only low-priority file catch-all. Mac DNS/HTTP metadata checks completed, not actual CA proof. Existing TLS plan contains exact new-file YAML using verified noop@internal418 and StageA1 approval boundary plus before/after/rollback checks. Independent plan review completed. No key/ACME contents, mail data, settings writes, restart, issuance, push or deploy.

@@ -1,5 +1,9 @@
 # Current Focus
 
+## Stage A1 certificate issued successfully — 2026-09-23
+
+Owner-approved exact mail-only/noop route installed without overwrite; HTTPS443 now trusted Let's Encrypt YR1/sole mail SAN, expiresDec22.418expected; existing site statuses307/API200/oldsite200 unchanged. Default config checksum and proxy/mail start/restart counts unchanged. No mail TLS/settings/key export/DB/restart/deploy. TLS plan records exact paths/hash/limits. Next separate approval for protected one-domain key handoff; mail transport not yet secured.
+
 ## Stage A1 exact route ready for owner approval — 2026-09-23
 
 Read-only confirms Traefik3.6.7 file watch, https entrypoint, dynamic uid9999/gid0, absent target and no mail-host match among22Docker rules; sole dynamic catch-all priority-1000. External Mac HTTP80 reachable404. TLS plan now contains exact new mail-only priority100/noop@internal YAML and narrow issuance approval/acceptance/withdrawal scope. No live writes or CA issuance. Next explicit StageA1 owner approval; no mail restart/key export/DB/deploy included.
