@@ -1,5 +1,9 @@
 # Current Focus
 
+## Protected one-domain export ready, not active — 2026-09-23
+
+Explicitly approved on-host export completed at /data/aluplan-mail-tls-bru9sghg root700/files600. Exact sole mail domain, trust/expiry/key match/bytes/public443fingerprint verified. Shared ACME source and proxy/mail identities unchanged; key never sent to Mac/Git/output. No mount/mailTLS/settings/restart/timer/DB/deploy. Next exact maintenance diff and failure-safe handoff, separate activation approval. Full evidence in TLS plan.
+
 ## Stage A1 certificate issued successfully — 2026-09-23
 
 Owner-approved exact mail-only/noop route installed without overwrite; HTTPS443 now trusted Let's Encrypt YR1/sole mail SAN, expiresDec22.418expected; existing site statuses307/API200/oldsite200 unchanged. Default config checksum and proxy/mail start/restart counts unchanged. No mail TLS/settings/key export/DB/restart/deploy. TLS plan records exact paths/hash/limits. Next separate approval for protected one-domain key handoff; mail transport not yet secured.

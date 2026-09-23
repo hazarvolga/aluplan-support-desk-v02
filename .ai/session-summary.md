@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Approved private certificate preparation — 2026-09-23
+
+Owner explicitly authorized shared ACME read/one-domain export. Fresh root700 /data/aluplan-mail-tls-bru9sghg contains mail-only chain/key/public receipt600. On-host cryptographic/hostname/trust/byte checks passed, matching public443leaf; source unchanged and no service identity changes. Independent review conditions applied (root-owner guard/python-I). No secrets transferred offhost or displayed. Existing site statuses unchanged; no mount/TLS activation/restart/settings/DB/automation/deploy. Runbook records path/fingerprint and next separate maintenance gate.
+
 ## Approved certificate-only production change completed — 2026-09-23
 
 StageA1 one exact-host dynamic YAML published atomically/exclusively; existing Traefik issued trusted mail.allplan.net.tr cert (Let's Encrypt YR1, expiry2026-12-22).HTTPS418verified, existing root/API/oldsite statuses unchanged, existing config checksum/start/restarts unchanged. Initial preflight stopped safely on non-YAML Caddyfile count; corrected no unrelated writes. No key/ACME body read/export, mail TLS activation, DB, restart, application deployment or push. Full scope and artifact paths in TLS plan; next key handoff and mail maintenance remain separately gated.

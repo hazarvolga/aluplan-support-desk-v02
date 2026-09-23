@@ -1,6 +1,26 @@
 # Mail transport transition plan — 2026-09-23
 
-Status: Approved Stage A1 certificate-only proxy routing/issuance completed. Mail TLS transition NOT executed; no mail settings/restart, private-key export or DB mutation. Application deployment remains NO-GO.
+Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
+
+## Approved one-domain private export verified — 2026-09-23
+
+Owner explicitly approved reading shared certificate storage (including its other private material) solely to extract mail.allplan.net.tr on-host. No keys/certificate store copied to Mac/Git/output. One-shot script sent over verified SSH stdin, executed python3 -I without optimization; not installed as a service/task or production publisher.
+
+Result: /data/aluplan-mail-tls-bru9sghg, root:root0700. fullchain.pem, privkey.pem and public-only VERIFIED.json are root:root0600. Independent postcheck confirmed ownership/modes and no mount of this directory into mailserver. No existing output overwritten; fresh mkdtemp destination only.
+
+Validation performed on host:
+- Shared acme.json opened read-only/no-follow, regular root:root0600 and size-bounded. Exact resolver letsencrypt with exactly one matching main domain and no additional SAN metadata; actual leaf sole SANmail.allplan.net.tr.
+- Strict base64 decoding, bounded selected key/chain, key/public certificate match, validity remaining greater than21days.
+- OpenSSL chain/system trust/purpose/hostname verification and byte readback of both selected files. Current trusted public HTTPS leaf fingerprint matches exported leaf.
+- Leaf SHA256 d1e47f725559175879ce0100dc29b7ce624bb0cdadd7bb0ad431536bdfaeafad; issuer Let's Encrypt YR1; expiry2026-12-22T15:26:05Z.
+- Source bytes identical before/after; no source write. Proxy/mail image/start/running/restart identities unchanged.
+- Postaction bounded responses allplan root307, API /api/v1/health200, aluplan200. Not full customer workflow validation.
+
+Independent one-shot code/security review found no blocker and requested root-owner verification and isolated Python invocation; both applied before execution. Local synthetic helper checks passed for private-file reading, loose-permission rejection, symlink rejection,0600 creation and overwrite rejection before final root-owner tightening; no fake claim of executing a real-root local test. Script syntax checked; actual final on-host validation completed successfully. Only nonsecret script remains at local /tmp/aluplan-mail-export-j8A4eg/export.py; production key bytes never left the host.
+
+No mail settings, credential changes, mounts, restarts, auto-renewal publisher/timer, DNS/firewall, mailbox/DB operation, deploy or Git push. This is protected certificate preparation, not mail TLS activation, automatic renewal acceptance, host cleanliness or disaster-recovery proof. Files fsynced; power-loss/directory-metadata durability not claimed. Current private candidate retained; no deletions.
+
+Next: prepare exact same-image mail mount/TLS/client/drain maintenance diff and failure-safe renewal handoff, preserving these existing files. Any actual mount/recreate/settings/credential operation requires distinct explicit maintenance approval. Do not treat general continuation as permission to activate or rotate anything.
 
 ## Stage A1 applied and verified — 2026-09-23
 
