@@ -1,5 +1,9 @@
 # Current Focus
 
+## Attachment collision fixed locally; domain proof open — 2026-09-23
+
+Real-disk test reproduced same-folder/name/millisecond key collision. Minimal UUID key addition +255byte UTF-8 filename bound fixed it; old keys unchanged. Storage/inbound focused71tests passed, independent code/security review approved after long-name correction. S3 is command-mock proof only. Combined ticket/message/storage persistence test not yet completed: source review identifies post-insert failures that leave partial domain state/manual holds. Next disposable full/relation-compatible DB fixture and actual post-commit failure tests; no unsafe replay or broad redesign. No live access/change/publication. Details in TLS transition plan latest checkpoint.
+
 ## Real PostgreSQL claim checkpoint — 2026-09-23
 
 Actual Prisma7.4.2 + PG17.10 focused table test4/4: contending unique inserts/observed lock wait, terminal CAS/stale-owner rejection, payload collision evidence preservation, pending owner after client replacement. Existing46regressions pass. Dedicated code/security review led to complete async-operation drainage fix in test only. Synthetic isolated tmpfs DB, no live/customer access. Detailed evidence/limits in TLS plan. Next actual ticket/message/storage persistence and ambiguous post-commit failure proof; no full application/backup/crash durability claim. Production NO-GO remains.

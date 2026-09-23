@@ -2,6 +2,21 @@
 
 Status: PLAN ONLY. No production mutation approved or executed. Application deployment remains NO-GO.
 
+## Storage collision fix and domain-write inspection — 2026-09-23
+
+During preparation of actual ticket/message/storage tests, found a release-relevant byte-integrity issue: StorageService built object keys from folder + millisecond timestamp + sanitized name. Two same-name uploads in one folder at the same timestamp successfully targeted the same local file. A new real-disk regression first failed on identical returned keys. This is a reproducible overwrite risk, not proof that historical customer files were overwritten.
+
+- Minimal local fix adds crypto.randomUUID to new keys; retains timestamp/name shape and opaque-key reads. Existing stored keys/data are not renamed. Final filename component is bounded to255UTF-8bytes, preserving code points and ordinary extensions up to32bytes; exceptionally longer extensions are truncated as part of the name. Original attachment display filename remains separate in existing metadata.
+- New actual disk tests verify two different byte sequences remain independently retrievable at the same clock tick and long ASCII/multibyte names still work. S3 command-mock test verifies separate keys/buffers; this is not live S3/R2 upload durability proof. UUIDs remove the practical timestamp collision, not a mathematical no-collision guarantee.
+- Six focused suites/71tests passed (storage upload/read/authorization plus inbound attachment/reliability). First combined run failed only because the network-denied sandbox blocked the existing HTTP test's loopback listener; final run permits loopback only, no external networking. Test data lives in mkdtemp-owned synthetic directories and is removed by teardown. Independent code/security review caught initial long-filename regression; fixed and re-reviewed with no remaining actionable issue.
+- Shared upload callers include manual ticket attachments, inbound mail, branding and knowledge-pool/crawler uploads. Direct callpath/read-contract inspection found opaque key consumers; folder layout stays unchanged, including public brand/logos single-file route. GitNexus impact/detect tools were unavailable; no index rebuild/tool installation performed.
+- Independent source inspection: TicketsService.create inserts ticket before synchronous event emission; inbound creates its first message afterward. addMessage inserts message before status updates/recipient queries/event emission. Errors at these later points can leave partial committed domain state while inbound is held. Synchronous throwing listeners are a valid injectable boundary test, not evidence that ordinary Nest listeners propagate errors. No realDB domain-failure reproduction in this batch.
+- Do not reuse existing broad db-utils cleanup/ambient PrismaService factories for this proof. Next build a disposable schema-compatible application fixture using explicit DB identity and scoped services; test post-insert failure without automatic replay and inspect ticket/message/attachment linkage. The previous claim-only table cannot establish application-schema parity.
+
+This batch fixes one demonstrated local storage risk; the intended combined actual domain-persistence test remains OPEN. No production/customer data access, migration, push or deploy; no historical byte recovery claim.
+
+Local checkpoints: tests2b395311, product17780dff. Focused changed-file TypeScript diagnostics0 with existing Jest/Express/Multer declarations explicitly resolved; not a full backend build. Final repeated test run71/71. No new dependency or environment variable; no schema migration. Existing keys are compatible, but older product code retains the collision risk and is not recommended as a safety rollback.
+
 ## Real PostgreSQL claim checkpoint — 2026-09-23
 
 - Added opt-in `inbound-claim-postgres.integration.spec.ts`, invoking actual claim/complete/hold helpers through Prisma7.4.2/PrismaPg and PostgreSQL17.10. No delegate mocks. Tests cover one owner with six contending inserts, terminal compare-and-set competition, conflicting payload fencing with retained attachment-failure evidence, and pending ownership surviving graceful client replacement.

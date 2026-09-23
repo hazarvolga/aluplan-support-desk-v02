@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Real storage integrity and domain-write preparation — 2026-09-23
+
+Discovered/reproduced timestamp-only upload-key collision using actual synthetic disk writes. Added UUID new-key identity with byte-bounded filenames; existing objects untouched. Real disk byte retrieval/long UTF-8 name tests and S3 key-command test added. Sixsuites71tests passed; independent code/security review approved. Product scope deliberately small. Source-only TicketsService inspection identified separate post-insert failure windows; actual combined ticket/message/attachment DB proof remains OPEN, not conflated with these passing storage tests. No production access or publication.
+
 ## PostgreSQL claim concurrency proof — 2026-09-23
 
 Added real PrismaPg/PG17 isolated claim integration tests, final4/4 plus existing46/46. Schema-matched inbound log table only, no fake delegates. Observed real lock contention and owner fencing; completed conflicting payload retains ticket/attachment-failure metadata. Graceful client replacement leaves pending claim held. Independent review found and corrected test failure-path draining; no product edits. TLS plan records image/schema identity and proof boundaries. Real ticket/message/storage transactions, DB restart/crash durability and full application release gates remain unproven. No production/publication changes.
