@@ -1,5 +1,11 @@
 # Condensed Project Memory
 
+## Webhook outcome mitigation checkpoint — 2026-09-23
+
+Explicit completed alone returns success; held/unknown resolves to fixed503. Controller10/10, combined17suites175tests, backend294roots0diagnostics; controller-only coverage100%. Synthetic/networkdenied proof, not realHTTP/provider/DB proof. No schema/dependency/live/push/deploy changes. Dedicated reviewer unavailable; final acceptance open. Detailed evidence and source-retention decision tree in source-consolidation top section.
+
+HIGH source-recovery blocker remains:503 is not custody of original message/attachments. Actual webhook provider/use/retention cannot be established from local sources. Next smallest step is separately approved read-only configuration evidence, not blind archive engineering, disabled webhook or automatic replay. Preserve explicit live-access and publication gates. Production NO-GO.
+
 ## Local shared inbound claim patch — 2026-09-23
 
 **WIP / HIGH blocker found in final security review:** webhook controller returns HTTP200 even when service returns held; log metadata/fingerprint is not recoverable original content. A pre-write failure or concurrent pending delivery can therefore be acknowledged with no locally recoverable payload. Provider retention/retrieval is unverified. Do not call this durable webhook intake acceptance or source-preserving delivery. Non-2xx alone is insufficient: next batch must prove provider-specific retained-source retrieval or a bounded protected durable-source design plus explicit controller outcome tests. IMAP source retention does not establish webhook recovery. Security-review agent subsequently started successfully and identified this blocker; dedicated code-review agent remained unavailable. No patch approval or release acceptance is claimed.
