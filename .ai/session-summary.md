@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Held intake correlation correction — 2026-09-23
+
+Implemented minimal known-ID/evidence retention in existing hold CAS for both IMAP and webhook. No TicketsService, schema, lifecycle or auto-replay change. Six assertions failed first; final125focused tests and4actualPG tests passed. New PG constraint-injection proves retained ticket correlation after rejected initial message. Corrected direct-event test interpretation against actual Nest wrapper; unknown-before-return/message recovery still open. Independent code/security reviewed; test/product commits1ae587eb/db3c7529. Temporary synthetic fixture cleaned; no live/customer access or publication. Next scoped message/status atomicity proof; production NO-GO unchanged.
+
 ## Actual domain persistence checkpoint — 2026-09-23
 
 Added local-only opt-in PostgreSQL domain test3/3 with actual ticket/access/PII/local-storage services. Normal attachment bytes and no duplicate replay proved; injected synchronous post-commit listener failures leave incomplete domain state and manual-held claims with missing linkage. Not production failure incidence or completed recovery proof. Reviewed test, existing71regressions green; no product/live changes. TLS transition plan records exact fixture, limitations and next bounded release-blocking correction.

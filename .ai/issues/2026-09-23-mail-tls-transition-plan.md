@@ -2,6 +2,22 @@
 
 Status: PLAN ONLY. No production mutation approved or executed. Application deployment remains NO-GO.
 
+## Known domain correlation retained on hold — 2026-09-23
+
+Bounded local correction, not full partial-commit recovery. IMAP and webhook now carry returned ticket/message identities into the existing owner-fenced hold update. An existing thread ID is retained only after sender eligibility and owner checks. Unknown identities remain absent; no lookup by subject/body, automatic replay, new acknowledgment, schema, dependency or TicketsService change.
+
+- Corrected interpretation of the previous injected event failure: installed Nest event-emitter3.0.1 wraps @OnEvent callbacks in async try/catch with default suppressErrors=true; discovered ticket.created/message_added listeners use that wrapper. Direct EventEmitter.once throwing in the test is an adversarial boundary, not evidence deployed listeners propagate those errors.
+- Six intended assertions first failed before implementation; after the patch and added authorization/attachment checks, nine focused suites passed125/125 under an empty environment/network-denied sandbox. Includes shared claims, old-owner fencing, sender eligibility, IMAP acknowledgment, webhook, review API and signature guards.
+- Actual disposable PostgreSQL integration4/4 passed. Added a real temporary CHECK constraint rejecting the initial message after ticket creation: held row retained ticketId, message remained absent, retry did not create another ticket/message. Constraint removed in finally. Existing direct-event case still demonstrates unknown new-ticket ID before service return; reply case now retains authorized thread ID but deliberately does not invent unknown message ID.
+- Changed-file TypeScript diagnostics0. Focused three-product-file coverage: statements86.06%, lines88.50%, functions92%, branches75.69%; this is not whole-backend coverage or full project typecheck.
+- Independent code and security reviews found no source blocker; reviewer identified the now-obsolete real-PG thread-null assertion, corrected before the4/4 run. Dedicated additional security-agent start was unavailable due thread limit; existing independent planner performed source security review. No claim of independently rerun tests.
+- GitNexus tool/CLI and Graphify report unavailable in this checkout; source callsite/diff impact review substituted. Scope is holdInbound plus its two intake callers; no ticket lifecycle/event listener changes.
+- Local test commit1ae587eb; local product commitdb3c7529. Owned synthetic tmpfs PostgreSQL container/network removed, loopback relay terminated, and temporary attachment directory cleaned. Only generated test state discarded. No production access, customer data, push or deploy.
+
+Remaining limitations: failure before service return, ambiguous DB commit response, process crash, failed hold persistence, or owner-CAS replacement may still leave incomplete/unknown correlation. This patch neither repairs missing bytes/messages nor proves retained-source retrieval or operator reconciliation. No blanket swallowing of event/database failures.
+
+Next bounded step: reproduce an actual post-insert ticket-status update failure in addMessage using isolated PostgreSQL, then assess an atomic message/status write correction without changing notification semantics or claiming an outbox. Preserve the remaining mail TLS/renewal, webhook source custody, independent-writer pause, backup restoration and exact Node20/Linux artifact gates. Production remains NO-GO.
+
 ## Actual domain persistence checkpoint — 2026-09-23
 
 New opt-in `inbound-domain-persistence.integration.spec.ts`: real Prisma7.4.2/PostgreSQL17.10, TicketsService, TicketAccessService, PiiMaskingService and LOCAL StorageService; no application bootstrap or production event listeners. Three tests passed twice, including a fresh-fixture run after independent review strengthened explicit failure-point assertions.

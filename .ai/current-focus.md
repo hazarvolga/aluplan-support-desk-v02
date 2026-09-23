@@ -1,5 +1,9 @@
 # Current Focus
 
+## Known held-intake linkage preserved — 2026-09-23
+
+Local IMAP/webhook correction retains returned ticket/message IDs and partial-attachment evidence under unchanged exact-owner hold CAS. No automatic replay/ACK or TicketsService/schema change. Six RED assertions before patch; focused125/125 and realPG4/4 green; changed-fileTS0; independent code/security review passed. Nest @OnEvent suppresses listener errors by default, so prior direct synchronous injection is not live propagation evidence. Before-return IDs/process-crash/reconciliation gaps remain. Next reproduce actual addMessage post-insert status-write failure and assess bounded transaction correction. Tests1ae587eb/productdb3c7529; no live access/push/deploy. Details in TLS transition plan.
+
 ## Real domain persistence exposes partial commits — 2026-09-23
 
 Three real PostgreSQL/TicketsService/LOCAL-storage tests passed: normal path byte integrity and replay suppression; injected post-insert events leave partial ticket/message state with held, unlinked claims. This is characterization, not a fix or production event-propagation proof. Independent review approved narrow test scope; existing71regressions pass. No live access/change. Next bounded correction of post-write error/correlation handling, not automatic replay or broad redesign. Detailed setup and limits in TLS transition plan. Production NO-GO remains.
