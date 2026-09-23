@@ -315,6 +315,63 @@ describe('inbound reliability: shared claims and safe acknowledgement', () => {
         expect(h.counts()).toEqual({ tickets: 1, replies: 0 });
         expect(h.connection.addFlags).not.toHaveBeenCalled();
         expect(h.logs.get(messageId)?.processed).toBe(false);
+        expect(h.logs.get(messageId)).toHaveProperty('ticketId', 'ticket-1');
+        expect(h.logs.get(messageId)?.error).toContain('"ticketMessageId":"initial-message"');
+    });
+
+    it('retains returned ticket identity when initial message persistence fails', async () => {
+        const h = createHarness();
+        h.prisma.ticketMessage.create.mockRejectedValueOnce(new Error('Synthetic message failure'));
+        await h.service.handleInboundEmails();
+        await h.service.handleInboundEmails();
+        expect(h.logs.get(messageId)).toMatchObject({ processed: false, ticketId: 'ticket-1' });
+        expect(h.logs.get(messageId)?.error).not.toContain('ticketMessageId');
+        expect(h.counts()).toEqual({ tickets: 1, replies: 0 });
+        expect(h.connection.addFlags).not.toHaveBeenCalled();
+    });
+
+    it.each(['imap', 'webhook'])('retains authorized thread identity after ambiguous reply failure (%s)', async ingress => {
+        const h = createHarness();
+        h.tickets.addMessage.mockRejectedValueOnce(new Error('Synthetic ambiguous reply failure'));
+        if (ingress === 'imap') await h.deliver(mail('[SUP-123]'));
+        else await h.webhook.handleInboundEmailWebhook({ from: 'customer@example.invalid', messageId,
+            subject: '[SUP-123]', text: 'Synthetic body' });
+        expect(h.logs.get(messageId)).toMatchObject({ processed: false, ticketId: 'ticket' });
+        expect(h.logs.get(messageId)?.error).not.toContain('ticketMessageId');
+    });
+
+    it('retains returned webhook reply identity when completion logging fails', async () => {
+        const h = createHarness();
+        h.prisma.inboundEmailLog.updateMany.mockRejectedValueOnce(new Error('Synthetic completion failure'));
+        const payload = { from: 'customer@example.invalid', messageId, subject: '[SUP-123]', text: 'Synthetic body' };
+        expect(await h.webhook.handleInboundEmailWebhook(payload)).toBe('held');
+        expect(await h.webhook.handleInboundEmailWebhook(payload)).toBe('held');
+        expect(h.logs.get(messageId)).toMatchObject({ processed: false, ticketId: 'ticket' });
+        expect(h.logs.get(messageId)?.error).toContain('"ticketMessageId":"reply-1"');
+        expect(h.counts()).toEqual({ tickets: 0, replies: 1 });
+    });
+
+    it('retains attachment failure evidence when finalization also fails', async () => {
+        const h = createHarness();
+        h.storage.uploadFile.mockRejectedValueOnce(new Error('Synthetic attachment failure'));
+        h.prisma.inboundEmailLog.updateMany.mockRejectedValueOnce(new Error('Synthetic completion failure'));
+        await h.deliver({ ...mail(), attachments: [{ filename: 'a.txt', content: Buffer.from('a'),
+            contentType: 'text/plain', size: 1 }] } as ReturnType<typeof mail>);
+        expect(h.logs.get(messageId)).toMatchObject({ processed: false, ticketId: 'ticket-1' });
+        expect(JSON.parse(h.logs.get(messageId)!.error!.slice('INBOUND_HOLD_V1:'.length))).toMatchObject({
+            ticketMessageId: 'initial-message', failedAttachmentCount: 1, note: 'INBOUND_ATTACHMENT_FAILURE',
+        });
+    });
+
+    it.each(['imap', 'webhook'])('never links another customer ticket to a denied sender (%s)', async ingress => {
+        const h = createHarness();
+        h.prisma.ticket.findUnique.mockResolvedValue({ id: 'private-ticket', userId: 'other-customer' });
+        if (ingress === 'imap') await h.deliver(mail('[SUP-123]'));
+        else await h.webhook.handleInboundEmailWebhook({ from: 'customer@example.invalid', messageId,
+            subject: '[SUP-123]', text: 'Synthetic body' });
+        expect(h.logs.get(messageId)).not.toHaveProperty('ticketId');
+        expect(h.logs.get(messageId)?.error).toContain('INBOUND_TICKET_OWNER_MISMATCH');
+        expect(h.tickets.addMessage).not.toHaveBeenCalled();
     });
 
     it('documents the existing in-flight reset control allowing another poll after an error', async () => {

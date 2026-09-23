@@ -104,6 +104,28 @@ run('actual inbound domain persistence and post-commit failure boundaries', () =
         expect(await db.ticket.count({ where: { subject } })).toBe(1);
     });
 
+    it('retains the returned ticket when PostgreSQL rejects its initial message, without replay', async () => {
+        const subject = `Database rejection ${randomUUID()}`;
+        const id = `<${randomUUID()}@example.invalid>`;
+        // Dedicated opt-in disposable database only; existing rows remain untouched.
+        await db.$executeRaw`ALTER TABLE ticket_messages ADD CONSTRAINT synthetic_reject_message
+            CHECK (message <> 'Synthetic customer message') NOT VALID`;
+        try {
+            expect(await deliver(subject, id)).toBe(false);
+        } finally {
+            await db.$executeRaw`ALTER TABLE ticket_messages DROP CONSTRAINT synthetic_reject_message`;
+        }
+        const ticket = await db.ticket.findFirstOrThrow({ where: { subject } });
+        expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(0);
+        const claim = await db.inboundEmailLog.findUniqueOrThrow({ where: { messageId: id } });
+        expect(claim).toMatchObject({ processed: false, ticketId: ticket.id });
+        expect(claim.error).toContain('PROCESSING_FAILED');
+        expect(claim.error).not.toContain('ticketMessageId');
+        expect(await deliver(subject, id)).toBe(false);
+        expect(await db.ticket.count({ where: { subject } })).toBe(1);
+        expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(0);
+    });
+
     it('characterizes a reply committed and ticket reopened before event failure, with attachment still absent', async () => {
         const ticket = await tickets.create({ subject: `Thread ${randomUUID()}` } as never, userId);
         await db.ticket.update({ where: { id: ticket.id }, data: { status: 'PENDING_CUSTOMER' } });
@@ -118,7 +140,8 @@ run('actual inbound domain persistence and post-commit failure boundaries', () =
         expect(await db.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toHaveProperty('status', 'OPEN');
         expect(await db.attachment.count({ where: { messageId: messages[0].id } })).toBe(0);
         const claim = await db.inboundEmailLog.findUniqueOrThrow({ where: { messageId: id } });
-        expect(claim).toMatchObject({ processed: false, ticketId: null });
+        expect(claim).toMatchObject({ processed: false, ticketId: ticket.id });
+        expect(claim.error).not.toContain('ticketMessageId');
         expect(claim.error).toContain('PROCESSING_FAILED');
         expect(await deliver(subject, id)).toBe(false);
         expect(await db.ticketMessage.count({ where: { ticketId: ticket.id } })).toBe(1);

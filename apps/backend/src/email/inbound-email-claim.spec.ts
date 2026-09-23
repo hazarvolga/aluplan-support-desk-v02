@@ -20,6 +20,30 @@ function fixture(seed?: any) {
 }
 
 describe('durable inbound claims (synthetic DB, no transaction claim)', () => {
+    it('retains known domain evidence on hold without acknowledging or allowing stale overwrite', async () => {
+        const { db, rows } = fixture(); const claim = await claimInbound(db, input);
+        if (claim.kind !== 'claimed') throw Error('claim');
+        const outcome = { ticketId: '00000000-0000-4000-8000-000000000001',
+            ticketMessageId: '00000000-0000-4000-8000-000000000002', failedAttachmentCount: 1 };
+        expect(await holdInbound(db, claim, 'PROCESSING_FAILED', outcome)).toBe(true);
+        const row = rows.get(input.messageId);
+        expect(row).toMatchObject({ processed: false, ticketId: outcome.ticketId });
+        expect(JSON.parse(row.error.slice('INBOUND_HOLD_V1:'.length))).toMatchObject({
+            ticketMessageId: outcome.ticketMessageId, failedAttachmentCount: 1, note: 'INBOUND_ATTACHMENT_FAILURE',
+        });
+        expect(await holdInbound(db, claim, 'PROCESSING_FAILED', { ticketId: 'other' })).toBe(false);
+        expect(await completeInbound(db, claim, {})).toBe(false);
+        expect((await claimInbound(db, input)).kind).toBe('held');
+        expect(rows.get(input.messageId)).toEqual(row);
+    });
+
+    it('does not erase existing ticket linkage when no new evidence is known', async () => {
+        const { db, rows } = fixture(); const claim = await claimInbound(db, input);
+        if (claim.kind !== 'claimed') throw Error('claim');
+        rows.set(input.messageId, { ...rows.get(input.messageId), ticketId: 'known-ticket' });
+        await holdInbound(db, claim, 'PROCESSING_FAILED');
+        expect(rows.get(input.messageId)).toHaveProperty('ticketId', 'known-ticket');
+    });
     it('only one concurrent ingress acquires; pending never acknowledges', async () => {
         const { db } = fixture();
         const results = await Promise.all([claimInbound(db, input), claimInbound(db, input)]);
