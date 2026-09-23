@@ -2,6 +2,8 @@
 
 ## Current release checkpoint — 2026-09-23 (supersedes historical status below)
 
+- Latest step is TEST/PLAN-only:9known-gap characterizations reproduce unsafe earlyACK/batchabort/cleanup and duplicatewrite paths; green is defect reproduction, not safetyacceptance. Existing105mail and13dependency controls pass. No product/config/data change. Independentplanner/security agree IMAP+webhook need shared durableclaim; markSeenfalse alone unsafe. Await owner agreement to visible manualreview for ambiguous/interrupted/legacy states before implementing; no current inboundlog adminread surface. No production access/push/deploy, globalNO-GO.
+
 - Latest mail source patch f73a6902 / tests bcc84323: exactmailparser3.9.28+nodemailer10.0.10, minimal namedtype-only SMTP imports. Original8controls RED6pass/2fail→8pass;5newcompatibilitycontrols total13pass; mockedmail105pass, loopbackwireTLS10pass, WebSocket15pass, backend293roots/0typeerrors. Independentreview/Gitleaks pass. Actual localNode24 with disclosed matchingborrowedDBdeclarations, not Node20image or provider delivery proof.
 - Existing76432image and2C123H are PRE-mail-patch; no newimage/rescan/production action. Next separate mockedIMAPfailure/ack/idempotence characterization and minimal reliabilityfix. markSeen-before-success/resourcebounds/historicalTLSconfig remain open; productionNO-GO. The older mail-triage-only bullet below is superseded.
 

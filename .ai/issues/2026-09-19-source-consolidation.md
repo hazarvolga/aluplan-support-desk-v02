@@ -1,5 +1,42 @@
 # Local source consolidation — 2026-09-19
 
+## Inbound acknowledgment decision gate — 2026-09-23
+
+Scope after checkpoint66e0c9f5: local source analysis and synthetic characterization only. No production inspection, real mailbox, customer DB, setting, migration, dependency or application-behavior changes. Planner and security reviewer independently rejected a one-line markSeen:false patch. Implementation is paused for an explicit operational decision below; this is not a new deployment approval request.
+
+### Why automatic retry cannot simply be enabled
+
+- IMAP fetch requests markSeen:true before MIME parsing. One parser failure stops the batch; connection.end is not in finally. Installed node-imap maps markSeen:false to BODY.PEEK, so changing the flag changes retry eligibility, not just presentation.
+- TicketsService.create inserts the ticket before emitting ticket.created; addMessage inserts the message before awaited ticket/status/recipient work and event emission. A rejected call can therefore follow a committed customer write. InboundEmailLog.processed becomes true only later. A false value is not proof that nothing was saved.
+- IMAP and OmniChannelService webhook both use findUnique then upsert(update:{}), with no exclusive processing claim. A unique messageId protects the log row, not the ticket/message side effect. isProcessing only guards one IMAP service instance. An IMAP-only fix cannot establish cross-ingress safety.
+- Existing partial attachment handling intentionally keeps processed=true with INBOUND_ATTACHMENT_FAILURE and the message ID. Preserve that fence; full-message replay is not file recovery.
+- InboundEmailLog is not exposed through an existing admin read API/UI in current source. A new manual-hold state without an operator-visible report would create a hidden backlog. Do not quietly substitute that for silent loss.
+
+### Proposed minimal implementation, pending owner decision
+
+Characterization evidence: new email-inbound-reliability.characterization.spec.ts executes actual intake methods with synthetic doubles,9/9 cases reproduced. Two mocked post-commit failures followed by delivery cause2ticket or2reply writes; synchronized IMAP/webhook reads produce2writes with1unique log. Parser failure calls the parser for only1of2items; search/parse failure closes0connections. Existing successful/partial-attachment marker controls suppress replay, and the poll lock resets after failure. These PASS results demonstrate the current defects and preserved controls; they are NOT desired safety acceptance, actual PostgreSQL atomicity evidence, current mailbox observation or a fix. No skipped tests; new file clearly labels the scope and requires replacement of gap assertions on remediation.
+
+Parent combined105existing regressions+9characterizations=114pass across10suites; separate actualdependency13/13 still passes. Runs used env-i and network-denied macOS sandbox, actualRC dependencies, disclosed matching sibling generatedDBpackage for existing tests. No provider/app/DB execution. Gitleaks newtest scan and git diffcheck passed. No product behavior change or production effect.
+
+Preserve the current schema and both intake routes initially; no new queue, provider, infrastructure, broad TicketsService transaction rewrite or automatic historical replay. Use one shared durable claim protocol, explicit processing outcomes and per-message cleanup. Exact implementation remains test-first; estimated three to four product files plus focused tests, not a fixed delivery promise.
+
+| Outcome | Proposed behavior |
+|---|---|
+| Durable successful message or recorded intentional terminal ignore | Acknowledge only after persistence; no mailbox deletion/move/expunge. |
+| Failure proven before any domain-write attempt | Bounded later retry may be permitted by a named durable safe-retry state. |
+| Call may have committed, interrupted claim, conflicting identity or unknown legacy unprocessed row | Keep source mail, fence automatic replay and expose a reason in the review list. Never release merely because a timeout elapsed. |
+| Message saved but attachment failed | Preserve completed-message fence and attachment failure marker; reconcile files separately. |
+
+Both IMAP and webhook must honor the same exclusive claim before domain writes. Use unique claim ownership and conditional completion; do not misuse processed=true as a lock. Existing error field markers are a possible migration-free implementation, not yet an approved schema substitute or proof of crash safety.
+
+The owner must accept the availability tradeoff: uncertain messages can wait for review instead of risking duplicate tickets/replies. Define the responsible support administrator, private read-only list of held items, and reconciliation checklist before activation. The first implementation/rehearsal remains synthetic/local; no actual hold, retry, replay, flag write or customer record change is authorized now. Review must compare existing ticket/message/attachment outcomes before any separately approved recovery action, never blindly clear a hold or import a local DB.
+
+### Separate identity and security limitations
+
+Header Message-ID is sender-controlled, and imap-UID fallback omits mailbox/UIDVALIDITY. A processed match alone does not prove identical content or sender. Changing the key without legacy handling could replay old mail; design/test the transition before rollout. No current production collision or loss is established here. Sender eligibility and exact ticket ownership remain required, but a matching From address is not authenticated customer identity; mailbox anti-spoof enforcement remains unverified. Webhook signature protection exists, but current production activation/configuration was not checked.
+
+Next: checkpoint bounded defect characterizations and obtain the hold/review workflow decision, then implement the shared claim/ack patch with failing safety tests and independent review. Previous13mail/105mocked/10TLS passes do not cover these failure-ordering defects. Existing image76432 is still pre-mail-patch; all final artifact and production gates remain NO-GO.
+
 ## Mail dependency remediation and compatibility evidence — 2026-09-23
 
 Supersedes version-candidate-only statements in the preceding historical triage below. Local test commit bcc84323 and patch f73a6902; no remote publication. Scope: backend mailparser3.9.28, nodemailer10.0.10, generated pnpm9.15.4 lock subtree, type-only SMTP import adaptation and regression controls. Lifecycle scripts disabled during public-registry install; frozen-lock install passed. Existing root/package engine>=20 is broader than new transitive html-to-text10.0.1 requirement>=20.19.0; target DockerNode20.20.2 satisfies declared floor, but artifact runtime acceptance is still required. No runtime mail configuration or IMAP acknowledgment change.

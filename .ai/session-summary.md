@@ -1,5 +1,15 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-23 — Inbound failure characterization; application change deliberately paused
+
+Continued local-only after66e0c9f5. Aluplan skill preserved current mail/ticket contracts; no graph tool/report available, so direct caller/table/consumer review used. Independent planner and security agents agree a one-line markSeen:false change is unsafe: a ticket/message may already be committed when TicketsService later throws; both IMAP and webhook share the unique-log/upsert path without exclusive claim. Current source has no admin read surface for inboundEmailLog, so manual hold needs a visible operational review path, not only an error marker.
+
+Added only email-inbound-reliability.characterization.spec.ts:9/9 cases reproduce current behavior, explicitly NOT safety acceptance. Synthetic counters show two ticket writes / two reply writes on repeated post-commit-failure delivery and two concurrent cross-channel writes despite one stateful unique log. One parser error aborts the remaining batch and search/parse errors omit connection.end. Existing processed/partial-attachment fences prevent replay; isProcessing resets after errors. Real ingress methods with mock parser/IMAP/DB/TicketsService/storage, no actual DB transaction or provider proof. Replace gap assertions with desired safety regressions when approved fix lands.
+
+Agent isolated1suite/9pass; parent combined10suites/114pass includes105existing regressions plus9characterizations, none skipped. Parent actual dependency harness13/13 passes. env-i/macOS network-denied, Node24.18.0; existing combined-suite resolver uses schema-matched sibling generatedDBpackage and RCsharedschemas as disclosed previously. No app bootstrap or customer data. Newtest Gitleaks no leaks and diffcheck clean. No production counts, new image/scan/typecheck/coverage or delivery claims.
+
+Proposed bounded no-schema-first design is recorded in source-consolidation; implementation awaits owner decision that ambiguous/interrupted/legacy messages are held visibly for support-administrator reconciliation rather than blindly replayed. Shared claim adoption must cover both routes; attachment failures keep existing duplicate fence. Header identity/UIDVALIDITY and From spoofing trust remain separate checks. No product/dependency/schema/config change; no live access/push/deploy. Global NO-GO remains.
+
 ## 2026-09-23 — Scoped mail dependency patch, local compatibility gates passed
 
 Test bcc84323 / patch f73a6902 pin mailparser3.9.28 and nodemailer10.0.10 coherently; no major override or unrelated lock update. New actual-dependency harness initially6pass/2expectedfail on direct6.10.1/nested7.0.13, unchanged original controls8/8 after update; five new compatibility controls make13/13. Original tiny2193byte/128address accumulator probe counted8256copies in each old path versus0patched;2second child deadline/256MiB V8heap/64KiB output/emptyenv. Not general MIME DoS proof.

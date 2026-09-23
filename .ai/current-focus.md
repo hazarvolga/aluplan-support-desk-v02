@@ -1,5 +1,13 @@
 # Current Focus
 
+## Inbound retry behavior requires explicit hold/review decision — 2026-09-23
+
+TEST/PLAN-only follow-up to66e0c9f5. Nine synthetic characterization cases reproduce current gaps: markSeen-before-parse, batch abort, missing connection cleanup, two ticket/reply writes after mocked post-commit failure, and two writes from concurrent IMAP/webhook despite one unique log. Successful completion and partial-attachment fences plus poll-lock reset remain controls. These tests passing means defects reproduced, NOT reliability acceptance or a RED/GREEN fix. Existing105mail regressions and13dependency controls still pass; no product code, config, DB or live change.
+
+Independent planner/security reviews found that both ingestion services share the unsafe find/upsert path, and TicketsService can throw after a write. Do NOT change markSeen:false alone or add an IMAP-only lock. Proposed minimal next patch: shared durable claim before domain effects, explicit outcomes, success-only acknowledgment, cleanup, and a visible private review list. Ambiguous/interrupted/legacy unprocessed states must not auto-replay. This can delay legitimate mail pending operator reconciliation; obtain owner agreement to that workflow before implementation. No current adminAPI/UI exposes these inbound logs. Identity collisions/UIDVALIDITY and From authentication remain explicit separate risks; no current live loss proven.
+
+No production observation/action/push/deploy. Sourcef73a6902 mail patch remains unbuilt in old76432 image; all artifact, bytes/recovery and host gates remain NO-GO. Detailed decision and evidence: source-consolidation top section.
+
 ## Mail dependency patch verified locally; acknowledgment safety next — 2026-09-23
 
 Local test checkpoint bcc84323 and patch f73a6902: exact mailparser3.9.28 + nodemailer10.0.10 replace both vulnerable direct6.10.1 and nested7.0.13 paths. Original bounded actual-parser tests RED6pass/2fail → GREEN8/8; five additional compatibility controls make13/13. Both old paths copied8256 array elements for128addresses; patched paths copied0. Existing mail9suites/105tests and real loopbackTLS10/10 pass; previous WebSocket15/15 still pass. Backend no-emit293files/0diagnostics after a named type-only import adaptation; emitted provider/spec JS unchanged. Independent code/security review approved this bounded diff; Gitleaks found no leaks in changed-source/test scans.
