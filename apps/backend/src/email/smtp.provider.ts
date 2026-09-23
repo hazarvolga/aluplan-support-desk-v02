@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SettingsService } from '../settings/settings.service';
 import { EmailProvider, SendEmailOptions } from './interfaces/email-provider.interface';
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter, type TransportOptions } from 'nodemailer';
 
 @Injectable()
 export class SmtpProvider implements EmailProvider {
@@ -9,7 +9,7 @@ export class SmtpProvider implements EmailProvider {
 
     constructor(private readonly settings: SettingsService) { }
 
-    private async getTransporter(): Promise<nodemailer.Transporter | null> {
+    private async getTransporter(): Promise<Transporter | null> {
         const host = await this.settings.getValue('email.smtp.host');
         if (!host) return null;
 
@@ -30,7 +30,7 @@ export class SmtpProvider implements EmailProvider {
                 // Ensure modern TLS version is used
                 minVersion: 'TLSv1.2'
             }
-        } as nodemailer.TransportOptions);
+        } as TransportOptions);
     }
 
     async send(options: SendEmailOptions): Promise<{ messageId: string }> {
