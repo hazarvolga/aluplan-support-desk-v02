@@ -1034,32 +1034,37 @@ export class TicketsService {
             throw new BadRequestException('message cannot be empty');
         }
 
-        const message = await this.prisma.ticketMessage.create({
-            data: {
-                ticketId,
-                senderId,
-                message: messageBody,
-                isInternal: dto.isInternal ?? false,
-                channel: dto.channel || 'WEB',
-            },
-            include: { sender: { select: { id: true, fullName: true, avatarUrl: true } } },
+        // Keep the reply and its required ticket updates atomic. No external effects in tx.
+        const message = await this.prisma.$transaction(async (tx) => {
+            const created = await tx.ticketMessage.create({
+                data: {
+                    ticketId,
+                    senderId,
+                    message: messageBody,
+                    isInternal: dto.isInternal ?? false,
+                    channel: dto.channel || 'WEB',
+                },
+                include: { sender: { select: { id: true, fullName: true, avatarUrl: true } } },
+            });
+
+            if (ticket.status === TicketStatus.PENDING_CUSTOMER && ticket.userId === senderId) {
+                // Another customer reply may already have opened it; never reopen CLOSED/deleted.
+                await tx.ticket.update({
+                    where: { id: ticketId, status: { in: [TicketStatus.PENDING_CUSTOMER, TicketStatus.OPEN] },
+                        userId: senderId, deletedAt: null },
+                    data: { status: TicketStatus.OPEN },
+                });
+            }
+
+            if (ticket.userId !== senderId && !ticket.slaRespondedAt) {
+                // A competing first reply may already have recorded the timestamp.
+                await tx.ticket.updateMany({
+                    where: { id: ticketId, slaRespondedAt: null, deletedAt: null },
+                    data: { slaRespondedAt: new Date() },
+                });
+            }
+            return created;
         });
-
-        // If ticket was PENDING_CUSTOMER and a customer replied → reopen
-        if (ticket.status === TicketStatus.PENDING_CUSTOMER && ticket.userId === senderId) {
-            await this.prisma.ticket.update({
-                where: { id: ticketId },
-                data: { status: TicketStatus.OPEN },
-            });
-        }
-
-        // Mark first response if agent replied for the first time
-        if (ticket.userId !== senderId && !ticket.slaRespondedAt) {
-            await this.prisma.ticket.update({
-                where: { id: ticketId },
-                data: { slaRespondedAt: new Date() },
-            });
-        }
 
         let recipientEmail = ticket.userId === senderId ? ticket.assignee?.email : (ticket.creator?.email || undefined);
         let userName = ticket.userId === senderId ? (ticket.assignee?.fullName || 'Temsilci') : (ticket.creator?.fullName || 'Müşteri');
