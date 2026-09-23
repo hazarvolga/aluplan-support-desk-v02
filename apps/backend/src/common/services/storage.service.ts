@@ -14,6 +14,7 @@ import * as path from 'path';
 import sanitize from 'sanitize-filename';
 import { SettingsService } from '../../settings/settings.service';
 import { openLocalStorageFile } from '../utils/storage-path.util';
+import { randomUUID } from 'node:crypto';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
@@ -108,7 +109,18 @@ export class StorageService implements OnModuleInit {
     async uploadFile(file: Express.Multer.File, folder: string): Promise<string> {
         const sanitizedFolder = folder.split('/').map(s => sanitize(s)).join('/');
         const sanitizedName = sanitize(file.originalname);
-        const key = `${sanitizedFolder}/${Date.now()}-${sanitizedName}`;
+        const prefix = `${Date.now()}-${randomUUID()}-`;
+        const extension = path.extname(sanitizedName);
+        // Preserve normal extensions without exceeding filesystem UTF-8 byte limits.
+        const suffix = Buffer.byteLength(extension) <= 32 ? extension : '';
+        const stem = suffix ? sanitizedName.slice(0, -suffix.length) : sanitizedName;
+        const budget = 255 - Buffer.byteLength(prefix + suffix);
+        let boundedStem = '';
+        for (const character of stem) {
+            if (Buffer.byteLength(boundedStem + character) > budget) break;
+            boundedStem += character;
+        }
+        const key = `${sanitizedFolder}/${prefix}${boundedStem}${suffix}`;
 
         try {
             if (this.storageType === 'S3') {
