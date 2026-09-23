@@ -50,4 +50,6 @@ Do not infer unused webhook from absent secrets, absent observed log configurati
 
 Upstream reference: https://docker-mailserver.github.io/docker-mailserver/edge/config/environment/ documents SSL_TYPE=manual with SSL_CERT_PATH/SSL_KEY_PATH and treats self-signed certificates as testing-only. This is current upstream guidance, not proof of exact v15.1.0 behavior; exact-version rehearsal is mandatory. Versioned documentation URLs could not be retrieved during this turn.
 
+Subsequently retrieved exact v15.1.0 upstream environment template: https://raw.githubusercontent.com/docker-mailserver/docker-mailserver/v15.1.0/mailserver.env (lines213–224). It confirms empty SSL_TYPE disables SSL, and manual uses mounted SSL_CERT_PATH/SSL_KEY_PATH. This resolves variable-name/version uncertainty, not startup/client/renewal compatibility proof.
+
 This turn used configuration/image/public-certificate metadata reads only. No protocol probe, mailbox login, customer content access, DB query, certificate issuance, configuration write, restart, deploy or push. Independent architect review could not start due agent-thread limit. This plan is not a production-ready change script or an independent security signoff.
