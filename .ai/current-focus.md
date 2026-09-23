@@ -1,5 +1,9 @@
 # Current Focus
 
+## Actual candidate mail-client checkpoint — 2026-09-23
+
+New opt-in DMS intake test3/3 passed on a clean synthetic mailbox, with actual SMTP/IMAP/parser/service/claim code and explicit fake persistence. Parsed attachment bytes preserved; successful re-poll did not repeat ticket/upload calls; injected ticket failure retained UNSEEN source and did not auto-replay. Existing46focused tests passed, new-file TS diagnostics0. This is NOT realDB/storage/CRM/concurrency acceptance. Detailed boundaries/setup in TLS transition plan. Next disposable PostgreSQL and actual persistence proof, not deployment. No live changes.
+
 ## Local Dovecot blocker diagnosed — 2026-09-23
 
 Controlled comparison reproduced Rosetta mmap failure/SIGTRAP at256MiB virtual-address limit only for amd64, not native arm64. Temporary local-only Dovecot1GiB virtual-address override (container RAM still768MiB) allowed actual amd64 SMTP235/IMAPOK, verified TLS1.3 and a synthetic attachment-byte-preserving send/retrieve with UNSEEN retained. Cross-container plaintext IMAP rejected PRIVACYREQUIRED; SMTP AUTH530. No production/config/product changes. TLS plan records exact evidence/limits. Next actual candidate-client integration with isolated state; no application/DB/claim/backup acceptance claimed. Production remains NO-GO.

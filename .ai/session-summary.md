@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Candidate client integration with isolated DMS — 2026-09-23
+
+Added opt-in3test integration suite using actual app SMTP/IMAP/MIME/intake/claim code against pinned amd64 mailserver; persistence services are synthetic doubles. Clean final run3/3, existing focused46/46, new-file TS0. Proved byte-preserving parser-to-storage boundary, duplicate re-poll fencing and failed-write UNSEEN retention/hold. Internal network/no final published ports; bounded raw-TLS loopback relay used. No product or live changes. TLS plan contains limitations; real PostgreSQL/actual storage/exact-release-image gates remain open.
+
 ## Local Dovecot diagnosis and mail round-trip — 2026-09-23
 
 Identified controlled Rosetta address-space failure at Dovecot's256MiB default, corroborated by native arm64 comparison. Local-only1GiB virtual-address override resolved amd64 daemon startup while retaining768MiB container RAM and isolation. Actual SMTP/IMAP authentication and synthetic message/binary-attachment round-trip passed, UNSEEN preserved; cross-container plaintext IMAP rejected. No application ticket/DB integration, native-amd64 execution or production acceptance claimed. See TLS transition plan for exact observations and temporary setup differences. No product/live/publication changes; independent reviewer unavailable(thread limit).
