@@ -1,5 +1,9 @@
 # Current Focus
 
+## Real domain persistence exposes partial commits — 2026-09-23
+
+Three real PostgreSQL/TicketsService/LOCAL-storage tests passed: normal path byte integrity and replay suppression; injected post-insert events leave partial ticket/message state with held, unlinked claims. This is characterization, not a fix or production event-propagation proof. Independent review approved narrow test scope; existing71regressions pass. No live access/change. Next bounded correction of post-write error/correlation handling, not automatic replay or broad redesign. Detailed setup and limits in TLS transition plan. Production NO-GO remains.
+
 ## Attachment collision fixed locally; domain proof open — 2026-09-23
 
 Real-disk test reproduced same-folder/name/millisecond key collision. Minimal UUID key addition +255byte UTF-8 filename bound fixed it; old keys unchanged. Storage/inbound focused71tests passed, independent code/security review approved after long-name correction. S3 is command-mock proof only. Combined ticket/message/storage persistence test not yet completed: source review identifies post-insert failures that leave partial domain state/manual holds. Next disposable full/relation-compatible DB fixture and actual post-commit failure tests; no unsafe replay or broad redesign. No live access/change/publication. Details in TLS transition plan latest checkpoint.

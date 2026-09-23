@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Actual domain persistence checkpoint — 2026-09-23
+
+Added local-only opt-in PostgreSQL domain test3/3 with actual ticket/access/PII/local-storage services. Normal attachment bytes and no duplicate replay proved; injected synchronous post-commit listener failures leave incomplete domain state and manual-held claims with missing linkage. Not production failure incidence or completed recovery proof. Reviewed test, existing71regressions green; no product/live changes. TLS transition plan records exact fixture, limitations and next bounded release-blocking correction.
+
 ## Real storage integrity and domain-write preparation — 2026-09-23
 
 Discovered/reproduced timestamp-only upload-key collision using actual synthetic disk writes. Added UUID new-key identity with byte-bounded filenames; existing objects untouched. Real disk byte retrieval/long UTF-8 name tests and S3 key-command test added. Sixsuites71tests passed; independent code/security review approved. Product scope deliberately small. Source-only TicketsService inspection identified separate post-insert failure windows; actual combined ticket/message/attachment DB proof remains OPEN, not conflated with these passing storage tests. No production access or publication.

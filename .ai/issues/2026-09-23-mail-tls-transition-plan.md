@@ -2,6 +2,22 @@
 
 Status: PLAN ONLY. No production mutation approved or executed. Application deployment remains NO-GO.
 
+## Actual domain persistence checkpoint — 2026-09-23
+
+New opt-in `inbound-domain-persistence.integration.spec.ts`: real Prisma7.4.2/PostgreSQL17.10, TicketsService, TicketAccessService, PiiMaskingService and LOCAL StorageService; no application bootstrap or production event listeners. Three tests passed twice, including a fresh-fixture run after independent review strengthened explicit failure-point assertions.
+
+- Normal parsed-email intake persisted one ticket, one message, one attachment row and byte-identical file. Same Message-ID replay added nothing.
+- A deliberately throwing synchronous ticket.created listener left the ticket committed, initial message absent, and inbound claim held with PROCESSING_FAILED / null ticketId. Replay stayed held and did not create a second ticket.
+- A deliberately throwing synchronous ticket.message_added listener left the reply committed and PENDING_CUSTOMER ticket reopened to OPEN, but attachment absent; claim again held with no linked ticketId. Replay did not duplicate the reply.
+- These passing characterization tests expose partial persistence, NOT an acceptable recovery outcome or a product fix. They do not prove a production Nest listener throws through its wrapper, or that any historical customer data was lost. Plain PrismaClient does not reproduce PrismaService lifecycle/extensions. No CRM eligibility, actual IMAP acknowledgement, S3, process-crash durability, migration-history or whole-application acceptance is claimed.
+- Synthetic dedicated DB domain_test, internal Docker network, no published ports, 512MiB RAM and tmpfs data. Bounded loopback15432 relay; test runner empty environment and network sandbox allowing only localhost15432. Fresh temporary LOCAL storage; no credentials/customer data from production.
+- Current schema and existing sibling generated-client schema match SHA256 95c56846bcbec9ecc79449448e6e15ae39c3790092216d57fe63351cd0bc4db3. Local Prisma CLI diff returned empty output despite exit0; rejected as evidence. Explicit-datasource local schema-engine JSON-RPC generated58,813bytes of SQL, applied with psql ON_ERROR_STOP plus existing ticket-number sequence migration. This installs the current schema snapshot; it is not migration-history compatibility proof. Final reviewed run used an empty recreated synthetic fixture with identical dumped schema.
+- Existing six storage/inbound suites71/71 passed. New-file TypeScript diagnostics0 before the review-only assertion/cleanup refinements; no full backend typecheck or coverage claim. Independent code review found no blocking issue in this narrow characterization scope.
+- No product code, schema, dependency, live access/change, push or deploy.
+- Test checkpoint:184996b6. Owned synthetic tmpfs container/network removed and bounded loopback relay terminated after verification; temporary attachment directory cleaned by test teardown. Only disposable synthetic records/files discarded, no customer or unrelated local data removed.
+
+Next smallest release-blocking task: design and regression-test a bounded correction for post-write failure handling, preserving correlation to committed ticket/message and preventing blind replay. First distinguish actual production listener behavior from injected faults; do not hide failed critical work with a blanket catch or redesign unrelated services. Existing TLS/renewal, recoverable webhook source, writer-pause, backup and exact Linux artifact gates remain open. Production NO-GO remains.
+
 ## Storage collision fix and domain-write inspection — 2026-09-23
 
 During preparation of actual ticket/message/storage tests, found a release-relevant byte-integrity issue: StorageService built object keys from folder + millisecond timestamp + sanitized name. Two same-name uploads in one folder at the same timestamp successfully targeted the same local file. A new real-disk regression first failed on identical returned keys. This is a reproducible overwrite risk, not proof that historical customer files were overwritten.
