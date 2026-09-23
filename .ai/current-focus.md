@@ -1,5 +1,11 @@
 # Current Focus
 
+## Mail TLS planning checkpoint — 2026-09-23
+
+Owner accepted staged planning plus bounded read-only metadata investigation. New plan: .ai/issues/2026-09-23-mail-tls-transition-plan.md. Current mail image v15.1.0 identified by immutable digest; configured public certificate is self-signed localhost, not mail.allplan.net.tr. SMTP submission override also explicitly disables TLS security. Live clients disable certificate validation. Backend broad API route labels show gzip only; webhook usage remains UNKNOWN, and bounded proxy configuration checks found no access-log setup. No absence-of-traffic claim.
+
+Next smallest implementation is isolated synthetic transport rehearsal, not live TLS checkbox changes or combined application rollout. Plan requires verified backups, renewal ownership, client inventory, independent mail-writer pause, coordinated settings refresh and approved maintenance; never restore old customer/mail data or automatically revert to plaintext. No production writes/restart/deploy/push, protocol probe or customer content access. Dedicated review unavailable; production NO-GO remains.
+
 ## Live mail read-only findings — 2026-09-23
 
 Explicitly approved configuration-only inspection completed viaSSH; no settings/restart/deploy/testmail or customercontentread. Source-consolidation topsection records exactscope/limits. LiveIMAP143/tlsfalse confirmed; Dovecotssl=no/disable_plaintext_auth=no; maildataonpersistentvolume andselectedautoexpunge0. Persistence isnotbackup/recoveryproof. Ports publishedallinterfaces, externalreachabilitynotprobed. Livewebhookcontroller lacks expectedrouteguard/signaturefile andglobalguard inspectedisthrottler; upstreamaccess/callersunknown, no exploitprobe. Thereforewebhookunusednotproven.
