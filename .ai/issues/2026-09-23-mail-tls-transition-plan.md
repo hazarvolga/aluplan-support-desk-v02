@@ -2,6 +2,18 @@
 
 Status: PLAN ONLY. No production mutation approved or executed. Application deployment remains NO-GO.
 
+## Recipient lookup moved before writes — 2026-09-23
+
+Implemented the bounded ordering correction in TicketsService.addMessage. Existing recipient routing block is unchanged except its explanatory comment and placement: after authorization/validation/sanitization, before the reply transaction. Events remain after commit. No schema/env/dependency/API or retry change.
+
+- Added unit test first failed on lookup-after-write call ordering. Final12suites203tests passed, including unchanged department recipient event payload, assigned-agent and staff-to-customer routing, ticket security and intake regressions.
+- Updated real PostgreSQL suite9/9 passed: injected recipient-query rejection now leaves zero messages and PENDING_CUSTOMER unchanged, holds known ticket linkage with no fabricated message ID, emits no event and does not auto-replay. Query failure is injected; persistence is real. This supersedes the earlier postcommit recipient-query characterization, not other postcommit failure limits.
+- Changed-file TypeScript diagnostics0. Independent source/test code review approved with no actionable regression/security finding. Full project typecheck/build, full coverage, actual SMTP notification delivery and production runtime acceptance not claimed.
+- Direct callers remain web/API, IMAP, webhook. Source-level impact/diff reviewed; GitNexus unavailable as previously recorded. Aluplan skill kept this to reordering, not new infrastructure.
+- Tests d3756d51, product e1ff2f0b. Owned synthetic tmpfs DB/network removed; temporary attachment files cleaned and relay terminated. No customer/live access, push or deploy.
+
+This closes the demonstrated recipient-query partial-write window only. Existing event-dispatch/ambiguous-commit/source-custody/manual-reconciliation gates remain. Next prove bounded retained-source reconciliation against the acceptance matrix below; do not blindly replay held mail, restore local DB over production or broaden into an automatic recovery framework. Production NO-GO unchanged. Source revert needs no data migration but reintroduces the known partial-write risk.
+
 ## Recovery gate consolidation and recipient-query proof — 2026-09-23
 
 Test-only checkpoint. Real PostgreSQL domain suite9/9 passed, changed-file TypeScript diagnostics0, independent test review approved. The new test injects ONLY db.user.findMany rejection at the department-recipient query; it is not a PostgreSQL outage simulation. Actual ticket/message/hold writes remain real. Result: reply and OPEN state committed; attachment absent; claim held with ticketId but no ticketMessageId; no event and no duplicate on retry. No product fix is claimed. No production/customer access or publication. Owned synthetic container/network/files cleaned and relay terminated.

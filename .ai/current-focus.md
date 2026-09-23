@@ -1,5 +1,9 @@
 # Current Focus
 
+## Recipient ordering fix verified — 2026-09-23
+
+Moved unchanged addMessage recipient resolution before transaction, after authorization/content validation. Events stay aftercommit. Order regression RED then203focused/9realPG GREEN; changedfileTS0; independent review approved. Query rejection now leaves no message/status change, still holds/no replay. Tests d3756d51/product e1ff2f0b. No schema/env/live/publication changes; synthetic fixture cleaned. Next retained-source/manual-reconciliation acceptance from TLS plan, not more speculative architecture. Production NO-GO unchanged.
+
 ## Recipient-query boundary and recovery gates — 2026-09-23
 
 Test-only9/9realPG suite green with explicitly injected recipient lookup rejection: reply/status committed, attachment absent, held known ticket but unknown message ID, no replay. Not fixed. Independent test review approved; newfileTS0. Existing review API is listing, not source retrieval or recovery. TLS plan now has bounded reconciliation matrix and separates blocking source/repair/operator evidence from deferred generic outbox/automatic retry. Next smallest code candidate: recipient lookup before transaction, preserving aftercommit events and successful routing. No product/live/customer/push/deploy change.

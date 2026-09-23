@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Recipient ordering correction — 2026-09-23
+
+Completed user-approved concrete fix: unchanged recipient lookup moved ahead of reply writes after auth/validation; notification dispatch remains aftercommit. Tests first caught old ordering, final203focused+9realPG passed; changedfileTS0 and independent review clear. Specific partial-write window closed, other recovery gates remain. Tests d3756d51/product e1ff2f0b, docs in TLS plan. No live/customer access, push or deploy; only owned synthetic fixtures discarded.
+
 ## Recovery consolidation checkpoint — 2026-09-23
 
 Added/reviewed postcommit recipient-query fault characterization; real persistence suite9/9 and changedfileTS0. No product change: committed reply/missing attachment/held claim remains explicit. Existing TLS plan consolidated manual reconciliation evidence gates; operator list is not recovery proof. No new queue/outbox/replay. Next scoped recipient-query ordering fix, then bounded source/reconciliation acceptance. Owned synthetic fixture removed; no live or customer access/publication.
