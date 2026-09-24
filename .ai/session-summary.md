@@ -1,5 +1,14 @@
 # Session Summary - 2026-05-13
 
+## Finite cron callbacks joined during destroy phase — 2026-09-24
+
+Installed @nestjs/schedule5.0.1/cron stop returns void; awaiting stop alone is not a completion proof. Root AppModule now provides CronShutdownService: snapshot jobs, stop all future ticks synchronously, reject unjoinable configuration, poll public isCallbackRunning until all returned callback promises settle. No elapsed-time success cutoff. Nine Cron declarations now opt waitForCompletion:true; existing socket revalidation already did. Normal behavior change: overlapping ticks are skipped, not queued.10source declarations guarded; no addCronJob/onComplete registrations found in source.
+
+Real Nest/Schedule/Cron fixture holds two callbacks through success/failure, verifies no dependency final-shutdown while either runs, completion of a simulated enqueue before dependency closure, and skipped overlapping tick. Unsupported callback configuration stops all jobs then rejects. Initial RED was missing newservice, not an executed assertion failure.13focused suites145tests pass (inbound, reconciliation, notifications, AI budget/clustering and existing queue/CRM/Redis lifecycle); backend/newtest diagnostics0 and independent review approved. No schema/env/live/push/deploy change.
+
+Limits: this hook can run after earlier feature destroy hooks, so it is not an immediate ingress fence. Producer queue connections remain available until final shutdown; work enqueued after the CRM worker stops can wait for restart. Callback completion does not cover detached descendants/onComplete, future dynamic jobs or noncron timers. Multiple runtime instances are possible despite10source declarations; snapshot handles registered instances. A stuck callback blocks graceful shutdown; external force-kill deadlines remain operational risk. Next combined HTTP admission/accepted-request and worker acquisition ordering rehearsal; no universal shutdown-ready decision yet.
+
+
 ## CRM terminal failure persistence joined before shutdown — 2026-09-24
 
 CrmProcessor preserves the failed-event conditions/retry logic; onFailed now synchronously registers a processor-local promise before invoking the original persistence body. onModuleDestroy awaits non-forced worker.close(), then allSettled of remaining failure writes. Database/Redis application-shutdown hooks run later in the tested topology; later BullExplorer close is idempotent. Unregistered-worker/close errors propagate rather than falsely allowing shutdown. No shared admission root can reject accepted CRM failure writes; shared tracker zero still excludes this local set.
