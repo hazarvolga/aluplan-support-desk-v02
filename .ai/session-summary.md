@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Three detached query children accounted for — 2026-09-24
+
+Architect caught direct worker queryInternal entry; wrapped both public query/queryInternal and retained existing private bodies. Injected existing shared tracker, reserved3background callbacks before invocation and caught failures with fixed-label warning. Actual-service tests cover closed admission before IO plus trace/cache/training held success/failure without delaying response:8RED then8GREEN. Combined10suites154passed/1existing skipped. Explicit changed-file typecheck exposed3old implicit-any callbacks; minimal test-only annotations clear them, backend+spec diagnostics0. Secret scan/diff clean and independent code/security review approved scope. No production access or runtime control hooks. Worker retries after future closure need coordinated acquisition pause; queued job data never carries leases. Next AI-fallback persistent notifications, not full release acceptance yet.
+
 ## Timed-out answer work remains counted — 2026-09-24
 
 Converted2false-zero characterization cases to acceptance; both failed before product patch. Mandatory shared MaintenanceWorkService injected into SupportAnswerOrchestrator; entire generate wrapped plus separate actual generation child before Promise.race. CommonModule registers/exports singleton, no duplicate AiModule registration. Closed root now Nest503. Added4admission/rejection cases; updated existing DI/constructor fixtures, including previously missed nested ai/tests fixture caught by broad run. Final10suites146pass/1existing skip; backend/twoacceptancefile typecheck0 with matching borrowed schema declarations. No live/push/deploy/schema/env changes. Scope excludes provider internals, fallback-event writes and remaining query descendants; no full shutdown/HTTP-fence claim. Next close these concrete descendants before ticket-created integration.

@@ -1,5 +1,9 @@
 # Current Focus
 
+## Query background descendants tracked — 2026-09-24
+
+Both public query and queryInternal now reserve root/child work (worker calls queryInternal directly). Retrieval trace, semantic-cache write and training-review insertion reserve child leases before IO; response remains non-blocking and failure warnings contain fixed labels only.8new real-service/mockIO cases RED then GREEN;10suites154pass/1existing skip; backend/fullchangedtest typecheck0 after3pre-existing test callback annotations. No live/push/deploy/schema/env changes. No general HTTP/Bull/ticket drain claim: worker result notifications, AI fallback events, remaining service entrypoints and provider-internal detached work remain outside proof. Next bounded persistent AI-fallback event chain, then actual ticket-created integration; no automatic closure hook activated.
+
 ## AI response-timeout lifetime tracked locally — 2026-09-24
 
 SupportAnswerOrchestrator.generate now reserves root/child work and separately tracks actual generateOrReformat across the response timeout. CommonModule provides/exports one shared tracker; no shutdown hook or maintenance endpoint. Two prior false-zero cases RED then GREEN, plus closed-root503/provider0, accepted-parent-after-fence and early/late rejection tests.10suites146pass/1pre-existing skip; backend/newtests typecheck0. Customer timeout/fallback contract retained; no live access. Remaining detached fallback notifications, query cache/training/tracing, other AI entrypoints and complete ticket fan-out are NOT covered. AiQueryService can catch admission errors, so this is not HTTP fencing. Next bounded descendant tracking; full Gate1 still open.
