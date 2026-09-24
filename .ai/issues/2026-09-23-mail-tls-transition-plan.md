@@ -1,5 +1,14 @@
 # Mail transport transition plan — 2026-09-23
 
+## HTTP admission-only boundary added locally — 2026-09-24
+
+MaintenanceAdmissionMiddleware uses a synchronous internal tracker check and is registered after helmet, before compression/body parsers and Nest guards. Closed admission returns fixed non-cacheable503 directly, avoiding exception-filter DB writes; open next() and downstream exceptions remain unchanged. It does not wrap next in a promise or infer completion from response close. CommonModule exports the middleware and the same tracker. No route/env/shutdown hook can close admission yet.
+
+11newtests plus audit9 and tracker40 pass (60total), including a real Nest/Express HTTP fixture proving closed requests do not reach a writing global guard or exception filter. Initial TDD failure was missing implementation (no assertions executed), then green. Backend plus explicit newtest typecheck0; independent code/security review approved. No fullApp/SSEtransport/disconnect proof claimed; no schema/live/push/deploy changes.
+
+Operational limits: all HTTP paths/methods, including health and OPTIONS, return503 when closed. Probe/CORS policy must be reviewed before activation. Previously admitted HTTP work is not automatically leased or fully counted. Gate1 remainsOPEN. Installed Nest invokes custom exception filters without awaiting their returned promise: next bounded step is tracking GlobalExceptionFilter error-log persistence before its first await, with held-write/failure/disconnect tests. Do not disconnect shared databases based on this ingress check. Remaining frozen writer/artifact/operational gates unchanged.
+
+
 ## Administrative audit payload safety and write accounting — 2026-09-24
 
 Local interceptor no longer copies request bodies to audit newValue: generic settings values, bulk settings and storage credentials made key-name redaction insufficient. Query strings are excluded from action/entity mapping; errors use a fixed message. Actor/action/entity/IP/user-agent metadata remains, with no body-derived ID fallback. Historical production audit contents were NOT inspected; potential past credential persistence is unverified and requires separately authorized assessment, not automatic deletion or rotation.
