@@ -1,5 +1,9 @@
 # Current Focus
 
+## Ticket completion boundary characterized; integration not activated — 2026-09-24
+
+Two new test files expose false completion before wiring maintenance accounting. Real Nest fixture: async:true alone does not join the deferred handler; explicit promisify:true joins it without synchronous scheduling. Actual SupportAnswerOrchestrator with mocked providers: timeout returns fallback and outer-only tracker reaches zero while generation survives and may initiate reformat afterward. Five new characterization cases, focused6suites69tests pass; no-emit backend/newtests diagnostics0. No product/module/hook/live changes. Next track actual AI generation lifetime and detached cache/training/fallback descendants, then join the finite ticket-created fan-out with pre-scheduling child reservations. Preserve fast ticket response; these passing tests expose an open risk, not a fix or deploy approval. Details in existing TLS plan.
+
 ## Local work accounting primitive verified, not activated — 2026-09-24
 
 MaintenanceWorkService added but NOT registered in any module, route or shutdown hook. Root/child leases reserve synchronously before microtasks, closeAdmission irreversible, active parents may admit descendants after fence, expired/foreign leases rejected, wait timeout reports incomplete without cancellation.40tests pass with100%coverage of this file only; no-emit typecheck0 and independent review clear. No production behavior changed. Gate1 remains OPEN. Next usable integration slice: one complete ticket-created chain with actual promise tracking/early listener registration, then remaining frozen inventory; do not claim primitive tests certify shutdown or allow deploy.

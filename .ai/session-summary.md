@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Ticket fan-out audit prevents premature tracker activation — 2026-09-24
+
+Independent architecture audit found deferred Nest listener wrapper mismatch and nested AI escapes. Added ticket-event-completion.spec.ts (3 synthetic real-Nest cases) and support-answer-timeout-completion.spec.ts (2 actual-orchestrator/mock-provider cases). Verified response timeout is not cancellation, including late reformat after outer tracker zero. Focused6suites69tests pass offline; schema cmp matches borrowed declarations and backend/both-new-test typecheck0. Independent review found no blocking test issue. Product remains unchanged and tracker remains unregistered; no live/customer data/provider access, push or deploy. Next narrow lifetime accounting at actual AI operation boundaries before complete ticket-created integration; do not make customers await AI or mislabel characterization as maintenance acceptance.
+
 ## Inert maintenance work tracker foundation — 2026-09-24
 
 Planner bounded contract; added unregistered process-local MaintenanceWorkService and40tests. RED missing module, then two malformed-label failures exposed RegExp coercion; explicit string validation fixed them. Final40/40 with100%file coverage; typecheck0, independent code/security approval. Uses AsyncLocalStorage plus per-instance active identity membership, not context presence as authority. No integrations/endpoints/hooks/env/deps/schema/live changes. Formatting follows existing4space/singlequote style. Primitive intentionally cannot mark app ready: untracked work, task success, real persistence and other processes remain outside evidence. Next complete representative ticket-created ingress→descendant chain without blocking normal responses on AI.

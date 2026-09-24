@@ -2,6 +2,21 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Ticket-created completion boundary audit — 2026-09-24
+
+Integration deliberately not activated: tracking only TicketsService.create plus emitAsync would still give false completion. This is a bounded prerequisite discovery, not a new infrastructure project. No production observation or product edits in this batch; old live findings are not refreshed.
+
+Evidence:
+
+- Installed Nest loader wraps callbacks in a non-async arrow returning a Promise. EventEmitter2 async:true scheduling alone does not expose completion under this wrapper. Three real-Nest synthetic tests prove early emitAsync resolution, explicit promisify:true preserving deferred scheduling while joining completion, and a reserved child retaining drain after the root response.
+- Two actual SupportAnswerOrchestrator/mock-provider tests prove Promise.race timeout returns fallback without cancelling the generation. Outer-only tracking reaches zero; a late ranking response can still initiate reformat. Count the underlying operation, not only the race result. These tests characterize current risk and must be converted to desired acceptance when integration lands.
+- Source audit: TicketsService.create detaches auto-tagging and ticket.created; four of five finite consumers use async:true (rules, assignment, auto-resolution, notifications), while Automation already returns its Promise. RuleEngine additionally detaches ai.translate_message. Wildcard webhooks remain inactive under current default event configuration; do not enable them incidentally.
+- Additional concrete descendants: AiQueryService retrieval tracing, semantic-cache set and trainingQueue.create; AiService system.ai_fallback emissions with persistent gateway writes; SupportAnswerOrchestrator generation/reformat surviving timeout. Do not claim all writers covered by changing only the five outer listeners.
+
+Smallest implementation order: (1) account for actual AI-operation lifetime and these descendants without extending customer response latency; (2) register one shared tracker and wrap create/root-or-child plus pre-reserved auto-tag/event children; (3) join finite handlers and nested translation, verify actual discovered consumers and failure settlement; (4) advance remaining Gate1 entries. Nest default suppressed listener errors settle the promise but do not prove successful delivery. Fail-fast aggregation needs explicit regression coverage if any listener propagates errors. No generic event monkey-patch, blanket awaited AI in HTTP, public maintenance endpoint or premature shutdown hook.
+
+Verification: new5cases and existing focused suites total6suites69tests green in network-denied runner; no-emit backend with both new tests diagnostics0 using schema-matched borrowed declarations; secret scans clean. Independent review found no blocking test issue. Not actual five-consumer integration, fullApp, physical persistence, Linux artifact, runtime coverage percentage or release readiness. Tracker remains unregistered; no schema/env/dependency/customer data/live/push/deploy changes.
+
 ## Work accounting foundation — unregistered, 2026-09-24
 
 Added common/services/maintenance-work.service.ts and colocated tests as a small explicit process-local primitive, not a new orchestration platform. No module/provider/HTTP endpoint/signal hook imports it yet. Therefore this changes no running application admission or shutdown behavior and does NOT close Gate1.
