@@ -25,9 +25,11 @@ import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants
 import { AiHealthEventService } from '../ai/ai-health-event.service';
 import { AiHealthEventType } from '@aluplan/database';
 import { TicketAccessService } from '../common/services/ticket-access.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 type SocketSession = JwtPayload & { exp: number };
+type AiFallbackPayload = { primaryProvider: string; fallbackProvider: string; task: string; error: string };
 type SessionClient = { id: string; data: Record<string, unknown>; disconnect(close?: boolean): unknown };
 
 const resolveAllowedOrigins = (): string[] => {
@@ -110,6 +112,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         private readonly aiHealthEventService: AiHealthEventService,
         private readonly ticketAccess: TicketAccessService,
         @InjectQueue(PROACTIVE_CHAT_QUEUE) private readonly proactiveChatQueue: Queue,
+        private readonly work: MaintenanceWorkService,
     ) { }
 
     private get isProduction(): boolean {
@@ -621,8 +624,21 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             .emit('tickets:bulk_updated', { ticketIds });
     }
 
-    @OnEvent('system.ai_fallback', { async: true })
-    async handleAiFallback(payload: { primaryProvider: string, fallbackProvider: string, task: string, error: string }) {
+    @OnEvent('system.ai_fallback')
+    handleAiFallback(payload: AiFallbackPayload): Promise<void> {
+        // Reserve inside the synchronous listener before emit() returns, not
+        // after EventEmitter's deferred scheduling. Keep persistence deferred.
+        const parent = this.work.currentLease();
+        const operation = async () => {
+            await new Promise<void>(resolve => setImmediate(resolve));
+            await this.persistAiFallback(payload);
+        };
+        return parent
+            ? this.work.runChild(parent, 'ai.fallback.notification', operation)
+            : this.work.runRoot('ai.fallback.notification', operation);
+    }
+
+    private async persistAiFallback(payload: AiFallbackPayload): Promise<void> {
         this.logger.warn(`⚠️ AI Fallback Triggered: ${payload.primaryProvider} -> ${payload.fallbackProvider} (Task: ${payload.task}). Error: ${payload.error}`);
 
         // 1. Record to database
