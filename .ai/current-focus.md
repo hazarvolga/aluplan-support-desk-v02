@@ -1,5 +1,9 @@
 # Current Focus
 
+## Persistent AI fallback notification chain tracked — 2026-09-24
+
+Gateway fallback listener now synchronously reserves shared root/child work before emit returns, then defers existing persistence via setImmediate. AiService publishers unchanged. Real Nest/gateway/health-service tests with mockPrisma cover held health/notification success/failure and closed standalone admission.5RED beforeproduct thenGREEN;12suites205pass/1existing skip; backend/newtest typecheck0, independent code/security review clear. No live/push/deploy/schema/env changes. Next actual ticket-created fan-out integration and remaining Gate1 writers; not full socket/provider/Bull/drain acceptance.
+
 ## Query background descendants tracked — 2026-09-24
 
 Both public query and queryInternal now reserve root/child work (worker calls queryInternal directly). Retrieval trace, semantic-cache write and training-review insertion reserve child leases before IO; response remains non-blocking and failure warnings contain fixed labels only.8new real-service/mockIO cases RED then GREEN;10suites154pass/1existing skip; backend/fullchangedtest typecheck0 after3pre-existing test callback annotations. No live/push/deploy/schema/env changes. No general HTTP/Bull/ticket drain claim: worker result notifications, AI fallback events, remaining service entrypoints and provider-internal detached work remain outside proof. Next bounded persistent AI-fallback event chain, then actual ticket-created integration; no automatic closure hook activated.

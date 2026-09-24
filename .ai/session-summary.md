@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Fallback listener reserves before scheduling — 2026-09-24
+
+Chose smaller listener-side fix instead of touching all AiService publishers. NotificationsGateway.handleAiFallback uses default synchronous event registration, reserves root/child immediately, returns tracked promise; explicit setImmediate retains deferred persistence. Original body moved private; injected shared tracker, updated isolated fixture.5new cases initiallyRED, thenGREEN; strengthened test to actual AiHealthEventService so caught health-write failure still attempts notification as before. Combined12suites205pass/1existing skip; backend/newtest typecheck0 with matching borrowed schema declarations; secrets/diff clean and independent review approved. No production/socket/provider IO or shutdown activation. Next actual ticket-created chain; no claim complete fallback provider lifetime or delivery.
+
 ## Three detached query children accounted for — 2026-09-24
 
 Architect caught direct worker queryInternal entry; wrapped both public query/queryInternal and retained existing private bodies. Injected existing shared tracker, reserved3background callbacks before invocation and caught failures with fixed-label warning. Actual-service tests cover closed admission before IO plus trace/cache/training held success/failure without delaying response:8RED then8GREEN. Combined10suites154passed/1existing skipped. Explicit changed-file typecheck exposed3old implicit-any callbacks; minimal test-only annotations clear them, backend+spec diagnostics0. Secret scan/diff clean and independent code/security review approved scope. No production access or runtime control hooks. Worker retries after future closure need coordinated acquisition pause; queued job data never carries leases. Next AI-fallback persistent notifications, not full release acceptance yet.
