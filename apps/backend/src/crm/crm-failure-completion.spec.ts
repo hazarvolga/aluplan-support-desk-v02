@@ -4,7 +4,7 @@ import { Job } from 'bullmq';
 import { CrmProcessor } from './crm.processor';
 import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
-/** Characterizes an OPEN release gap, not successful drain acceptance. */
+/** Shared accounting alone cannot replace the processor's separate shutdown join. */
 describe('CRM failed-event completion boundary', () => {
     it.each(['success', 'failure'] as const)(
         'exposes a pending terminal audit outside work accounting until %s',
@@ -52,6 +52,7 @@ describe('CRM failed-event completion boundary', () => {
                         new Error('Synthetic sync failure'),
                     ),
                 ).toBe(true);
+                await Promise.resolve();
                 expect(update).toHaveBeenCalledTimes(1);
                 work.closeAdmission();
                 // Explicitly exposes the false-zero risk; this is NOT an acceptance assertion.
