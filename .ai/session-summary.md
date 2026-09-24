@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Fresh current-source PostgreSQL replay proof — 2026-09-24
+
+Revalidated existing harness at c6c2b715 using local pinnedPG17 image, fresh networknone512MiB/tmpfs256MiB container, currentPrismaDDL58813bytes and Docker-exec loopback15432 relay. FirstDDL attempt failed beforecontainercreation (missing mandatory engine datasource); added fixedsyntheticloopback datasource and exit/stderr reporting in local scratchrunner, then passed. SIGTERM held-upload ordering and freshchild replay preserved allIDs/counts/exactattachmenthash. Cleanup sixsynthetictables0, labeledcontainersnone,15432listenernone. Additional5offline suites29tests pass; independent runner safety review clear. No product/schema/customerdata/live/push/deploy change. Removed only disposable synthetic data/container; not customerbackup. Existing fullApp/allwriter/hostegress/realIMAP/Linuxartifact limits remain. Evidence and SHA provenance in TLS plan.
+
 ## Five-consumer ticket fan-out acceptance — 2026-09-24
 
 Added ticket-fanout-completion.spec.ts: actual creation service plus all5known event consumers under real Nest discovery, mocked external IO. Parameterized10cases hold each distinct rule/assignment/draft/customer-mail/notification boundary and settle success/failure; fake timers cover actual1500ms assignment wait. Assert branch entry, rules audit, DRAFT update, staff email and assignment payload so catches/earlyreturns cannot hide missing paths. Creation returns before timer advancement. Shared counter stays1whileheld and0aftersettlement; cleanup also asserts drained and closes module in finally.18offline suites308tests passed; backend/newtest typecheck0, secrets clean, independent review approved logic. No product/runtime/production changes. This is finite consumer integration, not entire AppModule or real persistence/delivery. Next fresh synthetic PostgreSQL rehearsal for current source, not live restart.

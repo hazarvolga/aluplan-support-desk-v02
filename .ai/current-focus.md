@@ -1,5 +1,9 @@
 # Current Focus
 
+## Current-source PostgreSQL SIGTERM/re-entry revalidated — 2026-09-24
+
+At c6c2b715, repeated existing opt-in realPG17 harness with fresh network-none/tmpfs container and loopback relay. Actual SIGTERM while attachment held: intake fenced, DB alive, bytes/claim/ACK completed before disconnect; fresh child replay preserved IDs/counts1ticket/1message/1attachment/1claim and exact SHA. Six synthetic tables0aftercleanup; ownedcontainer/relay absent. Related5offline suites29tests pass. No product/live/customerdata/push/deploy changes. Not fullApp/allwriters/realIMAP/Linuximage/rollback proof; host was not egress-sandboxed. Next close remaining general mutation/WebSocket/cron/Bull admission coverage before wiring any global shutdown-ready decision; exact artifact/operational gates remain open.
+
 ## Five actual ticket-created consumers rehearsed together — 2026-09-24
 
 New real-Nest fixture runs actual TicketsService, rules, assignment, AI auto-resolver, Automation and gateway together; exactly5ticket.created listeners discovered in this fixture.10heldboundary cases (rule/assignment/draft/email/notification × success/failure) keep fast creation response and nonzero accounting until settlement. Distinct branch assertions prevent skipped handlers from looking green.18offline suites308tests pass; backend/newtest typecheck0, independent review clear. Test/docs-only change, no live/push/deploy. External DB/AIquery/mail/Redis mocked: not fullApp, durability, delivery or provider-internal proof. Next repeat isolated PostgreSQL SIGTERM/re-entry against current source, then remaining Gate1 writer/admission coverage; deployment still gated.
