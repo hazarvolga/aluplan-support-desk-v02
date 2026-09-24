@@ -1,5 +1,9 @@
 # Current Focus
 
+## AI response-timeout lifetime tracked locally — 2026-09-24
+
+SupportAnswerOrchestrator.generate now reserves root/child work and separately tracks actual generateOrReformat across the response timeout. CommonModule provides/exports one shared tracker; no shutdown hook or maintenance endpoint. Two prior false-zero cases RED then GREEN, plus closed-root503/provider0, accepted-parent-after-fence and early/late rejection tests.10suites146pass/1pre-existing skip; backend/newtests typecheck0. Customer timeout/fallback contract retained; no live access. Remaining detached fallback notifications, query cache/training/tracing, other AI entrypoints and complete ticket fan-out are NOT covered. AiQueryService can catch admission errors, so this is not HTTP fencing. Next bounded descendant tracking; full Gate1 still open.
+
 ## Ticket completion boundary characterized; integration not activated — 2026-09-24
 
 Two new test files expose false completion before wiring maintenance accounting. Real Nest fixture: async:true alone does not join the deferred handler; explicit promisify:true joins it without synchronous scheduling. Actual SupportAnswerOrchestrator with mocked providers: timeout returns fallback and outer-only tracker reaches zero while generation survives and may initiate reformat afterward. Five new characterization cases, focused6suites69tests pass; no-emit backend/newtests diagnostics0. No product/module/hook/live changes. Next track actual AI generation lifetime and detached cache/training/fallback descendants, then join the finite ticket-created fan-out with pre-scheduling child reservations. Preserve fast ticket response; these passing tests expose an open risk, not a fix or deploy approval. Details in existing TLS plan.

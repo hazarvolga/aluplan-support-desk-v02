@@ -2,6 +2,14 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Answer generation lifetime integration — 2026-09-24
+
+Bounded product fix: SupportAnswerOrchestrator.generate reserves a root or a child of the current active lease; its whole awaited operation includes no-knowledge recovery. Actual generateOrReformat has its own child before Promise.race, remaining active after timeout/fallback until generation/model lookup/reformat settles. No new response wait or provider cancellation was added. A stuck underlying operation deliberately prevents drained=true rather than fabricating completion. CommonModule registers/exports the mandatory shared tracker; no duplicate AiModule provider, optional fallback instance, public control endpoint or shutdown hook. Closed root rejects with Nest503.
+
+Two timeout cases failed before the fix and now pass; added closed-root/no-provider, active-parent after closure, provider rejection before and after timeout. Existing fixture constructors/providers updated for required injection.10suites146tests pass,1pre-existing skipped test retained; no-emit backend and new acceptance tests diagnostics0 using schema-matched borrowed declarations. Independent review scoped clear; tests use mocked external IO, not physical persistence or fullApp bootstrap. No production access, push, deploy, schema/env/dependency changes.
+
+Limits: repairLanguage and provider-internal losing timeout operations are not covered by this slice. Detached system.ai_fallback persistent writes, query tracing/cache/training and complete ticket-created consumers still need admission/completion accounting. AiQueryService catches generation errors and may continue fallback/DB processing; do NOT describe orchestrator503 as HTTP fencing. Closure remains test/in-process-only and is not activated in normal runtime. Next bounded descendant integration, then the actual ticket-created chain; Gate1/2/3 remain open. Prior section below records the pre-fix characterization, not current orchestrator behavior.
+
 ## Ticket-created completion boundary audit — 2026-09-24
 
 Integration deliberately not activated: tracking only TicketsService.create plus emitAsync would still give false completion. This is a bounded prerequisite discovery, not a new infrastructure project. No production observation or product edits in this batch; old live findings are not refreshed.

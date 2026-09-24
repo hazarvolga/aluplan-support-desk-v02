@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Timed-out answer work remains counted — 2026-09-24
+
+Converted2false-zero characterization cases to acceptance; both failed before product patch. Mandatory shared MaintenanceWorkService injected into SupportAnswerOrchestrator; entire generate wrapped plus separate actual generation child before Promise.race. CommonModule registers/exports singleton, no duplicate AiModule registration. Closed root now Nest503. Added4admission/rejection cases; updated existing DI/constructor fixtures, including previously missed nested ai/tests fixture caught by broad run. Final10suites146pass/1existing skip; backend/twoacceptancefile typecheck0 with matching borrowed schema declarations. No live/push/deploy/schema/env changes. Scope excludes provider internals, fallback-event writes and remaining query descendants; no full shutdown/HTTP-fence claim. Next close these concrete descendants before ticket-created integration.
+
 ## Ticket fan-out audit prevents premature tracker activation — 2026-09-24
 
 Independent architecture audit found deferred Nest listener wrapper mismatch and nested AI escapes. Added ticket-event-completion.spec.ts (3 synthetic real-Nest cases) and support-answer-timeout-completion.spec.ts (2 actual-orchestrator/mock-provider cases). Verified response timeout is not cancellation, including late reformat after outer tracker zero. Focused6suites69tests pass offline; schema cmp matches borrowed declarations and backend/both-new-test typecheck0. Independent review found no blocking test issue. Product remains unchanged and tracker remains unregistered; no live/customer data/provider access, push or deploy. Next narrow lifetime accounting at actual AI operation boundaries before complete ticket-created integration; do not make customers await AI or mislabel characterization as maintenance acceptance.
