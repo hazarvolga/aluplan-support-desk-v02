@@ -1,4 +1,6 @@
 import { Test } from '@nestjs/testing';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import imaps from 'imap-simple';
 import { EmailInboundService } from './email-inbound.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,14 +24,14 @@ function deferred<T>() {
     return { promise, resolve };
 }
 
-// Passing tests characterize a shutdown defect, NOT safe-drain acceptance.
-// Nest lifecycle is real; Prisma's destroy hook and IMAP are synthetic.
+// Scoped lifecycle acceptance with mocked IO, not full-app or signal acceptance.
+// Nest lifecycle is real; Prisma's shutdown hook and IMAP are synthetic.
 // The full application's module ordering and signal handling are not exercised.
-describe('inbound shutdown gap characterization', () => {
+describe('inbound shutdown lifecycle', () => {
     afterEach(() => jest.resetAllMocks());
 
     it.each(['configuration', 'cleanup'] as const)(
-        'Nest close completes while inbound %s is pending, and does not fence subsequent polls',
+        'Nest close waits for inbound %s and fences subsequent polls before database cleanup',
         async (phase) => {
             const entered = deferred<void>();
             const release = deferred<void>();
@@ -56,7 +58,7 @@ describe('inbound shutdown gap characterization', () => {
                 }),
             };
             const prisma = {
-                onModuleDestroy: jest.fn().mockImplementation(async () => {
+                onApplicationShutdown: jest.fn().mockImplementation(async () => {
                     events.push('synthetic-prisma-disconnect');
                 }),
             };
@@ -83,22 +85,25 @@ describe('inbound shutdown gap characterization', () => {
                     closing.then(() => true),
                     new Promise<boolean>((resolve) => setImmediate(() => resolve(false))),
                 ]);
-                expect(closedBeforeRelease).toBe(true);
+                expect(closedBeforeRelease).toBe(false);
 
-                expect(prisma.onModuleDestroy).toHaveBeenCalledTimes(1);
+                expect(prisma.onApplicationShutdown).not.toHaveBeenCalled();
                 expect(pollFinished).toBe(false);
-                expect(events).toEqual(['synthetic-prisma-disconnect']);
+                expect(events).toEqual([]);
+                const callsBeforeFencedPoll = settings.getValue.mock.calls.length;
+                await service.handleInboundEmails();
+                expect(settings.getValue).toHaveBeenCalledTimes(callsBeforeFencedPoll);
 
                 release.resolve(undefined);
                 await poll;
                 await closing;
-                expect(events).toEqual(['synthetic-prisma-disconnect', 'cleanup-complete']);
+                expect(events).toEqual(['cleanup-complete', 'synthetic-prisma-disconnect']);
                 expect(connection.end).toHaveBeenCalledTimes(1);
 
-                // A direct scheduler callback still starts new work after lifecycle close.
+                // A late scheduler callback must not start work after lifecycle close.
                 await service.handleInboundEmails();
-                expect(imaps.connect).toHaveBeenCalledTimes(2);
-                expect(connection.end).toHaveBeenCalledTimes(2);
+                expect(imaps.connect).toHaveBeenCalledTimes(1);
+                expect(connection.end).toHaveBeenCalledTimes(1);
             } finally {
                 release.resolve(undefined);
                 await poll;
@@ -106,4 +111,11 @@ describe('inbound shutdown gap characterization', () => {
             }
         },
     );
+
+    it('keeps the real Prisma disconnect in the final shutdown phase', () => {
+        // Source contract ties the synthetic lifecycle fixture to the product hook.
+        const source = readFileSync(join(__dirname, '../prisma/prisma.service.ts'), 'utf8');
+        expect(source).not.toMatch(/async\s+onModuleDestroy\s*\(/);
+        expect(source).toMatch(/async\s+onApplicationShutdown\s*\(\)\s*\{[^}]*await this\.\$disconnect\(\)/);
+    });
 });
