@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Minimal worker-before-Redis teardown fix — 2026-09-24
+
+Converted Redis characterization into desired acceptance:3RED failures with product untouched. Root RedisModule first discovery plus final-phase Redis cleanup/awaited QUIT passes held-worker late-read and QUIT resolve/reject tests. No new orchestration framework, dependency, schema or env. Combined10suites88tests green offline; no-emit backend/new-test typecheck0 with schema-identical borrowed declarations; secret scans/diff checks clean. GitNexus unavailable and Graphify report absent, so direct source/framework impact inspection used. Separate reviewed commits retain test/product/docs boundaries; no push/deploy/production access. Detached work remains outside this scoped fix.
+
 ## Background shutdown ordering characterization — 2026-09-24
 
 Test-only queue-shutdown-order.spec.ts uses actual global PrismaModule/proxy and installed Bull discovery under candidate-relative module order; held synthetic worker closes before DB disconnect. Added redis-shutdown-order.spec.ts proving current cleanup initiates Redis QUIT before held worker drain, and test-instance final-phase move alone does not fix it. Independent architecture/review; reviewer wording tightened to QUIT initiation, not physical closure. Focused10suites87tests green offline; no product/live/DB/provider changes. Candidate shared Redis is used by AI/knowledge workers; detached event writers remain outside direct IMAP/worker proof. Next explicit bounded worker-before-Redis cleanup ordering plus awaited quit, not broad lifecycle redesign.

@@ -1,5 +1,9 @@
 # Current Focus
 
+## Shared Redis teardown corrected locally — 2026-09-24
+
+RED3 before product edits, then GREEN: discover RedisModule first at root, move cleanup to final shutdown phase and await primary QUIT/fallback. Installed Nest reverse global order verified; real reduced Nest/Bull/Prisma/Redis module test holds worker, proves late Redis read, ordered cleanup and close waiting on held QUIT in success/rejection cases. Root-source order guard prevents fixture drift.10suites88tests/typecheck0, no new schema/env/deps/live access. Next bounded detached-event/cron completion and ingress fence acceptance; this fix is not universal drain or production artifact proof.
+
 ## Queue/Prisma ordering confirmed; Redis teardown gap isolated — 2026-09-24
 
 Reduced real Nest/Bull/Prisma module topology waits held worker close before Prisma disconnect; no queue/DB defect reproduced. Separate actual RedisModule characterization shows primary Redis QUIT initiated before Bull drain; hypothetical final-phase-only move also fails ordering. Mock drivers/workers, not fullApp/physical socket proof.10suites87tests pass. Product unchanged. Next bounded correction must explicitly preserve shared Redis until workers complete and await quit; prove topology rather than only rename hook. Detached event writers and cron/ingress fencing remain separate maintenance gate, no universal drain claim.

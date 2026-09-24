@@ -2,6 +2,16 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Minimal shared Redis lifecycle fix — 2026-09-24
+
+Converted redis-shutdown-order.spec.ts to desired acceptance;3tests failed before product edits. Changes are limited to root first-discovery of RedisModule (removed later duplicate placement) and RedisService cleanup moved to onApplicationShutdown with awaited client.quit(). Existing pool drain/clear and disconnect-on-QUIT-rejection behavior retained. No new dependency/env/schema/API, queue retry policy or lifecycle coordinator.
+
+Reason for both edits: installed Nest11.1.14 assigns global modules equal MAX_VALUE distance and reverses stable discovery order for final shutdown. Registering shared Redis first keeps it available until Bull global worker closure completes. A source-order guard checks the actual AppModule imports without booting it. Reduced real module test includes async ConfigService factory and checks Redis receives configured URL, preventing an assumed startup dependency regression. Hold worker close, release it to perform late Redis read, verify Prisma/pool cleanup ordering, hold QUIT and assert close remains pending; resolve/reject cases verify successful wait or disconnect fallback. Drivers/worker body are synthetic, not real Redis/socket/fullApp proof; dependency/import upgrades must rerun this regression.
+
+Final focused offline10suites88tests passed. Backend no-emit typecheck including new test reports0diagnostics using schema-matched sibling declarations; secret scans/diff checks clean. Source/library impact inspection substituted for unavailable GitNexus and absent Graphify report. Local source fix only: previous built images/live process do not inherit it. Remaining maintenance gate includes detached event/cron writers and new-ingress fencing, exact Linux artifact and explicitly approved operational acceptance; no blanket safety or zero-loss claim.
+
+Independent code/security review found no critical/high blocker and reproduced3focused cases with isolated setup. Default Jest invocation in review failed before test execution on existing unresolved langfuse-core setup; the documented sandbox runner/sibling dependency configuration passed, so this is not a claim that the standard full backend suite/build passes. Reviewer requested bounded test-only phase waits to ensure failed-order cleanup reaches finally; incorporated without adding production shutdown deadlines.
+
 ## Bounded background-writer shutdown audit — 2026-09-24
 
 Actual installed Nest reverses distance-sorted module order during shutdown. Both global Prisma and Bull core share final phase, but this alone is not a race: new prisma/queue-shutdown-order.spec.ts preserves candidate root order (Bull config, Prisma, queue feature) and actual PrismaModule/proxy/Bull discovery. Holding synthetic worker.close prevents DB disconnect; observed worker-close-start → worker-close-end → disconnect. No product correction needed for this reduced topology. Queue/worker/drivers are mocked; not fullApp, network, actual job processing or durability evidence.
