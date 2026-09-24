@@ -2,6 +2,20 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Local stop/re-entry audit — 2026-09-24
+
+Local source and installed-library review only; no live access. Candidate deploy.sh invokes migrate-once.sh on every ordinary startup. That script verifies files, invokes prisma migrate deploy, and checks migration ledger/schema/RBAC before exec node. Shell syntax checks passed; no script executed against a database. Pending migrations can change data/schema, so restart is not inherently migration-free. Do not disable these checks as a shortcut.
+
+Historical d9b21b9d source includes migration-ledger repair and schema operations; prior immutable-image metadata links the live image to a deploy.sh entrypoint, not a full compiled-byte startup proof. Existing ADR-022 rejection of blind historical restart/direct-Node fallback remains. No old image was loaded or executed.
+
+Independent local review found IMAP lacks a shutdown hook or retained processing promise. Nest scheduler stops future schedules without proving active callbacks have completed. BullMQ worker.close has an active-job wait path, conditional on signal handling/grace; neither it nor an empty outgoing queue proves IMAP quiescence. Never use Queue.drain as a graceful wait: it deletes queued jobs.
+
+PrismaService disconnects in onModuleDestroy; Nest calls destroy hooks before beforeApplicationShutdown. Merely adding an IMAP wait to the later hook would be too late to establish database availability. Module destroy order is reversed dependency-distance order, and providers within a module are awaited concurrently; actual module wiring must be tested rather than inferred from hook names.
+
+Added email-inbound-shutdown.spec.ts: two real minimal Nest TestingModule lifecycle characterizations with mocked IO reproduce close resolving while IMAP configuration or connection cleanup remains pending, synthetic Prisma destroy before cleanup, and lack of a service-level post-close poll fence. Synthetic same-module ordering is NOT full application topology proof. Both characterization cases and seven existing IMAP transport regressions pass (9/9) under the offline sandbox harness; this PASS proves the defect is reproducible, not fixed. No actual signals, DB, Redis or mailbox used. Independent review found no blockers and prompted a bounded close observation plus final cleanup await, avoiding a future repaired implementation hanging the characterization indefinitely.
+
+Next choose the smallest ordered lifecycle correction and invert characterization into safety acceptance, with actual module dependency ordering covered. No product implementation, new pause API, distributed coordinator, retry redesign, production stop command or zero-downtime claim in this batch. A local fix cannot retroactively make the old live process safe to stop; first-cutover quiescence remains a separately reviewed operational gate.
+
 ## Saved Coolify source confirmed through UI — 2026-09-23
 
 Read-only Firefox inspection of the exact q4wgowwo0wwsg0sksg8gkow4 service, aluplan-support-mailservise, opened Edit Compose File and its source/deployable views. No editor text entered, Validate/Save/Restart/Stop clicked, environment secrets opened or credentials entered. Only presentation controls changed; editor closed without saving.

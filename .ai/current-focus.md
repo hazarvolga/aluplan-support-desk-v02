@@ -1,5 +1,9 @@
 # Current Focus
 
+## IMAP shutdown gap reproduced locally — 2026-09-24
+
+Two minimal real Nest lifecycle/mockIO characterization cases prove close can resolve before active poll/cleanup, and no service-level post-close fence. Combined IMAP transport set9/9passes characterize defect, NOT fix. Candidate startup calls canonical migrations each boot; Prisma disconnects in destroy phase before later shutdown phase. No live access/product changes. Next smallest ordered lifecycle correction plus safety acceptance/module-order proof; do not assume restart is data-free or Queue.drain preserves jobs. TLS plan records evidence/limits.
+
 ## Saved Coolify source identified — 2026-09-23
 
 Firefox source/deployable Compose views confirm logical mail volumes map to exact existing UUID-prefixed volumes; ports/env/image match prior selected evidence. No edits/save/validate/restart/stop. Editor closed. Future patch belongs in source, preserving logical names; never paste generated Compose or overlay alone as full source. Source-location gate closed; next local startup/re-entry and minimum drain/interruption plan, then renewal/client acceptance gates. No activation authorized.

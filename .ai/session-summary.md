@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Local shutdown/startup characterization — 2026-09-24
+
+Audited candidate deploy.sh/migrate-once and installed Nest lifecycle; sh-n passes only, scripts not run. New test-only email-inbound-shutdown.spec.ts reproduces missing poll/cleanup wait in real minimal Nest close with mockIO and explicitly synthetic Prisma hook.2characterizations+7IMAP TLS regressions pass offline; no repair or full-topology/signal proof claimed. Independent review led to bounded close observation/final await. No live connection, customer data, product edits, push or deploy. Next ordered lifecycle correction with dependency shutdown order acceptance; historical unsafe re-entry remains prohibited.
+
 ## Coolify source UI read-only confirmation — 2026-09-23
 
 Used existing Firefox session to inspect exact mail service Source Compose and Deployable Compose. Confirmed logical/prefixed volume mapping and selected ports/env/image agreement, not byte equality. Closed editor without text entry or save; no restart/deploy/secrets. Recorded persistence boundary and full-source-vs-overlay distinction in TLS plan. Next local safe startup/re-entry/drain planning; no repeated Compose audit needed absent drift. Existing HTTP panel transport noted without changing access.
