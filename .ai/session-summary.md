@@ -1,5 +1,14 @@
 # Session Summary - 2026-05-13
 
+## Combined HTTP/cron rehearsal isolates disconnected-work gap — 2026-09-24
+
+New maintenance-combined.spec.ts uses real loopback HTTP, Nest lifecycle and Cron plus actual admission/tracker/cron-drain services, synthetic held controller and dependency hook. Three modes: connected request naturally delays dependency final-shutdown; intentionally disconnected request allows final hook while tracked work remains1; explicit TEST-ONLY drain-before-close prevents that ordering. New ingress returns503 without a second accepted call in all modes. Observed real cron-drain completion avoids mistaking its polling delay for HTTP transport waiting; HTTP/phase waits are bounded.
+
+Important correction: initial assumption that normal open HTTP could outlive final dependency hooks was too broad. Installed Nest closes in order destroy -> beforeShutdown -> dispose HTTP -> applicationShutdown; first attempted assertion timed out, leading to the corrected three-mode proof. Remaining risk is disconnected/detached work, not all connected HTTP.8focused suites67tests pass; backend/newtest diagnostics0. Test-only change, not a product coordinator or fullApp/realDB/Bull acquisition proof. Existing worker tests retain their separate scope.
+
+Next bounded implementation: supported worker acquisition-stop/completion ordering, preserving active-job descendants before closing shared admission, then join tracked disconnected work before dependency teardown. Do not attach waitForIdle to an arbitrary hook or treat sharedzero as allwriters. Previously untracked operations still need coverage. No live/push/deploy; release gates stayOPEN.
+
+
 ## Finite cron callbacks joined during destroy phase — 2026-09-24
 
 Installed @nestjs/schedule5.0.1/cron stop returns void; awaiting stop alone is not a completion proof. Root AppModule now provides CronShutdownService: snapshot jobs, stop all future ticks synchronously, reject unjoinable configuration, poll public isCallbackRunning until all returned callback promises settle. No elapsed-time success cutoff. Nine Cron declarations now opt waitForCompletion:true; existing socket revalidation already did. Normal behavior change: overlapping ticks are skipped, not queued.10source declarations guarded; no addCronJob/onComplete registrations found in source.
