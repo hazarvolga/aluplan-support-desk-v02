@@ -1,5 +1,9 @@
 # Current Focus
 
+## Local work accounting primitive verified, not activated — 2026-09-24
+
+MaintenanceWorkService added but NOT registered in any module, route or shutdown hook. Root/child leases reserve synchronously before microtasks, closeAdmission irreversible, active parents may admit descendants after fence, expired/foreign leases rejected, wait timeout reports incomplete without cancellation.40tests pass with100%coverage of this file only; no-emit typecheck0 and independent review clear. No production behavior changed. Gate1 remains OPEN. Next usable integration slice: one complete ticket-created chain with actual promise tracking/early listener registration, then remaining frozen inventory; do not claim primitive tests certify shutdown or allow deploy.
+
 ## Maintenance/release work consolidated into three gates — 2026-09-24
 
 TLS transition plan now owns one current acceptance matrix:1new-admission fence plus observed accepted work across HTTP/WS/IMAP/Bull/events/cron;2one final artifact/security/critical workflows;3separately approved fresh recovery evidence and legacy-first-cutover/TLS/forward-recovery execution. Historical evidence not reopened as duplicate tasks. No new code/live access/tests this turn;134focusedtests are previous evidence. Next bounded admission/in-flight accounting design and local acceptance, not more independent micro-fixes or blanket synchronous AI event conversion. Candidate does not fix legacy live drain; explicit separate first-cutover plan required.

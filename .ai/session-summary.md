@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Inert maintenance work tracker foundation — 2026-09-24
+
+Planner bounded contract; added unregistered process-local MaintenanceWorkService and40tests. RED missing module, then two malformed-label failures exposed RegExp coercion; explicit string validation fixed them. Final40/40 with100%file coverage; typecheck0, independent code/security approval. Uses AsyncLocalStorage plus per-instance active identity membership, not context presence as authority. No integrations/endpoints/hooks/env/deps/schema/live changes. Formatting follows existing4space/singlequote style. Primitive intentionally cannot mark app ready: untracked work, task success, real persistence and other processes remain outside evidence. Next complete representative ticket-created ingress→descendant chain without blocking normal responses on AI.
+
 ## Finite maintenance acceptance checklist — 2026-09-24
 
 Source-inspected writer/admission families and consolidated existing TLS plan into3gates with pass/stop conditions and deferred scope. Verified WebSocket read can cancel email, assignment delay precedes DB write, direct auto-tagging is detached, reconciliation cron writes DB. No claim exhaustive live inventory. Separate candidate-local proof from legacy first-cutover risk, fresh approved backups, exact artifact and ADR022 forward recovery. No product edits/new tests/production access. Next review bounded shared local completion accounting and ingress fencing; no public maintenance API/new platform by default.

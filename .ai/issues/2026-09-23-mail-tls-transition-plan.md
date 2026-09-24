@@ -2,6 +2,16 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Work accounting foundation — unregistered, 2026-09-24
+
+Added common/services/maintenance-work.service.ts and colocated tests as a small explicit process-local primitive, not a new orchestration platform. No module/provider/HTTP endpoint/signal hook imports it yet. Therefore this changes no running application admission or shutdown behavior and does NOT close Gate1.
+
+Contract: runRoot reserves before deferring callback; runChild requires an active same-instance lease and may reserve after admission closes; descendants retain independent leases when parents settle. AsyncLocalStorage carries context, but active object identity authorizes it; copied/forged/foreign/expired contexts rejected. closeAdmission is irreversible. waitForIdle requires the fence, returns only drained/count, and timeout leaves work running/incomplete. Finally releases successful or failed work; drained means settled tracked promises, not success/delivery. Caller must handle returned errors and register real domain promises before deferred callbacks; HTTP finish/close or Observable unsubscribe is not equivalent.
+
+40offline tests cover immediate fence/microtask race, descendants, inherited expired context, instance isolation, timeout/input checks, rejection cleanup, concurrent waiters, real EventEmitter2 synchronous-wrapper fixture and10,000pending roots. Initial RED was missing implementation; tests then exposed null/undefined string coercion, corrected with explicit type check. Parent rerun:40passed and100%statement/branch/function/line coverage of this single new file. Backend/newtest no-emit typecheck0 using schema-matched sibling declarations; secret/diff checks clean; independent review found no blocking issue. No full-backend coverage/build claim or Nest integrated shutdown evidence.
+
+Next integrate ONE complete ticket-created path (request operation plus assignment/rules/nested translation/AI/automation/persistent notifications) with synchronous registration wrappers before async scheduling; keep response latency independent of AI. Review changed fan-out semantics and error handling explicitly. Then cover remaining event/cron/IMAP/WebSocket/Bull entries from the consolidated matrix. Do not add a public maintenance API, activate a premature shutdown hook, or use a zero primitive count to certify unwired writers. Legacy first-cutover is still separately gated. No live/provider/data access, push or deploy in this batch.
+
 ## Consolidated maintenance acceptance scope — 2026-09-24
 
 This section is the current bounded checklist; earlier chronological sections are evidence/history, not separate new projects. Source-only inspection this turn; no production observation or fresh tests. Last focused acceptance remains15suites134tests, not full release acceptance. Local lifecycle improvements do not change the old running image's first-cutover behavior.
