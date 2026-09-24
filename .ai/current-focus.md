@@ -1,5 +1,9 @@
 # Current Focus
 
+## Synthetic PostgreSQL SIGTERM/re-entry passed — 2026-09-24
+
+Current-domain-source test with isolated PostgreSQL17/local attachment storage passed actual SIGTERM while upload held after ticket/message commits. Intake fenced, DB remained available, attachment/claim/ACK completed before disconnect; fresh child replay preserved IDs, counts1ticket/1message/1attachment/1claim and exact bytes, with no orphan file. Focused84tests pass. Test uses custom DB lifecycle provider; companion proxy spec covers actual Prisma hook. Not fullApp, Linux release image, hard-crash or version rollback proof. No live access/push/deploy. Next narrow all-writer shutdown inventory and explicit maintenance drain/re-entry acceptance, not another broad redesign.
+
 ## Actual SIGTERM synthetic acceptance passed — 2026-09-24
 
 Two owned-child real Nest/current-source signal cases passed network-denied: held config/search waits, new polls fenced, direct synthetic completion precedes DB shutdown and SIGTERM exit. Missing opt-in/deps fail closed; reviewed child IPC/error cleanup corrected. Actual PrismaService proxy runtime hook test passes with mocked drivers; total84tests. Not PostgreSQL persistence/fullApp/exact Linux artifact proof. Next fresh synthetic PG/domain-services signal+re-entry with record/attachment preservation; no live access or deploy.

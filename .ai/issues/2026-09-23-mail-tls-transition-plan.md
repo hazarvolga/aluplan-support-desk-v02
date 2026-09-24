@@ -2,6 +2,20 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Real PostgreSQL and attachment graceful re-entry — 2026-09-24
+
+New opt-in apps/backend/test/mail-shutdown-postgres-rehearsal.cjs loads allowlisted current inbound/claim/tickets/storage sources, real Nest and real Prisma PostgreSQL adapter. Fixed loopback15432/domain_test identity and PostgreSQL17/initial-empty checks prevent arbitrary endpoint selection. IMAP/MIME, SLA and external providers remain synthetic; AppModule is never loaded.
+
+Executed against existing image sha256:7ae6051efd0e60444282c27c7e141af07f322ce033300e727a49c3dd11075e38, Docker Desktop, network none, temporary memory-backed DB. Current RC Prisma schema generated58,813bytes DDL through installed schema engine; normal Prisma CLI returned empty output and was not treated as success. One readiness retry required waiting beyond transient init-server readiness; failed owned container removed before retry. Loopback-only Docker-exec relay connected the harness to this owned DB; no production data or credentials used.
+
+Actual SIGTERM during held upload after ticket/message commit proved admission fence and still-live DB; releasing work wrote exact attachment bytes, completed claim, acknowledged synthetic IMAP then invoked cleanup and final DB disconnect. Child exited by SIGTERM. Fresh child reprocessed same synthetic message, preserving all IDs and counts1ticket/1message/1attachment/1completedClaim. Exact attachment SHA256:40bb924c02a1c8526e036f932accdba0d7695bee43ff9348eedd9f69e48015cc. Owned directory enumeration asserts exactly the referenced attachment, excluding orphan replay writes. Independent review suggested this manifest assertion; incorporated before passing execution. Syntax/secret scan and focused8suites84tests passed.
+
+Cleanup verified six owned domain-table counts zero; temporary containers and loopback relay removed. Temporary synthetic data/files were intentionally discarded, not a recoverable customer backup. No live access, product changes, migration/deploy/restart, push or external provider calls.
+
+Limits: custom DB lifecycle provider is used here; actual PrismaService proxy wiring is covered separately by prisma-shutdown.spec.ts. Not fullApp/all-writer quiescence, real IMAP transport/socket closure, Linux/amd64 final image, SIGKILL/power-loss durability, migration compatibility or version rollback proof. Next smallest gate: identify actual remaining writers/background listeners and validate the bounded maintenance drain/re-entry sequence. Keep production activation separately approved and avoid expanding this into a new framework.
+
+Isolation distinction: PostgreSQL container had OS-enforced network=none. Host harness/relay used a sanitized environment, fixed loopback endpoint and source/import/provider allowlists, but this PostgreSQL run did NOT use an OS-enforced host egress-denial sandbox. Do not inherit the earlier signal-only sandbox claim.
+
 ## Real signal acceptance with synthetic dependencies — 2026-09-24
 
 Added opt-in apps/backend/test/mail-shutdown-signal-rehearsal.cjs. Fixed current EmailInboundService source is transpiled with SWC config discovery disabled and an explicit import allowlist; real Nest application context receives actual SIGTERM in an owned child only. Configuration-held and search-held cases both passed: process remains alive while held, subsequent polling fenced, release produces ordered synthetic ticket/message/completion/ACK/cleanup before synthetic DB shutdown, then exit is SIGTERM. This is source/macOS Node runtime evidence, not the final Linux production artifact.
