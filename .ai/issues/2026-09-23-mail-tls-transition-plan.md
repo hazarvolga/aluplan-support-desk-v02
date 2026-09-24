@@ -1,5 +1,14 @@
 # Mail transport transition plan — 2026-09-23
 
+## Exception audit writes tracked through disconnect — 2026-09-24
+
+GlobalExceptionFilter now reserves root/active-parent child work around the actual ErrorLoggerService promise before its first await; main injects the existing shared tracker. Original HTTP status/message/code/redaction and wait-before-reply semantics remain. Logging/admission rejection cannot replace the original response; filter catch uses a fixed log message. Destroyed/ended responses are not replied to after persistence settles. No new env/schema/control endpoint/shutdown hook.
+
+Five new unit cases:4RED/1pass beforeproduct, then allgreen. Added a real loopback Nest/controller/filter/ErrorLoggerService test with held mockedPrisma write: client destroyed, server close observed, count remains1 until release, then0/no reply. Phase waits bounded and cleanup covers bind failure after review. Seven focused suites79tests pass; backend and all4changedtest files typecheck0 with schema-matched declarations. This is mocked persistence, not actual PostgreSQL/wholeApp or guaranteed audit delivery.
+
+Standalone logging after admission closes is refused; active parent descendants remain allowed. Previously admitted HTTP requests without leases and unrelated ErrorLoggerService callers remain outside proof. Existing ErrorLoggerService internal DB-failure stack logging is not sanitized by the fixed filter catch. Next: reconcile remaining admitted-request/guard and scheduler/Bull/socket writer coverage against the frozen Gate1 inventory before any closure hook; no universal drain claim. No live access/push/deploy; operational/artifact gates unchanged.
+
+
 ## HTTP admission-only boundary added locally — 2026-09-24
 
 MaintenanceAdmissionMiddleware uses a synchronous internal tracker check and is registered after helmet, before compression/body parsers and Nest guards. Closed admission returns fixed non-cacheable503 directly, avoiding exception-filter DB writes; open next() and downstream exceptions remain unchanged. It does not wrap next in a promise or infer completion from response close. CommonModule exports the middleware and the same tracker. No route/env/shutdown hook can close admission yet.
