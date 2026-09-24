@@ -19,6 +19,7 @@ import { ErrorLoggerService } from './common/services/error-logger.service';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { XssValidationPipe } from './common/pipes/xss-validation.pipe';
 import { MaintenanceAdmissionMiddleware } from './common/middleware/maintenance-admission.middleware';
+import { MaintenanceWorkService } from './common/services/maintenance-work.service';
 
 async function checkConnection(host: string, port: number, timeout = 3000): Promise<boolean> {
     return new Promise((resolve) => {
@@ -267,7 +268,7 @@ async function bootstrap() {
     // Global Exception Filter (GAP-20: proper imports instead of require())
     const httpAdapterHost = app.get(HttpAdapterHost);
     const errorLogger = app.get(ErrorLoggerService);
-    app.useGlobalFilters(new GlobalExceptionFilter(httpAdapterHost, errorLogger));
+    app.useGlobalFilters(new GlobalExceptionFilter(httpAdapterHost, errorLogger, app.get(MaintenanceWorkService)));
 
     // GAP-08: Swagger Production Constraints & Export
     const swaggerConfig = new DocumentBuilder()

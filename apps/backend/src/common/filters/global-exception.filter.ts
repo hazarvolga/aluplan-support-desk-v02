@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { ErrorLoggerService } from '../services/error-logger.service';
+import { MaintenanceWorkService } from '../services/maintenance-work.service';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -16,6 +17,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     constructor(
         private readonly httpAdapterHost: HttpAdapterHost,
         private readonly errorLogger: ErrorLoggerService,
+        private readonly work: MaintenanceWorkService,
     ) { }
 
     async catch(exception: unknown, host: ArgumentsHost): Promise<void> {
@@ -89,7 +91,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
         // Log the error using the centralized service (persists to AuditLog)
         try {
-            await this.errorLogger.logError({
+            const operation = () => this.errorLogger.logError({
                 action: 'api_exception',
                 message: auditMessage,
                 error: sanitizedError,
@@ -101,11 +103,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
                     statusCode: httpStatus
                 }
             });
-        } catch (logError) {
+            // Nest does not await custom filter promises; reserve before awaiting IO.
+            const parent = this.work.currentLease();
+            await (parent
+                ? this.work.runChild(parent, 'http.exception-audit', operation)
+                : this.work.runRoot('http.exception-audit', operation));
+        } catch {
             // If logging to DB fails, still log to console but don't crash the response
-            this.logger.error('Failed to log error to AuditLog:', logError);
+            this.logger.error('Failed to log error to AuditLog');
         }
 
+        if (response.destroyed || response.writableEnded) return;
         httpAdapter.reply(response, responseBody, httpStatus);
     }
 }
