@@ -26,6 +26,7 @@ import { createHash } from 'crypto';
 import { buildSupportAnswerContractPrompt } from './ai-answer-contract';
 import { isNoKnowledgeAnswer } from './ai-answer-quality';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 // local type with NO_MATCH
 export type LocalConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -191,9 +192,18 @@ export class AiQueryService {
         private readonly storage: StorageService,
         private readonly semanticCache: AiSemanticCache,
         private readonly supportAnswerOrchestrator: SupportAnswerOrchestrator,
+        private readonly work: MaintenanceWorkService,
     ) { }
 
     async query(options: AiQueryOptions): Promise<any> {
+        const parent = this.work.currentLease();
+        const operation = () => this.queryTracked(options);
+        return parent
+            ? this.work.runChild(parent, 'ai.query', operation)
+            : this.work.runRoot('ai.query', operation);
+    }
+
+    private async queryTracked(options: AiQueryOptions): Promise<any> {
         const { userQuery, userId, channel = 'WEB', hotinfoContext, wait = true, attachments } = options;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
@@ -263,6 +273,15 @@ export class AiQueryService {
      * Exported as public for the Processor to call, but prefixed with internal for clarity.
      */
     async queryInternal(options: AiQueryOptions): Promise<AiQueryResult> {
+        // Bull invokes this entry directly; it cannot inherit the enqueue lease.
+        const parent = this.work.currentLease();
+        const operation = () => this.queryInternalTracked(options);
+        return parent
+            ? this.work.runChild(parent, 'ai.query.internal', operation)
+            : this.work.runRoot('ai.query.internal', operation);
+    }
+
+    private async queryInternalTracked(options: AiQueryOptions): Promise<AiQueryResult> {
         const { userQuery, userId, channel = 'WEB', hotinfoContext, attachments } = options;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
@@ -413,14 +432,15 @@ export class AiQueryService {
         let results = searchResponse.results;
 
         // Langfuse retrieval span (non-blocking)
-        this.langfuse.traceRetrieval({
+        const retrievalTrace = {
             query: userQuery,
             hypotheticalDoc: retrievalDocument,
             chunksRetrieved: results.length,
             topScore: searchResponse.diagnostics.topScore,
             cacheHit: false,
             chunkIds: results.slice(0, 10).map(r => r.articleId),
-        }).catch(() => {});
+        };
+        this.startQueryBackground('ai.query.trace', () => this.langfuse.traceRetrieval(retrievalTrace));
 
         /* 
         // 3. Vertex AI Data Store Hybrid Merge (DEACTIVATED FOR COST OPTIMIZATION)
@@ -751,19 +771,31 @@ export class AiQueryService {
             // R-P1: Store in semantic cache for similarity-based future hits.
             // Fallback answers are intentionally not cached; a transient model timeout
             // must not lock future users into a weaker deterministic answer.
-            this.semanticCache.set(userQuery, cacheScope, finalResult).catch(() => {});  // non-blocking, cache failure must not break the query
+            this.startQueryBackground('ai.query.cache', () => this.semanticCache.set(userQuery, cacheScope, finalResult));
         }
 
         // NO_MATCH escalation: queue interaction for admin training review (non-blocking)
         if (finalResult.confidence === 'NO_MATCH') {
-            this.prisma.trainingQueue.create({
+            this.startQueryBackground('ai.query.training', () => this.prisma.trainingQueue.create({
                 data: { interactionId: interaction.id },
-            }).catch(() => {});
+            }));
         }
 
         this.ragObs.recordQuery(Date.now() - startTime, false);
 
         return finalResult;
+    }
+
+    private startQueryBackground(
+        label: 'ai.query.trace' | 'ai.query.cache' | 'ai.query.training',
+        operation: () => Promise<unknown>,
+    ): void {
+        const parent = this.work.currentLease();
+        if (!parent) throw new Error('Expected active query work lease');
+        // Reserve before invoking IO, without extending the customer response.
+        void this.work.runChild(parent, label, operation).catch(() => {
+            this.logger.warn(`Background query operation failed (${label})`);
+        });
     }
 
     private async rankResultsWithLLM(query: string, results: SearchResult[]): Promise<SearchResult[]> {
