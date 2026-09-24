@@ -7,9 +7,10 @@ import {
     OnGatewayDisconnect,
     OnGatewayInit,
     MessageBody,
+    WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Logger, ServiceUnavailableException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -352,6 +353,22 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     @SubscribeMessage('ticket:message_read')
     async markAsRead(@ConnectedSocket() client: Socket, @MessageBody() data: { ticketId: string, messageId: string }) {
+        let started = false;
+        try {
+            // Each client event is new ingress, even on an existing connection.
+            return await this.work.runRoot('ws.ticket.message-read', () => {
+                started = true;
+                return this.markAsReadTracked(client, data);
+            });
+        } catch (error) {
+            if (!started && error instanceof ServiceUnavailableException) {
+                throw new WsException({ code: 'MAINTENANCE', message: 'Service temporarily unavailable' });
+            }
+            throw error;
+        }
+    }
+
+    private async markAsReadTracked(client: Socket, data: { ticketId: string, messageId: string }) {
         if (!data || !this.isValidIdentifier(data.ticketId) || !this.isValidIdentifier(data.messageId)) return { error: 'Invalid payload' };
         if (!await this.ensureSession(client) || !client.rooms?.has(`ticket:${data.ticketId}`)) return { error: 'Unauthorized' };
         const canAccess = await this.ticketAccess.canAccessTicket(
