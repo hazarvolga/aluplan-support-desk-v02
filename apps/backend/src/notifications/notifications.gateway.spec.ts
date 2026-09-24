@@ -9,6 +9,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants';
 import { AiHealthEventService } from '../ai/ai-health-event.service';
 import { TicketAccessService } from '../common/services/ticket-access.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 const socketData = (userId: string, role: string) => ({
     userId, role,
@@ -61,6 +62,7 @@ describe('NotificationsGateway', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 NotificationsGateway,
+                MaintenanceWorkService,
                 { provide: JwtService, useValue: mockJwtService },
                 { provide: ConfigService, useValue: mockConfig },
                 { provide: PrismaService, useValue: mockPrisma },
