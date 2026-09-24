@@ -1,5 +1,12 @@
 # Mail transport transition plan — 2026-09-23
 
+## CRM terminal failure persistence joined before shutdown — 2026-09-24
+
+CrmProcessor preserves the failed-event conditions/retry logic; onFailed now synchronously registers a processor-local promise before invoking the original persistence body. onModuleDestroy awaits non-forced worker.close(), then allSettled of remaining failure writes. Database/Redis application-shutdown hooks run later in the tested topology; later BullExplorer close is idempotent. Unregistered-worker/close errors propagate rather than falsely allowing shutdown. No shared admission root can reject accepted CRM failure writes; shared tracker zero still excludes this local set.
+
+Two real-Nest/Bull-discovery lifecycle cases failed before implementation (DB disconnected while write held), then passed. Enhanced fixture emits two late failure events during close: first DB write fails, second stays held through success/failure. Close-error and unregistered-worker tests also pass.7focused suites58tests; backend plus3CRMtest files diagnostics0; independent code/security review approved. Worker/DBdrivers are synthetic, Prisma hook and Nest/Bull discovery real: not fullApp, actual Redis/job durability, stalled-job transport or SIGTERM proof. No schema/env/live/push/deploy changes. Next combined remaining producer/acquisition/HTTP/cron/WS admission ordering; do not infer universal readiness from this CRM-local join.
+
+
 ## Exception audit writes tracked through disconnect — 2026-09-24
 
 GlobalExceptionFilter now reserves root/active-parent child work around the actual ErrorLoggerService promise before its first await; main injects the existing shared tracker. Original HTTP status/message/code/redaction and wait-before-reply semantics remain. Logging/admission rejection cannot replace the original response; filter catch uses a fixed log message. Destroyed/ended responses are not replied to after persistence settles. No new env/schema/control endpoint/shutdown hook.
@@ -123,7 +130,7 @@ This section is the current bounded checklist, reconciled against source at24c4e
 | HTTP/API/webhooks | New-ingress middleware rejects closed admission before guards; administrative/exception audit promises tracked; no closure hook | Previously admitted requests/uploads/guards are NOT universally leased. Preserve SSE and caller retry semantics; resolve health/OPTIONS policy before activation. |
 | Existing WebSocket clients | message_read cancellation admission/completion tested; heartbeat/disconnect/cleanup still write Redis | Cover remaining connected-client paths and accepted handlers; distinguish transient presence from durable customer effects. |
 | IMAP | Local stop flag/direct-chain drain + synthetic PG/file re-entry proven | Verify exact artifact and first-cutover procedure; no blanket mailbox deletion/Seen reset or old/new simultaneous consumers. |
-| Bull workers/repeat producers | Scoped worker/Prisma/Redis order and SLA join tested; CRM failed-event final log is NOT joined by job processing | Stop acquisition/producers without deleting jobs. Preserve accepted-job descendants through closure; join CRM failure-listener persistence after workers stop and before DB disconnect. |
+| Bull workers/repeat producers | Scoped worker/Prisma/Redis order and SLA join tested; CRM now closes its worker then joins pending failure writes in destroy phase (synthetic lifecycle proof) | General acquisition/producer fence still open. Preserve accepted-job descendants, retain waiting jobs, and test combined ordering; shared tracker does not count the CRM-local set. |
 | Detached ticket events and direct async work | Creation/auto-tag and known five-consumer fan-out tested together; query background work, AI timeout and fallback accounting added | These are scoped proofs, not all event discovery. Keep fast customer response; join remaining accepted descendants before readiness. |
 | In-process cron |10source Cron declarations; IMAP has its own stop/drain. Reconciliation, report email, FAQ/clustering, budget, health retention, RAG and socket tasks lack a common proven fence | Stop future invocations and account for in-flight effects. RAG trainingQueue.create IS awaited; do not report it as detached. Presence/cache is lower consequence but still needs dependency-safe stopping. |
 

@@ -1,5 +1,12 @@
 # Session Summary - 2026-05-13
 
+## CRM terminal failure persistence joined before shutdown — 2026-09-24
+
+CrmProcessor preserves the failed-event conditions/retry logic; onFailed now synchronously registers a processor-local promise before invoking the original persistence body. onModuleDestroy awaits non-forced worker.close(), then allSettled of remaining failure writes. Database/Redis application-shutdown hooks run later in the tested topology; later BullExplorer close is idempotent. Unregistered-worker/close errors propagate rather than falsely allowing shutdown. No shared admission root can reject accepted CRM failure writes; shared tracker zero still excludes this local set.
+
+Two real-Nest/Bull-discovery lifecycle cases failed before implementation (DB disconnected while write held), then passed. Enhanced fixture emits two late failure events during close: first DB write fails, second stays held through success/failure. Close-error and unregistered-worker tests also pass.7focused suites58tests; backend plus3CRMtest files diagnostics0; independent code/security review approved. Worker/DBdrivers are synthetic, Prisma hook and Nest/Bull discovery real: not fullApp, actual Redis/job durability, stalled-job transport or SIGTERM proof. No schema/env/live/push/deploy changes. Next combined remaining producer/acquisition/HTTP/cron/WS admission ordering; do not infer universal readiness from this CRM-local join.
+
+
 ## Writer inventory reconciled; CRM failure gap characterized — 2026-09-24
 
 Updated the existing Gate1 table rather than creating another plan: HTTP admission/audit and ticket fan-out evidence had outgrown its old rows. Static source has10Cron and9Processor declarations, not a runtime registration claim. RAG trainingQueue.create is awaited; an initial commentary misreading was corrected and no RAG fix is needed for that statement.
