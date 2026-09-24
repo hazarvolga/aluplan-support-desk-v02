@@ -1,5 +1,9 @@
 # Current Focus
 
+## Maintenance/release work consolidated into three gates — 2026-09-24
+
+TLS transition plan now owns one current acceptance matrix:1new-admission fence plus observed accepted work across HTTP/WS/IMAP/Bull/events/cron;2one final artifact/security/critical workflows;3separately approved fresh recovery evidence and legacy-first-cutover/TLS/forward-recovery execution. Historical evidence not reopened as duplicate tasks. No new code/live access/tests this turn;134focusedtests are previous evidence. Next bounded admission/in-flight accounting design and local acceptance, not more independent micro-fixes or blanket synchronous AI event conversion. Candidate does not fix legacy live drain; explicit separate first-cutover plan required.
+
 ## SLA warning producer now joins notification attempt — 2026-09-24
 
 4RED real Nest event-discovery cases, then two targeted await emitAsync changes for SLA response/resolution warnings. Actual SlaProcessor/Cron/Automation chain remains pending until mocked enqueue settles; attempt marker written afterward. Caught failure policy retained, not delivery proof.15suites134tests/typecheck0 and independent review pass. No live access. Next consolidate remaining detached ticket/AI/notification writers and ingress/cron fencing into one bounded maintenance acceptance scope; do not blanket-convert ticket emit to await long AI work.

@@ -2,6 +2,45 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Consolidated maintenance acceptance scope — 2026-09-24
+
+This section is the current bounded checklist; earlier chronological sections are evidence/history, not separate new projects. Source-only inspection this turn; no production observation or fresh tests. Last focused acceptance remains15suites134tests, not full release acceptance. Local lifecycle improvements do not change the old running image's first-cutover behavior.
+
+### Gate 1 — Stop new work and account for already accepted work
+
+| Work source | Current evidence | Required maintenance acceptance |
+| --- | --- | --- |
+| HTTP/API/webhooks | No general maintenance fence identified in inspected bootstrap/common/config paths | Explicitly block new mutations without false success; account for accepted requests/uploads and caller retries. Provider mail/source must remain retained. |
+| Existing WebSocket clients | ticket:message_read can cancel queued customer email; presence writes Redis | Cover existing connections, not only new HTTP upgrades; stop mutation admission and finish already accepted handlers. |
+| IMAP | Local stop flag/direct-chain drain + synthetic PG/file re-entry proven | Verify exact artifact and first-cutover procedure; no blanket mailbox deletion/Seen reset or old/new simultaneous consumers. |
+| Bull workers/repeat producers | Scoped worker/Prisma/Redis order and SLA warning join tested | Stop fresh job acquisition/production with supported non-deleting controls; finish active jobs while their DB/Redis and dependent enqueue paths remain usable; retain waiting/delayed/failed jobs. |
+| Detached ticket events and direct async work | Assignment waits1.5s then writes DB; AI drafts/status, automation emails, persistent notifications and auto-tagging can outlive caller | Enumerate concrete promises and observe completion, including nested events; do not infer safety from a fixed quiet sleep or await all AI work inside customer requests. |
+| In-process cron | Announcement reconciliation writes DB; AI reports enqueue email; presence cleanup writes Redis | Stop future invocations and account for in-flight work. Separate repeatable reconciliation/cache work from irreplaceable accepted customer effects. |
+
+Gate1 passes only when a focused local rehearsal shows: new admission is rejected/retained as appropriate, an intentionally held accepted writer prevents ready-to-stop, nested accepted work completes while dependencies remain available, and the signal is scoped to every applicable process. A process-local zero counter alone cannot certify other replicas or legacy writers. Do not implement a public unauthenticated maintenance endpoint, queue deletion, broad callback monkey-patching or a new distributed platform. Exact mechanism is still a bounded design/implementation decision, not executable authorization.
+
+Independent architecture review acceptance details: register detached work before async listener scheduling so a scheduled-but-not-entered callback cannot produce false zero. After admission closes, already-admitted parents may still create required descendants; account for those rather than silently rejecting them. Hold a request, cron callback, delayed listener, nested AI/notification, enqueue and worker in local tests; verify both registration race and failed/incomplete drain. A timeout must leave the decision NOT DRAINED, never certify unfinished writes. Keep relevant queue enqueue paths available until accepted producers/descendants settle, and never conflate stopping acquisition with deleting waiting jobs. Exact safe phase order must be tested as a whole.
+
+### Gate 2 — Accept one frozen release artifact
+
+- Freeze scope to necessary compatibility/security/data fixes; exclude new customer feature requests.
+- Build one final Linux/amd64 artifact including the recent commits, pin identity and run existing functional/security runners on it. Earlier image tests remain useful but do not certify newer source.
+- Close remaining reachable security decisions (including crawler containment) or explicitly restrict the affected feature with tested compatibility; scanner counts alone are not a verdict.
+- Recheck customer/staff separation, CRM eligibility, login/reset, ticket/reply/attachment, frontend dashboard and inbound/outbound mail. Reuse existing tests; no replacement test framework.
+
+### Gate 3 — Separately approved operational cutover
+
+- Fresh scoped live identity/config/migration/host/credential evidence and protected DB/mail/attachment recovery copies require separate permission. Historical local recovery proofs are not fresh snapshots.
+- Rehearse the actual pending migration/startup path and attachment bytes with the exact artifact in isolation; never replace live DB with a development DB.
+- Specify first-cutover writer fencing for the legacy running artifact, mail TLS/client/renewal handoff, operator, extended-maintenance acceptance, abort criteria and forward-recovery procedure under ADR-022. Do not restart historical deploy.sh blindly.
+- Obtain explicit push/deploy and maintenance authorization, then execute controlled customer workflow acceptance before reopening writes. Keep post-cutover accepted writes; never blindly restore an older DB to undo an application failure.
+
+### Scope limits and stop conditions
+
+Deferred: redesigning all event delivery as an outbox, distributed shutdown coordination, zero-downtime blue/green architecture, complete event-system replacement, general dependency mass-upgrades, renewed historical rollback-image engineering and new product features. These do not justify skipping demonstrated reachable security or data-preservation blockers.
+
+Do not schedule deployment while Gate1 has an unknown writer, Gate2 has an unacceptable reachable risk or failed critical workflow, or Gate3 lacks verified recovery/authority. Previously stated1–3focused-day estimate remains conditional, not a measured completion promise; no defensible fixed downtime estimate yet. Next action: design/test one shared local admission-and-in-flight accounting mechanism for this enumerated scope, with old-live operational fencing kept explicitly separate; review before implementation.
+
 ## Targeted SLA producer completion — 2026-09-24
 
 Added sla-completion.spec.ts with real EventEmitterModule bootstrap/decorator discovery and actual SlaProcessor, SlaCronService, AutomationService. Queue/Prisma/email boundaries mocked; exactly one discovered sla.warning listener asserted. Four cases (response/resolution × attempt success/rejection) failed against old emit: marker updated and process completed while enqueue remained held. Two emit calls now await emitAsync; payloads, recipients, repeat schedule and retry policy unchanged. Existing unit mocks/assertions updated, marker comments clarified as attempt rather than delivery. Test release/teardown is deterministic with bounded listener-start wait; no AppModule or external connections.
