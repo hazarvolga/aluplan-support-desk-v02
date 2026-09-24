@@ -1,5 +1,9 @@
 # Current Focus
 
+## Queue/Prisma ordering confirmed; Redis teardown gap isolated — 2026-09-24
+
+Reduced real Nest/Bull/Prisma module topology waits held worker close before Prisma disconnect; no queue/DB defect reproduced. Separate actual RedisModule characterization shows primary Redis QUIT initiated before Bull drain; hypothetical final-phase-only move also fails ordering. Mock drivers/workers, not fullApp/physical socket proof.10suites87tests pass. Product unchanged. Next bounded correction must explicitly preserve shared Redis until workers complete and await quit; prove topology rather than only rename hook. Detached event writers and cron/ingress fencing remain separate maintenance gate, no universal drain claim.
+
 ## Synthetic PostgreSQL SIGTERM/re-entry passed — 2026-09-24
 
 Current-domain-source test with isolated PostgreSQL17/local attachment storage passed actual SIGTERM while upload held after ticket/message commits. Intake fenced, DB remained available, attachment/claim/ACK completed before disconnect; fresh child replay preserved IDs, counts1ticket/1message/1attachment/1claim and exact bytes, with no orphan file. Focused84tests pass. Test uses custom DB lifecycle provider; companion proxy spec covers actual Prisma hook. Not fullApp, Linux release image, hard-crash or version rollback proof. No live access/push/deploy. Next narrow all-writer shutdown inventory and explicit maintenance drain/re-entry acceptance, not another broad redesign.

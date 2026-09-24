@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Background shutdown ordering characterization — 2026-09-24
+
+Test-only queue-shutdown-order.spec.ts uses actual global PrismaModule/proxy and installed Bull discovery under candidate-relative module order; held synthetic worker closes before DB disconnect. Added redis-shutdown-order.spec.ts proving current cleanup initiates Redis QUIT before held worker drain, and test-instance final-phase move alone does not fix it. Independent architecture/review; reviewer wording tightened to QUIT initiation, not physical closure. Focused10suites87tests green offline; no product/live/DB/provider changes. Candidate shared Redis is used by AI/knowledge workers; detached event writers remain outside direct IMAP/worker proof. Next explicit bounded worker-before-Redis cleanup ordering plus awaited quit, not broad lifecycle redesign.
+
 ## PostgreSQL and attachment signal persistence acceptance — 2026-09-24
 
 Added opt-in mail-shutdown-postgres-rehearsal.cjs using current inbound/claim/tickets/storage source with real PostgreSQL17 and synthetic IMAP/MIME. Held upload after ticket/message commit; actual SIGTERM fences intake and waits; release persists attachment/claim before synthetic ACK and final DB disconnect. Fresh child replay preserves IDs/counts/hash; full owned storage listing excludes orphan files. Independent code/security review found no critical/high blocker; optional manifest suggestion incorporated and executed. Focused8suites84tests passed. No product/schema/live changes. Isolated tmpfs DB owned rows verified zero after cleanup; exact containers, relay and temporary fixtures removed. Final artifact/runtime/all-writer/real transport gates remain; do not equate graceful re-entry with crash recovery or old-version rollback.

@@ -2,6 +2,16 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Bounded background-writer shutdown audit — 2026-09-24
+
+Actual installed Nest reverses distance-sorted module order during shutdown. Both global Prisma and Bull core share final phase, but this alone is not a race: new prisma/queue-shutdown-order.spec.ts preserves candidate root order (Bull config, Prisma, queue feature) and actual PrismaModule/proxy/Bull discovery. Holding synthetic worker.close prevents DB disconnect; observed worker-close-start → worker-close-end → disconnect. No product correction needed for this reduced topology. Queue/worker/drivers are mocked; not fullApp, network, actual job processing or durability evidence.
+
+New redis/redis-shutdown-order.spec.ts uses actual RedisModule/PrismaModule/Bull registration and candidate-relative Redis placement. Current cleanup: pool-drain → pool-clear → primary Redis QUIT initiation → worker-close-start [held] → worker-close-end → Prisma disconnect. Moving only that instance's actual cleanup body to onApplicationShutdown produces the same order; phase-only repair rejected. Production RedisService also does not await primary quit. This records QUIT invocation, not physical socket closure. AI query/knowledge-sync work uses this shared Redis, distinct from Bull's own Redis connection. Next bounded fix must preserve the shared client through worker completion and await quit/fallback, with module-order acceptance; no generic shutdown framework justified.
+
+Other source-confirmed limits: TicketsService emits without awaiting async listeners; automation/AI/notifications may write/enqueue after direct ticket completion. Installed EventSubscribersLoader removes listeners on shutdown without joining existing promises. SchedulerOrchestrator clears scheduled callbacks but does not universally await in-flight async callbacks. Redis teardown is independently actionable; fixing it does not prove detached-work completion. Maintenance still needs new ingress/producer fencing and observable completion, not queue-count zero or a guessed quiet sleep. No blind production shutdown authorized.
+
+Independent test/code-security review accepted scoped tests; wording corrected per review. Focused offline10suites87tests passed. Local characterization only; no new production access, product changes, push, deploy, schema mutation or external calls. Existing Aluplan skill guided reuse of actual modules/queue patterns rather than new orchestration infrastructure.
+
 ## Real PostgreSQL and attachment graceful re-entry — 2026-09-24
 
 New opt-in apps/backend/test/mail-shutdown-postgres-rehearsal.cjs loads allowlisted current inbound/claim/tickets/storage sources, real Nest and real Prisma PostgreSQL adapter. Fixed loopback15432/domain_test identity and PostgreSQL17/initial-empty checks prevent arbitrary endpoint selection. IMAP/MIME, SLA and external providers remain synthetic; AppModule is never loaded.
