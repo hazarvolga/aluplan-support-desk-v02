@@ -28,6 +28,8 @@ describe('AiQueryService', () => {
     let redis: any;
     let diagnosisService: any;
     let storageService: any;
+    let maintenanceWork: MaintenanceWorkService;
+    let semanticCache: any;
 
     const mockInteraction = { id: 'int-1', confidence: 'HIGH' };
 
@@ -159,6 +161,8 @@ describe('AiQueryService', () => {
         redis = module.get<RedisService>(RedisService);
         diagnosisService = module.get<AiDiagnosisService>(AiDiagnosisService);
         storageService = module.get<StorageService>(StorageService);
+        maintenanceWork = module.get(MaintenanceWorkService);
+        semanticCache = module.get(AiSemanticCache);
 
         jest.clearAllMocks();
         mockAiService.generate.mockReset();
@@ -168,6 +172,105 @@ describe('AiQueryService', () => {
         mockRedisService.get.mockResolvedValue(null);
         mockAiService.getActiveProviderName.mockResolvedValue('ollama');
         mockAiService.getActiveModelName.mockResolvedValue('llama3');
+        mockLangfuseService.traceRetrieval.mockReset().mockResolvedValue(undefined);
+        mockPrismaService.trainingQueue.create.mockReset().mockResolvedValue(undefined);
+    });
+
+    describe('query maintenance completion', () => {
+        it.each(['query', 'queryInternal'] as const)(
+            '%s rejects new work with 503 before external IO when admission is closed',
+            async (entrypoint) => {
+                mockPrismaService.user.findUnique.mockResolvedValue(null);
+                mockEmbeddingService.search.mockResolvedValue({
+                    results: [],
+                    diagnostics: { topScore: 0.5, passedThreshold: 0, queryEmbeddingModel: 'nomic', thresholdUsed: 0.78 },
+                });
+                maintenanceWork.closeAdmission();
+                await expect(service[entrypoint]({
+                    userQuery: 'how to install?',
+                    userId: '11111111-1111-4111-8111-111111111111',
+                })).rejects.toMatchObject({ status: 503 });
+                expect(prisma.user.findUnique).not.toHaveBeenCalled();
+                expect(mockRedisService.getClient).not.toHaveBeenCalled();
+                expect(mockRedisService.get).not.toHaveBeenCalled();
+                expect(semanticCache.get).not.toHaveBeenCalled();
+                expect(mockEmbeddingService.search).not.toHaveBeenCalled();
+                expect(prisma.aiInteraction.create).not.toHaveBeenCalled();
+            },
+        );
+
+        describe.each(['retrieval trace', 'training review', 'semantic cache'] as const)(
+            '%s child',
+            (operation) => {
+                it.each(['success', 'failure'] as const)(
+                    'does not delay the response but remains counted until %s',
+                    async (outcome) => {
+                        let release!: () => void;
+                        let reject!: (reason: Error) => void;
+                        const held = new Promise<void>((resolve, fail) => {
+                            release = resolve;
+                            reject = fail;
+                        });
+                        // Observe rejection even if a regression skips invoking this child.
+                        void held.catch(() => undefined);
+                        const target = operation === 'retrieval trace'
+                            ? mockLangfuseService.traceRetrieval
+                            : operation === 'training review'
+                                ? prisma.trainingQueue.create
+                                : semanticCache.set;
+                        target.mockReturnValueOnce(held);
+                        const highConfidence = operation === 'semantic cache';
+                        // A retrieved but unclassified result reaches late NO_MATCH
+                        // escalation; empty results take the earlier return instead.
+                        const hasContext = operation !== 'retrieval trace';
+                        prisma.user.findUnique.mockResolvedValue(null);
+                        mockEmbeddingService.search.mockResolvedValue({
+                            results: hasContext ? [{
+                                articleId: 'art-1', sourceType: 'ARTICLE',
+                                title: 'Installation Guide', content: 'Step 1: install.',
+                                similarity: 0.95, confidence: highConfidence ? 'HIGH' : 'NO_MATCH',
+                            }] : [],
+                            diagnostics: {
+                                topScore: hasContext ? 0.95 : 0.5,
+                                passedThreshold: hasContext ? 1 : 0,
+                                queryEmbeddingModel: 'nomic', thresholdUsed: 0.78,
+                            },
+                        });
+                        mockAiService.generate.mockResolvedValue('Formatted AI answer');
+                        const response = service.queryInternal({
+                            userQuery: 'how to install?',
+                            userId: '11111111-1111-4111-8111-111111111111',
+                        });
+                        try {
+                            // A scheduling turn, not a sleep: fully mocked query IO settles
+                            // while the selected real service branch is deliberately held.
+                            const result = await Promise.race([
+                                response,
+                                new Promise<'response-still-pending'>((resolve) =>
+                                    setImmediate(() => resolve('response-still-pending'))),
+                            ]);
+                            expect(result).not.toBe('response-still-pending');
+                            expect(result).toMatchObject({
+                                confidence: highConfidence ? 'HIGH' : 'NO_MATCH',
+                            });
+                            expect(target).toHaveBeenCalledTimes(1);
+                            maintenanceWork.closeAdmission();
+                            const heldWork = await maintenanceWork.waitForIdle(0);
+                            expect(heldWork.drained).toBe(false);
+                            expect(heldWork.activeCount).toBeGreaterThan(0);
+                            if (outcome === 'failure') reject(new Error('Synthetic child failure'));
+                            else release();
+                            await expect(maintenanceWork.waitForIdle(1000)).resolves.toEqual({
+                                drained: true, activeCount: 0,
+                            });
+                        } finally {
+                            release();
+                            await response;
+                        }
+                    },
+                );
+            },
+        );
     });
 
     describe('query — Cache', () => {
@@ -1551,7 +1654,7 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
                 userId: 'admin-1',
             });
 
-            expect(result.sources.map(source => source.articleId)).toEqual([
+            expect(result.sources.map((source: { articleId: string }) => source.articleId)).toEqual([
                 'network-startup',
                 'workgroup-network',
                 'license-offline',
@@ -1592,7 +1695,7 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
                 userId: 'admin-1',
             });
 
-            expect(result.sources.map(source => source.articleId)).toEqual([
+            expect(result.sources.map((source: { articleId: string }) => source.articleId)).toEqual([
                 'workgroup-checkout',
                 'visual-scripting',
             ]);
@@ -1958,7 +2061,7 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             // Only the image/png with url should produce an inlineData part
             expect(result).toHaveLength(1);
             expect(result[0].inlineData).toBeDefined();
-            expect(result.every(p => !p.fileData)).toBe(true);
+            expect(result.every((p: { fileData?: unknown }) => !p.fileData)).toBe(true);
         });
 
         it('StorageService.getFile() returns empty buffer → attachment skipped', async () => {
