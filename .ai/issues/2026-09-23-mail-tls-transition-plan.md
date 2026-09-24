@@ -2,6 +2,14 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Targeted SLA producer completion — 2026-09-24
+
+Added sla-completion.spec.ts with real EventEmitterModule bootstrap/decorator discovery and actual SlaProcessor, SlaCronService, AutomationService. Queue/Prisma/email boundaries mocked; exactly one discovered sla.warning listener asserted. Four cases (response/resolution × attempt success/rejection) failed against old emit: marker updated and process completed while enqueue remained held. Two emit calls now await emitAsync; payloads, recipients, repeat schedule and retry policy unchanged. Existing unit mocks/assertions updated, marker comments clarified as attempt rather than delivery. Test release/teardown is deterministic with bounded listener-start wait; no AppModule or external connections.
+
+After fix both marker update and processor completion wait for listener/child attempt settlement. Failure remains caught by AutomationService and marker still updates; deliberate preservation of current best-effort semantics, not successful queueing/delivery guarantee or retry redesign. No-assignee behavior unchanged. Focused15suites134tests green (includes existing ticket SLA suite), no-emit backend/newtest typecheck0 with schema-matched declarations, secret/diff checks clean; independent review clear for scoped change. No live access, migration/env/dependency change, send, push or deploy.
+
+This closes only the SLA warning dispatch join; it is not actual Bull worker shutdown/SIGTERM, durable Redis/DB transaction, fullApp or all-writer acceptance. Remaining detached ticket automation/AI/assignment/notifications, repeat producers and in-process cron plus HTTP/WebSocket/IMAP admission must be accounted for before maintenance. Next consolidate that finite acceptance scope; do not blindly await all ticket events and introduce long AI latency to customer requests. Continue existing Aluplan architecture without a new queue platform/outbox framework in this slice.
+
 ## Direct automation mail completion prerequisite — 2026-09-24
 
 Architecture audit: TicketsService emits ticket events without joining listeners; AutomationService previously launched its email children without awaiting them. EmailService later writes emailLog and enqueues Bull work, so merely switching an outer emit to emitAsync would still report premature completion. New automation-completion.spec.ts held each of10mail enqueue promises; all10desired assertions failed against old code. Product now awaits those operations and placeholder evaluateRules calls. Recipient/visibility guards, payloads, WEB delay60s and job IDs unchanged. Resolution/CSAT rejections now have sanitized error handlers, allowing later attempts. Other existing best-effort catches retained.

@@ -1,5 +1,9 @@
 # Current Focus
 
+## SLA warning producer now joins notification attempt — 2026-09-24
+
+4RED real Nest event-discovery cases, then two targeted await emitAsync changes for SLA response/resolution warnings. Actual SlaProcessor/Cron/Automation chain remains pending until mocked enqueue settles; attempt marker written afterward. Caught failure policy retained, not delivery proof.15suites134tests/typecheck0 and independent review pass. No live access. Next consolidate remaining detached ticket/AI/notification writers and ingress/cron fencing into one bounded maintenance acceptance scope; do not blanket-convert ticket emit to await long AI work.
+
 ## Automation child completion made observable — 2026-09-24
 
 10RED deferred-enqueue tests reproduced detached child promises. AutomationService now awaits10existing mail child operations and placeholder rule evaluation; resolution/CSAT errors are caught, customer failure still allows staff notification. Removed raw /tmp diagnostic write discovered in review.13suites116tests green; no live/schema/env changes. This is direct handler completion, NOT outer EventEmitter/shutdown draining or delivery. Next smallest chain: actual SLA worker → sla.warning → handler → enqueue completion, then remaining admission/cron/event gates. No blanket emitAsync conversion.

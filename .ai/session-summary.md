@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## SLA worker-to-listener completion fixed — 2026-09-24
+
+Added actual Nest EventEmitterModule discovery with real SlaProcessor/SlaCronService/AutomationService, mockIO only;4held-attempt cases initially RED. Two warning emissions now awaited; attempt comments clarified, existing unit mocks migrated. Response/resolution success/rejection cases green; existing caught rejection still marks attempted and completes.15suites134tests pass offline, typecheck0 with schema-matched declarations, secrets/diff clean, independent review scoped clear. Test-only bounded start wait guarantees fixture release on missing dispatch. No real enqueue, delivery, shutdown, production access or schema change proved/performed. Next remaining-writer/admission acceptance scope, not new infrastructure.
+
 ## Joined automation mail child operations — 2026-09-24
 
 Read-only architecture audit identified double detachment (producer emit plus unawaited listener children). Added13direct-handler tests:10held-success cases initially RED,3failure continuation cases. Joined existing10mail calls, caught resolution/CSAT rejections, awaited placeholder rules. Review caught newly propagated /tmp write failure risk; removed raw diagnostic file write while retaining sanitized app error log, staff continuation verified. Independent final code/security review clear.13suites116tests green offline, secret scan clean; no live access, schema/env/dependency or emit API changes. No full lifecycle proof; enqueue operations now awaited sequentially, so a hung earlier enqueue can delay subsequent attempts. Next scoped SLA producer completion test, not universal coordinator.
