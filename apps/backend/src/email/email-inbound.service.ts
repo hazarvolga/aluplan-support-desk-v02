@@ -33,7 +33,7 @@ export class EmailInboundService implements OnModuleInit, OnModuleDestroy {
         this.logger.log('EmailInboundService initialized');
     }
 
-    @Cron(CronExpression.EVERY_MINUTE)
+    @Cron(CronExpression.EVERY_MINUTE, { waitForCompletion: true })
     async handleInboundEmails() {
         if (this.stopping || this.isProcessing) return;
         this.isProcessing = true;

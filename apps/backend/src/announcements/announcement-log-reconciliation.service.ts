@@ -27,7 +27,7 @@ export class AnnouncementLogReconciliationService {
 
     constructor(private readonly prisma: PrismaService) { }
 
-    @Cron('*/2 * * * *')
+    @Cron('*/2 * * * *', { waitForCompletion: true })
     async reconcile(): Promise<void> {
         try {
             const [queued, bounces] = await Promise.all([

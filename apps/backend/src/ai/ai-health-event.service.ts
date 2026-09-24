@@ -94,7 +94,7 @@ export class AiHealthEventService {
      * 30-day retention cleanup
      * Runs daily at 3:00 AM
      */
-    @Cron('0 3 * * *')
+    @Cron('0 3 * * *', { waitForCompletion: true })
     async cleanupOldEvents() {
         const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
         try {

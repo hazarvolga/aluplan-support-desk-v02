@@ -23,7 +23,7 @@ export class TicketClusteringService {
      * Daily job to cluster resolved tickets and generate FAQ candidates.
      * Starts at 02:00 as per architecture specification R-T4.
      */
-    @Cron('0 2 * * *')
+    @Cron('0 2 * * *', { waitForCompletion: true })
     async runClusteringPipeline() {
         this.logger.log('🚀 Starting Ticket Clustering Pipeline...');
 

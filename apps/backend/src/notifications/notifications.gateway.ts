@@ -801,7 +801,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         }
     }
 
-    @Cron('*/1 * * * *')
+    @Cron('*/1 * * * *', { waitForCompletion: true })
     async cleanupGhostUsers() {
         this.logger.log('🧹 Running ghost user presence cleanup...');
         const redis = this.redisService.getClient();

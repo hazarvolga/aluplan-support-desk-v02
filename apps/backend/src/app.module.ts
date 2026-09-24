@@ -50,6 +50,7 @@ import { QueueDashboardModule } from './queue-dashboard/queue-dashboard.module';
 import { ProactiveChatModule } from './proactive-chat/proactive-chat.module';
 import { OpsDashboardModule } from './ops-dashboard/ops-dashboard.module';
 import { ReviewCenterModule } from './review-center/review-center.module';
+import { CronShutdownService } from './common/services/cron-shutdown.service';
 
 @Module({
     imports: [
@@ -179,6 +180,7 @@ import { ReviewCenterModule } from './review-center/review-center.module';
         ReviewCenterModule,
     ],
     providers: [
+        CronShutdownService,
         {
             provide: APP_INTERCEPTOR,
             useClass: AuditLogInterceptor,
