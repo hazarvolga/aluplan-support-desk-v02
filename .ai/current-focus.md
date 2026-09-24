@@ -1,5 +1,9 @@
 # Current Focus
 
+## Automation child completion made observable — 2026-09-24
+
+10RED deferred-enqueue tests reproduced detached child promises. AutomationService now awaits10existing mail child operations and placeholder rule evaluation; resolution/CSAT errors are caught, customer failure still allows staff notification. Removed raw /tmp diagnostic write discovered in review.13suites116tests green; no live/schema/env changes. This is direct handler completion, NOT outer EventEmitter/shutdown draining or delivery. Next smallest chain: actual SLA worker → sla.warning → handler → enqueue completion, then remaining admission/cron/event gates. No blanket emitAsync conversion.
+
 ## Shared Redis teardown corrected locally — 2026-09-24
 
 RED3 before product edits, then GREEN: discover RedisModule first at root, move cleanup to final shutdown phase and await primary QUIT/fallback. Installed Nest reverse global order verified; real reduced Nest/Bull/Prisma/Redis module test holds worker, proves late Redis read, ordered cleanup and close waiting on held QUIT in success/rejection cases. Root-source order guard prevents fixture drift.10suites88tests/typecheck0, no new schema/env/deps/live access. Next bounded detached-event/cron completion and ingress fence acceptance; this fix is not universal drain or production artifact proof.

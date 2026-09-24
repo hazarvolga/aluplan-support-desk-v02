@@ -2,6 +2,14 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Direct automation mail completion prerequisite — 2026-09-24
+
+Architecture audit: TicketsService emits ticket events without joining listeners; AutomationService previously launched its email children without awaiting them. EmailService later writes emailLog and enqueues Bull work, so merely switching an outer emit to emitAsync would still report premature completion. New automation-completion.spec.ts held each of10mail enqueue promises; all10desired assertions failed against old code. Product now awaits those operations and placeholder evaluateRules calls. Recipient/visibility guards, payloads, WEB delay60s and job IDs unchanged. Resolution/CSAT rejections now have sanitized error handlers, allowing later attempts. Other existing best-effort catches retained.
+
+Independent review found awaiting customer creation exposed an existing raw /tmp/mail_error.txt write failure as a staff-notification abort. Removed fs import/write and kept sanitized application error logging; no actual existing file deleted. Three rejection-continuation tests cover customer→staff, resolution→survey and survey failure without raw error leakage. Final independent review found no critical/high issue. Focused13suites116tests pass offline; secret/diff checks clean. No live access, send, DB read/write, migration, push or deploy.
+
+Limits: mocked direct-handler evidence, not actual mail delivery, durable enqueue atomicity, outer dispatch join, fullApp or shutdown proof. Sequential awaits mean a stuck earlier enqueue can delay later attempts; no false-success timeout added. Existing log-before-queue partial failure semantics unchanged. Next bounded producer chain is SLA: SlaProcessor awaits checkSlaWarnings, but that service emits sla.warning and records its timestamp without joining notification completion. Characterize actual listener topology before targeted repair; retain best-effort policy explicitly. Detached assignment/AI/notification DB writers and cron/HTTP/WebSocket/IMAP admission still require maintenance accounting. Reuse existing patterns per Aluplan skill, no new outbox/platform in this slice.
+
 ## Minimal shared Redis lifecycle fix — 2026-09-24
 
 Converted redis-shutdown-order.spec.ts to desired acceptance;3tests failed before product edits. Changes are limited to root first-discovery of RedisModule (removed later duplicate placement) and RedisService cleanup moved to onApplicationShutdown with awaited client.quit(). Existing pool drain/clear and disconnect-on-QUIT-rejection behavior retained. No new dependency/env/schema/API, queue retry policy or lifecycle coordinator.

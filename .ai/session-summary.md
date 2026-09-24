@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Joined automation mail child operations — 2026-09-24
+
+Read-only architecture audit identified double detachment (producer emit plus unawaited listener children). Added13direct-handler tests:10held-success cases initially RED,3failure continuation cases. Joined existing10mail calls, caught resolution/CSAT rejections, awaited placeholder rules. Review caught newly propagated /tmp write failure risk; removed raw diagnostic file write while retaining sanitized app error log, staff continuation verified. Independent final code/security review clear.13suites116tests green offline, secret scan clean; no live access, schema/env/dependency or emit API changes. No full lifecycle proof; enqueue operations now awaited sequentially, so a hung earlier enqueue can delay subsequent attempts. Next scoped SLA producer completion test, not universal coordinator.
+
 ## Minimal worker-before-Redis teardown fix — 2026-09-24
 
 Converted Redis characterization into desired acceptance:3RED failures with product untouched. Root RedisModule first discovery plus final-phase Redis cleanup/awaited QUIT passes held-worker late-read and QUIT resolve/reject tests. No new orchestration framework, dependency, schema or env. Combined10suites88tests green offline; no-emit backend/new-test typecheck0 with schema-identical borrowed declarations; secret scans/diff checks clean. GitNexus unavailable and Graphify report absent, so direct source/framework impact inspection used. Separate reviewed commits retain test/product/docs boundaries; no push/deploy/production access. Detached work remains outside this scoped fix.
