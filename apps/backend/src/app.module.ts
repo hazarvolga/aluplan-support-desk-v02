@@ -53,6 +53,10 @@ import { ReviewCenterModule } from './review-center/review-center.module';
 
 @Module({
     imports: [
+        // Discover shared Redis before Bull/features: Nest reverses global-module
+        // discovery order during final shutdown, so workers finish before Redis.
+        // Keep redis-shutdown-order.spec green when changing imports/Nest versions.
+        RedisModule,
         SentryModule.forRoot(),
         LoggerModule.forRootAsync({
             imports: [ConfigModule],
@@ -159,7 +163,6 @@ import { ReviewCenterModule } from './review-center/review-center.module';
         ReportsModule,
         NotificationsModule,
         WebhooksModule,
-        RedisModule,
         AutomationModule,
         TeamsModule,
         BrandingModule,

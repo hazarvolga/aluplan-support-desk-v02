@@ -1,11 +1,11 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationShutdown, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { createPool, Pool } from 'generic-pool';
 import { REDIS_TTL, RedisTTLKey } from '../config/redis.config';
 
 @Injectable()
-export class RedisService implements OnModuleInit, OnModuleDestroy {
+export class RedisService implements OnModuleInit, OnApplicationShutdown {
     private readonly logger = new Logger(RedisService.name);
     private client: Redis;
     private pool: Pool<Redis>;
@@ -67,10 +67,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         });
     }
 
-    async onModuleDestroy() {
+    async onApplicationShutdown() {
         await this.pool.drain();
         await this.pool.clear();
-        this.client.quit().catch(() => this.client.disconnect());
+        await this.client.quit().catch(() => this.client.disconnect());
     }
 
     async get(key: string): Promise<string | null> {
@@ -162,4 +162,3 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         return this.client;
     }
 }
-
