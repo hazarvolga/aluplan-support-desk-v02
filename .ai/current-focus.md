@@ -1,5 +1,9 @@
 # Current Focus
 
+## Ticket creation tracking integrated; full fan-out rehearsal remains — 2026-09-24
+
+TicketsService.create now reserves root/child and pre-registers detached autotag+ticket.created completion without waiting for AI in the response. Four scheduled consumers and translation listener promisify; rules join nested translation.4actual-create/synthetic-listener cases RED→GREEN;5metadata failures fixed;2actual-rule/synthetic-translation cases pass.17offline suites298tests plus separate loopback-only HTTP12tests pass; backend/3newtests diagnostics0. Known-handler metadata is NOT fullApp discovery or all-five-consumer persistence proof. PG runner adapted/syntax checked, not rerun. No live/push/deploy/schema/env changes. Next actual five-consumer fan-out acceptance, remaining Gate1 writer coverage and exact artifact gates; no universal shutdown readiness claim.
+
 ## Persistent AI fallback notification chain tracked — 2026-09-24
 
 Gateway fallback listener now synchronously reserves shared root/child work before emit returns, then defers existing persistence via setImmediate. AiService publishers unchanged. Real Nest/gateway/health-service tests with mockPrisma cover held health/notification success/failure and closed standalone admission.5RED beforeproduct thenGREEN;12suites205pass/1existing skip; backend/newtest typecheck0, independent code/security review clear. No live/push/deploy/schema/env changes. Next actual ticket-created fan-out integration and remaining Gate1 writers; not full socket/provider/Bull/drain acceptance.

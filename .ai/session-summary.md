@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Ticket root and detached children integrated — 2026-09-24
+
+Added shared mandatory tracker to TicketsService; create wraps private body root/currentchild, detached autotag and emitAsync reserve children and catch fixed-label failures. Four actual scheduled ticket.created decorators add promisify:true, Automation already awaitable. RuleEngine awaits nested translation emitAsync; actual translation decorator promisifies. Response remains independent of background work; later rule actions now wait translation. New tests cover actualcreate+syntheticconsumer4cases, knownactualmetadata6cases, actualRuleEngine+synthetictranslation2cases.17offline suites298tests pass, HTTP12pass via existing loopback-only runner after offline EPERM; no remote network. Backend+3newtests diagnostics0, PG fixture updated/syntaxchecked but persistence rehearsal not rerun. Source inspection/independent review used; no live/push/deploy. Next full actual consumer acceptance, not maintenance-ready assertion.
+
 ## Fallback listener reserves before scheduling — 2026-09-24
 
 Chose smaller listener-side fix instead of touching all AiService publishers. NotificationsGateway.handleAiFallback uses default synchronous event registration, reserves root/child immediately, returns tracked promise; explicit setImmediate retains deferred persistence. Original body moved private; injected shared tracker, updated isolated fixture.5new cases initiallyRED, thenGREEN; strengthened test to actual AiHealthEventService so caught health-write failure still attempts notification as before. Combined12suites205pass/1existing skip; backend/newtest typecheck0 with matching borrowed schema declarations; secrets/diff clean and independent review approved. No production/socket/provider IO or shutdown activation. Next actual ticket-created chain; no claim complete fallback provider lifetime or delivery.
