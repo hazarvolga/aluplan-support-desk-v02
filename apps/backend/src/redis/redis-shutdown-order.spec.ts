@@ -3,11 +3,16 @@ import { ConfigService } from '@nestjs/config';
 import { BullModule, getQueueToken, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Worker } from 'bullmq';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RedisModule } from './redis.module';
 import { RedisService } from './redis.service';
 
 let events: string[] = [];
+let quitResult: () => Promise<void>;
+let disconnected = false;
+let redisUrl: string | undefined;
 jest.mock('@aluplan/database', () => ({
     PrismaClient: class {
         async $connect() { }
@@ -29,8 +34,20 @@ jest.mock('../metrics/metrics.module', () => {
 jest.mock('ioredis', () => ({
     __esModule: true,
     default: class {
+        constructor(url: string) { redisUrl = url; }
         on() { return this; }
-        async quit() { events.push('redis-quit'); }
+        async get() {
+            if (disconnected) throw new Error('Redis already closed');
+            events.push('redis-get');
+            return 'available';
+        }
+        async quit() {
+            events.push('redis-quit');
+            disconnected = true;
+            await quitResult();
+            events.push('redis-quit-end');
+        }
+        disconnect() { disconnected = true; events.push('redis-disconnect'); }
     },
 }));
 jest.mock('generic-pool', () => ({ createPool: () => ({
@@ -41,7 +58,10 @@ jest.mock('generic-pool', () => ({ createPool: () => ({
 
 @Global()
 @Module({
-    providers: [{ provide: ConfigService, useValue: { get: () => 'redis://synthetic.invalid' } }],
+    providers: [{
+        provide: ConfigService,
+        useFactory: async () => ({ get: () => 'redis://synthetic.invalid' }),
+    }],
     exports: [ConfigService],
 })
 class ConfigFixtureModule { }
@@ -58,67 +78,105 @@ class FixtureProcessor extends WorkerHost {
 })
 class QueueFeatureModule { }
 
-// Reduced AppModule relative order: Bull root, Prisma, queue features, Redis.
-// Real global modules/discovery/hooks; all network drivers and worker close mocked.
-// The second case is a test-only phase-move experiment, not a product fix.
+function deferred() {
+    let resolve!: () => void;
+    const promise = new Promise<void>((done) => { resolve = done; });
+    return { promise, resolve };
+}
+
+async function waitForPhase(phase: Promise<void>, closing: Promise<void>, name: string) {
+    let timeout: NodeJS.Timeout | undefined;
+    try {
+        await Promise.race([
+            phase,
+            closing,
+            new Promise<never>((_, reject) => {
+                timeout = setTimeout(() => reject(new Error(`Shutdown phase not reached: ${name}`)), 1000);
+            }),
+        ]);
+    } finally {
+        if (timeout) clearTimeout(timeout);
+    }
+}
+
+// Real global modules/discovery/hooks; network drivers and worker close are mocked.
+// Guard root first-discovery order without importing/booting the full application.
 describe('application Redis shutdown relative to Bull workers', () => {
-    it.each(['current destroy phase', 'hypothetical final phase'] as const)(
-        'initiates Redis quit before worker drain with %s', async (variant) => {
+    it('keeps Redis first in AppModule imports to preserve reverse global shutdown order', () => {
+        const source = readFileSync(join(__dirname, '../app.module.ts'), 'utf8')
+            .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+        expect(source).toMatch(/@Module\(\{\s*imports:\s*\[\s*RedisModule\s*,/);
+    });
+
+    it.each(['resolve', 'reject'] as const)(
+        'waits worker Redis use, pool cleanup and held QUIT (%s)', async (outcome) => {
             events = [];
-            let release!: () => void;
-            const held = new Promise<void>((resolve) => { release = resolve; });
-            let started!: () => void;
-            const workerStarted = new Promise<void>((resolve) => { started = resolve; });
+            disconnected = false;
+            redisUrl = undefined;
+            const workerHeld = deferred();
+            const workerStarted = deferred();
+            const quitHeld = deferred();
+            const quitStarted = deferred();
+            quitResult = async () => {
+                quitStarted.resolve();
+                await quitHeld.promise;
+                if (outcome === 'reject') throw new Error('Synthetic QUIT failure');
+            };
+            let redis!: RedisService;
+            let lateRead: string | null | undefined;
             class HeldWorker {
                 async close() {
                     events.push('worker-close-start');
-                    started();
-                    await held;
+                    workerStarted.resolve();
+                    await workerHeld.promise;
+                    lateRead = await redis.get('synthetic-late-worker-read').catch(() => null);
                     events.push('worker-close-end');
                 }
             }
             BullModule.workerClass = HeldWorker as unknown as typeof Worker;
             let module: TestingModule | undefined;
             let closing: Promise<void> | undefined;
-            let timeout: NodeJS.Timeout | undefined;
             try {
                 module = await Test.createTestingModule({ imports: [
+                    RedisModule,
                     ConfigFixtureModule,
                     BullModule.forRootAsync({ useFactory: () => ({ connection: {} }) }),
                     PrismaModule,
                     QueueFeatureModule,
-                    RedisModule,
                 ] })
                     .overrideProvider(getQueueToken('redis-shutdown-fixture'))
                     .useValue({ opts: { connection: {} } })
                     .compile();
                 await module.init();
-                const redis = module.get(RedisService);
+                expect(redisUrl).toBe('redis://synthetic.invalid');
+                redis = module.get(RedisService);
                 expect(module.get(FixtureProcessor).redis).toBe(redis);
-                if (variant === 'hypothetical final phase') {
-                    // Move the actual cleanup body on this isolated instance only.
-                    Object.defineProperties(redis, {
-                        onApplicationShutdown: { value: redis.onModuleDestroy.bind(redis) },
-                        onModuleDestroy: { value: undefined },
-                    });
-                }
                 closing = module.close();
-                await Promise.race([
-                    workerStarted,
-                    new Promise<never>((_, reject) => {
-                        timeout = setTimeout(() => reject(new Error('Worker close not reached')), 1000);
-                    }),
+                await waitForPhase(workerStarted.promise, closing, 'worker close');
+                expect(events).toEqual(['worker-close-start']);
+                workerHeld.resolve();
+                await waitForPhase(quitStarted.promise, closing, 'Redis QUIT');
+                expect(lateRead).toBe('available');
+                expect(events).toEqual([
+                    'worker-close-start', 'redis-get', 'worker-close-end',
+                    'prisma-disconnect', 'pool-drain', 'pool-clear', 'redis-quit',
                 ]);
-                expect(events).toEqual(['pool-drain', 'pool-clear', 'redis-quit', 'worker-close-start']);
-                release();
+                // An event-loop barrier lets an incorrectly detached QUIT settle close().
+                const closeState = await Promise.race([
+                    closing.then(() => 'closed'),
+                    new Promise<string>((resolve) => setImmediate(() => resolve('pending'))),
+                ]);
+                expect(closeState).toBe('pending');
+                quitHeld.resolve();
                 await closing;
                 expect(events).toEqual([
+                    'worker-close-start', 'redis-get', 'worker-close-end', 'prisma-disconnect',
                     'pool-drain', 'pool-clear', 'redis-quit',
-                    'worker-close-start', 'worker-close-end', 'prisma-disconnect',
+                    outcome === 'reject' ? 'redis-disconnect' : 'redis-quit-end',
                 ]);
             } finally {
-                if (timeout) clearTimeout(timeout);
-                release();
+                workerHeld.resolve();
+                quitHeld.resolve();
                 try {
                     if (closing) await closing;
                     else if (module) await module.close();
