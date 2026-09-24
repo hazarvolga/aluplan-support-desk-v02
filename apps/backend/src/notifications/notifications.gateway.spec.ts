@@ -10,6 +10,8 @@ import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants
 import { AiHealthEventService } from '../ai/ai-health-event.service';
 import { TicketAccessService } from '../common/services/ticket-access.service';
 import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
+import { ServiceUnavailableException } from '@nestjs/common';
+import { WsException } from '@nestjs/websockets';
 
 const socketData = (userId: string, role: string) => ({
     userId, role,
@@ -19,6 +21,7 @@ const activeUser = (role: string) => ({ status: 'ACTIVE', deletedAt: null, sessi
 
 describe('NotificationsGateway', () => {
     let gateway: NotificationsGateway;
+    let work: MaintenanceWorkService;
     let mockJwtService: any;
     let mockConfig: any;
     let mockPrisma: any;
@@ -75,6 +78,7 @@ describe('NotificationsGateway', () => {
         }).compile();
 
         gateway = module.get<NotificationsGateway>(NotificationsGateway);
+        work = module.get(MaintenanceWorkService);
         gateway.server = mockServer;
     });
 
@@ -195,6 +199,57 @@ describe('NotificationsGateway', () => {
     });
 
     describe('markAsRead', () => {
+        const maintenanceReader = () => ({
+            id: 'synthetic-reader', data: socketData('customer-1', 'CUSTOMER'),
+            rooms: new Set(['ticket:ticket-1']), to: jest.fn().mockReturnThis(), emit: jest.fn(), disconnect: jest.fn(),
+        });
+        const publicReply = { id: 'message-1', isInternal: false, senderId: 'staff-1', ticket: { userId: 'customer-1' } };
+
+        it('rejects an existing socket during maintenance before session, access, or queue IO', async () => {
+            work.closeAdmission();
+            const socket = maintenanceReader();
+            const result = gateway.markAsRead(socket as any, { ticketId: 'ticket-1', messageId: 'message-1' });
+            await expect(result).rejects.toBeInstanceOf(WsException);
+            await expect(result).rejects.toMatchObject({ error: { code: 'MAINTENANCE' } });
+            expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
+            expect(mockTicketAccess.canAccessTicket).not.toHaveBeenCalled();
+            expect(mockEmail.cancelEmail).not.toHaveBeenCalled();
+            expect(socket.emit).not.toHaveBeenCalled();
+        });
+
+        it.each(['success', 'failure'] as const)('tracks admitted email cancellation until %s without premature read acknowledgement', async outcome => {
+            let release!: () => void;
+            let fail!: (error: Error) => void;
+            const held = new Promise<void>((resolve, reject) => { release = resolve; fail = reject; });
+            const failure = new ServiceUnavailableException('Synthetic queue unavailable');
+            mockPrisma.ticketMessage.findFirst.mockResolvedValue(publicReply);
+            mockEmail.cancelEmail.mockReturnValue(held);
+            const socket = maintenanceReader();
+            const result = gateway.markAsRead(socket as any, { ticketId: 'ticket-1', messageId: 'message-1' })
+                .then(value => ({ value }), error => ({ error }));
+            try {
+                // Close immediately after invocation, before async authorization.
+                work.closeAdmission();
+                await new Promise<void>(resolve => setImmediate(resolve));
+                expect(mockEmail.cancelEmail).toHaveBeenCalledWith('email-ntf-msg-message-1');
+                expect(socket.emit).not.toHaveBeenCalled();
+                expect(await work.waitForIdle(0)).toEqual({ drained: false, activeCount: 1 });
+                if (outcome === 'success') release(); else fail(failure);
+                if (outcome === 'success') {
+                    expect(await result).toEqual({ value: { read: 'message-1' } });
+                    expect(socket.emit).toHaveBeenCalledTimes(1);
+                } else {
+                    // Downstream503 is not misreported as maintenance admission.
+                    expect(await result).toEqual({ error: failure });
+                    expect(socket.emit).not.toHaveBeenCalled();
+                }
+                expect(await work.waitForIdle(0)).toEqual({ drained: true, activeCount: 0 });
+            } finally {
+                release();
+                await result;
+            }
+        });
+
         beforeEach(() => mockPrisma.user.findUnique.mockResolvedValue(activeUser('CUSTOMER')));
         const readerSocket: any = {
             data: socketData('user-1', 'CUSTOMER'),
