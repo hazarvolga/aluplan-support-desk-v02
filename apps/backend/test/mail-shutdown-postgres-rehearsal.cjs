@@ -43,6 +43,7 @@ function sourceLoader(dependency, imap) {
         'tickets/tickets.service.ts', 'tickets/dto/add-message.dto.ts',
         'common/services/storage.service.ts', 'common/services/pii-masking.service.ts',
         'common/services/ticket-access.service.ts', 'common/utils/storage-path.util.ts',
+        'common/services/maintenance-work.service.ts',
         'common/utils/rich-text-sanitizer.ts',
     ].map(file => path.join(sourceRoot, file)));
     const stubs = new Map([
@@ -53,7 +54,7 @@ function sourceLoader(dependency, imap) {
     const packages = new Set(['@nestjs/common', '@nestjs/schedule', '@nestjs/config',
         '@nestjs/event-emitter', '@nestjs/swagger', '@aluplan/database', 'class-validator',
         'fs-extra', 'sanitize-filename', 'cheerio']);
-    const builtins = new Set(['node:crypto', 'node:fs', 'node:fs/promises', 'node:path', 'path']);
+    const builtins = new Set(['node:async_hooks', 'node:crypto', 'node:fs', 'node:fs/promises', 'node:path', 'path']);
     const cache = new Map();
     const load = file => {
         assert(sourceFiles.has(file), `Non-allowlisted source: ${file}`);
@@ -141,6 +142,7 @@ async function childMain(phase) {
     };
     const load = sourceLoader(dependency, { connect: async () => { connections++; return connection; } });
     const { TicketsService } = load('tickets/tickets.service.ts');
+    const { MaintenanceWorkService } = load('common/services/maintenance-work.service.ts');
     const { StorageService } = load('common/services/storage.service.ts');
     const { TicketAccessService } = load('common/services/ticket-access.service.ts');
     const { PiiMaskingService } = load('common/services/pii-masking.service.ts');
@@ -148,7 +150,7 @@ async function childMain(phase) {
     const pii = new PiiMaskingService();
     const tickets = new TicketsService(db, {
         calculateDeadlines: async () => ({ slaResponseDue: new Date(), slaResolveDue: new Date() }),
-    }, pii, new (dependency('@nestjs/event-emitter').EventEmitter2)(), {}, {}, new TicketAccessService(db));
+    }, pii, new (dependency('@nestjs/event-emitter').EventEmitter2)(), {}, {}, new TicketAccessService(db), new MaintenanceWorkService());
     const storage = new StorageService({ get: () => ({ type: 'LOCAL', localPath: directory }) }, {});
     if (phase === 'drain') {
         const upload = storage.uploadFile.bind(storage);

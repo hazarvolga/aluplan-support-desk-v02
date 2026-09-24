@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TicketsService } from './tickets.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlaService } from './sla.service';
 import { PiiMaskingService } from '../common/services/pii-masking.service';
@@ -26,6 +27,7 @@ describe('TicketsService', () => {
     };
 
     const mockEventEmitter = {
+        emitAsync: jest.fn().mockResolvedValue([]),
         emit: jest.fn(),
     };
 
@@ -46,6 +48,7 @@ describe('TicketsService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 TicketsService,
+                MaintenanceWorkService,
                 { provide: PrismaService, useValue: mockPrismaService },
                 { provide: SlaService, useValue: mockSlaService },
                 { provide: PiiMaskingService, useValue: mockPiiMaskingService },
@@ -83,7 +86,7 @@ describe('TicketsService', () => {
 
             // Assert
             expect(result).toEqual(expectedTicket);
-            expect(mockEventEmitter.emit).toHaveBeenCalledWith('ticket.created', expectedTicket);
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('ticket.created', expectedTicket);
             expect(prisma.ticket.create).toHaveBeenCalled();
         });
 
@@ -129,7 +132,7 @@ describe('TicketsService', () => {
                 where: { id: dto.interactionId },
                 data: { ticketCreated: true },
             });
-            expect(mockEventEmitter.emit).not.toHaveBeenCalledWith('ticket.created', expect.anything());
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalledWith('ticket.created', expect.anything());
         });
 
         it('should recover from a duplicate AI interaction race by returning the existing ticket', async () => {
@@ -166,7 +169,7 @@ describe('TicketsService', () => {
             const result = await service.create(dto, 'user1');
 
             expect(result).toEqual({ ...existingTicket, alreadyCreated: true });
-            expect(mockEventEmitter.emit).not.toHaveBeenCalledWith('ticket.created', expect.anything());
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalledWith('ticket.created', expect.anything());
         });
     });
 

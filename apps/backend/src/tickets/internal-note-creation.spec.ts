@@ -1,5 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 function fixture() {
     const delegates = {
@@ -13,7 +14,7 @@ function fixture() {
     const events = { emit: jest.fn() };
     const service = new TicketsService(
         prisma as any, {} as any, { maskSensitiveData: (text: string) => text } as any,
-        events as any, {} as any, {} as any, {} as any,
+        events as any, {} as any, {} as any, {} as any, new MaintenanceWorkService(),
     );
     const find = jest.spyOn(service, 'findOne').mockResolvedValue({
         id: 'synthetic-ticket', userId: 'synthetic-sender', status: 'OPEN',

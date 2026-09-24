@@ -6,6 +6,7 @@ import { PrismaClient } from '@aluplan/database';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { TicketsService } from '../tickets/tickets.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 import { TicketAccessService } from '../common/services/ticket-access.service';
 import { PiiMaskingService } from '../common/services/pii-masking.service';
 import { StorageService } from '../common/services/storage.service';
@@ -62,7 +63,7 @@ run('actual inbound domain persistence and post-commit failure boundaries', () =
         const pii = new PiiMaskingService();
         tickets = new TicketsService(db as never, {
             calculateDeadlines: async () => ({ slaResponseDue: new Date(), slaResolveDue: new Date() }),
-        } as never, pii, events, {} as never, {} as never, new TicketAccessService(db as never));
+        } as never, pii, events, {} as never, {} as never, new TicketAccessService(db as never), new MaintenanceWorkService());
         storage = new StorageService({ get: () => ({ type: 'LOCAL', localPath: directory }) } as never, {} as never);
         inbound = new EmailInboundService(db as never, {} as never, tickets, storage, pii);
     });

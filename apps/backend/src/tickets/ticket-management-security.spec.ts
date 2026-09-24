@@ -1,6 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { TicketStatus } from '@aluplan/database';
 import { TicketsService } from './tickets.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 import { TicketAccessService } from '../common/services/ticket-access.service';
 
 function fixture() {
@@ -21,7 +22,7 @@ function fixture() {
     };
     const events = { emit: jest.fn() };
     const access = new TicketAccessService(prisma as any);
-    const service = new TicketsService(prisma as any, {} as any, {} as any, events as any, {} as any, {} as any, access);
+    const service = new TicketsService(prisma as any, {} as any, {} as any, events as any, {} as any, {} as any, access, new MaintenanceWorkService());
     const expectNoWrites = () => {
         expect(prisma.ticket.update).not.toHaveBeenCalled();
         expect(prisma.ticket.updateMany).not.toHaveBeenCalled();

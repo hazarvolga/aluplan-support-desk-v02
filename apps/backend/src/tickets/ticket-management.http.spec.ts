@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { TicketsController } from './tickets.controller';
 import { TicketsService } from './tickets.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 import { TicketAccessService } from '../common/services/ticket-access.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
@@ -37,7 +38,7 @@ describe('Ticket management HTTP authorization', () => {
             update,
         }, ticketMessage: { createMany: messages } };
         const service = new TicketsService(prisma as any, {} as any, {} as any, { emit: jest.fn() } as any,
-            {} as any, {} as any, new TicketAccessService(prisma as any));
+            {} as any, {} as any, new TicketAccessService(prisma as any), new MaintenanceWorkService());
         const module = await Test.createTestingModule({
             controllers: [TicketsController],
             providers: [RbacGuard, { provide: TicketsService, useValue: service },
