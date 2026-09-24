@@ -1,5 +1,12 @@
 # Current Focus
 
+## Writer inventory reconciled; CRM failure gap characterized — 2026-09-24
+
+Updated the existing Gate1 table rather than creating another plan: HTTP admission/audit and ticket fan-out evidence had outgrown its old rows. Static source has10Cron and9Processor declarations, not a runtime registration claim. RAG trainingQueue.create is awaited; an initial commentary misreading was corrected and no RAG fix is needed for that statement.
+
+Actual CrmProcessor.onFailed through Node EventEmitter exposes terminal crmSyncLog.update still pending while emit returns and unrelated shared accounting reads0. Four new characterization cases plus existing processor/tracker tests:49pass. They intentionally demonstrate an OPEN risk, not a completed fix. No product changes. Do not move the write into process using attemptsMade+1 alone: stalled/discard/unrecoverable/retry behavior may differ. Next bounded implementation must preserve failed-event conditions and join its real promise after workers stop but before Prisma disconnect; prove lifecycle ordering before activation. Remaining HTTP/cron/WS admission and exact artifact/operational gates remain open. No live/push/deploy.
+
+
 ## Exception audit writes tracked through disconnect — 2026-09-24
 
 GlobalExceptionFilter now reserves root/active-parent child work around the actual ErrorLoggerService promise before its first await; main injects the existing shared tracker. Original HTTP status/message/code/redaction and wait-before-reply semantics remain. Logging/admission rejection cannot replace the original response; filter catch uses a fixed log message. Destroyed/ended responses are not replied to after persistence settles. No new env/schema/control endpoint/shutdown hook.
