@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { SettingsService } from '../settings/settings.service';
 import { ServiceUnavailableException } from '@nestjs/common';
 import { GlobalExceptionFilter } from '../common/filters/global-exception.filter';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 describe('OmniChannelController', () => {
   let controller: OmniChannelController;
@@ -86,7 +87,7 @@ describe('OmniChannelController', () => {
     const logError = jest.fn().mockResolvedValue(undefined);
     const filter = new GlobalExceptionFilter({ httpAdapter: {
       getRequestUrl: () => '/omni-channel/webhook/email', reply,
-    } } as any, { logError } as any);
+    } } as any, { logError } as any, new MaintenanceWorkService());
     await filter.catch(exception, { switchToHttp: () => ({
       getRequest: () => ({ method: 'POST', body: { body: 'PRIVATE_MESSAGE' } }),
       getResponse: () => ({}),

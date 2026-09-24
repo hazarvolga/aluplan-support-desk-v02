@@ -4,6 +4,7 @@ import {
     ServiceUnavailableException,
 } from '@nestjs/common';
 import { GlobalExceptionFilter } from './global-exception.filter';
+import { MaintenanceWorkService } from '../services/maintenance-work.service';
 
 describe('GlobalExceptionFilter', () => {
     it('preserves a safe machine-readable code from an HttpException response', async () => {
@@ -25,7 +26,7 @@ describe('GlobalExceptionFilter', () => {
                 getResponse: () => response,
             }),
         } as ArgumentsHost;
-        const filter = new GlobalExceptionFilter(httpAdapterHost, errorLogger);
+        const filter = new GlobalExceptionFilter(httpAdapterHost, errorLogger, new MaintenanceWorkService());
 
         await filter.catch(
             new ServiceUnavailableException({
@@ -66,7 +67,7 @@ describe('GlobalExceptionFilter', () => {
                 getResponse: () => response,
             }),
         } as ArgumentsHost;
-        const filter = new GlobalExceptionFilter(httpAdapterHost, errorLogger);
+        const filter = new GlobalExceptionFilter(httpAdapterHost, errorLogger, new MaintenanceWorkService());
         const exception = new BadRequestException({
             statusCode: 400,
             code: 'unsafe-code',
@@ -116,7 +117,7 @@ describe('GlobalExceptionFilter', () => {
                 getResponse: () => response,
             }),
         } as ArgumentsHost;
-        const filter = new GlobalExceptionFilter(httpAdapterHost, errorLogger);
+        const filter = new GlobalExceptionFilter(httpAdapterHost, errorLogger, new MaintenanceWorkService());
 
         await filter.catch(
             new Error('provider failed with access_token=provider-secret'),
