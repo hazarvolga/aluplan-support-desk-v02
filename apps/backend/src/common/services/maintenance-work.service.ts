@@ -24,9 +24,14 @@ export class MaintenanceWorkService {
         label: string,
         operation: () => T | Promise<T>,
     ): Promise<T> {
+        this.assertAdmissionOpen();
+        return this.reserve(label, operation);
+    }
+
+    // Admission only: does not reserve or imply completion of downstream work.
+    assertAdmissionOpen(): void {
         if (!this.accepting)
             throw new ServiceUnavailableException('Maintenance admission is closed');
-        return this.reserve(label, operation);
     }
 
     async runChild<T>(

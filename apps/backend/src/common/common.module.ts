@@ -11,11 +11,13 @@ import { TeamScopeGuard } from './guards/team-scope.guard';
 import { AlertingService } from './services/alerting.service';
 import { TicketAccessService } from './services/ticket-access.service';
 import { MaintenanceWorkService } from './services/maintenance-work.service';
+import { MaintenanceAdmissionMiddleware } from './middleware/maintenance-admission.middleware';
 
 @Global()
 @Module({
     imports: [PrismaModule],
     providers: [
+        MaintenanceAdmissionMiddleware,
         MaintenanceWorkService,
         ErrorLoggerService,
         StorageService,
@@ -29,6 +31,7 @@ import { MaintenanceWorkService } from './services/maintenance-work.service';
     ],
     controllers: [StorageController],
     exports: [
+        MaintenanceAdmissionMiddleware,
         MaintenanceWorkService,
         ErrorLoggerService,
         StorageService,

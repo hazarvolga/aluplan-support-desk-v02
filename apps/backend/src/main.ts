@@ -18,6 +18,7 @@ import { Logger as PinoLogger } from 'nestjs-pino';
 import { ErrorLoggerService } from './common/services/error-logger.service';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { XssValidationPipe } from './common/pipes/xss-validation.pipe';
+import { MaintenanceAdmissionMiddleware } from './common/middleware/maintenance-admission.middleware';
 
 async function checkConnection(host: string, port: number, timeout = 3000): Promise<boolean> {
     return new Promise((resolve) => {
@@ -112,6 +113,11 @@ async function bootstrap() {
         xssFilter: true,
         hidePoweredBy: true,
     }));
+
+    // Reject new ingress before parsers, guards and their possible side effects.
+    // No shutdown hook closes admission yet; full writer completion is separate.
+    const maintenanceAdmission = app.get(MaintenanceAdmissionMiddleware);
+    app.use(maintenanceAdmission.use.bind(maintenanceAdmission));
 
     app.use(compression());
 
