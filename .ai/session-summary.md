@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Actual signal and proxy lifecycle acceptance — 2026-09-24
+
+Test-only harness real SIGTERM/current inbound/real Nest with synthetic IO passed2phases under deny-default network sandbox. Child env/source-import isolation and owned cleanup reviewed; negative opt-in/deps tests fail closed. Initial SWC config alias failure and later IPC-error cleanup corrected, final independent code/security approval. Real PrismaService proxy/mocked-driver lifecycle test added;8suites84tests green. No DB/customer/provider/live/product changes. Synthetic receipts explicitly persistenceProof:false; real PG/attachment re-entry remains next gate, not claimed completed.
+
 ## Scoped IMAP shutdown implementation — 2026-09-24
 
 Converted characterization to desired safety tests,3RED before patch. Added IMAP stop fence/tracked poll/destroy wait; moved Prisma disconnect to final shutdown phase.7suites83tests GREEN offline; backend+newtest typecheck0 using verified schema-identical generated declarations. Independent architect/code-security review clear for direct chain; GitNexus unavailable. No live access, schema/env/dependency/queue changes, push/deploy. Cleanup invocation is not socket-close proof; detached events/allworkers and real signal/persistence remain gates. Next isolated lifecycle acceptance, not new infrastructure.

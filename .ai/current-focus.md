@@ -1,5 +1,9 @@
 # Current Focus
 
+## Actual SIGTERM synthetic acceptance passed — 2026-09-24
+
+Two owned-child real Nest/current-source signal cases passed network-denied: held config/search waits, new polls fenced, direct synthetic completion precedes DB shutdown and SIGTERM exit. Missing opt-in/deps fail closed; reviewed child IPC/error cleanup corrected. Actual PrismaService proxy runtime hook test passes with mocked drivers; total84tests. Not PostgreSQL persistence/fullApp/exact Linux artifact proof. Next fresh synthetic PG/domain-services signal+re-entry with record/attachment preservation; no live access or deploy.
+
 ## Direct IMAP lifecycle fixed locally — 2026-09-24
 
 RED3 then GREEN83tests: stop flag fences polls and destroy hook waits tracked direct work/cleanup; Prisma disconnect delayed to final shutdown phase. Typecheck0 with schema-matched borrowed declarations. Independent architecture/code-security review scoped clear. No live/schema/env/queue changes. Physical socket close, detached event jobs, all-writer/signal and real persistence proof remain distinct; no general drain/production-ready claim. Next isolated candidate lifecycle/signal/write-preservation acceptance, not live restart. TLS plan contains limits.

@@ -2,6 +2,16 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Real signal acceptance with synthetic dependencies — 2026-09-24
+
+Added opt-in apps/backend/test/mail-shutdown-signal-rehearsal.cjs. Fixed current EmailInboundService source is transpiled with SWC config discovery disabled and an explicit import allowlist; real Nest application context receives actual SIGTERM in an owned child only. Configuration-held and search-held cases both passed: process remains alive while held, subsequent polling fenced, release produces ordered synthetic ticket/message/completion/ACK/cleanup before synthetic DB shutdown, then exit is SIGTERM. This is source/macOS Node runtime evidence, not the final Linux production artifact.
+
+Final parent execution used existing deny-default macOS sandbox, added read access to RC and self/child signal permission only; network remained denied. Child env allowlists omit production secrets/preloads. Missing opt-in and missing-dependency negative cases both exited1 without timeout; positive case exited0. First worker attempt with network denied failed on SWC inherited alias mapping, fixed by swcrc:false/configFile:false before final passing runs. Independent review found a child-error/unhandled-exit cleanup issue; explicit error settlement, IPC callbacks and nested-finally watchdog clearing corrected it. Final independent code/security review approved scoped tests. Owned children reaped; no fixture DB/container/customer files created or deleted.
+
+Added prisma-shutdown.spec.ts: actual PrismaService constructor/proxy and real Nest lifecycle discover the final disconnect hook after a held destroy-phase provider completes. Driver/adapter/pool are mocked; this strengthens earlier source-regex proof but does not access PostgreSQL. Combined regression8suites84tests passed; secret scans/diff checks passed. No product changes in this batch.
+
+Critical limit: persistenceProof:false. No real PostgreSQL write/reopen, real attachment byte persistence, full AppModule shutdown, physical IMAP socket close or detached-listener completion is proved here. Initial intent to test persistence was split rather than treating synthetic receipts as database evidence. Next bounded task is a fresh isolated synthetic PostgreSQL/current-domain-services signal/re-entry rehearsal retaining newly accepted records/attachment bytes; reuse existing domain fixture patterns and keep all external providers disabled. Live access, push and deploy remain unauthorized.
+
 ## Scoped local IMAP lifecycle correction — 2026-09-24
 
 Three desired acceptance assertions failed before product changes. EmailInboundService now publishes a tracked polling promise before asynchronous work, fences new polls synchronously in onModuleDestroy, and awaits the active direct processing chain through its cleanup block. PrismaService disconnect moved from onModuleDestroy to onApplicationShutdown, keeping DB access available through destroy-phase drains irrespective of within-phase provider concurrency. No new API, dependency, environment variable, schema/migration, queue policy or maintenance endpoint.
