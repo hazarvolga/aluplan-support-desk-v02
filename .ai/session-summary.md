@@ -1,5 +1,14 @@
 # Session Summary - 2026-05-13
 
+## Administrative audit payload safety and write accounting — 2026-09-24
+
+Local interceptor no longer copies request bodies to audit newValue: generic settings values, bulk settings and storage credentials made key-name redaction insufficient. Query strings are excluded from action/entity mapping; errors use a fixed message. Actor/action/entity/IP/user-agent metadata remains, with no body-derived ID fallback. Historical production audit contents were NOT inspected; potential past credential persistence is unverified and requires separately authorized assessment, not automatic deletion or rotation.
+
+Audit persistence now reserves shared root/child work before scheduling and catches rejection without delaying or collapsing HTTP Observable emissions. Non-HTTP contexts bypass unchanged.8RED then9GREEN regression cases; together with primitive40,49tests pass. Backend plus explicit new test typecheck0 using schema-matched borrowed declarations; independent code/security review approved. No schema/env/live/push/deploy changes.
+
+Boundary: admitted audit settlement is tracked, not guaranteed success. Standalone audit after closure is rejected even if the underlying mutation completed. Therefore general HTTP admission remains OPEN; do not activate shutdown readiness based on this slice. Next bounded step is HTTP request admission/lifetime integration preserving SSE and accounting for guards, cancellation and detached descendants, then remaining frozen writer inventory. Existing three release gates remain unchanged.
+
+
 ## Socket read/email-cancel mutation fenced locally — 2026-09-24
 
 Read-only remaining-writer scan prioritized existing socket message_read because it can remove queued customer email. Added3tests beforeproduct: closednoIO and heldcancel success/failure allRED; wrapperrunRoot+privateoriginalbody makesGREEN. Only admission503 translates to WsException MAINTENANCE via callback-started flag; downstream503 preserved. Existing customer/staff/session/access cases untouched and passing.4suites104tests; explicit backend+fullgatewaytest typecheck0/schema-matched declarations, diffsecretsclean and independent review approved. No new publiccontrol/shutdownhook/env/schema/live/push/deploy. Remaining HTTP async audit and gateway presence/cron plus Bull coordination still open; service-handler proof not sockettransport.

@@ -1,5 +1,14 @@
 # Current Focus
 
+## Administrative audit payload safety and write accounting — 2026-09-24
+
+Local interceptor no longer copies request bodies to audit newValue: generic settings values, bulk settings and storage credentials made key-name redaction insufficient. Query strings are excluded from action/entity mapping; errors use a fixed message. Actor/action/entity/IP/user-agent metadata remains, with no body-derived ID fallback. Historical production audit contents were NOT inspected; potential past credential persistence is unverified and requires separately authorized assessment, not automatic deletion or rotation.
+
+Audit persistence now reserves shared root/child work before scheduling and catches rejection without delaying or collapsing HTTP Observable emissions. Non-HTTP contexts bypass unchanged.8RED then9GREEN regression cases; together with primitive40,49tests pass. Backend plus explicit new test typecheck0 using schema-matched borrowed declarations; independent code/security review approved. No schema/env/live/push/deploy changes.
+
+Boundary: admitted audit settlement is tracked, not guaranteed success. Standalone audit after closure is rejected even if the underlying mutation completed. Therefore general HTTP admission remains OPEN; do not activate shutdown readiness based on this slice. Next bounded step is HTTP request admission/lifetime integration preserving SSE and accounting for guards, cancellation and detached descendants, then remaining frozen writer inventory. Existing three release gates remain unchanged.
+
+
 ## Existing-socket email-cancellation admission covered — 2026-09-24
 
 Gateway ticket:message_read now reserves a new root before session/access/DB/queue IO; original authorization/recipient logic unchanged. Closed admission yields WS MAINTENANCE, while admitted cancellation survives closure and blocks drain until settlement. Started flag preserves downstream503 errors.3RED→GREEN;4suites104tests incl existing46gateway tests pass; backend/fullchangedtest diagnostics0, independent review clear. No live or closure hook activation. This is one socket handler, not fullWS transport/API/cron/Bull coverage. Next bounded general HTTP admission design accounting for async audit interceptor, then remaining presence/scheduler writers; do not mark Gate1closed.
