@@ -2,6 +2,14 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Scoped local IMAP lifecycle correction — 2026-09-24
+
+Three desired acceptance assertions failed before product changes. EmailInboundService now publishes a tracked polling promise before asynchronous work, fences new polls synchronously in onModuleDestroy, and awaits the active direct processing chain through its cleanup block. PrismaService disconnect moved from onModuleDestroy to onApplicationShutdown, keeping DB access available through destroy-phase drains irrespective of within-phase provider concurrency. No new API, dependency, environment variable, schema/migration, queue policy or maintenance endpoint.
+
+Final focused offline run:7suites83tests pass, including3shutdown acceptance tests. Minimal real Nest lifecycle uses mocked IO and a synthetic Prisma hook; a separate source contract binds the real Prisma disconnect phase. This is not full application module topology or actual Prisma runtime disconnect proof. Schema-identical sibling generated declarations used for no-emit backend typecheck including shutdown spec:0diagnostics; schema cmp matched. Shell syntax checks and diff check passed. Independent architect and code/security reviewer found no critical/high blocker for this scoped direct chain. GitNexus tool/CLI unavailable; direct source/library impact review used instead.
+
+Important limits: imap-simple.end() returns void and initiates closing, so awaiting finally is not physical socket-close proof. Detached event listeners/outbound enqueues are not part of the polling promise. BullMQ final-phase closure and other background jobs are not universally ordered by this patch; no all-writer drain claim. Hung dependencies can outlast the external termination grace; no arbitrary timeout was added that would falsely report successful completion. Local lifecycle fixes do not make the old live artifact safe to restart. Next targeted acceptance is an isolated full lifecycle/signal and persistent-write rehearsal using the accepted candidate; maintain the distinct first-cutover quiescence, renewal and release gates. No production connection/change, push or deploy in this batch.
+
 ## Local stop/re-entry audit — 2026-09-24
 
 Local source and installed-library review only; no live access. Candidate deploy.sh invokes migrate-once.sh on every ordinary startup. That script verifies files, invokes prisma migrate deploy, and checks migration ledger/schema/RBAC before exec node. Shell syntax checks passed; no script executed against a database. Pending migrations can change data/schema, so restart is not inherently migration-free. Do not disable these checks as a shortcut.

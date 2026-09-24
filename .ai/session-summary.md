@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Scoped IMAP shutdown implementation — 2026-09-24
+
+Converted characterization to desired safety tests,3RED before patch. Added IMAP stop fence/tracked poll/destroy wait; moved Prisma disconnect to final shutdown phase.7suites83tests GREEN offline; backend+newtest typecheck0 using verified schema-identical generated declarations. Independent architect/code-security review clear for direct chain; GitNexus unavailable. No live access, schema/env/dependency/queue changes, push/deploy. Cleanup invocation is not socket-close proof; detached events/allworkers and real signal/persistence remain gates. Next isolated lifecycle acceptance, not new infrastructure.
+
 ## Local shutdown/startup characterization — 2026-09-24
 
 Audited candidate deploy.sh/migrate-once and installed Nest lifecycle; sh-n passes only, scripts not run. New test-only email-inbound-shutdown.spec.ts reproduces missing poll/cleanup wait in real minimal Nest close with mockIO and explicitly synthetic Prisma hook.2characterizations+7IMAP TLS regressions pass offline; no repair or full-topology/signal proof claimed. Independent review led to bounded close observation/final await. No live connection, customer data, product edits, push or deploy. Next ordered lifecycle correction with dependency shutdown order acceptance; historical unsafe re-entry remains prohibited.

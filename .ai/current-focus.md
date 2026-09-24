@@ -1,5 +1,9 @@
 # Current Focus
 
+## Direct IMAP lifecycle fixed locally — 2026-09-24
+
+RED3 then GREEN83tests: stop flag fences polls and destroy hook waits tracked direct work/cleanup; Prisma disconnect delayed to final shutdown phase. Typecheck0 with schema-matched borrowed declarations. Independent architecture/code-security review scoped clear. No live/schema/env/queue changes. Physical socket close, detached event jobs, all-writer/signal and real persistence proof remain distinct; no general drain/production-ready claim. Next isolated candidate lifecycle/signal/write-preservation acceptance, not live restart. TLS plan contains limits.
+
 ## IMAP shutdown gap reproduced locally — 2026-09-24
 
 Two minimal real Nest lifecycle/mockIO characterization cases prove close can resolve before active poll/cleanup, and no service-level post-close fence. Combined IMAP transport set9/9passes characterize defect, NOT fix. Candidate startup calls canonical migrations each boot; Prisma disconnects in destroy phase before later shutdown phase. No live access/product changes. Next smallest ordered lifecycle correction plus safety acceptance/module-order proof; do not assume restart is data-free or Queue.drain preserves jobs. TLS plan records evidence/limits.
