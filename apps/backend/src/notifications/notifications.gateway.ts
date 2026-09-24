@@ -447,7 +447,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         });
     }
 
-    @OnEvent('ticket.created', { async: true })
+    @OnEvent('ticket.created', { async: true, promisify: true })
     async emitTicketCreated(ticket: any) {
         this.logger.log(`📢 Broadcasting ticket:created event to admins/agents for Ticket #${ticket.ticketNumber} (ID: ${ticket.id})`);
         const payload = {

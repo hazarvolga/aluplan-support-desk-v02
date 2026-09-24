@@ -22,6 +22,7 @@ import { AiQueryService } from '../ai/ai-query.service';
 import { MessageContentFormat } from './dto/add-message.dto';
 import { isRichTextEffectivelyEmpty, sanitizeRichTextHtml } from '../common/utils/rich-text-sanitizer';
 import { TicketAccessService } from '../common/services/ticket-access.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
     NEW: [TicketStatus.OPEN, TicketStatus.DRAFT, TicketStatus.PENDING_CUSTOMER_REVIEW],
@@ -47,6 +48,7 @@ export class TicketsService {
         private readonly aiQueryService: AiQueryService,
         private readonly redis: RedisService,
         private readonly ticketAccess: TicketAccessService,
+        private readonly work: MaintenanceWorkService,
     ) { }
 
     // =============================================
@@ -65,6 +67,14 @@ export class TicketsService {
     // CREATE
     // =============================================
     async create(dto: CreateTicketDto, createdByUserId: string) {
+        const parent = this.work.currentLease();
+        const operation = () => this.createTracked(dto, createdByUserId);
+        return parent
+            ? this.work.runChild(parent, 'ticket.create', operation)
+            : this.work.runRoot('ticket.create', operation);
+    }
+
+    private async createTracked(dto: CreateTicketDto, createdByUserId: string) {
         if (dto.interactionId) {
             const existingTicket = await this.findTicketByInteractionId(dto.interactionId);
             if (existingTicket) {
@@ -133,13 +143,21 @@ export class TicketsService {
         // Option A + C Logic: If the user provided a productId, do auto-tagging
         if (dto.productId) {
             // we run this async so that the frontend feels "zero friction" fast response
-            this.runAutoTaggingAsync(ticket.id, dto.productId, `${dto.subject}\n\n${dto.description || ''}`, dto.hotinfoContext);
+            this.startCreationBackground('ticket.auto-tag', () => this.runAutoTaggingAsync(ticket.id, dto.productId!, `${dto.subject}\n\n${dto.description || ''}`, dto.hotinfoContext));
         }
 
         // Emit event for Autonomous Resolution Engine
-        this.eventEmitter.emit('ticket.created', ticket);
+        this.startCreationBackground('ticket.created', () => this.eventEmitter.emitAsync('ticket.created', ticket));
 
         return ticket;
+    }
+
+    private startCreationBackground(label: 'ticket.auto-tag' | 'ticket.created', operation: () => Promise<unknown>): void {
+        const parent = this.work.currentLease();
+        if (!parent) throw new Error('Expected active ticket creation lease');
+        void this.work.runChild(parent, label, operation).catch(() => {
+            this.logger.warn(`Ticket background operation failed (${label})`);
+        });
     }
 
     private ticketListInclude() {

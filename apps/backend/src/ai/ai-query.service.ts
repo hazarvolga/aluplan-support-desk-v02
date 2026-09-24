@@ -2737,7 +2737,7 @@ If context contains usable procedural evidence, synthesize the answer instead of
         return { main: mainContent, translations };
     }
 
-    @OnEvent('ai.translate_message', { async: true })
+    @OnEvent('ai.translate_message', { async: true, promisify: true })
     async handleTranslationRequest(payload: { ticketId: string; messageId: string; targetLanguage: string }) {
         try {
             const message = await this.prisma.ticketMessage.findUnique({ where: { id: payload.messageId } });
