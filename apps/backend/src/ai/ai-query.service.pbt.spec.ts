@@ -25,6 +25,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { StorageService } from '../common/services/storage.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 const LOW_CONFIDENCE_THRESHOLD = 0.72;
 
@@ -74,6 +75,7 @@ describe('AiQueryService.streamQuery() — Property-Based Tests', () => {
                 { provide: StorageService, useValue: { getFile: jest.fn().mockResolvedValue(null) } },
                 { provide: AiSemanticCache, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn().mockResolvedValue(undefined) } },
                 SupportAnswerOrchestrator,
+                MaintenanceWorkService,
                 { provide: getQueueToken('ai-query-processing'), useValue: {} },
             ],
         }).compile();

@@ -9,6 +9,7 @@ import { AiDiagnosisService } from './ai-diagnosis.service';
 import { DocumentParserService } from '../common/services/document-parser.service';
 import { NotFoundException } from '@nestjs/common';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 describe('AiCopilotService', () => {
     let service: AiCopilotService;
@@ -44,6 +45,7 @@ describe('AiCopilotService', () => {
             providers: [
                 AiCopilotService,
                 SupportAnswerOrchestrator,
+                MaintenanceWorkService,
                 { provide: PrismaService, useValue: mockPrisma },
                 { provide: AiService, useValue: mockAi },
                 { provide: PromptContextBuilderService, useValue: mockPromptBuilder },

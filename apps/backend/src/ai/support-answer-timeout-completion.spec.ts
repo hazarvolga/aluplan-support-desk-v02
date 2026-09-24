@@ -10,7 +10,7 @@ function deferred<T>() {
     return { promise, resolve };
 }
 
-// Characterization, not acceptance: a response timeout is not cancellation.
+// Scoped acceptance: a response timeout must not release surviving generation.
 // The actual orchestrator is used; provider IO is synthetic and never connects.
 describe('Support answer timeout completion boundary', () => {
     afterEach(() => {
@@ -18,7 +18,7 @@ describe('Support answer timeout completion boundary', () => {
     });
 
     it.each(['late-answer', 'late-reformat'] as const)(
-        'root-only accounting reaches zero while %s generation remains active',
+        'keeps %s generation counted after returning the timely fallback',
         async (outcome) => {
             jest.useFakeTimers();
             const generated = deferred<string>();
@@ -30,10 +30,11 @@ describe('Support answer timeout completion boundary', () => {
                     .fn()
                     .mockResolvedValue('synthetic-model'),
             };
+            const work = new MaintenanceWorkService();
             const service = new SupportAnswerOrchestrator(
                 ai as unknown as AiService,
+                work,
             );
-            const work = new MaintenanceWorkService();
             const response = work.runRoot('test.answer', () =>
                 service.generate({
                     finalPrompt: 'Synthetic prompt',
@@ -54,10 +55,11 @@ describe('Support answer timeout completion boundary', () => {
                     fallbackReason: 'TIMEOUT_OR_EMPTY',
                 });
                 work.closeAdmission();
-                // This is precisely why counting the outer response is insufficient.
-                expect(await work.waitForIdle(0)).toEqual({
-                    drained: true,
-                    activeCount: 0,
+                const pending = work.waitForIdle(0);
+                await jest.advanceTimersByTimeAsync(0);
+                expect(await pending).toEqual({
+                    drained: false,
+                    activeCount: 1,
                 });
                 expect(ai.getActiveModelName).not.toHaveBeenCalled();
                 expect(ai.reformat).not.toHaveBeenCalled();
@@ -72,9 +74,15 @@ describe('Support answer timeout completion boundary', () => {
                     expect(ai.getActiveModelName).toHaveBeenCalledTimes(1);
                     expect(ai.reformat).not.toHaveBeenCalled();
                 } else {
-                    // An additional provider operation starts AFTER response/fence/zero.
+                    // Already admitted work may finish after the fence.
                     expect(ai.reformat).toHaveBeenCalledTimes(1);
                     expect(ai.getActiveModelName).not.toHaveBeenCalled();
+                    const reformatPending = work.waitForIdle(0);
+                    await jest.advanceTimersByTimeAsync(0);
+                    expect(await reformatPending).toEqual({
+                        drained: false,
+                        activeCount: 1,
+                    });
                 }
             } finally {
                 generated.resolve('Cleanup answer');
@@ -84,6 +92,10 @@ describe('Support answer timeout completion boundary', () => {
                 });
                 await jest.advanceTimersByTimeAsync(100);
                 await response;
+                expect(await work.waitForIdle(0)).toEqual({
+                    drained: true,
+                    activeCount: 0,
+                });
             }
         },
     );

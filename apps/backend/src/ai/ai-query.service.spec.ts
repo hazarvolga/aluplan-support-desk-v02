@@ -17,6 +17,7 @@ import { StorageService } from '../common/services/storage.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 
 describe('AiQueryService', () => {
@@ -131,6 +132,7 @@ describe('AiQueryService', () => {
             providers: [
                 AiQueryService,
                 SupportAnswerOrchestrator,
+                MaintenanceWorkService,
                 { provide: PrismaService, useValue: mockPrismaService },
                 { provide: AiService, useValue: mockAiService },
                 { provide: EmbeddingService, useValue: mockEmbeddingService },

@@ -27,6 +27,7 @@ import { RedisService } from '../redis/redis.service';
 import { StorageService } from '../common/services/storage.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 // These properties test orchestration, not tokenizer accuracy. Reconstructing
 // real vocabulary maps per generated query obscures those invariants with CPU work.
@@ -174,6 +175,7 @@ async function buildModule(overrides: {
             { provide: StorageService, useValue: { getFile: jest.fn().mockResolvedValue(Buffer.from('fake')) } },
             { provide: AiSemanticCache, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn().mockResolvedValue(undefined) } },
             SupportAnswerOrchestrator,
+            MaintenanceWorkService,
             { provide: getQueueToken('ai-query-processing'), useValue: { add: jest.fn() } },
         ],
     }).compile();

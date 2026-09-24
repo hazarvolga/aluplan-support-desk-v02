@@ -1,5 +1,6 @@
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
 import { AiService } from './ai.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 describe('SupportAnswerOrchestrator', () => {
     let service: SupportAnswerOrchestrator;
@@ -11,7 +12,7 @@ describe('SupportAnswerOrchestrator', () => {
             reformat: jest.fn(),
             getActiveModelName: jest.fn().mockResolvedValue('gemini-2.5-flash'),
         } as any;
-        service = new SupportAnswerOrchestrator(ai as any);
+        service = new SupportAnswerOrchestrator(ai as any, new MaintenanceWorkService());
     });
 
     it('keeps customer synthesis open for usable context at the adaptive threshold', () => {
