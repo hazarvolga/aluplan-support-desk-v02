@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, Inject, forwardRef, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Inject, forwardRef, ForbiddenException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
@@ -14,9 +14,11 @@ import { createHash } from 'node:crypto';
 import { claimInbound, completeInbound, holdInbound, recordInboundHold, inboundHoldMessageId } from './inbound-email-claim';
 
 @Injectable()
-export class EmailInboundService implements OnModuleInit {
+export class EmailInboundService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(EmailInboundService.name);
     private isProcessing = false;
+    private stopping = false;
+    private activePoll: Promise<void> | undefined;
 
     constructor(
         private prisma: PrismaService,
@@ -33,9 +35,24 @@ export class EmailInboundService implements OnModuleInit {
 
     @Cron(CronExpression.EVERY_MINUTE)
     async handleInboundEmails() {
-        if (this.isProcessing) return;
-
+        if (this.stopping || this.isProcessing) return;
         this.isProcessing = true;
+        // Publish the tracked promise before any asynchronous work can start.
+        this.activePoll = Promise.resolve().then(() => this.pollInboundEmails());
+        try {
+            await this.activePoll;
+        } finally {
+            this.activePoll = undefined;
+            this.isProcessing = false;
+        }
+    }
+
+    async onModuleDestroy() {
+        this.stopping = true;
+        await this.activePoll;
+    }
+
+    private async pollInboundEmails() {
         let connection: any;
         try {
             const config = await this.getImapConfig();
@@ -93,8 +110,6 @@ export class EmailInboundService implements OnModuleInit {
                 if (connection) await connection.end();
             } catch {
                 this.logger.error('IMAP connection cleanup failed.');
-            } finally {
-                this.isProcessing = false;
             }
         }
     }
