@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 // Identity, not the token value, authorizes descendants in this process only.
@@ -9,7 +9,7 @@ export type WorkDrainResult = Readonly<{
 }>;
 
 /**
- * Explicit work accounting primitive; not registered or attached to shutdown yet.
+ * Process-local work accounting; partial integrations, no shutdown hook yet.
  * Every caller must return its actual operation promise, not a response lifetime.
  * Drained means settled tracked work, not successful delivery or global quiescence.
  */
@@ -24,7 +24,8 @@ export class MaintenanceWorkService {
         label: string,
         operation: () => T | Promise<T>,
     ): Promise<T> {
-        if (!this.accepting) throw new Error('Maintenance admission is closed');
+        if (!this.accepting)
+            throw new ServiceUnavailableException('Maintenance admission is closed');
         return this.reserve(label, operation);
     }
 
