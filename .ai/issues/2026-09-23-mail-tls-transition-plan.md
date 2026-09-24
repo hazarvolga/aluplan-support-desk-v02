@@ -2,6 +2,14 @@
 
 Status: Approved Stage A1 issuance and separately approved one-domain on-host certificate/key export completed. Mail TLS transition NOT executed; no mail settings/restart, automatic publisher or DB mutation. Application deployment remains NO-GO.
 
+## Existing WebSocket read/cancel admission — 2026-09-24
+
+Prioritized ticket:message_read: an already connected customer can cancel a queued public-reply email, so HTTP admission alone is insufficient. NotificationsGateway.markAsRead now reserves a fresh root before session validation, ticket access, message read and cancelEmail. Original body/authorization/recipient checks remain unchanged in a private method. A callback-started flag maps ONLY closed admission ServiceUnavailableException to WsException codeMAINTENANCE; downstream503 preserves its original identity. Accepted operations continue after closure and acknowledgement is emitted only after cancellation completes successfully. No client payload controls admission.
+
+Three added direct-handler tests failed beforepatch, then passed: closed existing socket has no session/access/queue IO; held accepted cancel continues after immediate closure, prevents drained=true, and acknowledges only on success; rejected cancellation settles tracking without false acknowledgement or maintenance-error relabeling.4suites104tests include existing46gateway authorization/behavior cases plus tracker/fallback/fanout tests. Backend/fullchangedtest typecheck0 with schema-matched declarations; secret/diff checks clean, independent review approved. No production access, push/deploy, schema/env or public maintenance control/shutdown-hook activation.
+
+Scope: this one handler's service behavior, not real socket transport, allWS events or general API admission. Remaining presence heartbeat/cleanup and session disconnect paths may writeRedis. Source inspection also confirms AuditLogInterceptor uses detached tap(async...) for administrative audit writes; a future HTTP boundary must not confuse Observable response completion with audit completion. Audit payload/error-redaction review is separate; no newly verified live exposure claimed. Next smallest general HTTP admission plan/test, then outstanding frozen Gate1 writers and queue-acquisition order, without declaring universal maintenance readiness.
+
 ## Current-source PostgreSQL graceful replay checkpoint — 2026-09-24
 
 Repeated existing apps/backend/test/mail-shutdown-postgres-rehearsal.cjs at HEAD c6c2b715cb1417e15aeda2498b95222724f0f3bd (includes ticket tracker constructor integration). Harness SHA2566a7e60f0a00d0bebcc98e4349f8b1989590f04f16ddf69362aa232ad911f8617; Prisma schema SHA25695c56846bcbec9ecc79449448e6e15ae39c3790092216d57fe63351cd0bc4db3, equal to borrowed client schema. No product edits in this batch.

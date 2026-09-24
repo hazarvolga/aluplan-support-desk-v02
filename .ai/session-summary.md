@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Socket read/email-cancel mutation fenced locally — 2026-09-24
+
+Read-only remaining-writer scan prioritized existing socket message_read because it can remove queued customer email. Added3tests beforeproduct: closednoIO and heldcancel success/failure allRED; wrapperrunRoot+privateoriginalbody makesGREEN. Only admission503 translates to WsException MAINTENANCE via callback-started flag; downstream503 preserved. Existing customer/staff/session/access cases untouched and passing.4suites104tests; explicit backend+fullgatewaytest typecheck0/schema-matched declarations, diffsecretsclean and independent review approved. No new publiccontrol/shutdownhook/env/schema/live/push/deploy. Remaining HTTP async audit and gateway presence/cron plus Bull coordination still open; service-handler proof not sockettransport.
+
 ## Fresh current-source PostgreSQL replay proof — 2026-09-24
 
 Revalidated existing harness at c6c2b715 using local pinnedPG17 image, fresh networknone512MiB/tmpfs256MiB container, currentPrismaDDL58813bytes and Docker-exec loopback15432 relay. FirstDDL attempt failed beforecontainercreation (missing mandatory engine datasource); added fixedsyntheticloopback datasource and exit/stderr reporting in local scratchrunner, then passed. SIGTERM held-upload ordering and freshchild replay preserved allIDs/counts/exactattachmenthash. Cleanup sixsynthetictables0, labeledcontainersnone,15432listenernone. Additional5offline suites29tests pass; independent runner safety review clear. No product/schema/customerdata/live/push/deploy change. Removed only disposable synthetic data/container; not customerbackup. Existing fullApp/allwriter/hostegress/realIMAP/Linuxartifact limits remain. Evidence and SHA provenance in TLS plan.

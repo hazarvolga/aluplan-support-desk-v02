@@ -1,5 +1,9 @@
 # Current Focus
 
+## Existing-socket email-cancellation admission covered — 2026-09-24
+
+Gateway ticket:message_read now reserves a new root before session/access/DB/queue IO; original authorization/recipient logic unchanged. Closed admission yields WS MAINTENANCE, while admitted cancellation survives closure and blocks drain until settlement. Started flag preserves downstream503 errors.3RED→GREEN;4suites104tests incl existing46gateway tests pass; backend/fullchangedtest diagnostics0, independent review clear. No live or closure hook activation. This is one socket handler, not fullWS transport/API/cron/Bull coverage. Next bounded general HTTP admission design accounting for async audit interceptor, then remaining presence/scheduler writers; do not mark Gate1closed.
+
 ## Current-source PostgreSQL SIGTERM/re-entry revalidated — 2026-09-24
 
 At c6c2b715, repeated existing opt-in realPG17 harness with fresh network-none/tmpfs container and loopback relay. Actual SIGTERM while attachment held: intake fenced, DB alive, bytes/claim/ACK completed before disconnect; fresh child replay preserved IDs/counts1ticket/1message/1attachment/1claim and exact SHA. Six synthetic tables0aftercleanup; ownedcontainer/relay absent. Related5offline suites29tests pass. No product/live/customerdata/push/deploy changes. Not fullApp/allwriters/realIMAP/Linuximage/rollback proof; host was not egress-sandboxed. Next close remaining general mutation/WebSocket/cron/Bull admission coverage before wiring any global shutdown-ready decision; exact artifact/operational gates remain open.
