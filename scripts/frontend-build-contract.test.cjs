@@ -36,6 +36,14 @@ test('frontend uses the repository package manager version', () => {
 
 const runner = instructions.slice(instructions.findIndex(line => /AS runner$/.test(line)));
 
+test('frontend runner requires the patched OpenSSL libraries without a broad OS upgrade', () => {
+    const apk = runner.filter(line => /^RUN apk\b/.test(line));
+    assert.deepEqual(apk, [
+        "RUN apk add --no-cache --upgrade curl 'libcrypto3>=3.5.8-r0' 'libssl3>=3.5.8-r0'",
+    ]);
+    assert.equal(builder.filter(line => /\bapk\b/.test(line)).length, 0);
+});
+
 test('frontend removes only explicit global package manager paths from the runner', () => {
     const expected = [
         '/usr/local/lib/node_modules/npm', '/usr/local/lib/node_modules/pnpm',
