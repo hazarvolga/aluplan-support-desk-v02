@@ -1,4 +1,4 @@
-FROM node:20.20.2-alpine3.23@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS base
+FROM node:22.23.3-alpine3.23@sha256:baf676f7d0e552f3231945c2f979055ca121bce128c152f7a34e6bd1728b1c5a AS base
 RUN apk add --no-cache openssl fontconfig
 RUN npm install -g pnpm@9.15.4
 
@@ -26,7 +26,7 @@ RUN pnpm install --frozen-lockfile && \
     NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/database db:generate && \
     NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/backend build
 
-FROM node:20.20.2-alpine3.23@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS runner
+FROM node:22.23.3-alpine3.23@sha256:baf676f7d0e552f3231945c2f979055ca121bce128c152f7a34e6bd1728b1c5a AS runner
 ARG VCS_REF
 RUN printf '%s' "${VCS_REF}" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision="${VCS_REF}"
