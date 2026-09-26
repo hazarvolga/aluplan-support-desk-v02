@@ -1,5 +1,11 @@
 # Current Focus
 
+## Shared schema prerequisite restored locally — 2026-09-26
+
+Supersedes the frontend TS2307 status below for the current local checkout. Workspace symlink was correct; @aluplan/shared-schemas declares dist/index.js and dist/index.d.ts, but dist was absent. Ran the existing shared-schema TypeScript build with network denied, then the unchanged frontend tsc --noEmit --incremental false: both exited0. No source alias, dependency change, generated-file commit or application-code workaround. Generated dist files are ignored. Frontend /tr still HTTP200; no full-stack or production build claim.
+
+Root turbo typecheck/build already declares upstream build dependencies. Direct frontend tsc bypassed that prerequisite. Separate release packaging gap: apps/frontend/Dockerfile invokes filtered frontend build without explicitly building shared-schemas; it also permits non-frozen install fallback and Next config ignores build type errors. Do not infer a clean frontend image succeeds from a locally populated dist. Next verify/fix the narrow frontend build prerequisite with regression coverage, then clean image acceptance; no broad frontend refactor authorized. XML-updated backend image rebuild/scan and remaining release gates remain pending. No production access, DB operation, push or deploy.
+
 ## XML dependency fix with storage compatibility — 2026-09-26
 
 Scoped root overrides now select fast-xml-parser5.7.3, fast-xml-builder1.1.7 and mammoth's xmldom0.8.15. pnpm9.15.4 regenerated the lockfile; frozen installation ran with lifecycle scripts disabled. Diff is limited to XML dependency closure (including entities/path-expression/strnum/anynum), not broad framework upgrades. Default PATH pnpm was incompatible with this repo and its initial metadata queries failed; no install was attempted using it. Existing worker WIP remains excluded.
