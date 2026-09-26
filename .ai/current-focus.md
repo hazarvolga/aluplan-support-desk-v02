@@ -1,5 +1,19 @@
 # Current Focus
 
+## Frontend OS patch verified in exact image — 2026-09-26
+
+Local commits070b4e14(test),57022899d32f645d19560020b8a77641b1466012(Docker) require runner libcrypto3/libssl3>=3.5.8-r0 via targeted apk add --upgrade with existing curl. No broad OS upgrade, repo/base/app/lock/schema change. RED8/1 -> GREEN9/9, independent code/security reviews approved. Actual resolver installed both3.5.8-r0 and additionally upgraded ca-certificates-bundle20260413-r0->20260909-r0. Minimum security floor is not an exact reproducibility pin.
+
+Exact source225files/3809280bytes archive SHA256f7354091e45b5424f67219d4aa2167bb5f0c918389f527c80fe9bc68d3baa616. Build/typecheck succeeded. amd64 image/index sha256:5fd6e658f5f71a0a4f907cf3bf5284c6dbcb90ba06cfbf2499310a288b9ce7c7; config sha256:1519a0592ad04776f54f9fa939610d41d24d56fc2c17ad358373a1b7b2b503de. Preview loopback API remains, not production-configured.
+
+Network-none runtime checks passed: UID1001,221 immutable path checks,cachewrite,package-manager absence, installed2library versions>=floor, curl8.22.0 loadingOpenSSL3.5.8 and Node TLS context creation. Node's bundled OpenSSL remains3.0.19; no claim that APK update fixes all Node TLS risks. Standalone /tr,/tr/login,PNG andimageoptimizer all200 with expected MIME/redirect rejection. Not customer auth/API/DB/browser acceptance.
+
+Same advisoryDB offline Trivy exact-image report **0Critical/17High/4Medium/1Low** versus0/21/18/33; Alpine section now0acrossallfour severities in this report. Remaining17HIGH are application dependency findings, not resolved by OS patch. No filters/ignores added. Report config matches build. Full-image security assurance and deploy GO still NOT established.
+
+Read-only next-step triage: all17 reported appHIGH paths are standalone .pnpm packages; sharp0.34.5 has2 and is directly used by Next image optimizer. Prioritize narrowly scoped sharp/native closure compatibility next; reported fixed floor0.35.4 needs upstream verification before update. Other groups fast-uri7,browserslist2,nanoid3,postcss2,serialize-javascript1. Next also carries versionless compiled browserslist/nanoid copies; clearing standalone findings cannot prove vendored copies safe. Do not apply blind mass overrides.
+
+Evidence outsideGit frontend-build-57022899d32f/{source.json,build.log,permissions.json,http.json}; scan-frontend-57022899/{input/image.tar,output/report.json}. Image archive SHA2562ccc31f243234b3a659c8f921f84220fd11a9c644c5a21327547f828423b0517; report SHA25633be4c3ba4db76e78f049dc58a83e3155635ec8e741784f8c24b904416b132c4. All exact-owned proof/scanner containers removed. Local dev/trHTTP200, WIP preserved. No production access, DB operation, migration, push/deploy or dev-server restart.
+
 ## Frontend runtime tools removed and exact image verified — 2026-09-26
 
 Supersedes prior frontend1Critical/40High count for the new artifact only. Commits c004db18 (test) and23b403a4e93303a2b662250cae3fd0aed6830882 (Docker runner cleanup) remove11 explicit global package-manager paths, preserving builder tools, node startup, app dependencies and schema. RED7/1 -> GREEN8/8; independent code/security reviews GO for local change. No application or lockfile changes.

@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Frontend OS security floor verified — 2026-09-26
+
+Narrow libcrypto3/libssl3 minimum3.5.8-r0 runner patch; resolvedexact3.5.8-r0 plusCAbundle20260909-r0. Source testsRED8/1 GREEN9/9; commits070b4e14/57022899, independent review. Cleanamd64previewbuild5fd6e658/config1519a059 passedTypeScript/build andnetwork-nonepermissions/TLScontext/curl/HTTP/imageoptimizer smoke. NodeOpenSSL3.0.19 separatefromOS3.5.8. SameDBTrivy **0Critical/17High/4Medium/1Low**, formerly0/21/18/33; OSsectionzerofindings. Remainingapp17HIGH requiresreview, sharpfirst; noproductionGO. Evidence/hashes/limits in current-focus. Ownedcontainersremoved, localdevHTTP200; no live/DB/push/deploy, unrelatedWIPpreserved.
+
 ## Frontend runtime cleanup and exact proof — 2026-09-26
 
 Removed only11global package-manager paths in frontendrunner, builder/CMD/appdeps/schema untouched. New testRED7/1 thenGREEN8/8; independent code/security approval. Localcommits c004db18,23b403a4. Exactamd64previewimage f0aab427/configd63b4d0d built; sameDBofflineTrivy **0Critical/21High/18Medium/33Low** vs1/40/24/36. Globalnpmcritical+19HIGH gone; NOT productionGO. InertUID1001/cache/immutability/allmanagerabsence checks passed; separate network-none standaloneHTTP /tr,/tr/login,PNG,imageoptimizer passed withredirectrejection. No customerAPI/authbrowser/data acceptance. Ownedcontainerscleaned, localdevHTTP200; no production/DB/push/deploy. Full hashes/evidence and nextOS/apptriage in current-focus.
