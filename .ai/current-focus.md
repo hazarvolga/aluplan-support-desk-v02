@@ -1,5 +1,17 @@
 # Current Focus
 
+## Combined Axios/XLSX exact backend image verified — 2026-09-26
+
+Built committed source `91295fad7db670e0f8d242711b91ffc45d25524c`, not dirty working tree. Curated archive:415 regular files/57 checksum-verified migrations/3338240bytes, SHA256 `fac0b2a6d1b107ac11ad2863314542696bdaa80be344f0b1fd7329c5de4caa55`. Outside-Git helper revision/log-stream update independently reviewed GO. Local Docker context/builder enforced; production compilation, generated Prisma client and PostgreSQL17 CLI build guards passed. Linux/amd64 index `sha256:4f0648cbf73ffc10f039d542afdbfeadb762737a6e6928d88b5170f949affeb3`; config `sha256:6af5953d07ecca4a49f3837d1a27ed5f8c4be77a0f8515e1385d26f5e0541d77`.
+
+Pinned Trivy0.72.0, network-none offline scan using the same DB updated2026-09-26T06:33:51.318021692Z: **0 Critical /45 High /119 Medium /15 Low**, previously0/58/137/16. Report config identity matches build. HIGH reduction:Axios10,XLSX2,form-data4.0.5 one occurrence. No suppressions. Remaining45HIGH still need scoped disposition; scanner counts are not exploitability judgments or whole-platform acceptance.
+
+Read-only/network-none/cap-drop/no-new-privileges isolated `node` entrypoint (NOT application startup) independently loaded backend-resolved Axios1.20.0 and XLSX0.20.3 as UID1000/x64. XLSX entry SHA256 `fd159f1e2d694e12cd0709c1ec1b63c6e1f045d2c4ce857a346f9b965798cbfa` matched reviewed source. This is package identity/load proof, not complete runtime workflow acceptance. Host focused tests repeated:XML/XLSX19/19 network-denied and Axios9/9 loopback-only. Localdev/trHTTP200. Scanner and library-proof containers removed.
+
+Private evidence: `../.aluplan-hotfix-evidence-20260926/unified-build-91295fad7db6/{source.json,source.tar,build.log}` and `../.aluplan-hotfix-evidence-20260926/scan-unified-91295fad/{input/image.tar,output/report.json}`. Image archive SHA256 `732e804d38fb3ace7f7e6d7317d24d8414cfeb0e6798a2b43fd787dc0afb79ef`; report SHA256 `6531b616e41e9fe6845bf69302d9354f3ce6d50424295da7d26627f95ffbacd0`.
+
+Next: prioritize remaining backend HIGH dependencies by production reachability and compatible fix, starting with network-facing consumers; separately retain globalPrisma tree and parser resource-bound decisions. Do not conflate this with frontend rebuild or broad authenticated/backup/drain/host acceptance. No production access, DB/mail/CRM operations, migration, application restart, push or deploy. Worker-shutdown/next-env WIP preserved. Publication/deploy remain separately approval-gated.
+
 ## Official XLSX security source checkpoint — 2026-09-26
 
 Commits3c610d86(test)/91295fad(dependency). Actual backend SheetJS0.18.5 replaced with official0.20.3 URL https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz in backend package.json. Maintainer https://docs.sheetjs.com/docs/getting-started/installation/nodejs/ identifies CDN as authoritative and npm distribution as stale; vendor advisories https://cdn.sheetjs.com/advisories/CVE-2023-30533 and https://cdn.sheetjs.com/advisories/CVE-2024-22363 state fixes0.19.3/0.20.2 respectively. Keep functionality; no parser rewrite, feature disablement, suppression, or service edit.

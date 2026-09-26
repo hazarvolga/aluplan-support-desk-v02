@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Combined backend image and same-DB scan — 2026-09-26
+
+Exact committed91295fad Linux/amd64 build passed; curated415files/57checkedmigrations. Image index4f0648cb/config6af5953d. Pinned offlineTrivy sameDB now **0C/45H/119M/15L**, previous0/58/137/16; no suppression, not productionGO. Actual isolated read-only/network-none Node probe confirms Axios1.20.0,XLSX0.20.3 and reviewedXLSXentryhash as UID1000/x64; no appentrypoint/DB boot. Repeatedhosttests19XML/XLSX+9Axios passed, local/tr200, ownedcontainersremoved. Evidence/fullhashes/currentlimits in current-focus. Next scoped remainingHIGH decisions, with drain/authenticatedclone/recovery/host gates still open. No live/provider/data/migration/restart/push/deploy; unrelatedWIP preserved.
+
 ## SheetJS official distribution and integrity proof — 2026-09-26
 
 3c610d86/91295fad preserve Excel support while changing backendxlsx0.18.5 to officialCDN0.20.3. Explicit measuredSHA512 added after pnpmgeneratedURL-onlylock; correctfrozeninstallpass, freshisolatedwronghashinstallfailsERR_PNPM_TARBALL_INTEGRITY. RegressionguardsURL+hash. Apachelicense/provenance/entryhashreviewed;bundlingisnotcodeelimination. Actualparser7/7 including independentOOXML,BIFF8,Turkish,cachedformula,truncation,malformedZIP; combinedXML19/19,Axios9/9,backendtsc0,reviewsGO,gitleakspass. No productservice edits, live/DB/provider/migration/restart/push/deploy. Exactbackendimage/rescanpending;0C58H remainslastverified. Next combinedAxios+XLSXimageproof; residualresourcebounds andotherreleasegatesnotclosed. Fullhashes/sources/limitsincurrent-focus,WIPpreserved.
