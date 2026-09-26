@@ -1,5 +1,11 @@
 # Current Focus
 
+## Isolated live-frontend backport prepared — 2026-09-26
+
+New local worktree ../aluplan-ticket-hotfix-20260926, branch hotfix/ticket-reopen-label-20260926, based exactly on known frontend OCI revisionee4d70a7. Only three ai_draft_btn translation values plus regression5ac248b9 differ. Label tests3RED then3GREEN, i18n and independent review pass; Dockerfile/lock unchanged. This branch does NOT yet contain ticket reopening. Modern-candidate browser evidence is not inherited; backport build/browser still pending.
+
+Existing inert backend archive tooling verifies outer content only; no selected-layer ticket/controller/auth source inspector or equivalence receipt exists. Do not invent source equivalence or build a general archive framework for this hotfix. Smallest unresolved step is narrowly allowlisted read-only deployed code-file evidence (ticket service/controller and relevant authorization), or an explicitly scoped inert selected-file reader. Neither needs old-image execution; release is blocked until enough source/startup compatibility is established. No live connection this continuation; original candidate/worker edits untouched.
+
 ## Authorized live identity check — 2026-09-26
 
 Owner approved read-only deployment identity check. Strict-host SSH confirmed vmi3049865. Backend backend-api/9ea92d99bfbd is running image302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644, tag d9b21b9d7b5c4c259acbe9a5828fdd04ba077ce2, started September2, restart0; image has no OCI revision or RepoDigests. Frontend allplan-frontend-ee4d70a7/5c0b67496777 healthy, imagedbd2a193d62a499e2adcea3d90f0f4617e1d9588d3b52a9b525c0e7fbf08094e, OCIee4d70a71a75d2f52cfc55ee05f4af34414c2b30, started September4, restart0. Both amd64. This confirms current artifacts, not complete backend source provenance or end-to-end health/security.

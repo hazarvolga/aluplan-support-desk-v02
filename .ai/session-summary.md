@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## Small frontend backport isolated from stabilization — 2026-09-26
+
+Created ../aluplan-ticket-hotfix-20260926 branch hotfix/ticket-reopen-label-20260926 at exact frontend OCIee4d70a71a75d2f52cfc55ee05f4af34414c2b30. Reused regression as5ac248b9:3RED before label then3GREEN; locale integrity and independent review pass. Only three message entries and regression file differ; pinnedDockerfile/lock unchanged. Reopen implementation remains only on candidate, not this branch. No build/browser claim on historical frontend, no production access or publication.
+
+Read-only independent archive-tool inventory confirms verify_image_archive.py/diagnose_image_layout.py prove outer config/layer content but do not resolve selected file bytes inside layers. Existing receipt binds startup hashes only, not ticket/controller/JWT code. Kept backend source correspondence unproven. Avoid general archive parser expansion; narrowly scoped deployed-file read or selected-file inert inspection is the remaining evidence choice. Do not run old application/startup or silently include broad stabilization changes to bypass it.
+
 ## Current live artifact identity refreshed — 2026-09-26
 
 Separately authorized read-only SSH to167.86.84.107 with strict known-host checking and bounded connect timeout confirmed hostnamevmi3049865. Scoped docker ps/inspect only: backend-api9ea92d99bfbd image302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644, tagd9b21b9d7b5c4c259acbe9a5828fdd04ba077ce2, started2026-09-02T19:03:59.250425823Z,restart0; imageamd64 created2026-06-30, OCI revision absent, RepoDigests empty. Frontend5c0b67496777/allplan-frontend-ee4d70a7 healthy image dbd2a193d62a499e2adcea3d90f0f4617e1d9588d3b52a9b525c0e7fbf08094e, OCIee4d70a71a75d2f52cfc55ee05f4af34414c2b30, started2026-09-04T17:19:21.914826475Z,restart0,amd64. Initial image-label formatting failed on nilLabels; conditional formatting retry succeeded. No operational change.
