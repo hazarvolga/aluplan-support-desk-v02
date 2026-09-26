@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## gRPC source patch and runtime-support gate — 2026-09-26
+
+Scopedgrpc-js1.14.3->1.14.4 for two maintainer advisories, no service code change. ActualGoogleconsumer5testsRED4pass1versionfail->GREEN5/5; Axios+gRPC14/14, XML/XLSX19/19, backendtsc0pre/post, local/tr200. RetainedXLSXhash afterpnpmregenerationdrop; frozenignore-scriptsrepeatpassed. ExistingotherWIPpreserved. No newimage/scan: last0C45H119M15L remains. Mostimportant nextgate: bothDockerfilesNode20.20.2 officiallyEOL, exactimagebundledUndici6.24.1/OpenSSL3.0.19; select/testsupportedLTS beforemoreleafpatchbatches. Separate npmUndici7.22 usesCheerio/JSDOM and newerupstreamfixes beyondscannerDB; do notconflatewithbuiltinfetch. Details/sources/caveatsincurrent-focus. No live/DB/provider/migration/restart/push/deploy.
+
 ## Combined backend image and same-DB scan — 2026-09-26
 
 Exact committed91295fad Linux/amd64 build passed; curated415files/57checkedmigrations. Image index4f0648cb/config6af5953d. Pinned offlineTrivy sameDB now **0C/45H/119M/15L**, previous0/58/137/16; no suppression, not productionGO. Actual isolated read-only/network-none Node probe confirms Axios1.20.0,XLSX0.20.3 and reviewedXLSXentryhash as UID1000/x64; no appentrypoint/DB boot. Repeatedhosttests19XML/XLSX+9Axios passed, local/tr200, ownedcontainersremoved. Evidence/fullhashes/currentlimits in current-focus. Next scoped remainingHIGH decisions, with drain/authenticatedclone/recovery/host gates still open. No live/provider/data/migration/restart/push/deploy; unrelatedWIP preserved.
