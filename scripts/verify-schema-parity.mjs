@@ -9,11 +9,11 @@ if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is required for schema parity verification');
 }
 
+// The runtime retains the pinned Prisma CLI, not package managers. Local callers
+// must likewise provide Prisma on PATH (for example through pnpm exec node).
 const result = spawnSync(
-    'pnpm',
+    'prisma',
     [
-        'exec',
-        'prisma',
         'migrate',
         'diff',
         '--config',

@@ -84,6 +84,21 @@ COPY --from=builder /app/scripts/verify-rbac-database.mjs ./scripts/verify-rbac-
 # 4. Generate Prisma client in runner (this creates packages/database/client/)
 RUN cd packages/database && prisma generate --schema ./prisma/schema.prisma
 
+# Installation and client generation are complete. Retain global Prisma for the
+# explicit migrate-once command and all workspace dependencies; remove only the
+# reviewed global package-manager locations from the pinned Node base image.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    /usr/local/lib/node_modules/pnpm \
+    /usr/local/lib/node_modules/corepack \
+    /opt/yarn-v1.22.22 \
+    /usr/local/bin/npm \
+    /usr/local/bin/npx \
+    /usr/local/bin/pnpm \
+    /usr/local/bin/pnpx \
+    /usr/local/bin/corepack \
+    /usr/local/bin/yarn \
+    /usr/local/bin/yarnpkg
+
 # 5. Copy backend artifacts
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/apps/backend/src/email/templates ./apps/backend/src/email/templates
