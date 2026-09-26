@@ -46,6 +46,20 @@ ENV HOSTNAME="0.0.0.0"
 
 RUN apk add --no-cache curl
 
+# Standalone Next.js starts with node; package managers are build-only tools.
+# Keep removal paths explicit and confined to this runner stage.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    /usr/local/lib/node_modules/pnpm \
+    /usr/local/lib/node_modules/corepack \
+    /opt/yarn-v1.22.22 \
+    /usr/local/bin/npm \
+    /usr/local/bin/npx \
+    /usr/local/bin/pnpm \
+    /usr/local/bin/pnpx \
+    /usr/local/bin/corepack \
+    /usr/local/bin/yarn \
+    /usr/local/bin/yarnpkg
+
 # Create a non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
