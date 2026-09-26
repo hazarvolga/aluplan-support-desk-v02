@@ -785,7 +785,7 @@
       "summarizing": "ÖZETLEME_DEVAM_EDİYOR...",
       "ai_summary_btn": "ANN_ÖZET",
       "drafting": "TASLAK_HAZIRLANIYOR...",
-      "ai_draft_btn": "Yapay Zeka Çözüm Önerisi",
+      "ai_draft_btn": "AI Yanıtı",
       "load_error": "Talep verileri yüklenirken hata oluştu",
       "live_request_success": "Canlı destek talebi gönderildi",
       "live_start_success": "Canlı destek oturumu başlatıldı",

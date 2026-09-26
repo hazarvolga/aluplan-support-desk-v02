@@ -761,7 +761,7 @@
       "summarizing": "ZUSAMMENFASSUNG_LÄUFT...",
       "ai_summary_btn": "ANN_ZUSAMMENFASSUNG",
       "drafting": "ENTWURF_WIRD_VORBEREITET...",
-      "ai_draft_btn": "KI-Lösungsvorschlag",
+      "ai_draft_btn": "KI-Antwort",
       "load_error": "Fehler beim Laden der Anfragedaten",
       "live_request_success": "Live-Support-Anfrage gesendet",
       "live_start_success": "Live-Support-Sitzung gestartet",
