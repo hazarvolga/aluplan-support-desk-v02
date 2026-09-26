@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Frontend Docker build-order correction — 2026-09-26
+
+Added explicit shared-schemas compilation and frontend typecheck before Next build, pinned pnpm9.15.4 and removed non-frozen fallback. Four new Docker source-contract tests failed before change and pass after; actual offline shared-schema build and frontend tsc pass. No UI/runtime/schema/env changes. Full Docker build/security scan not performed in this step; no production access, DB mutation, push or deployment. Unrelated WIP preserved.
+
 ## Frontend local typecheck prerequisite — 2026-09-26
 
 Resolved TS2307 without product-code changes: built existing packages/shared-schemas (missing ignored dist), then frontend raw tsc --noEmit --incremental false exited0, both network denied. Workspace symlink/package entrypoints correct; root Turbo already orders upstream builds. No alias workaround. Frontend HTTP200 retained. This does not prove frontend Docker build: its direct filtered build lacks explicit shared-schema prerequisite and existing ignoreBuildErrors/non-frozen fallback require release review. No new scan, live access, DB mutation or publication. Existing worker WIP preserved.

@@ -1,5 +1,11 @@
 # Current Focus
 
+## Frontend Docker prerequisite gate implemented — 2026-09-26
+
+Narrow Dockerfile change: pin pnpm9.15.4 to repository packageManager, remove non-frozen install fallback, build shared-schemas after client generation, and explicitly typecheck frontend before next build. Next's existing ignoreBuildErrors setting is unchanged; the separate RUN fails the Docker build on tsc failure. No runtime or schema change, env addition, migration or production operation.
+
+New scripts/frontend-build-contract.test.cjs: four source-contract tests RED0/4 then GREEN4/4, covering ordering/typecheck/frozen install/pnpm version. Actual shared-schema compile followed by full frontend tsc --noEmit --incremental false also exited0 with network denied. These tests do not execute Docker or prove clean image build, generated route typing, source-map upload safety or final runtime health. Local /tr HTTP200 retained. Exact frontend image build and updated backend image scan still pending; historical0Critical/69High result is unchanged evidence, not a new scan. Existing worker/next-env WIP untouched. Code/config/tests/docs must remain separate local commits; no push/deploy authorization.
+
 ## Shared schema prerequisite restored locally — 2026-09-26
 
 Supersedes the frontend TS2307 status below for the current local checkout. Workspace symlink was correct; @aluplan/shared-schemas declares dist/index.js and dist/index.d.ts, but dist was absent. Ran the existing shared-schema TypeScript build with network denied, then the unchanged frontend tsc --noEmit --incremental false: both exited0. No source alias, dependency change, generated-file commit or application-code workaround. Generated dist files are ignored. Frontend /tr still HTTP200; no full-stack or production build claim.
