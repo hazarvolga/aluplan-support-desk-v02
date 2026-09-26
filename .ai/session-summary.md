@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## Node 22 backend/frontend artifact checkpoint — 2026-09-26
+
+Exact committed cb8ecfd6 Linux/amd64 builds passed; backend index822f96cc/config507698ee, frontend indexd9f59577/configaddd83ec. Network-none runtime/native/permissions proofs passed: Prisma CLI/client/offline schema generation, PG17 tools, database bcrypt6 and Sentry ABI127; frontend HTTP and four image formats, Sharp closure and serializer hash. Source contracts26/26 and local dev200. Frontend is loopback-API preview, amd64 tests are ARM-host emulation, not native VPS or authenticated workflow acceptance.
+
+Same-DB pinned offline scan: backend0C/43H/119M/15L (previous45H; exactly two gRPC findings removed), frontend0C/0H/0M/1L unchanged. No suppressions; 43H still require disposition. Initial backend Docker create exceeded10s; late-created never-started owned container was explicitly removed. Reviewed helper now60s create/180s watchdog and honest uncertain-cleanup reporting; retry and cleanup passed. No product changes or live/DB/provider/migration/restart/push/deploy. All exact hashes, evidence paths, caveats and remaining gates in current-focus. Unrelated WIP preserved. Next narrow npm Undici consumer/risk decision, not deployment.
+
 ## Node22 base and CI source alignment — 2026-09-26
 
 ec682d49/5a9796d0 pin allfourDockerFROMlines to verified22.23.3Alpine3.23digest; sevenCIversionliterals acrossfiveworkflows aligned withoutjob/permission changes. Engineinspection supportsminimal20->22; Node24alsoallowed butnotrequired. Read-onlynetwork-nonebaseprobe verifiesNode22.23.3/Undici6.28.1/OpenSSL3.5.8/ABI127/Alpine3.23.6/nonroot; singlemountedSentryABI127binaryloads withoutprofiling/SDKinit.26source+bootcontractsPASSafterexpectedREDs, local/tr200, noapprestart. No completeNode22appbuild/scan/hostedCIyet; previoussecuritycounts belongOLDNode20images. Nextbuildboth exactcommittedimages andverifyruntime/native/permissions/scans. Node22supportends2027-04-30, revisit2027Q1(noautomationset); rootdeveloperenginepolicy stillpendingreconciliation. No live/DB/provider/migration/push/deploy,WIPpreserved. Fullpins/sources/caveatsincurrent-focus.
