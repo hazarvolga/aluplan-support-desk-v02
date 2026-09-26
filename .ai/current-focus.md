@@ -1,5 +1,17 @@
 # Current Focus
 
+## Exact frontend preview image built and scanned — 2026-09-26
+
+Committed source 3dcb743d793f0b772f2e64380ba5a49ec32227b6 built successfully for linux/amd64. Curated archive:225 files/3809280 bytes, SHA256 276e2e5f9cd2afcf786ffee2bdd1954fd08bd29189b8d37ea4d91fb55506c81e. No env/customer-data/migration/WIP input. Preview API is http://127.0.0.1:4000/api/v1: this is NOT a production frontend artifact. Frozen install, Prisma generation, shared-schema compilation, explicit frontend typecheck and Next build passed. Build performs downloads/lifecycle scripts/font fetching; Next telemetry notice observed. No production credentials provided.
+
+Image/index sha256:94038bef67bc8382b4cb5fdcbb95566307ecd2ce94c3b382f577acb94218d318; config sha256:061856093acc27ba7f2d9e6f4f5beb5e32c3830a605da3f42133fdf169c9445b. Network-none inert smoke passed UID1001/x64,221 immutable path checks,4449-path env-filename inventory and actual cache write/read/delete. Global npm/npx/corepack/yarn remain present; pnpm absent. This does not prove application boot, HTTP routes, image optimizer compatibility, full dependency permissions or absence of embedded secrets. Exact owned smoke container removed.
+
+Offline pinned Trivy0.72.0 scan with advisory DB updated2026-09-26T06:33:51Z returned **1 Critical /40 High /24 Medium /36 Low** occurrences. Report config identity matches image. Critical CVE-2026-59873 is tar6.2.1 at usr/local/lib/node_modules/npm/node_modules/tar/package.json (scanner fixed version7.5.19): reachability from application requests is not established. NO-GO for frontend release; do not conflate with backend0Critical/58High. Minimal next step: remove unnecessary runtime package managers, assess OS/app findings and rerun exact image scan; no suppression or blanket safety claim. HTTP/optimizer acceptance still pending.
+
+Independent security triage: global npm1C/19H, application dependencies0C/17H, OS0C/4H. Remove unused global tooling first; assess libcrypto3/libssl3 targeted patch next (report fix3.5.8-r0). Application HIGH occurrences: fast-uri7, browserslist2, nanoid3, postcss2, serialize-javascript1, sharp2. Prioritize sharp reachability because Next Image is used in login/landing; actual exploitability not established. These are proposed follow-up fixes, not applied changes.
+
+Evidence outside Git: ../.aluplan-hotfix-evidence-20260926/frontend-build-3dcb743d793f/{source.json,source.tar,build.log,permissions.json}; scan-frontend-3dcb743d/{input/image.tar,output/report.json}. Scan archive SHA256 bc9cd27165317275cfab41ab8ec89e961d2a679400e007861866996e259ec2c3; report SHA256 4dfc2aadf13b7271d68348002af33a7452cac29147f8233286fe5b515e66c873. Scanner auto-removed and exact-name inventory empty. Local /tr remains HTTP200; no DB/live access, migrations, push, deploy or existing dev-server restart.
+
 ## Frontend image identity and ownership controls — 2026-09-26
 
 Review caught a multiline VCS_REF bypass in grep-only validation. An actual /bin/sh regression reproduced it (6 pass/1 fail); an exact 40-character length check now rejects empty, short, long, uppercase and multiline values, while accepting a valid lowercase SHA (7/7 pass). This shell test is not Docker runtime proof.

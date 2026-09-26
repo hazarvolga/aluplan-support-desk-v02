@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Clean frontend preview image evidence — 2026-09-26
+
+Built committed3dcb743d curated225-file source as amd64 image94038bef/config06185609, with loopback API (preview-only). Explicit TypeScript gate and Next build passed. Network-none inert permission smoke passed UID1001,221 immutable path checks and real cache writes; no normal app boot/HTTP test. Global npm/corepack/yarn remain. Offline Trivy same advisoryDB reported1Critical/40High/24Medium/36Low; critical tar finding belongs to global npm, not proven externally reachable. Frontend release remains NO-GO pending minimal runtime tooling cleanup, app/OS risk triage and exact rescan/route validation. Full hashes/evidence in current-focus. Owned smoke/scanner removed; dev frontendHTTP200; unrelated WIP preserved, no production/DB/push/deploy actions.
+
 ## Frontend image identity/ownership patch — 2026-09-26
 
 Independent review caught multiline revision validation bypass before commit. Shell regression RED6/1 then GREEN7/7 after adding exact-length validation; actual image build and runtime permission checks remain pending.
