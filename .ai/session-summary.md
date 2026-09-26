@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Node22 base and CI source alignment — 2026-09-26
+
+ec682d49/5a9796d0 pin allfourDockerFROMlines to verified22.23.3Alpine3.23digest; sevenCIversionliterals acrossfiveworkflows aligned withoutjob/permission changes. Engineinspection supportsminimal20->22; Node24alsoallowed butnotrequired. Read-onlynetwork-nonebaseprobe verifiesNode22.23.3/Undici6.28.1/OpenSSL3.5.8/ABI127/Alpine3.23.6/nonroot; singlemountedSentryABI127binaryloads withoutprofiling/SDKinit.26source+bootcontractsPASSafterexpectedREDs, local/tr200, noapprestart. No completeNode22appbuild/scan/hostedCIyet; previoussecuritycounts belongOLDNode20images. Nextbuildboth exactcommittedimages andverifyruntime/native/permissions/scans. Node22supportends2027-04-30, revisit2027Q1(noautomationset); rootdeveloperenginepolicy stillpendingreconciliation. No live/DB/provider/migration/push/deploy,WIPpreserved. Fullpins/sources/caveatsincurrent-focus.
+
 ## gRPC source patch and runtime-support gate — 2026-09-26
 
 Scopedgrpc-js1.14.3->1.14.4 for two maintainer advisories, no service code change. ActualGoogleconsumer5testsRED4pass1versionfail->GREEN5/5; Axios+gRPC14/14, XML/XLSX19/19, backendtsc0pre/post, local/tr200. RetainedXLSXhash afterpnpmregenerationdrop; frozenignore-scriptsrepeatpassed. ExistingotherWIPpreserved. No newimage/scan: last0C45H119M15L remains. Mostimportant nextgate: bothDockerfilesNode20.20.2 officiallyEOL, exactimagebundledUndici6.24.1/OpenSSL3.0.19; select/testsupportedLTS beforemoreleafpatchbatches. Separate npmUndici7.22 usesCheerio/JSDOM and newerupstreamfixes beyondscannerDB; do notconflatewithbuiltinfetch. Details/sources/caveatsincurrent-focus. No live/DB/provider/migration/restart/push/deploy.

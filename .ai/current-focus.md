@@ -1,5 +1,19 @@
 # Current Focus
 
+## Supported Node base source checkpoint — 2026-09-26
+
+Selected Node22.23.3 LTS as the smaller supported major transition20->22, retaining Alpine3.23 and productionlinux/amd64. Node24 also satisfies inspected engines but is not needed for this stabilization scope. Official https://nodejs.org/dist/index.json lists22.23.3 released2026-09-23; https://raw.githubusercontent.com/nodejs/Release/main/schedule.json sets Node22end2027-04-30 (Node24end2028-04-30). Schedule follow-up runtime review in2027Q1 before22EOL; this note creates no automation. No universal runtime/security compatibility claimed.
+
+Commits ec682d49(tests)/5a9796d0(Dockerfiles) replace exactlyfour FROMlines with `node:22.23.3-alpine3.23@sha256:baf676f7d0e552f3231945c2f979055ca121bce128c152f7a34e6bd1728b1c5a`. Registryverifiedlinux/amd64manifest `sha256:489418a947387da1c5b4c0c5749c963da56ecaac0ced1da74c67db60e42f2b3a`. No application/dependency/lock/schema/entrypoint changes. CIversion alignment changes seven literals in five workflows(ci/backend-test/frontend-test/ai-eval/dr-drill) to22.23.3; jobs, permissions and commands unchanged. Semantic-release already22 and left unchanged. HostedCI not run/pushed. Root engines remains>=20 and hostNode24.18 unchanged; developer engine policy remains to reconcile after actual image acceptance, not proof of Node20 support.
+
+Actualbase pulled by digest and probed read-only/network-none/nonrootUID1000/nohostmounts: Node22.23.3/Undici6.28.1/OpenSSL3.5.8/ABI127/x64/Alpine3.23.6. Yarnpath/opt/yarn-v1.22.22 and globalnpm/corepack match existing explicit removal paths. Separate network-none single-file read-only mount loads installed Sentry2.2.0 linux-x64-musl ABI127 binary and verifies two function exports; never invoked profiler or SDK/provider. Both probecontainersremoved. This proves base identity and one native binary load, NOT complete rebuilt application packaging/behavior.
+
+Read-only installedengine/native review: Prisma7.4.2 andJSDOM28.1.0 require>=22.12 within22; Next15.5.24,Sharp0.35.4,bcrypt6,pdf-parse2.4.5 permit22. Sentryprofiling10.42.0 resolvesprofiler2.2.0 withABI127muslprebuild. ActualPrismaCLI/client,Sharpimageformat,bcrypt andSentrypackaging checks still required in rebuilt images. Retain globalPrisma migrationtool; never normal-boot backend during probes.
+
+TDD: initialDockercontracts8PASS/3expectedoldpinFAIL ->11/11; newCIchecks2DockerPASS/5expectedoldCIversionFAIL ->7/7. Combinedfrontend/runtime/productionboot source contracts **26/26** network-denied on hostNode24.18. Sourceonly, notNode22fulltestacceptance. Local/trHTTP200; no devrestart. Independentcode/securityreviews andgitleaks gates. Existingworker-shutdown/next-envWIP preserved.
+
+**Next:** exact committed-source frontend/backendLinuxamd64 builds with this base and priorgRPCfix, then image-native/runtime/permissions probes and scans. No new fullappimage or scan yet; backendlast0C45H119M15L andfrontendlast0C0H0M1L are OLD Node20artifactresults, not clearanceforNode22. Authenticatedclonedata/recovery/drain/host gates remain. No liveaccess,DB/mail/CRM writes,migrations,push ordeploy.
+
 ## gRPC patch and supported-runtime priority — 2026-09-26
 
 Narrow source fix: root override `@grpc/grpc-js@>=1.14.0 <1.14.4` ->1.14.4. Actual DocumentAI->google-gax dependency resolves patched version; same runtime dependency ranges/proto-loader0.8.0/ordered-map unchanged. Lock updates only this package and existing GAX/OTel/optionalTerminus consumer contexts. pnpm lock regeneration again removed the explicit XLSX integrity; restored exact reviewed hash and repeated frozen ignore-scripts installation successfully. Do not accept a future lock change dropping that pin.
