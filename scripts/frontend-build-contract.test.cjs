@@ -63,7 +63,7 @@ test('frontend removes only explicit global package manager paths from the runne
 test('frontend base and runner use the same immutable Node image', () => {
     const images = instructions.filter(line => /^FROM node:/.test(line));
     assert.equal(images.length, 2);
-    for (const line of images) assert.match(line, /^FROM node:20\.20\.2-alpine3\.23@sha256:[a-f0-9]{64} AS /);
+    for (const line of images) assert.match(line, /^FROM node:22\.23\.3-alpine3\.23@sha256:[a-f0-9]{64} AS /);
     assert.equal(images[0].split(' ')[1], images[1].split(' ')[1]);
 });
 
