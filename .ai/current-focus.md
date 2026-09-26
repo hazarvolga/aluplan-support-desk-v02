@@ -1,5 +1,11 @@
 # Current Focus
 
+## Worker pause boundary characterized — 2026-09-26
+
+Added worker-pause-boundary.spec.ts: installed BullMQ public pause implementation with synthetic transport/completion boundaries and real MaintenanceWorkService. Three cases prove test-selected admission remains open for late accepted-job work, parallel pause initiation, and the unsafe assumption that pause(true) followed by pause(false) joins active work. The latter skips completion waiting in this installed version. Initial execution hit the repository-wide BullMQ mock; typed jest.requireActual corrected the harness. This was not a product RED. Corrected five-suite run:51passed; backend plus explicit new test diagnostics0. Independent code/security review approved. No runtime, schema, production or external-service changes.
+
+Next minimum implementation: discover/deduplicate initialized WorkerHost workers and begin non-forced close in parallel before closing shared admission. Public BullRegistrar has no enumeration/drain API; do not access private BullExplorer.workers or private whenCurrentJobsFinished. Non-forced close is preferable to reversible pause for one-way shutdown, but CRM failed-event writes and other detached work still require separate joins. Do not activate a global coordinator until producer/admission/dependency ordering is proven. This fixture is not actual Redis acquisition/lock/persistence or all-writer proof; release gates remainOPEN.
+
 ## Combined HTTP/cron rehearsal isolates disconnected-work gap — 2026-09-24
 
 New maintenance-combined.spec.ts uses real loopback HTTP, Nest lifecycle and Cron plus actual admission/tracker/cron-drain services, synthetic held controller and dependency hook. Three modes: connected request naturally delays dependency final-shutdown; intentionally disconnected request allows final hook while tracked work remains1; explicit TEST-ONLY drain-before-close prevents that ordering. New ingress returns503 without a second accepted call in all modes. Observed real cron-drain completion avoids mistaking its polling delay for HTTP transport waiting; HTTP/phase waits are bounded.

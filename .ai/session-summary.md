@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## Worker pause boundary characterized — 2026-09-26
+
+Resumed local stabilization after the separately scoped CRM credential incident. No production access in this work. Added three bounded tests exercising installed BullMQ pause with synthetic completion/transport and real shared tracker: late accepted-job admission, all-worker parallel pause initiation, and pause(true) then pause(false) not joining active work. The first run failed because test/setup.ts globally mocks Worker; explicit typed jest.requireActual fixes that harness issue, not a product defect. Corrected five suites51tests pass; backend plus explicit newtest TypeScript diagnostics0 using schema-matched borrowed declarations. Independent code/security review approved corrected version. No product code changed.
+
+Read-only installed-source review: BullRegistrar only registers; WorkerHost.worker is public; BullExplorer worker list and whenCurrentJobsFinished are private. Next choose parallel non-forced public close for one-way shutdown, discover/deduplicate registered WorkerHosts, and prove late active-job work plus detached failure persistence before shared admission/dependencies close. No global hook activation, Redis/lock/persistence proof, all-writer acceptance, push or deploy implied.
+
 ## Combined HTTP/cron rehearsal isolates disconnected-work gap — 2026-09-24
 
 New maintenance-combined.spec.ts uses real loopback HTTP, Nest lifecycle and Cron plus actual admission/tracker/cron-drain services, synthetic held controller and dependency hook. Three modes: connected request naturally delays dependency final-shutdown; intentionally disconnected request allows final hook while tracked work remains1; explicit TEST-ONLY drain-before-close prevents that ordering. New ingress returns503 without a second accepted call in all modes. Observed real cron-drain completion avoids mistaking its polling delay for HTTP transport waiting; HTTP/phase waits are bounded.
