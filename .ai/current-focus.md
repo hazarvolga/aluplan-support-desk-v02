@@ -1,5 +1,19 @@
 # Current Focus
 
+## Routing dependency source checkpoint — 2026-09-26
+
+Local commits `dd8ed7d7` (tests), `c30d80a4` (dependency). Scoped override `path-to-regexp@>=8.0.0 <8.4.2` ->8.4.2 changes only one package/version/integrity and four consumer edges: Nest core/platform-express11.1.14, Swagger11.2.6, Express5.2.1->router2.2.0. Separate6.3.0 remains unchanged. No application routes, guards, schema or startup changes. pnpm9 frozen ignore-scripts installation passed; existing XLSX checksum restored after lock generation and regression7/7 passed.
+
+Official https://github.com/pillarjs/path-to-regexp/security/advisories/GHSA-j3q9-mxjg-w52f describes exponential expansion from sequential optional ROUTE PATTERNS, fixed8.4.0; this is not proof that arbitrary request URLs alone exploit this app. https://github.com/pillarjs/path-to-regexp/releases/tag/v8.4.1 corrects8.4.0 nonending-wildcard behavior; https://github.com/pillarjs/path-to-regexp/releases/tag/v8.4.2 adds trailing-backslash rejection and performance fixes. Selected8.4.2 within major8. Actual public branding and protected storage wildcard routes justify compatibility checks, not an assertion of demonstrated live exploitability.
+
+New `scripts/path-routing-dependency-security.test.cjs`: RED6tests5compatPASS/1expectedold-versionFAIL ->GREEN6/6. Resolves all four actual consumer chains; parse/compile/match roundtrip for Turkish parameters, nonending multi-segment wildcard, isolated Express paths representative of tickets/reset/teams and branding/storage, query decoding, wrong paths/methods404 and tiny malformed percent encoding400. Loopback-only sandbox,1s request deadlines,4s async-test deadlines,2KiB response cap and socket cleanup. Synthetic handlers have no real auth/storage/controllers/AppModule/DB: this is routing compatibility, not complete Nest application/auth acceptance or a ReDoS stress test.
+
+Combined routing/Undici/Axios/gRPC29/29; existing mocked auth-controller/ticket-controller/RBAC-guard42/42 before/after; backend TypeScript check passed before/after; XLSX7/7; local/trHTTP200 without restart. HostNode24.18, not rebuilt LinuxNode22 image proof. Independent code/security reviews GO and staged secret scans clean. Preserved worker-shutdown/next-env WIP. No live access, DB/mail/CRM operation, migration, push or deploy. Last verified image remains cb8ecfd6/0Critical43High; new source fixes have NOT yet been rescanned as an image.
+
+Read-only prioritization also flagged telemetry coupling: sdk-node brings Prometheus/Jaeger, Sentry shares OTel packages, so avoid blanket OTel overrides. Repository main.ts/deploy startup did not reveal imports/preloads for existing instrument.ts/otel.ts; production NODE_OPTIONS is unknown, so do not claim telemetry inactive live. Latent source issue: otel.ts calls resources.Resource while installed resources2.6 exports resourceFromAttributes instead. Do not activate or rewrite telemetry during dependency patching. Review its actual startup/consumer compatibility separately before any telemetry upgrade; absence of a known importer is not blanket risk acceptance.
+
+**Next:** remaining backend risk groups (telemetry and Prisma's separate CLI dependency tree need coordinated decisions), then one combined exact-image build/rescan for accepted source fixes. No repeated build solely for each leaf patch. Authenticated sanitized-data workflows, all-writer drain and data-preserving recovery/operational gates remain open.
+
 ## Undici consumer-compatible source checkpoint — 2026-09-26
 
 Local checkpoints: `a707c0d6` (tests), `772fd395` (dependency/lock). Neither published nor deployed.

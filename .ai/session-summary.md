@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Routing dependency checkpoint — 2026-09-26
+
+dd8ed7d7/c30d80a4 add six routing compatibility tests and scoped path-to-regexp8.3->8.4.2 across four actual Nest/Express consumer edges;6.3 unchanged, XLSX pin retained. RED5pass1versionfail ->6/6; combined dependency29/29, mocked auth/tickets/RBAC42/42 pre/post, backendtsc pre/post pass, XLSX7/7, local200. Independent reviews and secret scans pass. Synthetic routing tests do not certify actual authorization or live exploitability. No new image/scan: last0C43H remains. Telemetry initialization/Resource-export mismatch recorded for separate coordinated review, not changed or activated. No live/data/provider/migration/restart/push/deploy; WIP preserved. Sources, scope and next grouped risk/rebuild gates in current-focus.
+
 ## Undici narrow dependency checkpoint — 2026-09-26
 
 Updated only scoped npm Undici7.22->7.30 and Cheerio/JSDOM lock edges; retained XLSX checksum after pnpm regeneration. No application/global-fetch/Node-base/schema change. Actual consumer9tests RED8pass1versionfail ->9/9; combined Axios/gRPC23/23, mocked crawlers33/33 and frontend Vitest4/4 pre/post, both TypeScript checks pre/post pass. Reviewed JSDOM private-handler fixture now uses/restores owned dispatcher without enabling scripts/subresources. Source test checkpoint a707c0d6, independent code/security review GO and gitleaks clean. No new image/scan: last exact backend remains0C43H, not reduced by assumed fixes. Upstream sources, limitations and next grouped risk/rebuild step in current-focus. No live/data/provider/migration/restart/push/deploy; unrelated WIP preserved.
