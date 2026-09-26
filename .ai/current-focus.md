@@ -1,5 +1,9 @@
 # Current Focus
 
+## Hotfix implementation moved to isolated live-baseline branch — 2026-09-26
+
+Active small-patch checkout ../aluplan-ticket-hotfix-20260926 at hotfix/ticket-reopen-label-20260926, product405a51b3 and label17624a46. Only scoped ticket reopening/labels, not this broad candidate. Backend55tests/frontend22/labels3pass, fulltypechecks0 with disclosed borrowed dependency resolution, synthetic browser and independentreviewpass. Detailed evidence/remaining gates are in that checkout .ai/current-focus.md and session-summary.md. Next actual isolatedDB atomicity/conflict proof, exactbuild/startup and separatelyapproved staffgrants/backup/recovery/deploy gates. This worktree pending worker-shutdown edits preserved unchanged. No production actions during implementation.
+
 ## Live selected-method correspondence established — 2026-09-26
 
 Separately approved fixed-file read used docker cp tar stdout, local tar stdout and local TypeScript parsing only; no extraction to filesystem, container exec, app import/execution, credentials/env/customerdata or DB access. Source .ts absent in image; fixed dist JS files available. Backend immutable image/start/restart remained the recorded302229/September2/0 at preflight. Historicald9b21b9d source transpiled locally with TypeScript5.9.3; exact skip-trivia lexical token equality passed for TicketsService.transition, TicketsController.transition, JwtStrategy.validate and RbacGuard.canActivate. Full service file hash differs from local transpile; reason NOT established, no whole-source/dependency equivalence claim.
