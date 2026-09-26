@@ -1,5 +1,11 @@
 # Current Focus
 
+## Authorized live identity check — 2026-09-26
+
+Owner approved read-only deployment identity check. Strict-host SSH confirmed vmi3049865. Backend backend-api/9ea92d99bfbd is running image302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644, tag d9b21b9d7b5c4c259acbe9a5828fdd04ba077ce2, started September2, restart0; image has no OCI revision or RepoDigests. Frontend allplan-frontend-ee4d70a7/5c0b67496777 healthy, imagedbd2a193d62a499e2adcea3d90f0f4617e1d9588d3b52a9b525c0e7fbf08094e, OCIee4d70a71a75d2f52cfc55ee05f4af34414c2b30, started September4, restart0. Both amd64. This confirms current artifacts, not complete backend source provenance or end-to-end health/security.
+
+Local frontend OCI revision source has ANN_TASLAK; backend historical tag source passes actorId:string with no newer ticket-access gate. No blind cherry-pick. Next local work: prepare narrow backport against known frontend source and verify backend code provenance from existing inert archive/receipts before selecting its build base; preserve patched frontend runtime/dependencies. Do not run legacy startup scripts or bundle candidate shutdown/migration work. Only docker ps/selected inspect and hostname used remotely; no container exec, env/secret output, customer-data query, deploy/restart/config/DB mutation.
+
 ## Two-change hotfix scope and baseline blocker — 2026-09-26
 
 Scope: authorized CLOSED reopening plus AI action label only. Label tests96a9bb78, label product05cb3f25; TR AI Yanıtı, EN AI Response, DE KI-Antwort. Three RED then GREEN checks, i18n parity and synthetic Chromium button assertion pass; no AI action invoked. Existing reopening functional checks still pass. No migration/env/AI-behavior change.

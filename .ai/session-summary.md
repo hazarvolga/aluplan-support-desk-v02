@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## Current live artifact identity refreshed — 2026-09-26
+
+Separately authorized read-only SSH to167.86.84.107 with strict known-host checking and bounded connect timeout confirmed hostnamevmi3049865. Scoped docker ps/inspect only: backend-api9ea92d99bfbd image302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644, tagd9b21b9d7b5c4c259acbe9a5828fdd04ba077ce2, started2026-09-02T19:03:59.250425823Z,restart0; imageamd64 created2026-06-30, OCI revision absent, RepoDigests empty. Frontend5c0b67496777/allplan-frontend-ee4d70a7 healthy image dbd2a193d62a499e2adcea3d90f0f4617e1d9588d3b52a9b525c0e7fbf08094e, OCIee4d70a71a75d2f52cfc55ee05f4af34414c2b30, started2026-09-04T17:19:21.914826475Z,restart0,amd64. Initial image-label formatting failed on nilLabels; conditional formatting retry succeeded. No operational change.
+
+Git inspection confirms frontend OCI revision contains ANN_TASLAK. Historical backend tag source transition takes actorId:string and controller passes req.user.sub, unlike the candidate guarded requester contract. Image identity matches earlier receipt but does not prove whole-image source equivalence. No logs/secrets/env/customer records read, no exec inside container, no DB/restart/deploy. Next only scoped local backport/provenance verification using existing inert evidence; legacy startup risks and full backend-source mapping remain open. No production-ready claim or general deployment approval.
+
 ## AI label and standalone-hotfix compatibility — 2026-09-26
 
 Label-only checkpoint05cb3f25, regression96a9bb78: three translation values changed, existing ai_draft_btn key/click behavior retained. Three label tests RED then GREEN; i18n parity clean; independent review and actual-page synthetic Chromium assertion confirm AI Yanıtı accessible name, without clicking AI, page errors or external requests. Probe remains unstyled/not full Next or DB proof. Staged secret scans clean; unrelated worker edits preserved.
