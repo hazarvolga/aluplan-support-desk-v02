@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## XML-updated backend image built and scanned — 2026-09-26
+
+Exact e992c231 committed source produced amd64 image4cd531281f3b/config2dae23995094. Build successful, same-DB offline Trivy report **0Critical/58High/137Medium/16Low**, versus previous unified0/69/143/17. XML-family findings absent; difference11HIGH/6MEDIUM/1LOW occurrences, not a claim of all risks closed. Report/image/archive identities and hashes in current-focus. No normal application start/new runtime smoke, customer DB or live connection. Frontend source preflight identified unpinned base, missing revision identity and writable runtime code plus font/Sentry/API build considerations; frontend image not built. Scanner cleanup verified; worker WIP untouched; no push/deploy.
+
 ## Frontend Docker build-order correction — 2026-09-26
 
 Added explicit shared-schemas compilation and frontend typecheck before Next build, pinned pnpm9.15.4 and removed non-frozen fallback. Four new Docker source-contract tests failed before change and pass after; actual offline shared-schema build and frontend tsc pass. No UI/runtime/schema/env changes. Full Docker build/security scan not performed in this step; no production access, DB mutation, push or deployment. Unrelated WIP preserved.
