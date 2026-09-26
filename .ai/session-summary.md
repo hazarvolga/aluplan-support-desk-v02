@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## Scoped live ticket/auth method comparison — 2026-09-26
+
+Owner separately approved reading ticket/authorization code. Strict-host SSH metadata confirmed backend302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644/start2026-09-02T19:03:59.250425823Z/restart0. Attempted fixed src/tickets/tickets.service.ts absent; then docker cp exact distJS paths to tar stdout only, bounded local buffers2MB/timeouts25s. No files extracted to disk, remote shell/application code executed inside container, DB/provider/env/secret/customerdata access or production mutations. Only local transpiler/parser executed against code strings, not imported application.
+
+Observed selectedfile hashes: tickets.service.js45714bytes SHA2cbe2ba67faec727da61acd03c5cf3cc5f987009f99addbbe30122ea3a3ded2b; tickets.controller.js17807 SHA f9cbe654ef515806620def62f7ef89a72fcd647af9f9afda325d75fa1e4d996f; jwt.strategy.js2964 SHA60fea009cc972b4f0167726257cf9d2261d79bfe614d9e187c0d8e87d8066c10; rbac.guard.js3120 SHA93b1ebfbab3417f32955ed540e7a1eb16e013d9704ad61264846dcb143863161. TypeScript5.9.3 transpileModule historicald9 source using historical compiler options; parsed unique methods, compared ordered lexicaltokens skipping trivia. All4match: service.transition, controller.transition, strategy.validate, guard.canActivate. Service full transpilation hash differs (46305bytes/SHA54598326ade5ab64acdedf5a8be6dcd91df735fba6879f2d0dc03fe664023d16); cause unresolved. Method correspondence does not attest class decorators/import resolution/wholefile/image/source equivalence or runtime safety.
+
+Confirmed working transition has actorId:string and no staff check in method, controller passes sub, historical JWT/RBAC method behavior corresponds. Narrow source-specific backport can now be designed locally; no blind modern cherry-pick, whole-framework migration or deploymentGO. No customer ticket change, restart, image load/run or publication. Existing startup hazards require separate reviewed boot/build acceptance before any production rollout.
+
 ## Small frontend backport isolated from stabilization — 2026-09-26
 
 Created ../aluplan-ticket-hotfix-20260926 branch hotfix/ticket-reopen-label-20260926 at exact frontend OCIee4d70a71a75d2f52cfc55ee05f4af34414c2b30. Reused regression as5ac248b9:3RED before label then3GREEN; locale integrity and independent review pass. Only three message entries and regression file differ; pinnedDockerfile/lock unchanged. Reopen implementation remains only on candidate, not this branch. No build/browser claim on historical frontend, no production access or publication.

@@ -1,5 +1,11 @@
 # Current Focus
 
+## Live selected-method correspondence established — 2026-09-26
+
+Separately approved fixed-file read used docker cp tar stdout, local tar stdout and local TypeScript parsing only; no extraction to filesystem, container exec, app import/execution, credentials/env/customerdata or DB access. Source .ts absent in image; fixed dist JS files available. Backend immutable image/start/restart remained the recorded302229/September2/0 at preflight. Historicald9b21b9d source transpiled locally with TypeScript5.9.3; exact skip-trivia lexical token equality passed for TicketsService.transition, TicketsController.transition, JwtStrategy.validate and RbacGuard.canActivate. Full service file hash differs from local transpile; reason NOT established, no whole-source/dependency equivalence claim.
+
+This resolves the narrow actorId/permission-method uncertainty sufficiently to design a local backport, not release acceptance. Next local implementation must preserve existing transition callers and customer review, authorize reopening with current database staff/permission checks, use atomic nested audit and optimistic closure predicate, and adapt UI without candidate-only dependencies. Existing startup risks and exact build/integration/backup/recovery approvals remain separate; never execute legacy startup to test this. Live ticket unchanged by us.
+
 ## Isolated live-frontend backport prepared — 2026-09-26
 
 New local worktree ../aluplan-ticket-hotfix-20260926, branch hotfix/ticket-reopen-label-20260926, based exactly on known frontend OCI revisionee4d70a7. Only three ai_draft_btn translation values plus regression5ac248b9 differ. Label tests3RED then3GREEN, i18n and independent review pass; Dockerfile/lock unchanged. This branch does NOT yet contain ticket reopening. Modern-candidate browser evidence is not inherited; backport build/browser still pending.
