@@ -1,5 +1,11 @@
 # Current Focus
 
+## Scoped ticket reopening checkpoint — 2026-09-26
+
+Temporarily prioritize CLOSED -> OPEN staff reopening. Local regression checkpoint f8a92e2d and product checkpoint f77c4429 are separate from unfinished worker-shutdown edits. Backend73tests and full backend typecheck pass after optimistic closedAt guard; frontend30tests pass. Independent code/security reviews approved the bounded change. Browser interaction with actual page/UI components and synthetic services passed; no production requests. The scratch bundle has no global CSS and is not full Next/API/database acceptance. Frontend typecheck passes with an ephemeral shared-schemas source alias, not a package/config fix.
+
+Next: assess this narrow fix against the exact deployed source/artifact before proposing a standalone hotfix. Do not deploy the whole candidate or blindly cherry-pick onto an unverified live baseline. Verify actual DB nested-write/conflict behavior and final build compatibility, then require explicit publication/deploy approval. No migration required by this change. SUP-00190 remains unchanged by us; ticket-specific reopening authorization is not general deployment authority. Preserve pending worker-shutdown work separately; overall stabilization gates remain open.
+
 ## Worker pause boundary characterized — 2026-09-26
 
 Added worker-pause-boundary.spec.ts: installed BullMQ public pause implementation with synthetic transport/completion boundaries and real MaintenanceWorkService. Three cases prove test-selected admission remains open for late accepted-job work, parallel pause initiation, and the unsafe assumption that pause(true) followed by pause(false) joins active work. The latter skips completion waiting in this installed version. Initial execution hit the repository-wide BullMQ mock; typed jest.requireActual corrected the harness. This was not a product RED. Corrected five-suite run:51passed; backend plus explicit new test diagnostics0. Independent code/security review approved. No runtime, schema, production or external-service changes.
