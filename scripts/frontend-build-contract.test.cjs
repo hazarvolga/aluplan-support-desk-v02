@@ -36,6 +36,22 @@ test('frontend uses the repository package manager version', () => {
 
 const runner = instructions.slice(instructions.findIndex(line => /AS runner$/.test(line)));
 
+test('frontend removes only explicit global package manager paths from the runner', () => {
+    const expected = [
+        '/usr/local/lib/node_modules/npm', '/usr/local/lib/node_modules/pnpm',
+        '/usr/local/lib/node_modules/corepack', '/opt/yarn-v1.22.22',
+        '/usr/local/bin/npm', '/usr/local/bin/npx', '/usr/local/bin/pnpm',
+        '/usr/local/bin/pnpx', '/usr/local/bin/corepack', '/usr/local/bin/yarn', '/usr/local/bin/yarnpkg',
+    ];
+    const removals = runner.filter(line => line.startsWith('RUN rm '));
+    assert.equal(removals.length, 1);
+    assert.deepEqual(removals[0].split(/\s+/), ['RUN', 'rm', '-rf', ...expected]);
+    assert.ok(runner.indexOf(removals[0]) < runner.indexOf('USER nextjs'));
+    assert.equal(builder.filter(line => line.startsWith('RUN rm ')).length, 0);
+    assert.ok(instructions.includes('RUN npm install -g pnpm@9.15.4'));
+    assert.ok(runner.includes('CMD ["node", "apps/frontend/server.js"]'));
+});
+
 test('frontend base and runner use the same immutable Node image', () => {
     const images = instructions.filter(line => /^FROM node:/.test(line));
     assert.equal(images.length, 2);
