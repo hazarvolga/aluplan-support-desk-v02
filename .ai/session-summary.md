@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Exact frontend image: critical/high/medium cleared in bounded scan — 2026-09-26
+
+Built committed d66bf7d6 as Linux/amd64 preview, with separate TypeScript gate passing. Index4d2d0c80/config2365a67d; source/archive/report hashes and private evidence paths in current-focus. Network-none permission, named-vendor hash/negative behavior and HTTP/native-image smoke all passed with exit-code checks. Initial diagnostic Sentry-metadata lookup failed due standalone tracing; revised bounded regular-file inventory verified the one packaged Terser serializer, not all embedded code. Independent helper review approved. Focused host tests34/34. Same-DB offline Trivy now **0C/0H/0M/1L**, previous0/1/1/1; only esbuild0.27.3 LOW remains, not yet risk-accepted. No ignores. Preview loopback API is not production configuration; full authenticated workflows/backend/recovery/host CPU gates remain. Next classify the LOW and reconcile existing release blockers, avoiding scope expansion. Owned smoke/scanner containers removed, localdev/tr200. No production access, DB/mail/CRM mutation, migration, push/deploy or restart; unrelated WIP preserved.
+
 ## Terser source fix and vendor provenance — 2026-09-26
 
 85983543/d66bf7d6 update onlyTerserplugin5.5.0withinmajor5; obsoleteexternalserializer6/randombytesremoved. Independentpublishedartifact/tag/upstreamASTproof confirmsbundledserializer7.0.5, SHA25627a2480018708bf3b3e6f71798bc50fde9d12fce8fb35350c4d7ae81a7283a91; scannerabsencealoneinsufficient. Realwebpackserial/worker/function/RegExp/sourcemap testsplusvendornegativebehavior4/4,combinedoffline34/34,tsc0,reviewsGO,gitleakspass. VMtrustedfixtureonly, testtimeoutnothardworkertermination. **Exactimagebuild+vendorhash+rescanpending**, previouscount0C/1H/1M/1L remainscurrentverifiedresult. Details/sourcesincurrent-focus. Dev/tr200,nolive/data/migration/push/deploy/restart,WIPpreserved.
