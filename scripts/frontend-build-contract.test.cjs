@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const { spawnSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
 const source = readFileSync(path.join(root, 'apps/frontend/Dockerfile'), 'utf8');
@@ -31,4 +32,41 @@ test('frontend install cannot silently rewrite the lockfile', () => {
 test('frontend uses the repository package manager version', () => {
     const manifest = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
     assert.ok(instructions.includes(`RUN npm install -g ${manifest.packageManager}`));
+});
+
+const runner = instructions.slice(instructions.findIndex(line => /AS runner$/.test(line)));
+
+test('frontend base and runner use the same immutable Node image', () => {
+    const images = instructions.filter(line => /^FROM node:/.test(line));
+    assert.equal(images.length, 2);
+    for (const line of images) assert.match(line, /^FROM node:20\.20\.2-alpine3\.23@sha256:[a-f0-9]{64} AS /);
+    assert.equal(images[0].split(' ')[1], images[1].split(' ')[1]);
+});
+
+test('frontend records a validated source revision', () => {
+    assert.ok(runner.includes('ARG VCS_REF'));
+    const guard = runner.find(line => line.startsWith('RUN ') && line.includes('VCS_REF'));
+    assert.ok(guard);
+    for (const value of ['', 'a'.repeat(39), 'a'.repeat(41), 'A'.repeat(40), `${'a'.repeat(40)}\nextra`]) {
+        const result = spawnSync('/bin/sh', ['-c', guard.slice(4)], {
+            env: { PATH: '/usr/bin:/bin', VCS_REF: value }, timeout: 1000,
+        });
+        assert.equal(result.error, undefined);
+        assert.notEqual(result.status, 0, 'invalid revision must fail');
+    }
+    assert.equal(spawnSync('/bin/sh', ['-c', guard.slice(4)], {
+        env: { PATH: '/usr/bin:/bin', VCS_REF: 'a'.repeat(40) }, timeout: 1000,
+    }).status, 0);
+    assert.ok(runner.includes('LABEL org.opencontainers.image.revision="${VCS_REF}"'));
+});
+
+test('runtime code is root owned and only the cache is granted to nextjs', () => {
+    const copies = runner.filter(line => line.startsWith('COPY '));
+    assert.equal(copies.length, 3);
+    for (const line of copies) assert.ok(line.includes('--chown=root:root '));
+    assert.deepEqual(runner.filter(line => /\bchown\b/.test(line) && line.startsWith('RUN ')), [
+        'RUN mkdir -p /app/apps/frontend/.next/cache && chown nextjs:nodejs /app/apps/frontend/.next/cache',
+    ]);
+    assert.ok(runner.includes('USER nextjs'));
+    assert.ok(runner.includes('CMD ["node", "apps/frontend/server.js"]'));
 });
