@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Axios security dependency and real HTTP contracts — 2026-09-26
+
+fc754e7a/51b480a9 add9 loopback actual-Axios tests and scoped1.20.0 upgrade. Rejected1.16.0 due newer maintainer advisory; sources/closure/shared-hasown caveat in current-focus. OriginalRED7pass/1versionfail; final9/9 (positive redirect case added postinstall), mockedservices53/53pre+post under deniednetwork, backendtsc0pre+post, XML12/12. Explicit existing local langfuse-core NODE_PATH required for shared Jest setup; default setup stillfails, no source workaround. Independent security/code reviewGO, stagedgitleaks passed. No exact newimage/scan; backend0C58H remains last verified count. Next XLSX decision then combined exact-image verification, not arithmetic advisory subtraction. No live/DB/mail/CRM/migration/restart/push/deploy, localpage200,WIPpreserved.
+
 ## Narrow release-risk reconciliation — 2026-09-26
 
 Maintainer esbuild advisory verified: remaining LOW requires Windows development serving; exact frontend image re-inspected Linux/amd64 with standalone Node entrypoint. No scanner suppression or unnecessary upgrade; target-specific non-blocker, revisit on platform/serve/advisory change. Saved backend e992c231 report still58HIGH occurrences/44unique IDs (7globalPrisma,51workspace), not a fresh scan. Actual local Axios1.13.5/XLSX0.18.5 and production-code consumers verified; XLSX output truncation occurs after parsing. Next narrow dependency work: Axios compatibility/security tests and targeted remediation, with separate XLSX source/update/containment decision. Backend, drain ordering, isolated authenticated/data-preserving acceptance and operational live gates remain; no whole-project GO. No product edits/tests/new image or scan, no live/data/provider/restart/push/deploy. WIP preserved. Details and upstream source in current-focus.
