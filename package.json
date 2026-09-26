@@ -49,6 +49,7 @@
   "packageManager": "pnpm@9.15.4",
   "pnpm": {
     "overrides": {
+      "terser-webpack-plugin@>=5.0.0 <5.5.0": "5.5.0",
       "browserslist@>=4.0.0 <4.28.7": "4.28.7",
       "postcss@>=8.0.0 <8.5.28": "8.5.28",
       "fast-uri@>=3.0.0 <3.1.8": "3.1.8",
