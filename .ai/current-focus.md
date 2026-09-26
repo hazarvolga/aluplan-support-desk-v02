@@ -1,5 +1,17 @@
 # Current Focus
 
+## Frontend runtime tools removed and exact image verified — 2026-09-26
+
+Supersedes prior frontend1Critical/40High count for the new artifact only. Commits c004db18 (test) and23b403a4e93303a2b662250cae3fd0aed6830882 (Docker runner cleanup) remove11 explicit global package-manager paths, preserving builder tools, node startup, app dependencies and schema. RED7/1 -> GREEN8/8; independent code/security reviews GO for local change. No application or lockfile changes.
+
+Exact committed source built successfully for linux/amd64: image/index sha256:f0aab4276f2227caa68e1cc2c7a327a928ddccd85a2ca3941c2124233edd74f3, config sha256:d63b4d0d68a1abe7faec095854db27f9ddcf3f2a7b85ef0ea694527d91643bc4. Source225files/3809280bytes SHA2565f929b9fac6de1de91a534bb28e52cba19acf00677e7a8e5291c1f8881008d4b. API remains loopback: preview-only, NOT production-configured. Build/typecheck passed.
+
+Network-none, mount-free, unpublished-port containers: permission smoke passed UID1001/x64,221 immutable checks,cache write,7 binary paths absent plus4 global directories absent. Separate real standalone boot returned200 for /tr,/tr/login,staticPNG and Next image optimizer (500-byte image result). Redirects rejected; static MIME and optimizer MIME verified. Container exit codes0 and exact-ID cleanup verified. No browser rendering, authenticated customer flow, API/DB or load acceptance claimed.
+
+Pinned offline Trivy0.72.0 with same2026-09-26T06:33:51Z advisoryDB: **0Critical/21High/18Medium/33Low**, versus prior1/40/24/36. Config identity matches report. Global npm critical+19HIGH occurrences gone; remaining21HIGH (previous triage:17app+4OS) still require decisions/fixes. Next smallest step: targeted libcrypto3/libssl3 patch, then prioritize sharp image-optimizer findings and other app dependencies; do not treat0Critical as production GO. No scan suppressions.
+
+Evidence: ../.aluplan-hotfix-evidence-20260926/frontend-build-23b403a4e933/{source.json,build.log,permissions.json,http.json}; scan-frontend-23b403a4/{input/image.tar,output/report.json}. Archive SHA25650d4209f77deeceee84324d8d63cf49b5cc5f35b8903d7c45e863f992cbb8c25; report SHA256d73cadb96575fa89267c06f596388d334624e067821d9dc95f83e746ca4c45f9. Scanner removed; local dev/trHTTP200. No live access, DB operations, migrations, push/deploy or dev restart. Existing worker/next-env WIP untouched.
+
 ## Exact frontend preview image built and scanned — 2026-09-26
 
 Committed source 3dcb743d793f0b772f2e64380ba5a49ec32227b6 built successfully for linux/amd64. Curated archive:225 files/3809280 bytes, SHA256 276e2e5f9cd2afcf786ffee2bdd1954fd08bd29189b8d37ea4d91fb55506c81e. No env/customer-data/migration/WIP input. Preview API is http://127.0.0.1:4000/api/v1: this is NOT a production frontend artifact. Frozen install, Prisma generation, shared-schema compilation, explicit frontend typecheck and Next build passed. Build performs downloads/lifecycle scripts/font fetching; Next telemetry notice observed. No production credentials provided.

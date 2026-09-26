@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Frontend runtime cleanup and exact proof — 2026-09-26
+
+Removed only11global package-manager paths in frontendrunner, builder/CMD/appdeps/schema untouched. New testRED7/1 thenGREEN8/8; independent code/security approval. Localcommits c004db18,23b403a4. Exactamd64previewimage f0aab427/configd63b4d0d built; sameDBofflineTrivy **0Critical/21High/18Medium/33Low** vs1/40/24/36. Globalnpmcritical+19HIGH gone; NOT productionGO. InertUID1001/cache/immutability/allmanagerabsence checks passed; separate network-none standaloneHTTP /tr,/tr/login,PNG,imageoptimizer passed withredirectrejection. No customerAPI/authbrowser/data acceptance. Ownedcontainerscleaned, localdevHTTP200; no production/DB/push/deploy. Full hashes/evidence and nextOS/apptriage in current-focus.
+
 ## Clean frontend preview image evidence — 2026-09-26
 
 Built committed3dcb743d curated225-file source as amd64 image94038bef/config06185609, with loopback API (preview-only). Explicit TypeScript gate and Next build passed. Network-none inert permission smoke passed UID1001,221 immutable path checks and real cache writes; no normal app boot/HTTP test. Global npm/corepack/yarn remain. Offline Trivy same advisoryDB reported1Critical/40High/24Medium/36Low; critical tar finding belongs to global npm, not proven externally reachable. Frontend release remains NO-GO pending minimal runtime tooling cleanup, app/OS risk triage and exact rescan/route validation. Full hashes/evidence in current-focus. Owned smoke/scanner removed; dev frontendHTTP200; unrelated WIP preserved, no production/DB/push/deploy actions.
