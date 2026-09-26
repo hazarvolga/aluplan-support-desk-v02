@@ -1,5 +1,11 @@
 # Current Focus
 
+## Two-change hotfix scope and baseline blocker — 2026-09-26
+
+Scope: authorized CLOSED reopening plus AI action label only. Label tests96a9bb78, label product05cb3f25; TR AI Yanıtı, EN AI Response, DE KI-Antwort. Three RED then GREEN checks, i18n parity and synthetic Chromium button assertion pass; no AI action invoked. Existing reopening functional checks still pass. No migration/env/AI-behavior change.
+
+Offline historical-source comparison warns against blind cherry-pick: d9b21b9d transition takes actorId:string and lacks candidate TicketAccessService; candidate reopen requires requester.sub plus preceding canManageTicket. Historical frontend lacks activeRef used by candidate handler; test also relies on newer MaintenanceWorkService. This is historical evidence, not current live identification. Next scoped need: read-only verification of current deployed backend/frontend immutable identities and source mapping, then a narrow compatible backport and isolated integration/build verification. Do not equate local separated commits with a deployable legacy hotfix. No push, deploy, restart or production data mutation authorized/performed in this continuation.
+
 ## Scoped ticket reopening checkpoint — 2026-09-26
 
 Temporarily prioritize CLOSED -> OPEN staff reopening. Local regression checkpoint f8a92e2d and product checkpoint f77c4429 are separate from unfinished worker-shutdown edits. Backend73tests and full backend typecheck pass after optimistic closedAt guard; frontend30tests pass. Independent code/security reviews approved the bounded change. Browser interaction with actual page/UI components and synthetic services passed; no production requests. The scratch bundle has no global CSS and is not full Next/API/database acceptance. Frontend typecheck passes with an ephemeral shared-schemas source alias, not a package/config fix.
