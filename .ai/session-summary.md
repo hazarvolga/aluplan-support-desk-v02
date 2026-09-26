@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## Unified image build, inert smoke and advisory comparison — 2026-09-26
+
+Completed exact committed-source5f9c5b14 Linux/amd64 backend build and network-none inert smoke, without application boot or customer DB. Image41c2c7f9eea5/configfe01befeddaf. Trivy report matches config; frozen-DB comparison is unified0Critical/69High/143Medium/17Low versus historical hotfix4/149/194/26. Findings are occurrences, not exploitability conclusions. Full identities, evidence path/hash and limits recorded in current-focus's matching section.
+
+Temporary smoke creation exceeded helper deadline and completed after an early cleanup check. Corrected the observation, inspected and ran only the exact owned inert container, verified exit0, removed it, and confirmed no owned smoke/scan containers remain. Helper is not safe to reuse unchanged for cleanup guarantees. No application code changed in this verification phase; existing worker WIP and generated next-env remain untouched. Frontend HTTP200 is not full-stack acceptance. No production access/mutation, fresh DB capture, restore, publication or deployment. Remaining advisory triage and isolated real-data acceptance gates stay open.
+
 ## Consolidation runtime follow-up — 2026-09-26
 
 Second review blocked initial package-manager removal because schema-parity still invoked pnpm after migrations. Corrected direct Prisma invocation; all diff flags/limits/failure checks preserved. Added actual-script injected subprocess recorder (no DB/network/process execution): RED2/1 -> GREEN3/3; combined7/7, existing2read-only/parity contracts pass. No actual image/migration claim. This was caught before committing or deploying broken startup.
