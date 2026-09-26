@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## SheetJS official distribution and integrity proof — 2026-09-26
+
+3c610d86/91295fad preserve Excel support while changing backendxlsx0.18.5 to officialCDN0.20.3. Explicit measuredSHA512 added after pnpmgeneratedURL-onlylock; correctfrozeninstallpass, freshisolatedwronghashinstallfailsERR_PNPM_TARBALL_INTEGRITY. RegressionguardsURL+hash. Apachelicense/provenance/entryhashreviewed;bundlingisnotcodeelimination. Actualparser7/7 including independentOOXML,BIFF8,Turkish,cachedformula,truncation,malformedZIP; combinedXML19/19,Axios9/9,backendtsc0,reviewsGO,gitleakspass. No productservice edits, live/DB/provider/migration/restart/push/deploy. Exactbackendimage/rescanpending;0C58H remainslastverified. Next combinedAxios+XLSXimageproof; residualresourcebounds andotherreleasegatesnotclosed. Fullhashes/sources/limitsincurrent-focus,WIPpreserved.
+
 ## Axios security dependency and real HTTP contracts — 2026-09-26
 
 fc754e7a/51b480a9 add9 loopback actual-Axios tests and scoped1.20.0 upgrade. Rejected1.16.0 due newer maintainer advisory; sources/closure/shared-hasown caveat in current-focus. OriginalRED7pass/1versionfail; final9/9 (positive redirect case added postinstall), mockedservices53/53pre+post under deniednetwork, backendtsc0pre+post, XML12/12. Explicit existing local langfuse-core NODE_PATH required for shared Jest setup; default setup stillfails, no source workaround. Independent security/code reviewGO, stagedgitleaks passed. No exact newimage/scan; backend0C58H remains last verified count. Next XLSX decision then combined exact-image verification, not arithmetic advisory subtraction. No live/DB/mail/CRM/migration/restart/push/deploy, localpage200,WIPpreserved.
