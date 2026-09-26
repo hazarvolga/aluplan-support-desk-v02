@@ -49,6 +49,9 @@
   "packageManager": "pnpm@9.15.4",
   "pnpm": {
     "overrides": {
+      "fast-xml-parser@>=5.0.0 <5.7.3": "5.7.3",
+      "fast-xml-builder@>=1.0.0 <1.1.7": "1.1.7",
+      "@xmldom/xmldom@>=0.8.0 <0.8.15": "0.8.15",
       "protobufjs@>=7.0.0 <7.6.5": "7.6.5",
       "handlebars@>=4.0.0 <4.7.9": "4.7.9",
       "multer@>=2.0.0 <2.3.0": "2.3.0",
