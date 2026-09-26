@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Terser source fix and vendor provenance — 2026-09-26
+
+85983543/d66bf7d6 update onlyTerserplugin5.5.0withinmajor5; obsoleteexternalserializer6/randombytesremoved. Independentpublishedartifact/tag/upstreamASTproof confirmsbundledserializer7.0.5, SHA25627a2480018708bf3b3e6f71798bc50fde9d12fce8fb35350c4d7ae81a7283a91; scannerabsencealoneinsufficient. Realwebpackserial/worker/function/RegExp/sourcemap testsplusvendornegativebehavior4/4,combinedoffline34/34,tsc0,reviewsGO,gitleakspass. VMtrustedfixtureonly, testtimeoutnothardworkertermination. **Exactimagebuild+vendorhash+rescanpending**, previouscount0C/1H/1M/1L remainscurrentverifiedresult. Details/sourcesincurrent-focus. Dev/tr200,nolive/data/migration/push/deploy/restart,WIPpreserved.
+
 ## Combined CSS/browser exact-image checkpoint — 2026-09-26
 
 fe347318/4c4c5540 add real-consumer Browserslist tests and4.28.7patch with required4data dependencies. Defaulttargetschangeconfirmed, notfullvisualcompatproof. Combinedoffline30/30,frontendtsc0,independentreviewsGO,gitleakspass. Exactamd64build includes priorPostCSS/nanoidfix: index5bfd291f/config91237da6. Network-none permission/HTTP/nativeimageformatchecks passed. SameDBTrivy **0Critical/1High/1Medium/1Low**, previously0/8/4/1; browser/CSS/nanoid findings absent. Remainingserialize-javascript6.0.2 requires narrowTerser-majorcompatibilitydecision, notblindglobaloverride; esbuildLOW remains. Fullhashes/evidence/source/limitsincurrent-focus. PreviewloopbackAPI notproductionartifact, customeracceptance/backend/VPSCPUgatesopen. Containersremoved,dev/tr200,no production/DB/mail/CRM/migration/push/deploy/restart,WIPpreserved.
