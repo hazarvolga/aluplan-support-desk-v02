@@ -44,7 +44,8 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-RUN apk add --no-cache curl
+# Fail closed if the runtime OpenSSL security patch is unavailable.
+RUN apk add --no-cache --upgrade curl 'libcrypto3>=3.5.8-r0' 'libssl3>=3.5.8-r0'
 
 # Standalone Next.js starts with node; package managers are build-only tools.
 # Keep removal paths explicit and confined to this runner stage.
