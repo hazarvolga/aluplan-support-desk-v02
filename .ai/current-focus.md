@@ -1,5 +1,19 @@
 # Current Focus
 
+## Consolidation follow-up: runtime tooling and WIP acceptance — 2026-09-26
+
+Follow-up caught and corrected an actual cleanup/startup conflict BEFORE commit/build: migrate-once calls verify-schema-parity.mjs, which still used pnpm exec prisma. It now calls retained Prisma directly with identical migrate-diff arguments, timeout, environment and fail-closed drift handling. Local callers need Prisma on PATH (e.g. pnpm exec node). New bounded VM subprocess-recorder regression RED2pass1fail -> GREEN3/3; combined tooling+consumer7/7 and existing read-onlyRBAC/parity2/2 pass. No real subprocess/DB in the new tests. Worker WIP remains outside accepted scope. Build must use reviewed narrow source context, not blindly archive historical private files with the older full-tree build helper.
+
+Read-only canonical dirty inventory against committed ff4a39b6:50 frontend/backend product/test files,34 identical,16 differing,0 absent. Reviewed differences are later candidate safety/UI changes, not missing canonical features. Keep canonical untouched; no wholesale copy. This is source-level coverage, not functional equivalence proof.
+
+Correction to earlier hotfix transfer suggestions: candidate RagMaintenanceService.onModuleInit already logs only (822aafdd); DDL/sync are explicit runInfrastructureMaintenance operations. Do NOT port hotfix flag/default or old method body. Six existing RAG tests pass.
+
+Candidate Prisma client was missing; generated locally from candidate schema with network denied and synthetic inert datasource, no DB connection. Initial --no-engine option was unsupported and retried without it; generate succeeded. Generated files remain ignored. Backend tsc --noEmit passes without borrowed client. Shutdown tests initially failed in shared setup (langfuse-core resolution); explicit NODE_PATH to THIS checkout's installed3.38.6 resolved it. Six focused suites55/55 pass under network-denied sandbox. This environment accommodation is not a fix to default test setup.
+
+Uncommitted WorkerShutdownService/app.module WIP remains unaccepted: beforeApplicationShutdown may wait indefinitely while HTTP still accepts work; real Bull/Nest error/close ordering and admission boundary need proof. Tests use controlled worker doubles, not all-writer production drain. No forced close or timeout-success workaround added; preserve WIP.
+
+Bounded packaging adaptation removes only explicit global npm/pnpm/corepack/yarn paths AFTER install/generate. Global Prisma deliberately retained because candidate migrate-once invokes it; workspace dependencies/PG17 guards/CMD unchanged. New runtime-tooling source contracts RED2pass2fail -> GREEN4/4. Exact new image build/scan/isolated migration/boot are still pending; no reduced advisory count claimed. No live access, capture, restore, deploy or push in this follow-up.
+
 ## Single active integration source — 2026-09-26 (supersedes hotfix routing below)
 
 Owner approved consolidating existing improvements. Active source is THIS checkout, branch `security/release-candidate-20260919`; the narrow hotfix is now a reference, not the user-facing development source. Do not wholesale merge the historical hotfix or its lockfile/startup. Existing candidate already contains homepage ff8ff8a7, reopening f77c4429, AI label05cb3f25, broader authorization/durability and newer mail dependencies.

@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## Consolidation runtime follow-up — 2026-09-26
+
+Second review blocked initial package-manager removal because schema-parity still invoked pnpm after migrations. Corrected direct Prisma invocation; all diff flags/limits/failure checks preserved. Added actual-script injected subprocess recorder (no DB/network/process execution): RED2/1 -> GREEN3/3; combined7/7, existing2read-only/parity contracts pass. No actual image/migration claim. This was caught before committing or deploying broken startup.
+
+Verified no absent file among50canonical dirty product/test files versus committedcandidate:34identical,16laterRCdifferences. Preserved originals. RAG boot gate transfer is unnecessary:822aafdd already moved maintenance out of boot;6tests pass. Generated missing candidatePrisma client offline from its own schema; full backend tsc passes. Defaultshutdown test setup failed on langfuse-core; same-checkout explicitNODE_PATH gave55/55 in6suites, not a defaulttestconfigfix.
+
+Independent review found workerWIP earlyshutdown HTTP admission/wait boundary unresolved; not committed or accepted. Added4source-contract tests first(2expectedfails), then narrow Docker global package-manager cleanup(4pass), retaining globalPrisma for currentmigration workflow. No wholeDockerfile/hotfix/RAG merge, no dependency/schema/CMD change. Exactimagebuild/scan/runtimeacceptance pending. Localpreview remains frontendonly; freshDBcapture still pending. No live actions or publication this follow-up.
+
 ## Consolidation checkpoint — 2026-09-26
 
 Owner selected one integrated release source after old hotfix preview omitted committed homepage improvements. THIS releasecandidate is now active; historical routing notes below are superseded. Main/login route files match, but landing-hub differs: candidate/canonical share ff8ff8a7 with BIMFlex card, revised hero/footer and removed placeholder stats/FAQ/social proof. Existing reopen and AI label already present. Preserve richer candidate auth/mail/durability rather than wholesale hotfix merge.
