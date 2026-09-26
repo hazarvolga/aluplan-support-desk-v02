@@ -1,5 +1,5 @@
 FROM node:20-alpine AS base
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.4
 
 FROM base AS builder
 # Set working directory
@@ -17,10 +17,14 @@ RUN pnpm config set fetch-retries 5 && \
     pnpm config set network-concurrency 4 && \
     pnpm config set registry https://registry.npmjs.org/
 
-# Install dependencies (fallback to non-frozen if registry issues occur)
-RUN pnpm install --frozen-lockfile || pnpm install
+# Fail closed instead of changing dependency versions during a release build.
+RUN pnpm install --frozen-lockfile
 # Generate database client
 RUN pnpm --filter @aluplan/database db:generate
+# Direct filtered builds bypass Turbo's upstream build ordering.
+RUN pnpm --filter @aluplan/shared-schemas build
+# Next config skips built-in type checking; retain a separate release gate.
+RUN pnpm --filter @aluplan/frontend typecheck
 # Build arguments
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
