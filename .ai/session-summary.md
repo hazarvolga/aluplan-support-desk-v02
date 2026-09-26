@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## Consolidation checkpoint — 2026-09-26
+
+Owner selected one integrated release source after old hotfix preview omitted committed homepage improvements. THIS releasecandidate is now active; historical routing notes below are superseded. Main/login route files match, but landing-hub differs: candidate/canonical share ff8ff8a7 with BIMFlex card, revised hero/footer and removed placeholder stats/FAQ/social proof. Existing reopen and AI label already present. Preserve richer candidate auth/mail/durability rather than wholesale hotfix merge.
+
+Three local restore refs created at pre-integration committed tips. Dirty worker files and canonical frontend edits remain untouched. Added only copied provenance-verified dependency behavior test; independent review GO for test-only commit.32dependency and28frontend targeted tests pass (React mock prop warnings remain). Preview switched to candidate frontend; no backend/data usability claim. Dev-generated next-env.d.ts excluded from commits. No push/deploy/live writes. Fresh dump remains pending; previous safe SSH preflight only. Runtime cleanup needs startup compatibility work, not blind cherry-pick. Full consolidation and team routing are NOT complete.
+
 ## Scoped live ticket/auth method comparison — 2026-09-26
 
 Owner separately approved reading ticket/authorization code. Strict-host SSH metadata confirmed backend302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644/start2026-09-02T19:03:59.250425823Z/restart0. Attempted fixed src/tickets/tickets.service.ts absent; then docker cp exact distJS paths to tar stdout only, bounded local buffers2MB/timeouts25s. No files extracted to disk, remote shell/application code executed inside container, DB/provider/env/secret/customerdata access or production mutations. Only local transpiler/parser executed against code strings, not imported application.

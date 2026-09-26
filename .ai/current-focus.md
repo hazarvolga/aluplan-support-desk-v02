@@ -1,5 +1,17 @@
 # Current Focus
 
+## Single active integration source — 2026-09-26 (supersedes hotfix routing below)
+
+Owner approved consolidating existing improvements. Active source is THIS checkout, branch `security/release-candidate-20260919`; the narrow hotfix is now a reference, not the user-facing development source. Do not wholesale merge the historical hotfix or its lockfile/startup. Existing candidate already contains homepage ff8ff8a7, reopening f77c4429, AI label05cb3f25, broader authorization/durability and newer mail dependencies.
+
+Local restore branches preserve pre-consolidation release1a2d4f3b, hotfix48be5373 and canonical9b5d6870. These protect committed history only, NOT dirty files or an off-device backup. Existing app.module/worker-shutdown edits remain untouched/unaccepted; canonical dirty frontend files remain in place. Inventory/review those before declaring consolidation complete.
+
+Ported only the missing four Handlebars/protobuf/multer behavior controls into scripts/consolidated-dependency-behavior.test.cjs from hotfix6062e678. Combined dependency/mail/WebSocket32/32 and frontend landing/language/reopen28/28 pass on this checkout. WebSocket tests already identical; no duplicate port. Tests do not establish full image/production readiness.
+
+Pending: reconcile exact packaging/runtime changes (global Prisma cannot simply be removed because candidate migrate-once uses it); resolve existing worker WIP; review remaining canonical deltas; exact unified image/scan/boot; fresh isolated data acceptance; team/category feature not implemented. Production remains NO-GO, explicit push/deploy gates unchanged.
+
+User-facing preview now targets this candidate on loopback3000 with explicit loopback API4000 and outbound-restricted dev process. Backend is NOT ready/connected; no real-data login claim. Google fonts may fall back offline. Fresh live capture helper is prepared outside Git but NOT executed. Approved read-only SSH confirmed host,19% disk, actual application DBaluplan_support/PG17.9 target; no dump/restore/deploy occurred. Do not boot copied production credentials or workers. Sanitization and browser/provider egress must be verified first.
+
 ## Hotfix implementation moved to isolated live-baseline branch — 2026-09-26
 
 Active small-patch checkout ../aluplan-ticket-hotfix-20260926 at hotfix/ticket-reopen-label-20260926, product405a51b3 and label17624a46. Only scoped ticket reopening/labels, not this broad candidate. Backend55tests/frontend22/labels3pass, fulltypechecks0 with disclosed borrowed dependency resolution, synthetic browser and independentreviewpass. Detailed evidence/remaining gates are in that checkout .ai/current-focus.md and session-summary.md. Next actual isolatedDB atomicity/conflict proof, exactbuild/startup and separatelyapproved staffgrants/backup/recovery/deploy gates. This worktree pending worker-shutdown edits preserved unchanged. No production actions during implementation.
