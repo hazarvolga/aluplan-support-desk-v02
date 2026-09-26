@@ -3,6 +3,7 @@ import {
     NotFoundException,
     BadRequestException,
     ForbiddenException,
+    ConflictException,
     Logger,
     Inject,
     forwardRef,
@@ -31,7 +32,7 @@ const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
     PENDING_CUSTOMER: [TicketStatus.OPEN, TicketStatus.RESOLVED, TicketStatus.CLOSED, TicketStatus.PENDING_CUSTOMER_REVIEW],
     PENDING_CUSTOMER_REVIEW: [TicketStatus.RESOLVED, TicketStatus.OPEN], // Review to final resolved or back to open
     RESOLVED: [TicketStatus.CLOSED, TicketStatus.OPEN], // Reopen on customer reply
-    CLOSED: [],
+    CLOSED: [TicketStatus.OPEN], // Staff authorization is enforced before transition.
     DRAFT: [TicketStatus.OPEN, TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER, TicketStatus.CLOSED],
 };
 
@@ -856,12 +857,37 @@ export class TicketsService {
             updateData.closedAt = new Date();
         }
 
-        const updated = await this.prisma.ticket.update({ where: { id }, data: updateData });
+        const reopening = ticket.status === TicketStatus.CLOSED && toStatus === TicketStatus.OPEN;
+        if (reopening) {
+            updateData.closedAt = null;
+            // Keep historical SLA/resolution fields unchanged. Persist actor and
+            // prior closure atomically with reopening, without replacing messages.
+            updateData.messages = { create: {
+                message: 'Ticket reopened by authorized support staff.',
+                isInternal: true,
+                sender: { connect: { id: requester.sub } },
+                metadata: {
+                    action: 'TICKET_REOPENED',
+                    previousClosedAt: ticket.closedAt?.toISOString() ?? null,
+                },
+            } };
+        }
+        const updated = await this.prisma.ticket.update({
+            where: reopening ? { id, status: TicketStatus.CLOSED, deletedAt: null, closedAt: ticket.closedAt } : { id },
+            data: updateData,
+        }).catch((error: unknown) => {
+            if (reopening && typeof error === 'object' && error !== null
+                && 'code' in error && error.code === 'P2025') {
+                throw new ConflictException('Ticket changed; refresh before reopening');
+            }
+            throw error;
+        });
 
         this.eventEmitter.emit('ticket.status_changed', {
             ticketId: updated.id,
             oldStatus: ticket.status,
-            newStatus: updated.status
+            newStatus: updated.status,
+            actorId: requester.sub,
         });
 
         if (updated.status === TicketStatus.RESOLVED) {

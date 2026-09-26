@@ -98,6 +98,7 @@ function TicketDetail({ id }: { id: string }) {
     const replyOperationRef = useRef(false);
     const activeRef = useRef(true);
     const [updating, setUpdating] = useState(false);
+    const reopenOperationRef = useRef(false);
     const [summary, setSummary] = useState<string | null>(null);
     const [summarizing, setSummarizing] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -299,6 +300,9 @@ function TicketDetail({ id }: { id: string }) {
     const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
     const roleName = (typeof user?.role === 'string' ? user.role : user?.role?.name)?.toLowerCase();
     const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer') || roleName === 'customer' || roleName === 'viewer';
+    const normalizedRole = roleName?.trim().toUpperCase().replace(/-/g, '_');
+    const isReopenStaff = ['ADMIN', 'SUPER_ADMIN', 'SUPERUSER', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'SENIOR_AGENT', 'AGENT', 'SUPPORT_AGENT', 'SUPPORT_MANAGER'].includes(normalizedRole || '');
+    const canReopen = Boolean(user?.id) && isReopenStaff && ['ticket:update', '*', 'admin'].some(permission => user?.permissions?.includes(permission));
     const isReplyEffectivelyEmpty = ContentSanitizer.isEffectivelyEmpty(reply);
     const isComposerDisabled = ['CLOSED', 'RESOLVED', 'PENDING_CUSTOMER_REVIEW'].includes(ticket?.status);
     const isLiveChatEligible = !isCustomer || Boolean(ticket?.creator?.customerProfile?.isVip);
@@ -476,6 +480,24 @@ function TicketDetail({ id }: { id: string }) {
         }
     };
 
+    const handleReopenTicket = async () => {
+        if (!canReopen || ticket?.status !== 'CLOSED' || reopenOperationRef.current) return;
+        reopenOperationRef.current = true;
+        setUpdating(true);
+        try {
+            const updated = await api.tickets.updateStatus(ticket.id, 'OPEN');
+            if (!activeRef.current) return;
+            setTicket((previous: any) => ({ ...previous, ...updated }));
+            toast.success(t('reopen_success'));
+            await load();
+        } catch {
+            if (activeRef.current) toast.error(t('status_update_error'));
+        } finally {
+            reopenOperationRef.current = false;
+            if (activeRef.current) setUpdating(false);
+        }
+    };
+
     const handleTransitionToReview = async () => {
         if (!ticket) return;
         try {
@@ -567,6 +589,17 @@ function TicketDetail({ id }: { id: string }) {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
+                                {canReopen && ticket.status === 'CLOSED' && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleReopenTicket}
+                                        disabled={updating}
+                                        className="h-7 border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
+                                    >
+                                        {updating ? t('reopening') : t('reopen_ticket')}
+                                    </Button>
+                                )}
                                 {!isCustomer && ticket.status !== 'CLOSED' && ticket.status !== 'RESOLVED' && ticket.status !== 'PENDING_CUSTOMER_REVIEW' && (
                                     <Button
                                         variant="outline"
