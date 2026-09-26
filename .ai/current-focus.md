@@ -1,5 +1,15 @@
 # Current Focus
 
+## Frontend image identity and ownership controls — 2026-09-26
+
+Review caught a multiline VCS_REF bypass in grep-only validation. An actual /bin/sh regression reproduced it (6 pass/1 fail); an exact 40-character length check now rejects empty, short, long, uppercase and multiline values, while accepting a valid lowercase SHA (7/7 pass). This shell test is not Docker runtime proof.
+
+Docker source now pins both frontend stages to the same Node20.20.2/alpine3.23 digest already used by the verified backend candidate. This establishes identity, not a claim that this Node version is current or vulnerability-free. Required build arg VCS_REF must be40lowercasehex and is stored in OCI revision label; missing/invalid value fails build. All frontend build callers (including future Coolify settings) must supply the exact source SHA; no production setting changed.
+
+Public/standalone/static COPY now explicitly root-owned. Only /app/apps/frontend/.next/cache is nextjs-owned; removed misplaced /app/.next write permission. Source scan found Next image usage and no explicit ISR/revalidate configuration; real image optimization/cache/route behavior still needs runtime validation. No claim that ownership alone provides a read-only root filesystem or full compromise containment. Existing base-image global package-manager tooling remains a separate runtime hardening consideration.
+
+Added three source-contract tests: initial4pass/3fail -> final7/7. Existing frontend build-order/typecheck/frozen-install guards stay green. Local/tr HTTP200. No frontend image build/runtime permission proof yet; no DB/env/UI/product behavior changes, no production access/push/deploy. New backend scan remains0Critical/58High, unrelated to this frontend Docker source edit. Next build a curated frontend source archive with explicit API build value and no production secrets, verify immutable source identity and cache-only writes on the resulting image, then scan it.
+
 ## XML-updated exact backend image scan — 2026-09-26
 
 Committed e992c231ccee0b5c5ec8dfc27fa4f87d106806d7 built successfully as Linux/amd64 backend image sha256:4cd531281f3b4d5657e3186f6bc7ea913176429ab3a2e35fa2760ca387691e23; config sha256:2dae239950945dcfc263c1fe8c00ed1df1d4a2ae1cd1bb6459a0aae66a0b192c. Curated Git archive415files/57hash-validated migrations/3338240bytes SHA25637b6b484f372386a012724bba7cd2c674bed9c4add7b50d36b72201ad8cc83b6; dirty WIP/secrets/customer data excluded. Backend production compilation and PG17 build guards passed. Build uses network/downloads/lifecycle scripts; global Prisma/APK resolution is not fully reproducible. No normal app start or new exact-image runtime smoke was performed.

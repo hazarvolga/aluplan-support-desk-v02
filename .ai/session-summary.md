@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## Frontend image identity/ownership patch — 2026-09-26
+
+Independent review caught multiline revision validation bypass before commit. Shell regression RED6/1 then GREEN7/7 after adding exact-length validation; actual image build and runtime permission checks remain pending.
+
+Pinned frontend Node base/runner to known backend digest, required validated VCS_REF/OCI revision, made public/standalone/static root-owned and limited nextjs ownership to actual frontend .next/cache. Docker build callers now must provide sourceSHA; none changed in production. Tests4pass3fail ->7pass. Only source contracts verified, no full frontend image/runtime assertion or vulnerability-count change. Frontend localHTTP200 retained; unrelated worker/next-env WIP preserved. Next curated clean image build and runtime cache/permissions verification; no live/DB/push/deploy.
+
 ## XML-updated backend image built and scanned — 2026-09-26
 
 Exact e992c231 committed source produced amd64 image4cd531281f3b/config2dae23995094. Build successful, same-DB offline Trivy report **0Critical/58High/137Medium/16Low**, versus previous unified0/69/143/17. XML-family findings absent; difference11HIGH/6MEDIUM/1LOW occurrences, not a claim of all risks closed. Report/image/archive identities and hashes in current-focus. No normal application start/new runtime smoke, customer DB or live connection. Frontend source preflight identified unpinned base, missing revision identity and writable runtime code plus font/Sentry/API build considerations; frontend image not built. Scanner cleanup verified; worker WIP untouched; no push/deploy.
