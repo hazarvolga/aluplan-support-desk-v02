@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Fast-uri security patch and immutable image proof — 2026-09-26
+
+Local4d313522/6e278405 patch only fast-uri3.1.0->3.1.8 with two AJV edges. Upstream3.1.7/3.1.8 additional fixes verified beyond scanner3.1.6 floor. Actual Sentry/webpack/schema-utils/AJV tests RED2fail3pass -> GREEN5/5; combined network-denied21/21 and full frontendtsc0. Code/security reviews and staged gitleaks passed. Exact amd64 image2f239162/config2f3159e2 built; rootless permissions and offline standalone HTTP/image-format proofs passed. SameDB exact-image Trivy **0Critical/8High/4Medium/1Low**, down from0/15/4/1, fast-uri findings absent. Hashes/source URLs/evidence paths in current-focus. Preview API only, no customer auth/DB acceptance or production readiness claim. Remaining8HIGH require consumer-aware decisions; PostCSS/nanoid narrow patch next candidate, not blindly upgrading or treating build-time presence as demonstrated runtime exploit. VPS CPU and separate backend acceptance gates remain. Owned containers removed; dev/tr200. No live access, DB/mail/CRM changes, migration, push/deploy or restart. Unrelated WIP preserved.
+
 ## Sharp native update verified locally — 2026-09-26
 
 Scoped Sharp0.35.4/native1.3.3 update committed e919131a/f1ea3332. ActualNext synthetictests7/7, combined16/16, frontendtsc0, cleanamd64build c929ccc9/configd1b733f2. Linuxinitialheifmetadataassertfailed: diagnosed omitted diagnosticversions.json, corrected to actualnestednativepackage/addon/binary provenance without alteringapp/loaderrestrictions. Finalpermissions andHTTPsmoke plusPNG/JPEG/WebP/AVIF nativeNext transforms pass. Runtimeheifversionnotdirectlymeasured; upstreamnative1.3.3metadata lists1.23.2. SameDBTrivy **0Critical/15High/4Medium/1Low** vs0/17/4/1. CPUx86-64-v2 compatibilityonVPS stillunverified; no productionGO. Evidence/sourceURLs/fullhashes in current-focus. Containerscleaned, localdevHTTP200; no live/DB/push/deploy, WIPuntouched.
