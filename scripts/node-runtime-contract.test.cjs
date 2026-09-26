@@ -18,3 +18,21 @@ for (const app of ['backend', 'frontend']) {
         ]);
     });
 }
+
+for (const workflow of ['ci', 'backend-test', 'frontend-test', 'ai-eval', 'dr-drill']) {
+    test(`${workflow} CI jobs select Node 22.23.3`, () => {
+        const source = readFileSync(path.resolve(__dirname, `../.github/workflows/${workflow}.yml`), 'utf8');
+        const versions = [...source.matchAll(/^\s*node-version:\s*(.*?)\s*$/gm)].map(match => match[1]);
+        const setups = [...source.matchAll(/\buses:\s*actions\/setup-node@/g)];
+        assert.ok(setups.length > 0);
+        assert.equal(versions.length, setups.length);
+        if (workflow === 'ci') {
+            const env = [...source.matchAll(/^\s*NODE_VERSION:\s*(.*?)\s*$/gm)].map(match => match[1]);
+            assert.equal(env.length, 1);
+            assert.match(env[0], /^(?:22\.23\.3|'22\.23\.3'|"22\.23\.3")$/);
+            for (const version of versions) assert.equal(version, '${{ env.NODE_VERSION }}');
+        } else {
+            for (const version of versions) assert.match(version, /^(?:22\.23\.3|'22\.23\.3'|"22\.23\.3")$/);
+        }
+    });
+}
