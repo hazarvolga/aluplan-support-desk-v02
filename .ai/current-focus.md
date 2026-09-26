@@ -1,5 +1,17 @@
 # Current Focus
 
+## XML dependency fix with storage compatibility — 2026-09-26
+
+Scoped root overrides now select fast-xml-parser5.7.3, fast-xml-builder1.1.7 and mammoth's xmldom0.8.15. pnpm9.15.4 regenerated the lockfile; frozen installation ran with lifecycle scripts disabled. Diff is limited to XML dependency closure (including entities/path-expression/strnum/anynum), not broad framework upgrades. Default PATH pnpm was incompatible with this repo and its initial metadata queries failed; no install was attempted using it. Existing worker WIP remains excluded.
+
+TDD caught a REAL compatibility regression: proposed FXP5.7.0 broke AWS xml-builder's unconditional numeric addEntity registrations even on benign XML. Rejected that candidate; upstream changelog documents compatibility restoration in5.7.2. Selected5.7.3 and retained the failing AWS test, adding explicit CR/LF assertions. No AWS SDK upgrade or production-code workaround. Maintainer references: https://github.com/NaturalIntelligence/fast-xml-parser/issues/824 ; https://github.com/NaturalIntelligence/fast-xml-parser/blob/master/CHANGELOG.md ; https://github.com/xmldom/xmldom/releases/tag/0.8.15 .
+
+New scripts/xml-dependency-security.test.cjs uses actual consumer dependency resolution, small synthetic XML/DOCX, version floors, escaping, numeric expansion and opt-in doctype serialization controls. Corrected baseline fixture enabled htmlEntities explicitly before meaningful RED3pass/4fail; final suite12/12 passes. Combined XML/mail/WebSocket/dependency44/44 and existing HXL/knowledge parser14/14 pass with network denied; backend TypeScript passes. Independent security review12/12 confirms storage XML/CRLF compatibility. Configured test limits and serializer options do not imply those options are configured in production. No full SDK/cloud integration or full-stack boot proof.
+
+Frontend default tsc remains blocked by TS2307 resolving @aluplan/shared-schemas at src/lib/schemas.ts:28; no alias workaround applied this turn and no full frontend typecheck PASS claim. This is separate from the passing backend/parser checks and must be addressed before release acceptance.
+
+No env/schema/migration/application-service changes, production access, DB writes, push or deploy. Frontend loopback/tr remains HTTP200. Last exact image scan remains0Critical/69High: NEW DEPENDENCIES HAVE NOT YET BEEN REBUILT/SCANNED. Next exact candidate image verification, remaining Axios/XLSX risk decisions, then sanitized-data acceptance; do not represent advisory closure by subtracting expected counts.
+
 ## Unified backend image verified and scanned — 2026-09-26
 
 Built committed source `5f9c5b142df978ab30db6899c731b4800647e220` only, excluding dirty worker WIP, as Linux/amd64 image `sha256:41c2c7f9eea574aad2e753f0d6592f75b072f380a7f6ea00bd16767aed463306`. Config identity `sha256:fe01befeddafbff56a7a4b9ad8564882375e3481f2f9ea4c99e1a389ec5deff2` matches the scan. Narrow source archive: 415 files, 57 hash-validated migrations, 3338240 bytes, SHA256 `746a7b969599ad628e1c54869ec0717a7a3c08a7a639a31e32b293ba0625c762`. Build succeeded; network was used for builder dependencies. This is the backend image, not a frontend production build.

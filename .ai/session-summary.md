@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## XML dependency correction — 2026-09-26
+
+Frontend default tsc failed TS2307 @aluplan/shared-schemas resolution (src/lib/schemas.ts:28); no full frontend typecheck success claimed. Separate release gate, unchanged in this dependency-only patch.
+
+Narrow pnpm9.15.4 override/lock update: fast-xml-parser5.7.3, fast-xml-builder1.1.7, xmldom0.8.15. New actual-chain synthetic tests caught AWS storage XML breakage at5.7.0; upstream5.7.3 restored compatibility without SDK changes or test weakening. XML12/12, combined dependency44/44, existing parser14/14, backend tsc pass; network denied during tests. Independent security review GO for source commits only. Details/sources/limits in current-focus matching section. No new image scan or advisory-count reduction claimed; no application DB, live access, push or deployment. Unrelated worker and generated frontend WIP preserved.
+
 ## Unified image build, inert smoke and advisory comparison — 2026-09-26
 
 Completed exact committed-source5f9c5b14 Linux/amd64 backend build and network-none inert smoke, without application boot or customer DB. Image41c2c7f9eea5/configfe01befeddaf. Trivy report matches config; frozen-DB comparison is unified0Critical/69High/143Medium/17Low versus historical hotfix4/149/194/26. Findings are occurrences, not exploitability conclusions. Full identities, evidence path/hash and limits recorded in current-focus's matching section.
