@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Undici narrow dependency checkpoint — 2026-09-26
+
+Updated only scoped npm Undici7.22->7.30 and Cheerio/JSDOM lock edges; retained XLSX checksum after pnpm regeneration. No application/global-fetch/Node-base/schema change. Actual consumer9tests RED8pass1versionfail ->9/9; combined Axios/gRPC23/23, mocked crawlers33/33 and frontend Vitest4/4 pre/post, both TypeScript checks pre/post pass. Reviewed JSDOM private-handler fixture now uses/restores owned dispatcher without enabling scripts/subresources. Source test checkpoint a707c0d6, independent code/security review GO and gitleaks clean. No new image/scan: last exact backend remains0C43H, not reduced by assumed fixes. Upstream sources, limitations and next grouped risk/rebuild step in current-focus. No live/data/provider/migration/restart/push/deploy; unrelated WIP preserved.
+
 ## Node 22 backend/frontend artifact checkpoint — 2026-09-26
 
 Exact committed cb8ecfd6 Linux/amd64 builds passed; backend index822f96cc/config507698ee, frontend indexd9f59577/configaddd83ec. Network-none runtime/native/permissions proofs passed: Prisma CLI/client/offline schema generation, PG17 tools, database bcrypt6 and Sentry ABI127; frontend HTTP and four image formats, Sharp closure and serializer hash. Source contracts26/26 and local dev200. Frontend is loopback-API preview, amd64 tests are ARM-host emulation, not native VPS or authenticated workflow acceptance.
