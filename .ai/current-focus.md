@@ -1,5 +1,21 @@
 # Current Focus
 
+## Sharp update and exact Linux preview proof — 2026-09-26
+
+Commits e919131a(test),f1ea333227956eedc085b252533d0d4193508c96(dependency): range-scoped sharp override0.34.x->0.35.4, native/libvips closure1.3.3. pnpm9.15.4 lock-only then frozen install with lifecycle scripts disabled on host. Independent review found no unrelated dependency churn; Next/Sentry/next-intl versions unchanged, peer context gains existing @types/node because Sharp now declares it. Node>=20.9 supported by pinned20.20.2.
+
+Official sources verified: https://github.com/lovell/sharp/security/advisories/GHSA-rgj7-g3m4-5g8c (patched>=0.35.4), https://github.com/lovell/sharp/security/advisories/GHSA-f88m-g3jw-g9cj (patched>=0.35.0), https://github.com/lovell/sharp-libvips/releases/tag/v1.3.3 (libheif1.23.2/libvips8.18.6). These do not prove universal image safety or VPS CPU compatibility.
+
+New actual Next->Sharp offline tests: corrected AVIF inspection to Next getImageSize/detectContentType because Next deliberately blocks Sharp's HEIF loader; never unblocked loaders. RED6/1 then GREEN7/7; combined Docker contracts16/16. PNG/JPEG/WebP/AVIF dimensions/type, benign malformed rejection and pixel-limit rejection passed. Host native versions sharp0.35.4/vips8.18.6/heif1.23.2; frontend full tsc exited0. All tests network denied.
+
+Exact committed-source archive225files/3809280bytes SHA256964408315375ebd6b2add2eacd4d804bbc6d37fc5f2d6328a870e20767f2b10d builtamd64 successfully (typecheck/buildpassed). Preview image/index sha256:c929ccc963650b351650a6fd71facc78a2d619b181fad4bebbc507eb3c7a2b35; config sha256:d1b733f2f7cb64072859eb2d1d3d842b8813c43624182debb634581976554604. LoopbackAPI; not production configured.
+
+Initial Linux permission smoke FAILED its assumed sharp.versions.heif equality; not an app crash. Investigation proved standalone omits native versions.json and libvips is nested under the native addon, not directly accessible from Sharp's require context. Retained app packaging and corrected diagnostic to verify actual loaded musl-x64 addon0.35.4, nested libvips package1.3.3, expected nativebinary path and native-reported vips8.18.6. Runtime heif metadata remains unavailable: release metadata lists1.23.2, not a direct runtime measurement. Independent security review approved evidence-based replacement, no functional restrictions weakened. Final permission smoke passed UID1001/221immutablechecks/cachewrite/managerabsence/OSfloor/TLScontext. Separate network-none HTTP /tr,/tr/login,PNG,optimizer all200, and actualNext directPNG/JPEG/WebP/AVIF transformations passed on Linux. No customer API/auth/DB/browser acceptance.
+
+Same advisoryDB offline exact-image Trivy **0Critical/15High/4Medium/1Low**, previously0/17/4/1; Sharp findings absent. No suppressions. RemainingappHIGH15 require focused triage; Next's versionless compiled copies remain separate caveat. Before live release verify VPS CPU meets Sharp's x86-64-v2 requirement using separately approved read-only evidence; local emulator success is not VPS compatibility. No production action authorized.
+
+Evidence outsideGit frontend-build-f1ea33322795/{source.json,build.log,permissions.json,http.json}; scan-frontend-f1ea3332/{input/image.tar,output/report.json}. Archive SHA256b895d0cce045097ab9715670ab710b1bf59c1da4090b189894eaf9c861a6df61; report SHA2565bf734e3235c07da93511d730af33c3a4489aee443af615bb7329d0f5b68b70d. All owned containers removed including failed smoke/diagnostics. Local devHTTP200. No production access, DB changes, migrations, push/deploy or dev restart. WIP preserved.
+
 ## Frontend OS patch verified in exact image — 2026-09-26
 
 Local commits070b4e14(test),57022899d32f645d19560020b8a77641b1466012(Docker) require runner libcrypto3/libssl3>=3.5.8-r0 via targeted apk add --upgrade with existing curl. No broad OS upgrade, repo/base/app/lock/schema change. RED8/1 -> GREEN9/9, independent code/security reviews approved. Actual resolver installed both3.5.8-r0 and additionally upgraded ca-certificates-bundle20260413-r0->20260909-r0. Minimum security floor is not an exact reproducibility pin.

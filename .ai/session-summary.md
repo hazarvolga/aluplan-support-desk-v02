@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Sharp native update verified locally — 2026-09-26
+
+Scoped Sharp0.35.4/native1.3.3 update committed e919131a/f1ea3332. ActualNext synthetictests7/7, combined16/16, frontendtsc0, cleanamd64build c929ccc9/configd1b733f2. Linuxinitialheifmetadataassertfailed: diagnosed omitted diagnosticversions.json, corrected to actualnestednativepackage/addon/binary provenance without alteringapp/loaderrestrictions. Finalpermissions andHTTPsmoke plusPNG/JPEG/WebP/AVIF nativeNext transforms pass. Runtimeheifversionnotdirectlymeasured; upstreamnative1.3.3metadata lists1.23.2. SameDBTrivy **0Critical/15High/4Medium/1Low** vs0/17/4/1. CPUx86-64-v2 compatibilityonVPS stillunverified; no productionGO. Evidence/sourceURLs/fullhashes in current-focus. Containerscleaned, localdevHTTP200; no live/DB/push/deploy, WIPuntouched.
+
 ## Frontend OS security floor verified — 2026-09-26
 
 Narrow libcrypto3/libssl3 minimum3.5.8-r0 runner patch; resolvedexact3.5.8-r0 plusCAbundle20260909-r0. Source testsRED8/1 GREEN9/9; commits070b4e14/57022899, independent review. Cleanamd64previewbuild5fd6e658/config1519a059 passedTypeScript/build andnetwork-nonepermissions/TLScontext/curl/HTTP/imageoptimizer smoke. NodeOpenSSL3.0.19 separatefromOS3.5.8. SameDBTrivy **0Critical/17High/4Medium/1Low**, formerly0/21/18/33; OSsectionzerofindings. Remainingapp17HIGH requiresreview, sharpfirst; noproductionGO. Evidence/hashes/limits in current-focus. Ownedcontainersremoved, localdevHTTP200; no live/DB/push/deploy, unrelatedWIPpreserved.
