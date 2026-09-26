@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Combined CSS/browser exact-image checkpoint — 2026-09-26
+
+fe347318/4c4c5540 add real-consumer Browserslist tests and4.28.7patch with required4data dependencies. Defaulttargetschangeconfirmed, notfullvisualcompatproof. Combinedoffline30/30,frontendtsc0,independentreviewsGO,gitleakspass. Exactamd64build includes priorPostCSS/nanoidfix: index5bfd291f/config91237da6. Network-none permission/HTTP/nativeimageformatchecks passed. SameDBTrivy **0Critical/1High/1Medium/1Low**, previously0/8/4/1; browser/CSS/nanoid findings absent. Remainingserialize-javascript6.0.2 requires narrowTerser-majorcompatibilitydecision, notblindglobaloverride; esbuildLOW remains. Fullhashes/evidence/source/limitsincurrent-focus. PreviewloopbackAPI notproductionartifact, customeracceptance/backend/VPSCPUgatesopen. Containersremoved,dev/tr200,no production/DB/mail/CRM/migration/push/deploy/restart,WIPpreserved.
+
 ## PostCSS/nanoid local source checkpoint — 2026-09-26
 
 Commits40d4714d/d9dff4a4 add6 actualNext CSS regression tests and singlePostCSS8.5.28override, naturally resolvingnanoid3.3.19. No redundantnanoidoverride; no unrelatedpackageversionchanges. RED3fail3pass -> GREEN6/6; finaltestsusefrontendcwd/realTailwindconfig. Parent/symlinksource-map protections and allowedmapcompatibility, CSSplugins/Turkishtext, boundednegativeNanoid verified; not comprehensiveallCVEcoverage. Combinedoffline27/27, frontendtscnoerrors, independentreviewsGO,gitleakspass. ExistinglocalpageHTTP200 andIABlandingcontentpresent; dependencyreloadnotproven. **Newimagebuild/rescanpending**: lastverifiedfrontendcountstays0C/8H/4M/1L. Planboundedbrowserslistpatchnextthenonecombinedimageproof. No live/DB/mail/CRM/migration/push/deploy/restart; WIPuntouched. Detailsandprimarysourcesincurrent-focus.
