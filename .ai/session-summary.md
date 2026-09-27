@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Fresh DB scan and focused risk triage — 2026-09-27
+
+Same11d77fbb backend artifact re-scanned offline using separately refreshed2026-09-27 Trivy DB: still0C3H30M7L. Download and scan exited0, owned containers removed; hashes/paths in current-focus. Independent review reran7 isolated tests and supports patched OTel exporter chain/explicitly disabled MJML minifier path, not blanket waiver. Source review identifies active frontend DOMPurify and backend FileTypeValidator consumers among remaining Mediums; next scope is reachability-led compatible fixes, not count-driven wholesale upgrades. No product edits, live access, DB writes, restart, push or deploy; existing WIP intact.
+
 ## Grouped backend artifact verification — 2026-09-27
 
 Frozen11d77fbb backend Linux/amd64 image built and network-none non-root/native-module/Prisma offline schema smoke passed under Mac emulation; schema output hash unchanged, no database or normal application startup. Comparative offline Trivy with same pinned scanner/DB: prior0C30H71M10L -> **0C3H30M7L**. First256MiB temporary-space attempt failed; bounded2GiB tmp/4GiB memory retry passed and owned container cleanup verified. Remaining High: two OTel parent-package entries and retained html-minifier; no automatic waiver or suppression. Full identity/hash/evidence paths and limitations in current-focus. Fresh advisory DB and operational/data-preservation acceptance still outstanding. No live/DB/migration/push/deploy; existing WIP excluded and intact.
