@@ -1,5 +1,11 @@
 # Current Focus
 
+## Canlı salt-okunur veri/depolama envanteri — 2026-09-27
+
+Kullanıcının dar onayıyla canlı SSH/Docker metadata, PostgreSQL `SELECT` ve R2 `ListObjectsV2` incelendi; hiçbir canlı yazma, backup, restart, migration, push veya deploy yapılmadı. Uygulama DB'sinde anlık 182 bilet / 578 mesaj / 114 ek / 1289 kullanıcı var. R2'de 477 nesne (~62,9 GB) listelendi. Etkin 114 ek kaydının 109 gerçek anahtarı ve boyutu eşleşiyor; 5 kayıt tarihsel `FAILED_STORAGE_UPLOAD_...` işareti ve bunların dosya baytları kanıtlanmadı. Tüm etkin ek paritesi başarısız; işaretsiz R2 anahtar/boyut paritesi başarılı. Bu listeleme byte bütünlüğü veya restore kanıtı değildir. Ayrıntı: `.ai/issues/2026-09-27-live-readonly-release-inventory.md`.
+
+Production **NO-GO**: taze DB backup/restore, etkin R2 dosyalarının geri alınabilirliği, 5 marker istisnasının mahremiyetli kararı, kesin rollback ve ayrı açık deploy onayı henüz yok. Kullanıcının `apps/frontend/next-env.d.ts` değişikliği korunmalı.
+
 ## Combined candidate backend/frozen frontend browser acceptance — 2026-09-27
 
 Private local mode `--run-local-browser-4157` paired backend Git `4157dbee5905df36f283ed420575b0aaa4ab8bfa` / immutable Linux-amd64 image `sha256:45a47db7dfb713e01ebc26b8f96b0cccb6ff2dfba025a9fdcea48bddd4e303b6` with the unchanged frontend Git `c602031d9a2c747b504d6c18a1f0560c1f6125cb` / image `sha256:3b6579da7b0e298fe0de0bac5f4da9fb5796cb13c43dbe289fc9189445873d2c`. Git diff between those commits for `apps/frontend`, browser probe and auth fixture was empty. The private runner pins source archive, image IDs and OCI revision labels; adapted browser source hash `0cf8c8855a393ecf6192b4cf751266c7e84e6fa4c0f1169bca8508b862eb6079` matches the previous accepted browser run and fixture hash `c70f523c598ab70b6e2e2bd438d1e48fbe65cd3f9438790c9005df99f6ff9e11` matches committed source. Independent code/security reviews found no mode-specific local rehearsal blocker. Image labels and source archive hash are not a signed reproducible-build attestation.

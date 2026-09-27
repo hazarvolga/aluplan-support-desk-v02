@@ -5127,3 +5127,10 @@ Maintenance rule:
 # MySQL2 checkpoint — 2026-09-27
 
 Local f8fee179 tests /9b40133f scoped Prisma mysql2 3.22.0. Actual default auth-switch now rejects synthetic clear-password request before writing packets; no DB/config execution. Five new tests incl normal auth and public escaping; aggregate27files230/230, focused7/7 independently verified; both typechecks passed. Code/security GO for bounded patch, not advisory/image/live clearance. Advisory metadata still has no patched version. Frozen install and XLSX integrity preserved. No live/schema/image/rescan/push/deploy; WIP untouched. Current-focus records provenance, secondary lock changes and next remaining dependency decisions.
+
+## 2026-09-27 - production read-only data and storage inventory
+
+- Narrow user approval covered live service/DB/attachment inventory only. Docker metadata, read-only PostgreSQL queries and bounded R2 object listing were performed over SSH; no backup, object download, live write, restart, migration, push or deploy occurred.
+- Application database point-in-time counts: 182 tickets / 578 messages / 114 attachments / 1289 users. R2 listing returned 477 objects, about 62.9 GB. Of 114 active attachment rows, 109 non-marker keys matched exact R2 key and recorded size; the other five are historical `FAILED_STORAGE_UPLOAD_...` markers. No non-marker key was missing, no size mismatch; overall active-attachment availability remains unproved/failed.
+- Independent code/security reviews of the private inventory script closed endpoint/credential-target and timeout hazards before execution. No credentials, customer rows or raw object keys were printed. Listing does not prove byte integrity, restored backup or a stable cutover snapshot.
+- Canonical sanitized report: `.ai/issues/2026-09-27-live-readonly-release-inventory.md`. Production remains NO-GO pending fresh restore-tested DB backup, R2 recovery evidence, marker exception decision, rollback validation and separate deploy approval. User WIP `apps/frontend/next-env.d.ts` untouched.
