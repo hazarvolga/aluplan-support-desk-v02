@@ -1,5 +1,9 @@
 # Mail transport transition plan — 2026-09-23
 
+## 2026-09-27 compiled-service checkpoint after library probe
+
+Local `32c2c7b5` extended the same pinned, internal, no-published-port synthetic DMS rehearsal to load the frozen backend image's compiled `SmtpProvider` and `EmailInboundService`. Provider health/send, trusted SMTP587 STARTTLS and IMAP993 TLS, binary attachment bytes, a completed intake, duplicate re-poll without another ticket/upload, and failed ticket creation with source UNSEEN plus an in-memory hold marker passed. The image default entrypoint/AppModule did not run; no real DB, R2 or customer mailbox was supplied. Four focused shutdown/worker suites also passed 16/16. This improves local gate 3 but **does not close it**: PostgreSQL claim/real ticket/storage integration is separate, as are port25 intake, same-volume DMS recreate, real client inventory, mail TLS activation/renewal owner and old-live writer cutover. No production operation or approval followed.
+
 ## 2026-09-27 exact-image synthetic mail-library checkpoint
 
 The frozen Linux/amd64 backend image `sha256:e7962dbe5cda314ce8aa4143a72ab7275344b00adcb7194128737c3cf38b3e2c` was exercised against the pinned v15.1.0 Docker Mailserver in a local internal Docker network with no published ports. Its packaged Node mail libraries authenticated over trusted SMTP587 STARTTLS and IMAP993 TLS, sent one synthetic message with four binary attachment bytes, and retrieved the same bytes without marking the source read. The certificate-renewal/rejection harness also passed and cleaned its owned containers/network. Only a synthetic account and generated local CA were used; no production mailbox, provider or database was contacted.
