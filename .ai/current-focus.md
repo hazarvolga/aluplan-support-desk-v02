@@ -1,5 +1,15 @@
 # Current Focus
 
+## Locked Prisma CLI source candidate — 2026-09-27
+
+Implemented the prior packaging proposal only in apps/backend/Dockerfile: removed the separate npm-global prisma7.4.2 install; after frozen production pnpm install, verify the workspace JS entry is executable and link /usr/local/bin/prisma directly to /app/packages/database/node_modules/prisma/build/index.js. Do not link the location-dependent pnpm .bin shell wrapper. Existing Prisma/client7.4.2 pins, lockfile, generate command, migrate-once/startup scripts, schema and migrations are unchanged. Package-manager removal and non-root runtime remain. This consolidates dependency control; it does not remediate advisories in the remaining dependency tree.
+
+TDD scripts/prisma-cli-packaging.test.cjs: RED3pass/1expected-global-install-fail ->GREEN4/4. Combined with production-boot and Node runtime source contracts21/21 network-denied. Independent code review GO for source only. No application-code or frontend change; worker-shutdown/next-env WIP preserved.
+
+Additional compatibility evidence uses the OLD exact cb8ecfd6 Linux/amd64 image822f96cc, Node22.23.3, UID1000, read-only/network-none/cap-drop/no-new-privileges, no host mounts/ports, synthetic unreachable DB URL only. Both existing global and workspace CLI versions7.4.2 ran offline migrate diff --from-empty --to-schema. First raw-output comparison failed because dotenv prints randomized advice, not because of demonstrated SQL drift. Retry with DOTENV_CONFIG_QUIET=true produced byte-identical SQL:62 CREATE TABLE statements,58815bytes,SHA256 b466a58f9d8dff2215ec7d0de9aa5bf635403fa22dc69e7becf47b097f19afcb. No SQL executed. Separate temporary direct-JS symlink executed --version as UID1000 successfully. All three disposable probe containers removed and absence checked. Tests ran under ARM-host emulation, not VPS native CPU.
+
+**Next:** build the combined committed backend candidate and update exact-image smoke assumptions from global Prisma metadata to the locked workspace CLI identity/realpath, then verify generation/client load/offline diff/non-root permissions and rescan. This source candidate has NOT been built as a new image; prior image scan remains0C/43H. No arithmetic deduction for duplicate findings or newer source fixes. Actual migration rehearsal, authenticated cloned-data workflows, drain/recovery and separately approved operational gates remain mandatory. No live access, database connection, migration execution, provider calls, push or deploy.
+
 ## Telemetry and migration-tool disposition — 2026-09-27
 
 Read-only follow-up at d0284ec1, not a dependency update or release acceptance. The previous cb8ecfd6 image report identifies exactly seven HIGH occurrences under usr/local/lib/node_modules/prisma: @hono/node-server1.19.9 (one), deepmerge-ts7.1.5 (one), effect3.18.4 (one), hono4.11.4 (two), lodash4.17.21 (one), mysql2 3.15.3 (one). These are distinct from workspace copies. Dockerfile separately installs npm-global prisma7.4.2; this dependency tree is outside pnpm-lock.yaml and root overrides. Pinning the CLI version alone does not lock its full transitive tree.

@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Frozen workspace Prisma command candidate — 2026-09-27
+
+Dockerfile now links prisma command directly to frozen workspace Prisma7.4.2 JS instead of installing a second unlocked global dependency tree. Version/client/lock/schema/migrations/startup command unchanged. New4tests RED3pass1fail ->GREEN; combined boot/runtime21/21 network-denied. OLD cb8ecfd6 image comparison: global/workspace offline schema SQL identical62tables/58815bytes after disabling randomized dotenv advice; initial log-only mismatch recorded. Non-root direct-JS symlink version probe passes; all owned probe containers removed. No new image or scan yet, no claim seven findings fixed. Next combined image build must update smoke's obsolete global-path assertion and prove CLI/client/generation/permissions before rescan. Details/hash in current-focus; no live/data/provider/migration/push/deploy, WIP retained.
+
 ## Dependency runtime boundary review — 2026-09-27
 
 Read-only telemetry/Prisma split: seven HIGH occurrences belong to the separately npm-global installed Prisma CLI, outside root pnpm overrides/lock. CLI is required by migrate-once and normal deploy entrypoint; do not remove or blindly major-upgrade it. Next candidate is compatibility-proven use of the already-retained locked workspace CLI at unchanged7.4.2, then narrow fixes; not implemented or accepted, and deduplication alone is not remediation. Network-denied boot contracts10/10. Independent inspection confirms latent otel.ts Resource export mismatch; no source preload found, live env unknown, Sentry remains in AppModule. Source contradicts stale skill preload claims. No app/config/dependency changes, build, live/data/provider operations, migration, push or deploy. WIP retained; last image0C43H unchanged. Details and test conditions in current-focus.
