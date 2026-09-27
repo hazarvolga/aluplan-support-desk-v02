@@ -1,5 +1,9 @@
 # Mail transport transition plan — 2026-09-23
 
+## 2026-09-27 current live old-writer checkpoint
+
+The separately scoped read-only inventory in `.ai/issues/2026-09-27-live-readonly-release-inventory.md` confirms one known old backend container (`sha256:302229b2...`) with shell PID1 `deploy.sh` and Node as child. The shell launches Node without `exec` or a visible TERM trap, while the compiled Node app has shutdown hooks; Docker stop forwarding/drain is therefore unproven and must **not** be assumed. Its registered five-minute failed-job recovery retries four named queues but excludes `knowledge-sync`. At 16:09 UTC, `knowledge-sync` remained 500 failed with 0 waiting/active/delayed/repeat; the owner attributes these to bad crawl URLs and explicitly defers that investigation until after release. Preserve the failed jobs; no mass retry/delete. CRM/SLA retain 1/3 delayed plus 1/3 repeatable entries. Postfix queue 0, INBOX 181/UNSEEN 0, three mail volumes present. These are moving snapshots, not a stop/fence/TLS/restore proof. Minimal next gate is an approved old-process signal/drain and runnable-queue decision **during maintenance**, followed by final protected recovery checkpoint and mail TLS acceptance; production remains NO-GO.
+
 ## 2026-09-27 legacy-writer boundary audit — local evidence only
 
 The frozen `87372fe4` product source is unchanged by the later mail-test/documentation commits. Candidate boot is **not** a read-only preflight: `AppModule` activates nine BullMQ processors and `ScheduleModule`; CRM/SLA bootstrap registers four repeatable jobs, IMAP polls each minute, announcement templates may be inserted into PostgreSQL and storage initialization may attempt bucket creation. `WORKER_MODE=true` only skips Bull Board mounting. Candidate shutdown code is process-local/partial and does not prove that the **older running production image** gracefully drains. Never start this candidate against live DB/Redis/R2 merely to inspect it.

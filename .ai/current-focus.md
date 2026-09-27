@@ -1,5 +1,9 @@
 # Current Focus
 
+## Güncel canlı gözlem — 2026-09-27 eski imaj ve kuyruk
+
+Dar onaylı salt-okunur SSH kontrolünde bilinen `backend-api` tek kopya/`sha256:302229b2...` olarak çalışıyor; PID1 `deploy.sh` Node'u `exec` olmadan çocuk süreç olarak başlatıyor. Eski imajda dört kuyruğa beş dakikada bir failed-job retry servisi kayıtlı fakat `knowledge-sync` bu listede değil. 16:09 UTC sayımında `knowledge-sync` 500 failed ve 0 runnable; kullanıcının geçersiz crawl URL açıklaması doğrulanmamış kök neden olarak kaydedildi, konu yayın sonrasına ertelendi, hiçbir job silinmedi/yeniden denenmedi. CRM 1, SLA 3 delayed/repeat kayıt taşıyor. Postfix kuyruk 0; INBOX 181 mesaj/0 UNSEEN. Mail üç volume mevcut; login/API health HTTP 200. Eski shell PID1'in Docker stop sinyalini Node'a doğru iletip drain ettiği kanıtlanmadı. `.ai/issues/2026-09-27-live-readonly-release-inventory.md` ayrıntılıdır. **Production NO-GO**: ayrıca onaylı maintenance stop/fence, taze recovery checkpoint ve canlı TLS kabulü gerekir. Push/deploy/ayar/veri yazısı yok; frontend WIP korunur.
+
 ## Güncel engel — 2026-09-27 eski canlı yazıcı sınırı
 
 Yerel kaynak denetimi, kesin adayın normal açılışta dokuz BullMQ tüketicisini, zamanlayıcıları ve dakikalık IMAP poller'ı etkinleştirdiğini; CRM/SLA tekrarlı işlerini Redis'e kaydettiğini ve DB/R2 başlangıç yan etkileri olabildiğini doğruladı. `WORKER_MODE` işleyicileri durdurmaz. Adayın kısmi, süreç-içi shutdown kanıtı eski **canlı** imajın drain kanıtı değildir. Mevcut Redis aracı 90 bilinen anahtarda sayı/en çok 100 kimlik parmak izi sağlar, tek tek job kararı vermez; 15/15 yerel sözleşme/adapter testi geçti. `.ai/issues/2026-09-23-mail-tls-transition-plan.md` başına en küçük kesme/uzlaştırma kapısı kaydedildi. Sıradaki anlamlı kanıt, ayrıca kapsamlandırılmış salt-okunur canlı eski-imaj/replica/Redis/mail envanteri ve operatörün kuyruk kararıdır. **Production NO-GO; canlı erişim/değişiklik, push, deploy yok.** Kullanıcı frontend WIP'i korunur.
