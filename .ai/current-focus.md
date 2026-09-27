@@ -1,5 +1,13 @@
 # Current Focus
 
+## Passive OTel resource compatibility fix — 2026-09-27
+
+apps/backend/src/otel.ts now imports typed resourceFromAttributes from the existing installed resources2.6.0 instead of casting nonexistent runtime Resource to any and constructing it. No package/lock/environment/endpoint/instrumentation/signal-handler/startup-import changes. Source search still finds no otel preload in backend main/scripts/Dockerfile; live NODE_OPTIONS unknown. Do not activate this module during security patching: shared Sentry ownership and its existing SIGTERM process.exit callback need separate lifecycle assessment.
+
+New scripts/otel-resource-compatibility.test.cjs executes transpiled actual source in a bounded VM with real backend-resolved resources/semantic-conventions only; SDK/exporter/auto-instrumentations/logger/process are mocked and require is allowlisted. Defaults/empty env, explicit env+endpoint and synchronous mocked start-error logging: RED3 failures Resource-is-not-a-constructor ->GREEN3/3. With boot contracts13/13 network-denied; backend TypeScript before/after passes. No real SDK start, provider request, host signal handler, AppModule or database. These tests validate compatibility, not end-to-end trace delivery or shutdown correctness. Graph report absent and GitNexus tools unavailable; direct import/startup search used for bounded impact review.
+
+This source fix is newer than the verified2b90e02d image; no rebuild/rescan in this checkpoint. Last image remains0C30H71M10L. No live/DB/mail/CRM/migration/restart/push/deploy. Unrelated worker-shutdown/next-env work preserved. Next dependency decisions must remain consumer-scoped; do not equate installed parser/tool packages with externally reachable application paths or waive remaining findings from import searches alone.
+
 ## Combined locked-CLI backend image verified — 2026-09-27
 
 Built exact committed2b90e02d6bd35f149525decbca0f83bdb2db08ad Linux/amd64, including accepted Undici/path-to-regexp fixes and workspace Prisma command. Curated415files/57 verified migrations/3338240bytes; source archive SHA256290efb216e4d1e4df3bbe990778258e217e290db9eca5c9d810a15ea7d6391a9. Uncommitted worker-shutdown/next-env work excluded and preserved. Build and updated smoke helpers independently reviewed. Builder compilation and runner client generation passed. Index5f369d7de7236abe20309e22e107033d8916bd47e06179994cd6fdc66a3d3936; config36f111fa5ef01b17cafd9f762008f0f214e1a04ad65539045dd169e730cd6be5.

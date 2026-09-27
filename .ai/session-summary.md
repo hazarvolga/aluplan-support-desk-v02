@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## OTel Resource factory compatibility — 2026-09-27
+
+Replaced undefined resources.Resource constructor/any workaround with existing typed resourceFromAttributes, preserving settings and startup nonactivation. New isolatedVM regression3RED constructor failures ->3GREEN; plus10boot tests13/13, backendtsc passes before/after. Real resources/conventions but mocked SDK/exporter/process; no telemetry started or lifecycle behavior certified. No dependency/version changes or newimage: prior2b90e02d0C30H still applies. Current-focus records limitations/next gates. No live/provider/DB/migration/push/deploy, unrelatedWIP retained.
+
 ## Combined backend artifact checkpoint — 2026-09-27
 
 Exact2b90e02d Linux/amd64 build passed;415files/57migration checksums, index5f369d7d/config36f111fa. Updated isolated smoke confirms locked workspace Prisma7.4.2 command/permissions, absent global copy, generated client, identical62table offline SQL, PG17/native/permission checks; no appboot/DB/provider. Same pinned Trivy DB:0C30H71M10L, previously0C43H119M15L. Removed HIGH:5Undici+1routing+7globalduplicate occurrences; none added. Duplicate removal is not remaining-advisory remediation.21source/boot/runtime +29consumer tests pass. Evidence/hashes/caveats in current-focus. No frontend rebuild or production GO; remaining30HIGH, authenticated/drain/recovery/operational gates still open. No live/push/deploy; unrelated WIP untouched.
