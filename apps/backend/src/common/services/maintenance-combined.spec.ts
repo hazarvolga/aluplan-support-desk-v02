@@ -1,11 +1,13 @@
 import { Controller, Get, Injectable } from '@nestjs/common';
 import { Cron, ScheduleModule, SchedulerRegistry } from '@nestjs/schedule';
 import { Test } from '@nestjs/testing';
+import { DiscoveryModule } from '@nestjs/core';
 import request from 'supertest';
 import { ClientRequest, request as httpRequest } from 'node:http';
 import { AddressInfo } from 'node:net';
 import { Request, Response, NextFunction } from 'express';
 import { CronShutdownService } from './cron-shutdown.service';
+import { WorkerShutdownService } from './worker-shutdown.service';
 import { MaintenanceWorkService } from './maintenance-work.service';
 import { MaintenanceAdmissionMiddleware } from '../middleware/maintenance-admission.middleware';
 
@@ -37,13 +39,14 @@ async function bounded(promise: Promise<unknown>) {
     }
 }
 
-// This deliberately contrasts current shutdown with TEST-ONLY explicit sequencing.
+// Contrast the missing hook, test-only sequencing, and the runtime coordinator.
 // A synthetic controller/dependency is not full application or all-writer proof.
 describe('combined HTTP and cron completion boundary', () => {
     it.each([
         'connected',
         'disconnected-gap',
         'explicit-test-sequence',
+        'runtime-coordinator',
     ] as const)('%s', async (mode) => {
         const httpHold = deferred();
         const httpEntered = deferred();
@@ -52,6 +55,7 @@ describe('combined HTTP and cron completion boundary', () => {
         const socketClosed = deferred();
         const operationFinished = deferred();
         const cronDrained = deferred();
+        const admissionClosed = deferred();
         const events: string[] = [];
         let dependencyClosed = false;
         let acceptedCalls = 0;
@@ -83,12 +87,13 @@ describe('combined HTTP and cron completion boundary', () => {
             }
         }
         const module = await Test.createTestingModule({
-            imports: [ScheduleModule.forRoot()],
+            imports: [ScheduleModule.forRoot(), DiscoveryModule],
             controllers: [FixtureController],
             providers: [
                 MaintenanceWorkService,
                 MaintenanceAdmissionMiddleware,
                 CronShutdownService,
+                ...(mode === 'runtime-coordinator' ? [WorkerShutdownService] : []),
                 FixtureCron,
                 {
                     provide: 'dependency',
@@ -122,6 +127,11 @@ describe('combined HTTP and cron completion boundary', () => {
         let client: ClientRequest | undefined;
         let tick: Promise<void> | undefined;
         const work = module.get(MaintenanceWorkService);
+        const originalClose = work.closeAdmission.bind(work);
+        const closeSpy = jest.spyOn(work, 'closeAdmission').mockImplementation(() => {
+            originalClose();
+            admissionClosed.resolve();
+        });
         try {
             await app.listen(0, '127.0.0.1');
             const job = module.get(SchedulerRegistry).getCronJob('combined');
@@ -139,16 +149,18 @@ describe('combined HTTP and cron completion boundary', () => {
             client.on('error', () => undefined); // Intentional destroy can cause ECONNRESET; phases are bounded.
             client.end();
             await bounded(httpEntered.promise);
-            work.closeAdmission();
-            await request(app.getHttpServer())
-                .get('/work')
-                .timeout({ response: 1000, deadline: 1500 })
-                .expect(503);
-            expect(acceptedCalls).toBe(1);
-            expect(await work.waitForIdle(0)).toEqual({
-                drained: false,
-                activeCount: 1,
-            });
+            if (mode !== 'runtime-coordinator') {
+                work.closeAdmission();
+                await request(app.getHttpServer())
+                    .get('/work')
+                    .timeout({ response: 1000, deadline: 1500 })
+                    .expect(503);
+                expect(acceptedCalls).toBe(1);
+                expect(await work.waitForIdle(0)).toEqual({
+                    drained: false,
+                    activeCount: 1,
+                });
+            }
 
             if (mode !== 'connected') {
                 client.destroy();
@@ -162,6 +174,14 @@ describe('combined HTTP and cron completion boundary', () => {
                 cronHold.resolve();
                 await tick;
                 await bounded(cronDrained.promise);
+                if (mode === 'runtime-coordinator') {
+                    await bounded(admissionClosed.promise);
+                    await request(app.getHttpServer())
+                        .get('/work')
+                        .timeout({ response: 1000, deadline: 1500 })
+                        .expect(503);
+                    expect(acceptedCalls).toBe(1);
+                }
                 if (mode === 'disconnected-gap') await bounded(closed.promise);
                 else {
                     await new Promise<void>((resolve) => setImmediate(resolve));
@@ -213,6 +233,7 @@ describe('combined HTTP and cron completion boundary', () => {
                 else await app.close();
             } finally {
                 drainSpy.mockRestore();
+                closeSpy.mockRestore();
             }
         }
     });
