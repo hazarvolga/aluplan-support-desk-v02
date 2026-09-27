@@ -80,3 +80,25 @@ Kullanıcı ayrı ve açık şekilde yaklaşık yedi gün tutulacak geçici R2 y
 - Geçici bucket düşük maliyetli yedi günlük korumadır; üretim uygulama S3 anahtarından tam bağımsız felaket kurtarma katmanı değildir. Cloudflare dashboard kuralı değiştirebilen hesap erişimi ayrıca korunmalıdır. Yedek için otomatik silme/lifecycle kurulmadı; başarı sonrasında da silme yeni açık kullanıcı onayına bağlıdır.
 
 **Yayın kararı hâlâ NO-GO.** Kullanıcılar canlıya yazmayı sürdürdüğü için bu yedek ve DB hash kontrolü birer anlık fotoğraftır; daha sonraki müşteri biletleri/ekleri kapsanmayabilir. Bakım penceresinde yeni, ifşa edilmemiş parola ile şifreli DB yedeği + geri yükleme kanıtı; bilet/mesaj/ek/marker son sayımı; Redis/BullMQ ve e-posta işlerinin durum/çift-yazım kontrolü; kesin frontend/backend imajı ve rollback planı; ardından ayrı `deploy et` onayı gerekir. Tanı sırasında Coolify Redis parolasının süreç komut satırında görülebildiği anlaşıldı; değer dokümana yazılmadı. Bu gizli bilgi, iş akışını bozmadan uygun bakım planında döndürülmeli; bugün otomatik rotasyon yapılmadı.
+
+## 2026-09-27 canlı Redis ve posta salt-okunur kontrolü
+
+Önceki adımda önerilen dar envanter kapsamında, mevcut çalışan backend'in `REDIS_URL` bağlantısı kullanılarak dokuz kanonik BullMQ kuyruğunun yalnız sabit anahtarlarında `LLEN` ve `ZCARD` çalıştırıldı. İş kimliği, gövdesi, müşteri bilgisi, bağlantı dizesi ve parola çıktılanmadı. BullMQ `getJobCounts()` kullanılmadı; kurulu sürümde bu çağrı eski bekleme işaretçisini `RPOP` ile değiştirebiliyor. Sayılar 09:27 UTC anına aittir ve devam eden worker/cron nedeniyle değişebilir.
+
+| Kuyruk | Bekleyen/aktif | Geciken | Başarısız | Tekrarlı kayıt |
+| --- | ---: | ---: | ---: | ---: |
+| `ai-query-processing` | 0/0 | 0 | 0 | 0 |
+| `document-parsing` | 0/0 | 0 | 0 | 0 |
+| `embedding-migration` | 0/0 | 0 | 4 | 0 |
+| `crm-sync` | 0/0 | 1 | 0 | 1 |
+| `email` | 0/0 | 0 | 0 | 0 |
+| `knowledge-sync` | 0/0 | 0 | 500 | 0 |
+| `kb-summarizer` | 0/0 | 0 | 2 | 0 |
+| `sla-processing` | 0/0 | 3 | 0 | 3 |
+| `proactive-chat` | 0/0 | 0 | 0 | 0 |
+
+Tüm `paused`, `prioritized` ve `waiting-children` sayıları 0. Başarısız işler silinmedi, yeniden denenmedi veya içerikleri okunmadı. Bir anlık boş e-posta kuyruğu IMAP gelen kutusunun boşluğunu, tüm teslimatların başarıyla tamamlandığını ya da yazıcıların durduğunu kanıtlamaz. Docker Mailserver'ın Postfix `postqueue -j` çıktısı sunucuda yalnız toplam sayıya indirgenerek incelendi; kuyruk **0** kayıt. Gönderen/alıcı adresleri görüntülenmedi.
+
+Canlı backend ve frontend çalışan değişmez imaj kimlikleri sırasıyla `sha256:302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644` ve `sha256:dbd2a193d62a499e2adcea3d90f0f4617e1d9588d3b52a9b525c0e7fbf08094e`; aday imaj kimliklerinden farklı. Çalışan backend veritabanı URL'sinin hedefi yalnız host/veritabanı adı düzeyinde doğrulanıp gerçek `aluplan_support` veritabanında `BEGIN READ ONLY` ile sadece gizli olmayan e-posta transport ayarları okundu: IMAP `mail.allplan.net.tr:143`, TLS `false`; SMTP `mail.allplan.net.tr:587`, implicit SSL `false`. Mailserver konteynerinde `SSL_TYPE` tanımlı değil; etkin Postfix `smtpd_tls_security_level=none`, Dovecot `ssl=no`. `mail.allplan.net.tr:993` doğrudan IMAP TLS ve `:587` SMTP STARTTLS için hostname/CA doğrulamalı bağlantı denemeleri başarısız oldu (her ikisi çıkış kodu 1); etkin sunucu ayarlarıyla birlikte bu, adayın gerektirdiği doğrulanmış TLS yolunun kullanıma hazır olmadığını gösterir.
+
+**Kesin yayın engeli:** Aday backend IMAP için doğrulanmış doğrudan TLS/993, SMTP için doğrulanmış STARTTLS veya implicit TLS gerektiriyor. Mevcut DB ayarı `email.imap.tls=false` adayda açıkça reddediliyor; ayarı yalnız `true` yapmak, 993 TLS handshake başarısızken çözüm değil. Bu haliyle deploy, mail-to-ticket ve çıkış postasını kırma riski taşır. Önce ayrı planlı ve doğrulanmış mail TLS geçişi, gelen posta/SMTP uçtan uca testi ve kuyruk-yazar kesme planı gerekir. ADR-022 gereği eski imaja otomatik rollback güvenli değildir; veri korunarak ileri-kurtarma planı geçerlidir. Canlı login ve API health bu kontrol sonunda HTTP 200 idi. Bu turda canlı servise yazma, restart, migration, deploy veya push yapılmadı. **Production NO-GO.**
