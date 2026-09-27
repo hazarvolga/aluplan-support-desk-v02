@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Deepmerge checkpoint — 2026-09-27
+
+Local63ea4b5b tests /b2536990 scopedPrismaconfigdeepmerge8.0.2 update. CJS/ESM configshape andboundedcirculargraph regressions pass; actualconfigloader/CLI notrun. Final5tests+CI7/7 independently, aggregate31files243/243 andboth typechecks passed. Sentrybindings/XLSXintegrity/frozeninstall preserved, unrelatedWIP intact. No newimage/live/data/migration/push/deploy. Next: groupedimmutableimagebuild/rescan toreplace old2b90e02dscan evidence; no productionGO inferred.
+
 ## Email minifier boundary — 2026-09-27
 
 Localfd3b1a22 test/wiring /d7c289f1 explicitminify:false. Three realrenderpaths tested, no minifiercalls; existing default alreadydisabled, so notclaimingnewexploitclosure. Focused3/3 independently, aggregate30files238/238, mailmock23/23 and both typechecks passed. No packageversionchanges, realmail/data/live/image/scan/push/deploy. WIP preserved. Currentfocus records boundeddeepmerge8.0.2 candidate and proofneeded before nextupgrade; minifierpackageadvisory notwaived.
