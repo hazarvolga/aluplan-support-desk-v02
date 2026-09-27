@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Dependency regression CI wiring — 2026-09-27
+
+Added explicit root test:security:dependencies (19existingfiles+newsourcecontract), serial file execution; existing CI build job gets unconditional5minute step afterinstall beforePrisma. RED2->GREEN2; actual pnpmcommand141/141 loopback-onlysandbox passed, YAML parse/structure and independent code review passed. No packageversion/lock/app/schema/deployconfiguration changes. Existing CI localPGservice preserved; tests themselves DB-independent. HostNode24 versus CI22 remains a hosted-validation limitation. No remoteCI/push/build/rescan/live/data changes; WIP preserved. Current-focus records exact scope and next gates.
+
 ## Defu configuration dependency checkpoint — 2026-09-27
 
 Scoped defu6.1.4->6.1.5 override patches GHSA-737v-mqg7-c878; only three c12/giget/rc9 edges changed, Prisma/schema/boot untouched. XLSX integrity preserved after lock regeneration; frozen ignore-scripts install passed. Nine new consumer-resolved pure-library tests RED3pass6expectedfail ->GREEN9; combined51/51 network-denied, backendtsc pre/post and frontendtsc post pass. Independent code/security reviews GO for source only. Prisma substitutes deepmerge for c12 config merging but defu metadata path remains; no public exploit path established. No real config loader/CLI/env/app/DB/live execution. No new image/scan; last0C30H remains artifact-specific. WIP preserved; CI wiring, remaining risk groups and release operational/data gates stay open. Sources/integrity/details in current-focus.

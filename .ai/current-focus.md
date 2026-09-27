@@ -1,5 +1,15 @@
 # Current Focus
 
+## Recurring dependency regression gate — 2026-09-27
+
+Root `pnpm test:security:dependencies` explicitly runs19 reviewed dependency/compatibility/runtime/packaging files plus the new `scripts/dependency-regression-ci.test.cjs` contract. `--test-concurrency=1` reduces tight-deadline CPU contention while retaining per-file process isolation. No globs or arbitrary script discovery/execution. CI Quality Gate's existing typecheck-and-build job invokes this command unconditionally after install and before Prisma Generate/migrations, with a five-minute timeout. Existing audit/deploy jobs, secrets, dependencies and lockfile unchanged.
+
+Static contract RED2 missing-command/step failures ->GREEN2; checks exact20-file allowlist, absence of pre/post hooks, blocking step and ordering. Baseline19files139/139 and actual pnpm aggregate141/141 passed under macOS sandbox external-network denial with loopback permitted. Four suites use bounded local HTTP/gRPC servers; others use in-memory, mocks, temporary fixtures/workers or source checks. No normal application boot, mail delivery, provider request or database connection. Existing CI job already declares a disposable Postgres service and synthetic DATABASE_URL; the new step is DB-independent, not a DB-free job. Local Node24.18.0; workflow still selects22.23.3, so hosted Linux/Node22 execution remains unverified. YAML parse/step structure and independent code review passed.
+
+Independent security review also GO for the scoped source change; no new credentials/permissions/publication or fail-open test behavior. Existing staging webhook error handling remains outside this change and is not certified by this gate.
+
+This closes the local recurring-entrypoint implementation task, not remote CI acceptance: no push/workflow trigger, image build/rescan or production activity. Last verified backend image2b90e02d remains0C30H71M10L. Unrelated worker-shutdown/next-env WIP retained. Next: remaining telemetry/rendering/configuration risk decisions followed by grouped immutable-image build/rescan, then authenticated workflow/drain/forward-recovery and explicit operational gates. Do not count141 tests as whole-project security or production readiness.
+
 ## Scoped configuration dependency patch — 2026-09-27
 
 Root override `defu@>=6.0.0 <6.1.5:6.1.5` replaces6.1.4 only. Maintainer advisory https://github.com/unjs/defu/security/advisories/GHSA-737v-mqg7-c878 and release https://github.com/unjs/defu/releases/tag/v6.1.5 identify the prototype-data default-override fix (CVE-2026-35209). Installed implementation uses object spread for defaults and own-key iteration. Registry integrity sha512-pwdBJxJuJXmqrLO6s0VBmfbRz+G7FUzkjldAsdi9Yrv86mPyzq0ll1o8+8gB4Gsr6GJHbK1Lh3ngllgTInDCjA== retained; no runtime dependencies/install lifecycle added. pnpm9 frozen ignore-scripts install passed after restoring the XLSX integrity that lock regeneration removed. Final lock diff contains only defu override/package/snapshot and three consumer edges.
