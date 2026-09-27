@@ -4,6 +4,10 @@ async function runClosedReopenProbe({ request, db, customer, other, support, adm
   const assert = require('node:assert/strict');
   const id = customer.ticket.id;
   const path = `/tickets/${id}`;
+  // Pass the global CSRF middleware while deliberately omitting all auth cookies.
+  const anonymous = { cookies: customer.cookies.filter(cookie => cookie.startsWith('XSRF-TOKEN=')), csrf: customer.csrf };
+  assert.equal(anonymous.cookies.length, 1);
+  assert.equal(decodeURIComponent(anonymous.cookies[0].slice('XSRF-TOKEN='.length)), anonymous.csrf);
   let httpChecks = 0;
   const checked = async (...args) => {
     const result = await request(...args);
@@ -29,7 +33,7 @@ async function runClosedReopenProbe({ request, db, customer, other, support, adm
     assert(closed.closedAt instanceof Date);
     const beforeMessages = await readMessages();
     for (const [actor, status, csrf] of [
-      [customer, 403, true], [other, 403, true], [undefined, 401, true],
+      [customer, 403, true], [other, 403, true], [anonymous, 401, true],
       [support, 403, false], [admin, 403, false],
     ]) {
       await checked(`${path}/status/OPEN`, status, actor, undefined, csrf, 'PATCH');
@@ -56,6 +60,8 @@ async function runClosedReopenProbe({ request, db, customer, other, support, adm
     const visible = await checked(path, 200, customer);
     assert.equal(visible.id, id);
     assert.equal(visible.status, 'OPEN');
+    assert(Array.isArray(visible.messages));
+    assert(!visible.messages.some(message => message.isInternal || message.id === added[0].id));
   }
   return { httpChecks };
 }
