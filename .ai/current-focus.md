@@ -1,6 +1,12 @@
 # Current Focus
 
-## Güncel yayın kapısı — 2026-09-27 PostgreSQL restore geçti, R2 açık
+## Güncel kapı — 2026-09-27 mail TLS ve kontrollü kesme
+
+Geçici özel R2 yedeği 477/477 nesne için oluşturuldu; etkin 109 ekin kaynak/yedek byte eşitliği geçti. Güncel canlı salt-okunur envanterde backend/frontend imajları sabit, e-posta/Postfix kuyrukları anlık boş fakat IMAP 143/TLS kapalı, Dovecot SSL kapalı ve Postfix TLS kapalı. Aday backend bu ayarları reddediyor; doğrudan deploy mail-to-ticket ve gönderimi kırabilir. Bilgi senkronizasyonunda 500 başarısız iş var; hiçbir kuyruk değiştirilmeyecek. Yerel sentetik TLS testleri bugün 23/23 geçti, fakat canlı sunucu/sertifika ve kesin bakım kesmesi kanıtı değildir. En küçük kalan işlem, `.ai/issues/2026-09-23-mail-tls-transition-plan.md` içindeki 27 Eylül kontrollü değişiklik kapısını kapatmak; sonra ifşa edilmemiş parola ile korunan ön DB/mail yedeği, doğrulanmış yazıcı sınırı, son yedek/R2 delta/parite ve ayrı `deploy et` onayı. Bu genel devam onayı canlı değişiklik yetkisi vermez. Kullanıcının `apps/frontend/next-env.d.ts` WIP dosyası korunacak.
+
+## Tarihsel kontrol noktası — 2026-09-27 PostgreSQL restore geçti, R2 henüz açıktı
+
+Bu ve aşağıdaki önceki kontrol noktalarının “sıradaki adım” cümleleri yazıldıkları ana aittir; güncel durum üstteki mail TLS/yayın kapısı ve 27 Eylül canlı envanterindedir.
 
 R2 gövde okunabilirliği için operatör aracı `scripts/release-r2-body-canary.cjs` (tooling commit `e10d419e`) test ve bağımsız kod/güvenlik incelemesinden sonra dar kullanıcı onayıyla bir kez çalıştırıldı. Canlı DB'den yalnız etkin R2 ayarları ve en fazla üç aday ek için `SELECT`; sabit R2 bucket'ında LIST/HEAD ve koşullu/sınırlı üç GET yapıldı. Sonuç PASS: 477 nesne listelendi; üç etkin küçük ekin toplam 385445 baytı bellekte SHA-256 ile işlendi. Ham anahtar, içerik, hash veya credential kaydedilmedi/çıktılanmadı. Backend çalışmaya devam ediyor, site giriş sayfası HTTP 200. **Bu üç dosyalık canary tam R2 yedeği veya restore kanıtı değildir; production NO-GO sürüyor.** Sıradaki farklı canlı işlem (ayrı hedefe kopya/geri okuma, deploy vb.) ayrıca kapsamlandırılıp onaylanmalı; 5 failed-upload marker ve tüm 477 nesnenin bağımlılık kapsamı açık.
 
