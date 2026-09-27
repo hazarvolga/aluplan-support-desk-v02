@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Final-image customer/staff API acceptance — 2026-09-27
+
+Exact c602031d backend passed real56-check extended customer probe after normal isolated startup against a fresh disposable Sept17-derived sanitized clone and empty Redis. Credential-zero/preboot parity/canonical RBAC and preboot/runtime external/host egress denial passed. Customer isolation, replies, role/CSRF boundaries, internal notes, status/bulk/merge and synthetic attachment bytes checked; not password reset, explicit CLOSED→OPEN, browser flows or historical attachment bytes. Pure guards17/17; independent helper code/security review approved. Private final-customer-e9237306fff9 receipts record PASS plus clean cleanup; exit0 and independent exact-label absence verified. Synthetic data existed only in removed clone; original dump retained. No live/provider integration/push/deploy, product source unchanged, next-env WIP preserved. Next mandatory workflow and release gates detailed in current-focus; productionGo:false.
+
 ## Final-image data restore gate — 2026-09-27
 
 Exact c602031d backend A13 restore/migration proof passed on isolated existing Sept17-derived sanitized input. New source/archive/smoke/image-bound private receipt created without relabeling old evidence; bounded independent bridge review approved. Extra exact-image static migration/runtime checks passed.77/77 sanitizer/A13 safety tests passed; real two-pass migration preserved protected fingerprints and180tickets/563messages/114attachmentrecords/1285users, second pass no-op. Run final-c602031d-20260927 has parity/complete/cleanup receipts; exact labelled Docker resources removed, original dump retained. No app boot/live/push/deploy; next is fresh blocked-egress working-clone application acceptance, not a claim of fresh-live/attachment-byte/forward-recovery proof. Details and boundaries in current-focus; next-env WIP unchanged.
