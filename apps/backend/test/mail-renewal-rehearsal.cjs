@@ -12,8 +12,11 @@ const CANDIDATE_IMAGE = 'sha256:e7962dbe5cda314ce8aa4143a72ab7275344b00adcb71941
 const token = crypto.randomBytes(8).toString('hex');
 const name = `aluplan-renewal-${token}`;
 const label = `com.aluplan.synthetic-renewal=${token}`;
+const volumes = ['mail', 'state', 'config'].map(kind => `${name}-${kind}`);
 const receipts = [];
 let fixture;
+let volumeMode = false;
+let serverArgs;
 const socket = path.join(os.homedir(), '.docker/run/docker.sock');
 const endpoint = `unix://${socket}`;
 let dockerVerified = false;
@@ -130,6 +133,33 @@ function probeCompiledMailServices() {
     receipts.push('exact candidate compiled mail services: synthetic intake, attachment, duplicate and hold verified');
 }
 
+function mailboxContinuity(action, ids) {
+    const script = fs.readFileSync(path.join(__dirname, 'mail-volume-recreate-probe.py'), 'utf8');
+    const output = command('docker', ['--host', endpoint, 'exec', '-i',
+        '--env', `MAIL_RECREATE_ACTION=${action}`, '--env', `MAIL_RECREATE_IDS=${JSON.stringify(ids)}`,
+        name, 'python3', '-'], { input: script, timeout: 60000 });
+    return JSON.parse(output.trim());
+}
+
+async function rehearseVolumeRecreate(expectedCertificate) {
+    const ids = [0, 1].map(() => `<recreate-${crypto.randomBytes(12).toString('hex')}@example.invalid>`);
+    const before = mailboxContinuity('send', ids);
+    assert.deepEqual(Object.keys(before.messages).sort(), [...ids].sort());
+    command('docker', ['--host', endpoint, 'stop', '--time', '30', name], { timeout: 45000 });
+    assert.equal(JSON.parse(docker('inspect', name))[0].State.Running, false);
+    docker('rm', name);
+    docker(...serverArgs);
+    const recreated = JSON.parse(docker('inspect', name))[0];
+    assert.equal(recreated.HostConfig.Privileged, false);
+    assert.equal(Object.keys(recreated.HostConfig.PortBindings || {}).length, 0);
+    assert.deepEqual(recreated.Mounts.filter(m => m.Type === 'volume').map(m => m.Name).sort(), [...volumes].sort());
+    docker('start', name);
+    await waitForCertificate(expectedCertificate);
+    const after = mailboxContinuity('inspect', ids);
+    assert.deepEqual(after, before, 'Mailbox UID, flags, and bytes changed across same-volume recreate');
+    receipts.push('same-image/three-volume recreate retained Seen+UNSEEN source bytes, UID and UIDVALIDITY');
+}
+
 function publish(cert, key) {
     // Validation happens before touching the watched pair or stopping the watcher.
     validatePair(cert, key);
@@ -154,6 +184,9 @@ async function run() {
     assert.equal(process.env.MAIL_RENEWAL_REHEARSAL, 'synthetic-local-only', 'Explicit opt-in required');
     assert(!process.env.MAIL_EXACT_IMAGE_REHEARSAL || process.env.MAIL_EXACT_IMAGE_REHEARSAL === 'synthetic-local-only',
         'Invalid exact-image rehearsal opt-in');
+    assert(!process.env.MAIL_VOLUME_RECREATE_REHEARSAL || process.env.MAIL_VOLUME_RECREATE_REHEARSAL === 'synthetic-local-only',
+        'Invalid volume-recreate rehearsal opt-in');
+    volumeMode = process.env.MAIL_VOLUME_RECREATE_REHEARSAL === 'synthetic-local-only';
     assert.equal(process.platform, 'darwin', 'This bounded harness requires local macOS Docker Desktop');
     assert(!process.env.DOCKER_HOST && !process.env.DOCKER_CONTEXT && !process.env.DOCKER_TLS_VERIFY,
         'Docker endpoint overrides are not accepted');
@@ -183,22 +216,44 @@ async function run() {
     fs.copyFileSync(firstKey, path.join(fixture, 'served/key.pem'));
     fs.chmodSync(path.join(fixture, 'served/key.pem'), 0o600);
     docker('network', 'create', '--internal', '--label', label, name);
+    if (volumeMode) {
+        for (const volume of volumes) {
+            assert.equal(docker('volume', 'ls', '-q', '--filter', `name=^${volume}$`).trim(), '',
+                'Synthetic volume name already exists');
+            docker('volume', 'create', '--label', label, volume);
+            const owned = JSON.parse(docker('volume', 'inspect', volume))[0];
+            assert.equal(owned.Labels['com.aluplan.synthetic-renewal'], token);
+        }
+        if (process.env.MAIL_REHEARSAL_INJECT_FAILURE === 'after-volume-create') {
+            throw new Error('Injected synthetic failure after volume creation');
+        }
+        docker('run', '--rm', '--name', `${name}-seed`, '--label', label, '--network', 'none',
+            '--platform', 'linux/amd64',
+            '--mount', `type=volume,source=${volumes[2]},target=/tmp/docker-mailserver`,
+            '--mount', `type=bind,source=${fixture}/config,target=/seed,readonly`,
+            '--entrypoint', '/bin/sh', IMAGE, '-c', 'cp /seed/postfix-accounts.cf /seed/dovecot.cf /tmp/docker-mailserver/');
+    }
     const env = {
         SSL_TYPE: 'manual', SSL_CERT_PATH: '/fixture-tls/cert.pem', SSL_KEY_PATH: '/fixture-tls/key.pem',
         ENABLE_CLAMAV: '0', ENABLE_AMAVIS: '0', ENABLE_SPAMASSASSIN: '0', ENABLE_FAIL2BAN: '0',
         ENABLE_OPENDKIM: '0', ENABLE_OPENDMARC: '0', ENABLE_POLICYD_SPF: '0', ENABLE_RSPAMD: '0',
         UPDATE_CHECK_INTERVAL: '0', LOG_LEVEL: 'warn', DMS_CONFIG_POLL: '1',
     };
-    docker('create', '--name', name, '--label', label, '--platform', 'linux/amd64', '--hostname', 'mail.example.invalid',
+    serverArgs = ['create', '--name', name, '--label', label, '--platform', 'linux/amd64', '--hostname', 'mail.example.invalid',
         '--network', name, '--memory', '768m', '--cpus', '2', '--pids-limit', '256',
         '--mount', `type=bind,source=${fixture}/served,target=/fixture-tls,readonly`,
         '--mount', `type=bind,source=${fixture}/ca.pem,target=/fixture-ca.pem,readonly`,
-        '--mount', `type=bind,source=${fixture}/config,target=/tmp/docker-mailserver`,
-        ...Object.entries(env).flatMap(([key, value]) => ['--env', `${key}=${value}`]), IMAGE);
+        ...(volumeMode ? [
+            '--mount', `type=volume,source=${volumes[0]},target=/var/mail`,
+            '--mount', `type=volume,source=${volumes[1]},target=/var/mail-state`,
+            '--mount', `type=volume,source=${volumes[2]},target=/tmp/docker-mailserver`,
+        ] : ['--mount', `type=bind,source=${fixture}/config,target=/tmp/docker-mailserver`]),
+        ...Object.entries(env).flatMap(([key, value]) => ['--env', `${key}=${value}`]), IMAGE];
+    docker(...serverArgs);
     const isolated = JSON.parse(docker('inspect', name))[0];
     assert.equal(isolated.HostConfig.Privileged, false);
     assert.equal(Object.keys(isolated.HostConfig.PortBindings || {}).length, 0);
-    assert(isolated.Mounts.every(m => m.Source.startsWith(fixture + '/')));
+    assert(isolated.Mounts.every(m => m.Source.startsWith(fixture + '/') || (volumeMode && volumes.includes(m.Name))));
     assert.equal(JSON.parse(docker('network', 'inspect', name))[0].Internal, true);
     docker('start', name);
     const initial = fingerprint(firstCert);
@@ -233,6 +288,7 @@ async function run() {
     assert.equal(after.RestartCount, before.RestartCount);
     assert.match(inside('supervisorctl', 'status', 'changedetector'), /RUNNING/);
     receipts.push('container not restarted; watcher running');
+    if (volumeMode) await rehearseVolumeRecreate(fingerprint(renewed));
 }
 
 async function main() {
@@ -241,13 +297,14 @@ async function main() {
     catch (error) { failure = error; }
     finally {
         let cleanupFailed = false;
+        const ownedVolumes = [];
         const cleanup = action => {
             try { action(); }
             catch (error) { cleanupFailed = true; failure = failure || error; }
         };
         if (dockerVerified) {
             // Query exact names even if a create/run command timed out after taking effect.
-            for (const ownedName of [name, `${name}-hash`, `${name}-candidate`, `${name}-service`]) cleanup(() => {
+            for (const ownedName of [name, `${name}-hash`, `${name}-candidate`, `${name}-service`, `${name}-seed`]) cleanup(() => {
                 const id = docker('ps', '-aq', '--filter', `name=^/${ownedName}$`).trim();
                 if (!id) return;
                 const owned = JSON.parse(docker('inspect', id))[0];
@@ -260,10 +317,26 @@ async function main() {
                 assert.equal(JSON.parse(docker('network', 'inspect', id))[0].Labels['com.aluplan.synthetic-renewal'], token);
                 docker('network', 'rm', id);
             });
+            if (volumeMode) {
+                // Re-inventory exact names: create may have succeeded before a CLI timeout.
+                for (const volume of volumes) cleanup(() => {
+                    const ids = docker('volume', 'ls', '-q', '--filter', `name=^${volume}$`).trim().split('\n').filter(Boolean);
+                    if (!ids.length) return;
+                    assert.deepEqual(ids, [volume]);
+                    const owned = JSON.parse(docker('volume', 'inspect', volume))[0];
+                    assert.equal(owned.Labels['com.aluplan.synthetic-renewal'], token);
+                    ownedVolumes.push(volume);
+                });
+                if (!failure && !cleanupFailed) for (const volume of ownedVolumes) cleanup(() => docker('volume', 'rm', volume));
+            }
         }
-        // Retain files if a container might still be using them after cleanup failure.
-        if (fixture && !cleanupFailed) cleanup(() => fs.rmSync(fixture, { recursive: true }));
-        console.log(JSON.stringify({ syntheticOnly: true, receipts, cleanup: cleanupFailed ? 'FAILED' : 'complete', passed: !failure }));
+        const preserveEvidence = volumeMode && failure && ownedVolumes.length > 0;
+        // Retain fixture with named volumes on test failure, or when Docker cleanup failed.
+        if (fixture && !cleanupFailed && !preserveEvidence) cleanup(() => fs.rmSync(fixture, { recursive: true }));
+        console.log(JSON.stringify({ syntheticOnly: true, receipts,
+            cleanup: cleanupFailed ? 'FAILED' : preserveEvidence ? 'synthetic-evidence-retained' : 'complete',
+            ...(preserveEvidence ? { retainedVolumes: ownedVolumes, retainedFixture: fixture } : {}),
+            passed: !failure }));
     }
     if (failure) { console.error(`REHEARSAL_FAILED: ${failure.message.split('\n')[0]}`); process.exitCode = 1; }
 }
