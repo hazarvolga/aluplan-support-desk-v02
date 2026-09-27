@@ -1,5 +1,13 @@
 # Current Focus
 
+## YAML v4 patch checkpoint — 2026-09-27
+
+Completed the first bounded batch from the disposition below: scoped `js-yaml@>=4.0.0 <4.3.2` override to 4.3.2. Lock changes only the three v4 consumers (@nestjs/swagger, cosmiconfig, @eslint/eslintrc); v3.14.2 and XLSX integrity remain unchanged. Frozen install with scripts disabled passed. Primary source: https://raw.githubusercontent.com/nodeca/js-yaml/4.3.2/CHANGELOG.md (merge-work limits, empty-map accounting, ordered-map complexity fixes). No application code, schema, environment or startup change.
+
+New `scripts/yaml-dependency-security.test.cjs`: 15 tests; RED 6 compatibility passes / 9 version-or-limit failures on 4.1.1, GREEN 15 on 4.3.2. Resolves real consumer paths but executes only js-yaml, not CLI/config/app modules. Small synthetic OpenAPI uses Swagger's skipInvalid/noRefs options; tests cover Turkish text, refs/scalars, normal merges, duplicate rejection, three-empty-map budget and 100/101 default merge boundary. No stress payload or timing assertion. This does not measure ordered-map complexity or establish customer exploitability. Changelog changes underscore numeric parsing; tracked YAML search found only Tempo's `max_block_bytes: 1_000_000`, an external Tempo configuration, not a demonstrated js-yaml consumer.
+
+Explicit aggregate/CI guard now 23 files. Focused 17/17 including CI contracts; actual aggregate 173/173 under external-network denial with loopback allowed; backend and frontend tsc noEmit/incremental:false passed. Independent code and security reviews found no scoped blockers. No image build/rescan, hosted CI, app boot, live/DB/provider access, migration, push or deploy. Existing app.module/next-env/worker-shutdown WIP preserved. Last exact image remains 2b90e02d (0C/30H/71M/10L); do not subtract source patches from that scan. Next bounded source batch: Lodash4 compatibility/security tests then scoped update; operational acceptance/recovery gates remain open.
+
 ## Remaining-risk source disposition — 2026-09-27
 
 Read-only consumer review with three bounded agents plus maintainer advisories; no dependency/application/runtime changes. Re-ran recurring regression command:158/158 under external-network denial with loopback permitted. This is prioritization, NOT accepted risk, scan suppression, image clearance or production GO. Owner: project maintainer; re-review every row before release acceptance and whenever its activation/input path changes. Last exact image remains2b90e02d0C30H71M10L; newer source patches require a grouped build/rescan.

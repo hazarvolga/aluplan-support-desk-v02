@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## YAML v4 source checkpoint — 2026-09-27
+
+Scoped js-yaml4.1.1->4.3.2 across Swagger/cosmiconfig/eslintrc, v3 preserved. Fifteen bounded consumer-resolved tests RED6pass9fail -> GREEN15; focused17 incl CI and recurring23-file aggregate173/173; both typechecks passed. Independent reviews GO for this source scope. Frozen ignore-scripts install and XLSX checksum preserved. No application/schema/env/startup changes, live/data access, new image/scan or publication/deploy. Current-focus records source, compatibility caveat and limits. Next: Lodash batch; no production GO inferred.
+
 ## Remaining advisory consumer disposition — 2026-09-27
 
 Documentation-only checkpoint after three-agent source review plus primary advisories. Current-focus matrix separates runtime utility/config consumers, opt-in telemetry, Prisma dev/Studio and disabled-by-default html-minifier paths. No blanket waivers; major deepmerge/OTel changes not applied. Notable limits: Prisma dev hostname omitted (not proven loopback); Studio may embed a separate copy; live OTel preloads/settings unknown; mysql advisory patchedNone conflicts with3.22 release's default-plugin disable. Nextbounded batch js-yaml4 then Lodash4 compatibility; Effect/OTel/Prisma-tool decisions follow. Aggregate158/158 rerun passed networkrestricted; no application/dependency/version changes, image scan, live/data/SDK/CLI/migration/push/deploy. Last image0C30H unchanged, WIP preserved.
