@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-27 — Combined local browser gate passed
+
+Private local-only runner paired source-pinned 4157dbee backend image with frozen c602031d frontend image on a fresh disposable sanitized clone. The browser adapter and auth fixture were hash-pinned to prior accepted/committed sources; independent code/security review found no local-execution blocker. Real Chromium auth acceptance passed with zero unexpected/proxy requests: login, cookies, refresh, CSRF, reset/replay, old-session and password revocation, new login. Fixture verification passed and no synthetic mail was sent. `combined-browser-0b57b342b6e2` private evidence has result PASS/`productionGo:false`; owned resources cleaned and exact-label absence independently confirmed. This is not full UI, live data, actual mail, historical bytes, all-writer drain or public-TLS proof. No product code edits, live access, push or deploy; unrelated `apps/frontend/next-env.d.ts` WIP remains untouched. Next gate needs separately scoped production approval. The Aluplan skill kept the exercise to an existing compatibility probe rather than expanding features.
+
 ## 2026-09-27 — Local 4157dbee forward re-entry pass
 
 Rebuilt exact Linux/amd64 backend candidate after two small, test-first local fixes: Nest PID1 shutdown exit (`a0d3c265`/`f7ff49eb`) and preservation of existing announcement templates during startup (`d86ec9dc`/`4157dbee`). Targeted tests/typecheck and ops-safety suite passed before build; independent reviews found no blocker to bounded local rehearsal. The prior f7ff49e image stopped cleanly but changed existing template rows, so it is not the accepted candidate. Current image ID `sha256:45a47db7dfb713e01ebc26b8f96b0cccb6ff2dfba025a9fdcea48bddd4e303b6` and source archive SHA `ec7cf665c8026ba78f7fea294c1ba3ee5779e577fdcdaa524c9677c050a9391d` were checked.
