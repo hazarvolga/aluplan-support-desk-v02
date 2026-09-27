@@ -6,7 +6,7 @@ Rebuilt exact Linux/amd64 backend candidate after two small, test-first local fi
 
 Fresh disposable local sanitized clone run `latest-reentry-100933a1ef5b` passed two 56-check probes, graceful stop exit 0, same DB/attachment volume re-entry with unchanged full fingerprint/migration ledger and two first-round attachment byte hashes, then further synthetic writes. Result remains `productionGo:false`; historical attachment bytes, all-writer drain and fresh production-window backup are unproved. Cleanup receipt and independent exact-label Docker audit found no leftover resources. No live access/change, push or deploy. Existing `apps/frontend/next-env.d.ts` WIP preserved. The private runner/evidence are not Git-tracked and may contain sensitive diagnostics.
 
-The `aluplan-support-intelligence` skill kept this a narrow release-blocker repair rather than a broader architecture change. Next mandatory path: artifact-specific security check and separately authorized production-window evidence for real data/storage/recovery, not immediate deployment.
+The `aluplan-support-intelligence` skill kept this a narrow release-blocker repair rather than a broader architecture change. Latest exact-image offline Trivy 0.72 scan passed with the same pinned DB and identical 20 advisory tuples as c602031d: 0C/3H/14M/3L; no new advisory, no blanket waiver for the three Highs. See current-focus for image/archive/report hashes and scanner limitations. Next mandatory path: separately authorized production-window evidence for real data/storage/recovery, not immediate deployment.
 
 ## Frozen frontend browser gate — 2026-09-27
 
