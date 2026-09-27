@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Grouped backend artifact verification — 2026-09-27
+
+Frozen11d77fbb backend Linux/amd64 image built and network-none non-root/native-module/Prisma offline schema smoke passed under Mac emulation; schema output hash unchanged, no database or normal application startup. Comparative offline Trivy with same pinned scanner/DB: prior0C30H71M10L -> **0C3H30M7L**. First256MiB temporary-space attempt failed; bounded2GiB tmp/4GiB memory retry passed and owned container cleanup verified. Remaining High: two OTel parent-package entries and retained html-minifier; no automatic waiver or suppression. Full identity/hash/evidence paths and limitations in current-focus. Fresh advisory DB and operational/data-preservation acceptance still outstanding. No live/DB/migration/push/deploy; existing WIP excluded and intact.
+
 ## Deepmerge checkpoint — 2026-09-27
 
 Local63ea4b5b tests /b2536990 scopedPrismaconfigdeepmerge8.0.2 update. CJS/ESM configshape andboundedcirculargraph regressions pass; actualconfigloader/CLI notrun. Final5tests+CI7/7 independently, aggregate31files243/243 andboth typechecks passed. Sentrybindings/XLSXintegrity/frozeninstall preserved, unrelatedWIP intact. No newimage/live/data/migration/push/deploy. Next: groupedimmutableimagebuild/rescan toreplace old2b90e02dscan evidence; no productionGO inferred.
