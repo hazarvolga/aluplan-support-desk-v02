@@ -1,5 +1,26 @@
 # Current Focus
 
+## Owner-directed minimum release scope — 2026-09-27
+
+Supersedes earlier open-ended dependency work queues below. Owner explicitly requests only mandatory pre-deploy work; defer everything else. Apply existing delivery policy/ADR-022, not a new platform redesign. No production GO or remote-action approval is implied.
+
+Release blockers are demonstrated unacceptable security exposure, customer-data loss/duplication risk, broken existing customer flows, or missing evidence for the actual deployment artifact. Advisory counts alone are not an upgrade queue. Do not add features, broad dependency/framework upgrades, cosmetic repairs, or speculative refactors to this release.
+
+Bounded read-only review supports these conditional deferrals:
+
+- qs6.15.0 malformed-constructor and comma/null stringify findings: inspected Express/body-parser path uses parse; googleapis-common uses repeat formatting and identified Gmail call has fixed userId:'me'; Superagent uses indices:false/strictNullHandling and is reached through development Supertest. No direct app qs import or customer-object forwarding found. Reopen for untrusted outbound query objects, comma formatting, or any separate parse advisory. This does NOT dispose every qs report entry.
+- Nest core SSE metadata injection: sole observed endpoint ai.controller.ts:243 emits {data:object} at257, not untrusted type/id/retry metadata. Installed SSE writer serializes object data; generated IDs and constant error event type are not customer-supplied. Reopen for a new SSE writer or untrusted event metadata. Not host-wide clearance.
+- Broader OTel parent-version alignment and html-minifier replacement: defer subject to final artifact retaining the already-tested patched exporter resolution and minify:false boundary, and deployment configuration not enabling an unreviewed path. Findings remain visible; do not suppress or claim all telemetry/MJML risks resolved.
+- Existing plain-text special-character double escaping, new team/category/licensing features, cosmetic text and architecture cleanup: post-release backlog. Reopen sooner only if an existing essential customer workflow is demonstrably unusable. These new features must not be represented as included.
+
+Remaining mandatory work, grouped into three acceptance gates rather than endless patch batches:
+
+1. FINAL ARTIFACT: freeze reviewed committed source; build backend plus production-configured frontend; verify exact identities, targeted regressions/typechecks and refreshed scan. Classify residual findings with evidence; fix only demonstrated release blockers. Existing11d77fbb scan is not the newer source's result. Exclude unaccepted worker-shutdown/app.module/next-env WIP; if drain proof requires a change, accept only that bounded change first.
+2. DATA AND WORKFLOW REHEARSAL: isolated safe database copy with outbound side effects disabled; login/reset, customer isolation, ticket reply/reopen/attachments, and mail deduplication acceptance. Prove all-writer fencing/drain, backup restoration including attachment bytes, and ADR-022 forward recovery without overwriting newly accepted customer writes. Worker.close alone is not all-writer fencing; restart is not version rollback.
+3. APPROVED RELEASE WINDOW: separately authorized current production/configuration checks and fresh backup, maintenance/abort/reopening criteria, explicit push et and deploy et gates, then deployment and post-release data/workflow verification. Never replace live data with the local copy. Current turn does not perform this gate.
+
+Next execution priority: settle the existing writer-drain readiness gap against the established rehearsal plan, then produce the final artifact once. Do not start another broad advisory search or rebuild repeatedly between speculative patches. Latest verified source baseline remains dependency256/256, upload30/30, rich-text19/19 and both typechecks from prior checkpoints; no tests or images rerun for this documentation-only scope decision. No live/DB/provider access, changes, restart, push or deploy.
+
 ## Upload detector dependency checkpoint — 2026-09-27
 
 Scoped `@nestjs/common@11.1.14>file-type` override21.3.0->21.3.2; no framework/controller/MIME-policy/schema changes. Verified official release https://github.com/sindresorhus/file-type/releases/tag/v21.3.2 and advisories GHSA-5v7r-6r5c-r473 /GHSA-j47w-4g3g-c36v. Registry notdeprecated, node>=20, noinstallhooks, integrity `sha512-DLkUvGwep3poOV2wpzbHCOnSKGk1LzyXTv+aHFgN2VFl96wnp8YA9YjO2qPzg5PuL8q/SW9Pdi6WTkYOIh995w==`. Existing secondary versions unchanged; unrelated Sentry peer drift/SheetJS integrity loss from lock regeneration restored. Frozenignore-scripts install passed.

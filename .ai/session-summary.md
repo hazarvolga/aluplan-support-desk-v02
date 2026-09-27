@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Minimum-release scope frozen — 2026-09-27
+
+Owner explicitly prioritizes mandatory security/data/working-flow gates and defers optional work. Current-focus now supersedes old dependency queues: conditional qs stringify/Nest SSE deferrals based on independent read-only consumer review, constrained existing OTel/minifier mitigations, and post-release cosmetic/new-feature work. No blanket vulnerability waiver. Three grouped gates remain: final immutable artifacts; isolated data/workflow/drain/forward-recovery rehearsal; separately approved production release window. Next priority is the existing writer-drain proof gap, not another broad dependency sweep. No code/tests/images/live/data operations this checkpoint; unrelated WIP preserved. Prior test/scan results remain historical and artifact-specific.
+
 ## File-type upload parser patch — 2026-09-27
 
 Local9e92bb35 tests/CI and00beed9d scoped Nest file-type21.3.2 patch. RealNest validator7tests RED5pass2fail (version+childASFtimeout) ->GREEN7; corrected patchedresult expectation to strictundefined after source inspection. Child hardtimeout avoids parent eventloop hang. Aggregate33files256/256, independent9/9, uploadlimits/durability30/30 andbothTSC passed. No ZIPbomb or E2Eclaim, no newimagecount. Sentrybindings/XLSXintegrity/WIP preserved; no live/data/push/deploy. Currentfocus records reachability and next request-parser/Nestcore disposition.
