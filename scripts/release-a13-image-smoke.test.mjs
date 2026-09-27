@@ -109,6 +109,18 @@ exec "$A13_FAKE_NODE_BIN" -e '
 `,
   );
   await executable(
+    path.join(fakeBin, "stat"),
+    `#!/bin/sh
+set -eu
+if [ "\${A13_FAKE_STAT_SIZE_UNAVAILABLE:-0}" = 1 ]; then
+  case "$1 $2" in
+    '-f %z'|'-c %s') printf 'invalid stat output\\n'; exit 1 ;;
+  esac
+fi
+exec /usr/bin/stat "$@"
+`,
+  );
+  await executable(
     path.join(fakeBin, "docker"),
     `#!/bin/sh
 set -eu
@@ -273,6 +285,27 @@ test.after(async () => {
   );
 });
 
+test("exact-image smoke accepts an operator-owned mode-0700 private root on Linux and macOS", async () => {
+  const harness = await createImageHarness();
+  const privateRoot = path.join(harness.root, ".private-data");
+  const metadata = await stat(privateRoot);
+  assert.equal(metadata.uid, process.getuid());
+  assert.equal(metadata.mode & 0o777, 0o700);
+
+  const result = runImageSmoke(harness, "success");
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
+
+test("exact-image smoke still rejects a permissive private root", async () => {
+  const harness = await createImageHarness();
+  await chmod(path.join(harness.root, ".private-data"), 0o755);
+
+  const result = runImageSmoke(harness, "success");
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}\n${result.stderr}`, /operator-owned with mode 0700/);
+  assert.doesNotMatch(await logOf(harness), /docker build|docker create/);
+});
+
 test("exact-image smoke never removes a foreign container after name collision", async () => {
   const harness = await createImageHarness();
   const result = runImageSmoke(harness, "collision");
@@ -411,4 +444,16 @@ test("exact-image smoke rejects an immutable Git context above its size budget",
     evidenceEntries.filter((entry) => entry.startsWith(".tmp-image-")),
     [],
   );
+});
+
+test("exact-image smoke fails closed when both archive size probes fail", async () => {
+  const harness = await createImageHarness();
+  const result = runImageSmoke(harness, "success", {
+    A13_FAKE_STAT_SIZE_UNAVAILABLE: "1",
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}\n${result.stderr}`, /size/i);
+  assert.doesNotMatch(await logOf(harness), /docker build|docker create/);
+  assert.equal(await readyExists(harness), false);
 });

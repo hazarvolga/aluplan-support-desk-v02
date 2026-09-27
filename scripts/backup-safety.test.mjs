@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import {
+  chmod,
   mkdir,
   readFile,
   readdir,
   stat,
+  symlink,
   unlink,
   writeFile,
 } from "node:fs/promises";
@@ -23,6 +25,34 @@ import {
 } from "./backup-test-harness.mjs";
 
 test.after(cleanupHarnesses);
+
+test("backup accepts an operator-owned mode-0700 root on Linux and macOS", async () => {
+  const harness = await createHarness();
+  const metadata = await stat(harness.backupDir);
+  assert.equal(metadata.uid, process.getuid());
+  assert.equal(metadata.mode & 0o777, 0o700);
+
+  const result = runBackup(rootBackupScript, harness, {
+    ALLOW_DATABASE_BACKUP: "1",
+    ALLOW_LOCAL_ONLY_BACKUP: "1",
+    DATABASE_URL: "postgresql://example.invalid/aluplan",
+  });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
+
+test("backup still rejects an operator-owned root with permissive mode", async () => {
+  const harness = await createHarness();
+  await chmod(harness.backupDir, 0o755);
+
+  const result = runBackup(rootBackupScript, harness, {
+    ALLOW_DATABASE_BACKUP: "1",
+    ALLOW_LOCAL_ONLY_BACKUP: "1",
+    DATABASE_URL: "postgresql://example.invalid/aluplan",
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}\n${result.stderr}`, /operator-owned with mode 0700/);
+  assert.deepEqual(await listArtifacts(harness.backupDir), []);
+});
 
 test("the test harness keeps createHarness focused and reviewable", () => {
   const meaningfulLines = createHarness
@@ -447,10 +477,19 @@ test("a pre-artifact mktemp failure releases the backup lock", async () => {
 test("shasum is used when sha256sum is unavailable", async () => {
   const harness = await createHarness();
   await unlink(path.join(harness.fakeBin, "sha256sum"));
+  const systemBin = path.join(harness.root, "system-bin");
+  await mkdir(systemBin);
+  for (const name of ["cat", "chmod", "mkdir", "mv", "rm", "rmdir"]) {
+    await symlink(`/bin/${name}`, path.join(systemBin, name));
+  }
+  for (const name of ["dirname", "id", "stat", "tr", "wc"]) {
+    await symlink(`/usr/bin/${name}`, path.join(systemBin, name));
+  }
   const result = runBackup(rootBackupScript, harness, {
     ALLOW_DATABASE_BACKUP: "1",
     ALLOW_LOCAL_ONLY_BACKUP: "1",
     DATABASE_URL: "postgresql://example.invalid/aluplan",
+    BACKUP_TOOL_PATH: `${harness.fakeBin}:${systemBin}`,
   });
 
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);

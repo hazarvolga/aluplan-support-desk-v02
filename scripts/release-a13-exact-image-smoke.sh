@@ -60,17 +60,21 @@ checksum_file() {
     printf '%s' "${digest}"
 }
 
-directory_uid() {
-    stat -f '%u' "$1" 2>/dev/null || stat -c '%u' "$1"
+stat_numeric_attribute() {
+    local bsd_format="$1" gnu_format="$2" target="$3" value
+    if value="$(stat -f "${bsd_format}" "${target}" 2>/dev/null)" \
+        && [[ "${value}" =~ ^[0-9]+$ ]]; then
+        printf '%s' "${value}"
+    elif value="$(stat -c "${gnu_format}" "${target}" 2>/dev/null)" \
+        && [[ "${value}" =~ ^[0-9]+$ ]]; then
+        printf '%s' "${value}"
+    else
+        return 1
+    fi
 }
-
-directory_mode() {
-    stat -f '%Lp' "$1" 2>/dev/null || stat -c '%a' "$1"
-}
-
-file_size() {
-    stat -f '%z' "$1" 2>/dev/null || stat -c '%s' "$1"
-}
+directory_uid() { stat_numeric_attribute '%u' '%u' "$1"; }
+directory_mode() { stat_numeric_attribute '%Lp' '%a' "$1"; }
+file_size() { stat_numeric_attribute '%z' '%s' "$1"; }
 
 reject_symlink_components() {
     local target_path="$1"
@@ -192,8 +196,12 @@ snapshot_archive="${run_dir}/context.tar"
 # Preserve them on extraction without relaxing the private evidence umask.
 run_long "${git_bin}" -c tar.umask=0022 archive --format=tar --output="${snapshot_archive}" "${git_sha}" \
     || fail 'Unable to create the immutable Git build context.'
-[[ -f "${snapshot_archive}" && ! -L "${snapshot_archive}" \
-    && "$(file_size "${snapshot_archive}")" -le "${max_build_context_bytes}" ]] \
+[[ -f "${snapshot_archive}" && ! -L "${snapshot_archive}" ]] \
+    || fail 'Immutable Git build context archive is missing or symbolic.'
+context_bytes="$(file_size "${snapshot_archive}")" \
+    || fail 'Unable to determine immutable Git build context size.'
+[[ "${context_bytes}" =~ ^[0-9]+$ && "${context_bytes}" -gt 0 \
+    && "${context_bytes}" -le "${max_build_context_bytes}" ]] \
     || fail 'Immutable Git build context exceeds its size budget.'
 run_long "${tar_bin}" -xpf "${snapshot_archive}" -C "${snapshot_dir}" \
     || fail 'Unable to extract the immutable Git build context.'

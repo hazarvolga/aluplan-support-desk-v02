@@ -132,11 +132,23 @@ reject_symlink_components() {
 }
 
 current_uid="$(id -u)"
+stat_numeric_attribute() {
+    local bsd_format="$1" gnu_format="$2" target="$3" value
+    if value="$(stat -f "${bsd_format}" "${target}" 2>/dev/null)" \
+        && [[ "${value}" =~ ^[0-9]+$ ]]; then
+        printf '%s' "${value}"
+    elif value="$(stat -c "${gnu_format}" "${target}" 2>/dev/null)" \
+        && [[ "${value}" =~ ^[0-9]+$ ]]; then
+        printf '%s' "${value}"
+    else
+        return 1
+    fi
+}
 directory_uid() {
-    stat -f '%u' "$1" 2>/dev/null || stat -c '%u' "$1"
+    stat_numeric_attribute '%u' '%u' "$1"
 }
 directory_mode() {
-    stat -f '%Lp' "$1" 2>/dev/null || stat -c '%a' "$1"
+    stat_numeric_attribute '%Lp' '%a' "$1"
 }
 
 default_backup_root="${REPO_ROOT}/.private-data/backups"

@@ -253,6 +253,9 @@ async function installFakeChecksum(fakeBin) {
     path.join(fakeBin, "sha256sum"),
     `#!/bin/sh
 set -eu
+if [ -x /usr/bin/sha256sum ]; then
+  exec /usr/bin/sha256sum "$@"
+fi
 exec /usr/bin/shasum -a 256 "$1"
 `,
   );
@@ -262,6 +265,23 @@ exec /usr/bin/shasum -a 256 "$1"
 set -eu
 printf 'pg_restore %s\\n' "$*" >> "$A13_FAKE_COMMAND_LOG"
 exit "\${A13_FAKE_PG_RESTORE_EXIT:-0}"
+`,
+  );
+}
+
+async function installFakeWc(fakeBin) {
+  await writeExecutable(
+    path.join(fakeBin, "wc"),
+    `#!/bin/sh
+set -eu
+counter="$A13_FAKE_STATE_DIR/wc-calls"
+count=0
+if [ -f "$counter" ]; then count="$(cat "$counter")"; fi
+count=$((count + 1))
+printf '%s\\n' "$count" > "$counter"
+if [ "\${A13_FAKE_WC_FAIL_ON_CALL:-0}" = "$count" ]; then exit 1; fi
+if [ "\${A13_FAKE_WC_EMPTY_ON_CALL:-0}" = "$count" ]; then exit 0; fi
+exec /usr/bin/wc "$@"
 `,
   );
 }
@@ -315,6 +335,7 @@ export async function createA13Harness() {
   await Promise.all([
     installFakeDocker(paths.fakeBin),
     installFakeChecksum(paths.fakeBin),
+    installFakeWc(paths.fakeBin),
   ]);
   await writeValidArtifact(paths.artifactDir);
   const checksum = async (relativePath) =>

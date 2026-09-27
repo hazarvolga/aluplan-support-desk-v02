@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmod, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import {
@@ -12,6 +12,28 @@ import {
 } from "./release-a13-test-harness.mjs";
 
 test.after(cleanupA13Harnesses);
+
+test("restore drill accepts operator-owned private roots with mode 0700 on Linux and macOS", async () => {
+  const harness = await createA13Harness();
+  for (const root of [harness.artifactRoot, harness.evidenceRoot, harness.imageEvidenceRoot]) {
+    const metadata = await stat(root);
+    assert.equal(metadata.uid, process.getuid());
+    assert.equal(metadata.mode & 0o777, 0o700);
+  }
+
+  const result = runRestore(harness);
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
+
+test("restore drill still rejects an operator-owned private root with permissive mode", async () => {
+  const harness = await createA13Harness();
+  await chmod(harness.evidenceRoot, 0o755);
+
+  const result = runRestore(harness);
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}\n${result.stderr}`, /operator-owned with mode 0700/);
+  assert.equal(await commandLog(harness), "");
+});
 
 test("restore drill requires explicit authorization before Docker access", async () => {
   const harness = await createA13Harness();
@@ -110,6 +132,15 @@ test("restore drill rejects archives above the explicit size budget before Docke
 
   assert.notEqual(result.status, 0);
   assert.match(`${result.stdout}\n${result.stderr}`, /size budget/i);
+  assert.equal(await commandLog(harness), "");
+});
+
+test("restore drill rejects empty metadata size output before Docker access", async () => {
+  const harness = await createA13Harness();
+  const result = runRestore(harness, { A13_FAKE_WC_EMPTY_ON_CALL: "1" });
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}\n${result.stderr}`, /size/i);
   assert.equal(await commandLog(harness), "");
 });
 
@@ -251,6 +282,19 @@ test("restore drill bounds backend job output before accepting evidence", async 
     "utf8",
   );
   assert.doesNotThrow(() => JSON.parse(baseline));
+});
+
+test("restore drill rejects an unmeasurable backend job output", async () => {
+  const harness = await createA13Harness();
+  const result = runRestore(harness, { A13_FAKE_WC_FAIL_ON_CALL: "7" });
+
+  assert.notEqual(result.status, 0);
+  assert.doesNotMatch(result.stdout, /local evidence complete/i);
+  assert.match(await commandLog(harness), /capture-release-fingerprints\.mjs/);
+  await assert.rejects(
+    readFile(path.join(harness.evidenceRoot, "a13-test-run", "LOCAL-A13.json")),
+    /ENOENT/,
+  );
 });
 
 test("restore drill applies the backend job output cap to stderr too", async () => {

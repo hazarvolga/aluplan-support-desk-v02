@@ -59,9 +59,26 @@ sha256sum_bin="$(command -v sha256sum 2>/dev/null || true)"
 shasum_bin="$(command -v shasum 2>/dev/null || true)"
 [[ "${sha256sum_bin}" == /* || "${shasum_bin}" == /* ]] || fail 'A SHA-256 utility is required.'
 
-directory_uid() { stat -f '%u' "$1" 2>/dev/null || stat -c '%u' "$1"; }
-directory_mode() { stat -f '%Lp' "$1" 2>/dev/null || stat -c '%a' "$1"; }
-file_size() { wc -c < "$1" | tr -d '[:space:]'; }
+stat_numeric_attribute() {
+    local bsd_format="$1" gnu_format="$2" target="$3" value
+    if value="$(stat -f "${bsd_format}" "${target}" 2>/dev/null)" \
+        && [[ "${value}" =~ ^[0-9]+$ ]]; then
+        printf '%s' "${value}"
+    elif value="$(stat -c "${gnu_format}" "${target}" 2>/dev/null)" \
+        && [[ "${value}" =~ ^[0-9]+$ ]]; then
+        printf '%s' "${value}"
+    else
+        return 1
+    fi
+}
+directory_uid() { stat_numeric_attribute '%u' '%u' "$1"; }
+directory_mode() { stat_numeric_attribute '%Lp' '%a' "$1"; }
+file_size() {
+    local size
+    size="$(wc -c < "$1" | tr -d '[:space:]')" || return 1
+    [[ "${size}" =~ ^[0-9]+$ ]] || return 1
+    printf '%s' "${size}"
+}
 checksum_file() {
     local digest
     if [[ -n "${sha256sum_bin}" ]]; then digest="$(${sha256sum_bin} "$1")";
@@ -132,7 +149,9 @@ for artifact_path in "${dump_path}" "${checksum_path}" "${ready_path}"; do
         && "$(directory_mode "${artifact_path}")" == '600' ]] \
         || fail 'Release input files must be regular, non-symlink, and mode 0600.'
 done
-[[ "$(file_size "${ready_path}")" -le 65536 && "$(file_size "${checksum_path}")" -le 1024 ]] \
+ready_bytes="$(file_size "${ready_path}")" || fail 'Unable to measure release metadata size.'
+checksum_bytes="$(file_size "${checksum_path}")" || fail 'Unable to measure release metadata size.'
+[[ "${ready_bytes}" -le 65536 && "${checksum_bytes}" -le 1024 ]] \
     || fail 'Release metadata exceeds its safe size limit.'
 [[ "$(basename "${artifact_dir}")" == "$("${node_bin}" -e '
   const fs=require("fs"); const value=JSON.parse(fs.readFileSync(process.argv[1],"utf8")).runId;
@@ -160,7 +179,7 @@ manifest_field() {
 sidecar="$(cat "${checksum_path}")"
 [[ "${sidecar}" =~ ^([a-f0-9]{64})[[:space:]][[:space:]]database\.dump$ ]] \
     || fail 'Backup checksum sidecar has an invalid format.'
-actual_size="$(file_size "${dump_path}")"
+actual_size="$(file_size "${dump_path}")" || fail 'Unable to measure backup archive size.'
 [[ "${actual_size}" -gt 0 && "${actual_size}" -le "${max_archive_bytes}" ]] \
     || fail 'Backup archive exceeds the explicit size budget.'
 actual_sha="$(checksum_file "${dump_path}")"
@@ -181,7 +200,9 @@ image_evidence_file="$(cd -P -- "$(dirname -- "${A13_IMAGE_EVIDENCE_FILE}")" && 
 case "${image_evidence_file}" in "${image_evidence_root}/"*) : ;; *) fail 'Image evidence escaped its root.' ;; esac
 [[ "${image_evidence_file}" == "${image_evidence_root}/image-${A13_EXPECTED_GIT_SHA}/image.json" ]] \
     || fail 'Exact-image evidence must use the canonical image-<gitSha>/image.json path.'
-[[ "$(file_size "${image_evidence_file}")" -le 65536 ]] \
+image_evidence_bytes="$(file_size "${image_evidence_file}")" \
+    || fail 'Unable to measure exact-image evidence size.'
+[[ "${image_evidence_bytes}" -le 65536 ]] \
     || fail 'Exact-image evidence exceeds its safe size limit.'
 image_evidence_sidecar="$(dirname "${image_evidence_file}")/image.json.sha256"
 image_evidence_ready="$(dirname "${image_evidence_file}")/READY.json"
@@ -189,7 +210,9 @@ for image_evidence_path in "${image_evidence_sidecar}" "${image_evidence_ready}"
     [[ -f "${image_evidence_path}" && ! -L "${image_evidence_path}" \
         && "$(directory_mode "${image_evidence_path}")" == '600' ]] \
         || fail 'Exact-image checksum and READY evidence are required.'
-    [[ "$(file_size "${image_evidence_path}")" -le 65536 ]] \
+    image_evidence_bytes="$(file_size "${image_evidence_path}")" \
+        || fail 'Unable to measure exact-image checksum or READY evidence size.'
+    [[ "${image_evidence_bytes}" -le 65536 ]] \
         || fail 'Exact-image checksum or READY evidence exceeds its safe size limit.'
 done
 image_sidecar="$(cat "${image_evidence_sidecar}")"
@@ -382,7 +405,7 @@ run_timed "${docker_bin}" exec "${container_id}" pg_restore --exit-on-error --si
     --username=a13_operator --dbname=a13_raw /tmp/database.dump || fail 'Disposable restore failed.'
 
 run_backend() {
-    local name="$1" env_file="$2" output_file="$3" command_status; shift 3
+    local name="$1" env_file="$2" output_file="$3" command_status output_bytes; shift 3
     command_status=0
     (ulimit -f "${max_job_output_blocks}"; run_timed "${docker_bin}" run --rm --name "${name}" \
         --platform linux/amd64 \
@@ -393,7 +416,8 @@ run_backend() {
         --env-file "${env_file}" "${A13_BACKEND_IMAGE}" "$@") \
         > "${output_file}" 2>&1 || command_status=$?
     chmod 0600 "${output_file}"
-    [[ "$(file_size "${output_file}")" -le "${max_job_output_bytes}" ]] || return 125
+    output_bytes="$(file_size "${output_file}")" || return 125
+    [[ "${output_bytes}" -le "${max_job_output_bytes}" ]] || return 125
     return "${command_status}"
 }
 

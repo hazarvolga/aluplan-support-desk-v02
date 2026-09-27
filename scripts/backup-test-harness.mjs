@@ -104,7 +104,14 @@ fi
     `#!/bin/sh
 set -eu
 printf 'shasum %s\\n' "$*" >> "$FAKE_COMMAND_LOG"
-exec /usr/bin/shasum "$@"
+if [ -x /usr/bin/shasum ]; then
+  exec /usr/bin/shasum "$@"
+fi
+if [ "\${1:-}" = '-a' ] && [ "\${2:-}" = '256' ] && [ -x /usr/bin/sha256sum ]; then
+  shift 2
+  exec /usr/bin/sha256sum "$@"
+fi
+exit 10
 `,
   );
 }
