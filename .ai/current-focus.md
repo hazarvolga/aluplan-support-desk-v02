@@ -1,5 +1,9 @@
 # Current Focus
 
+## Daha küçük 503 yanıtlayıcısı ve imaj taraması — 2026-09-27
+
+`scripts/release-maintenance/nginx.conf` en küçük bakım yanıtlayıcısı olarak yerel commit'te sabitlendi. Linux/amd64 `nginxinc/nginx-unprivileged:stable-alpine-slim@sha256:307ca0bd...` imajı Trivy 0.72.0/27 Eylül DB ile 0 Critical/0 High verdi; önceki Node/Caddy/non-slim seçenekleri sırasıyla 8/17/1 High taşıyordu. Aynı kesin Nginx config'iyle izole Traefik'te dört hedef HTTP/HTTPS rotası 200 → 503 (`Retry-After:300`, yönlendirme yok) → 200; ilgisiz host 404. `nginx -t`, GET/POST ve bağımsız kod/güvenlik incelemeleri geçti. Root olmayan/salt-okunur konteynerin 16 MiB `/tmp` tmpfs ve 64 MiB/64 PID sınırıyla ~7.2 MiB kullandığı görüldü. Geçici konteyner/ağ/sertifika ve üretilen 1.3 GiB genel imaj tarama önbelleği silindi. Canlı proxy/ACME/network, eski yazıcı kesmesi, mail TLS ve taze kurtarma hâlâ açık; canlı erişim/değişiklik, push/deploy yok; kullanıcı WIP korunur. **Production NO-GO.**
+
 ## Dört-router HTTP/HTTPS ingress provası — 2026-09-27
 
 İzole Traefik 3.6.7 ortamında iki host × HTTP/HTTPS için priority-10000 bakım router'ları, doğrulanan sentetik TLS sertifikası ve digest-sabit Linux/amd64 503 responder ile 200 → 503/`Retry-After: 300` → 200 geçti; ilgisiz host HTTP/HTTPS 404 kaldı ve yönlendirme yoktu. Responder root olmayan, salt-okunur, yetenekleri düşürülmüş ve kaynak sınırları olan iç ağ konteyneriydi. Yerel konteyner/ağ/sertifika kaldırıldı. Bu üretim ACME, Docker+file provider önceliği, responder zafiyet incelemesi veya canlı writer/mail/kurtarma kanıtı değil. Tek değişiklik kartı `.ai/issues/2026-09-27-release-window-change-sheet.md` güncellendi. Canlı erişim/değişiklik, push ve deploy yok; kullanıcı frontend WIP'i korunur. **Production NO-GO.**
