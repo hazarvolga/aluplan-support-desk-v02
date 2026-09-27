@@ -8,6 +8,10 @@ const deployScript = await readFile(
     new URL('../apps/backend/scripts/deploy.sh', import.meta.url),
     'utf8',
 );
+const backendMain = await readFile(
+    new URL('../apps/backend/src/main.ts', import.meta.url),
+    'utf8',
+);
 const migrateOnceScript = await readFile(
     new URL('../apps/backend/scripts/migrate-once.sh', import.meta.url),
     'utf8',
@@ -109,6 +113,14 @@ test('normal production boot does not run recovery, seed, or role-repair scripts
         deployScriptStat.mode & 0o111,
         0,
         'canonical deploy script must remain executable outside Docker',
+    );
+});
+
+test('production backend exits explicitly after Nest shutdown hooks when Node is Docker PID 1', () => {
+    assert.match(deployScript, /exec node apps\/backend\/dist\/main\.js/);
+    assert.match(
+        backendMain,
+        /app\.enableShutdownHooks\(\s*undefined\s*,\s*\{\s*useProcessExit:\s*true\s*\}\s*\)/,
     );
 });
 
