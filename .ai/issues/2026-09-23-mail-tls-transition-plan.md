@@ -1,5 +1,11 @@
 # Mail transport transition plan — 2026-09-23
 
+## 2026-09-27 local same-image/same-volume DMS recreate checkpoint
+
+Opt-in `MAIL_VOLUME_RECREATE_REHEARSAL=synthetic-local-only` adds three uniquely named, owner-labelled local Docker volumes to the pinned DMS harness, with generated credentials and no published ports. The final combined local run passed: two delivered synthetic INBOX messages retained raw-message SHA-256, binary attachment bytes, UID, UIDVALIDITY and `\\Seen` parity after DMS stop/remove/recreate against the same image and volumes. The compiled frozen-backend mail-service, packaged-library and certificate-renewal checks also passed in that run. An injected post-volume-create failure returned a nonzero exit and explicitly named retained diagnostic resources; labels were verified before their manual removal. Successful runs removed owned containers, network, volumes and fixture. No real mailbox or production endpoint was used.
+
+This narrows mandatory local gate 3 but does **not** prove pending SMTP spool, external MX/port25, real client inventory, production certificate/volume identity, live TLS activation or old-writer fencing. Do not promote this receipt to production GO. The next required work is the old-app/Redis/mail writer and source boundary, then a separately approved live maintenance checkpoint with fresh recoverable copies and explicit deploy authorization.
+
 ## 2026-09-27 compiled-service checkpoint after library probe
 
 Local `32c2c7b5` extended the same pinned, internal, no-published-port synthetic DMS rehearsal to load the frozen backend image's compiled `SmtpProvider` and `EmailInboundService`. Provider health/send, trusted SMTP587 STARTTLS and IMAP993 TLS, binary attachment bytes, a completed intake, duplicate re-poll without another ticket/upload, and failed ticket creation with source UNSEEN plus an in-memory hold marker passed. The image default entrypoint/AppModule did not run; no real DB, R2 or customer mailbox was supplied. Four focused shutdown/worker suites also passed 16/16. This improves local gate 3 but **does not close it**: PostgreSQL claim/real ticket/storage integration is separate, as are port25 intake, same-volume DMS recreate, real client inventory, mail TLS activation/renewal owner and old-live writer cutover. No production operation or approval followed.
