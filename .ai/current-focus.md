@@ -1,5 +1,17 @@
 # Current Focus
 
+## Glob-family compatibility checkpoint — 2026-09-27
+
+Four same-major root overrides: brace-expansion2.0.2->2.1.4 and5.0.2->5.0.9; minimatch9.0.1->already-present9.0.9; picomatch2.3.1->2.3.2. Preserve brace1, minimatch3/10, picomatch4 for separate disposition, not blanket dependency clearance. Selected minimatch9.0.9 rather than9.0.7 because9.0.9 retains brace2 and aligns an existing consumer;9.0.7 would introduce brace5 into that chain. Current Node22-compatible engine constraints retained. pnpm9 frozen ignore-scripts install passed; restored XLSX archive integrity removed during lock generation. Final lock diff is limited to these families and consumer edges, including Jest/Tailwind/build-tool consumers; not backend-only.
+
+Maintainer evidence: https://github.com/juliangruber/brace-expansion/security/advisories/GHSA-rgw5-rvv9-x895 (earlier bounds bypass, fixes2.1.4/5.0.9); https://github.com/isaacs/minimatch/security/advisories/GHSA-23c5-xmqv-rm74 and https://github.com/isaacs/minimatch/releases/tag/v9.0.9; https://github.com/micromatch/picomatch/security/advisories/GHSA-c2c7-rcm5-vvqj. No malicious stress fixtures executed. Latest image contains ten HIGH occurrences across these four versions, but do NOT subtract them without a new artifact scan.
+
+Independent consumer analysis: MJML->js-beautify->editorconfig/minimatch9 and glob10; MJML CLI->chokidar->anymatch/readdirp->picomatch2; Sentry->@fastify/otel->minimatch10->brace5; additional Jest/micromatch consumers. App email renderer sets beautify:false, and backend is Express, not Fastify. Installed chains do not establish untrusted request-time pattern execution, nor waive findings universally.
+
+New scripts/glob-dependency-compatibility.test.cjs:14tests RED9compatPASS/5versionFAIL ->GREEN14/14. Actual consumer resolutions, bounded brace alternatives/ranges/Turkish paths, globstar/extglob/negative matching, anymatch exclusions and inline MJML render with includes/beautify/minify disabled. Combined glob/XLSX/mail25/25 network-denied; mocked email service/processor23/23 before/after, frontend Vitest sanitizer4/4, backend/frontendtsc before/after pass. Jest uses documented langfuse-core NODE_PATH accommodation. No watcher/Sentry/normal-app/mail/DB startup. Independent code/security reviews GO for source only.
+
+No image build/rescan, live access, migration, restart, push or deploy; WIP retained. Last verified image remains2b90e02d0C30H71M10L. Next group remains consumer-based risk work (telemetry/configuration/rendering); before release, wire new standalone dependency regression tests into a recurring test/CI entrypoint rather than relying solely on manual invocation. Authenticated data workflows/drain/forward recovery/operational gates remain open.
+
 ## Inbound-mail semver source patch — 2026-09-27
 
 Scoped override utf7@1.0.2>semver:5.7.2 replaces its sole5.3.0 edge. Actual backend chain imap-simple5.1.0 ->imap0.8.19 ->utf7 1.0.2 unchanged. Other semver majors/consumers remain unchanged. Official maintainer release https://github.com/npm/node-semver/releases/tag/v5.7.2 and advisory https://github.com/advisories/GHSA-c2qf-rxjj-qqgw identify the5.7.2 fix for CVE-2022-25883, involving untrusted Range input. Inspected utf7 uses gte(process.version,'6.0.0') only; no customer-controlled range input or demonstrated live exploitation established. Do not describe this as fixing a proven mail-message exploit.

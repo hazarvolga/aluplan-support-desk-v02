@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Scoped glob-family patches — 2026-09-27
+
+Four same-major overrides patch brace2/5, minimatch9 and picomatch2 while retaining other majors; lock/XLSX integrity reviewed and frozenignore-scripts install passed.14new tests RED9pass5versionfail ->GREEN14; combined25, mail23 pre/post, frontend4, both tsc pre/post pass. Actual consumer paths include MJML tooling/SentryFastify/Jest, not proof of public reachability. No newimage; last0C30H unchanged, ten corresponding HIGH occurrences not arithmetically subtracted. Code/security source reviews GO. New regression CI wiring remains pre-release task. No live/mail/DB/migration/push/deploy; WIP retained. Sources and scope in current-focus.
+
 ## Scoped inbound semver checkpoint — 2026-09-27
 
 utf7-only override semver5.3->5.7.2 for CVE-2022-25883; no other mail/library settings changed. Actual call uses runtime Node version, not proven untrusted Range. Four consumer tests RED3pass1versionfail ->GREEN4, mail/OTel/XLSX14/14; three mocked inbound suites30/30 pre/post; backendtsc pass. pnpm-generated unrelated editorconfig edge change/XLSX checksum loss restored before successful frozen ignore-scripts install. Upstream links/integrity/limitations in current-focus. No newimage/scan/live/mailbox/DB/migration/push/deploy; WIP retained, last image0C30H unchanged.
