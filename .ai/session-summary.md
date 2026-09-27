@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Multipart/cookie source checkpoint — 2026-09-27
+
+Same-major form-data2.5.6/4.0.6 and js-cookie3.0.8 patches, expectedhasownedge only; preserveXLSXintegrity/frozeninstall.17newtests RED7pass10fail ->GREEN17; with2CIcontracts19/19. Explicit22-file recurring aggregate158/158 and both tsc pre/post pass. Independent code/security GO. Type/test-tool and MJML dependency paths do not demonstrate public exploitability; fixtures are puremultipart buffers/fakecookie sink, not realuploads/auth. No schema/app/credentials/live/push/deploy changes or newimage; last0C30Hartifact unchanged. Current-focus contains sources/reachability/remaining gates; WIP preserved.
+
 ## Dependency regression CI wiring — 2026-09-27
 
 Added explicit root test:security:dependencies (19existingfiles+newsourcecontract), serial file execution; existing CI build job gets unconditional5minute step afterinstall beforePrisma. RED2->GREEN2; actual pnpmcommand141/141 loopback-onlysandbox passed, YAML parse/structure and independent code review passed. No packageversion/lock/app/schema/deployconfiguration changes. Existing CI localPGservice preserved; tests themselves DB-independent. HostNode24 versus CI22 remains a hosted-validation limitation. No remoteCI/push/build/rescan/live/data changes; WIP preserved. Current-focus records exact scope and next gates.
