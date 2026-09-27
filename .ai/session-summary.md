@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Final-image data restore gate — 2026-09-27
+
+Exact c602031d backend A13 restore/migration proof passed on isolated existing Sept17-derived sanitized input. New source/archive/smoke/image-bound private receipt created without relabeling old evidence; bounded independent bridge review approved. Extra exact-image static migration/runtime checks passed.77/77 sanitizer/A13 safety tests passed; real two-pass migration preserved protected fingerprints and180tickets/563messages/114attachmentrecords/1285users, second pass no-op. Run final-c602031d-20260927 has parity/complete/cleanup receipts; exact labelled Docker resources removed, original dump retained. No app boot/live/push/deploy; next is fresh blocked-egress working-clone application acceptance, not a claim of fresh-live/attachment-byte/forward-recovery proof. Details and boundaries in current-focus; next-env WIP unchanged.
+
 ## Exact production-configured frontend artifact — 2026-09-27
 
 Pinned c602031d matches backend source. Local curated225file source build with verified public API passed separate typecheck/Nextbuild; image3b6579da7b0e298fe0de0bac5f4da9fb5796cb13c43dbe289fc9189445873d2c. Independent helper/source/asset reviews found no actionable blocker; missing source og-image deferred. Three network-none nonroot permissions/vendor/HTTP smoke programs passed; exact public URL present in7static chunks, all owned containers removed. Same fresh advisory DB scan0C0H0M1L (esbuild), no suppression; first temporary-cache copy failed, direct readonly DB mount retry passed. Full hashes/provenance/limits in current-focus. No product/live/DB/push/deploy changes, unrelated next-env WIP preserved. Next mandatory gate is combined isolated application/data acceptance, not another optional upgrade batch.
