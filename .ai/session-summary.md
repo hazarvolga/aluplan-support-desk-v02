@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Exact backend artifact after shutdown fix — 2026-09-27
+
+Frozen c602031d local amd64 build exit0; immutable image aa150a9c660cba09c4db6476b21f7da552ee59c2addd9c89acb82ab492691471. Network-none inert native-module/permissions/client/offline-schema smoke passed and owned cleanup verified. Same fresh advisory DB scan now0C3H14M3L (previous0C3H30M7L); same three scoped High findings remain, no blanket waiver. Seventeen pure rehearsal guards passed, not real-data application proof. Helpers only changed revision; independent helper review unavailable due agent limit. Full identities/evidence/limits in current-focus. No product changes/live/DB/push/deploy. Frontend production artifact and isolated application acceptance next.
+
 ## Tracked-work runtime shutdown fix — 2026-09-27
 
 a177411f tests /9a060806 product: existing worker coordinator WIP now joins workers, closes shared admission, then waits for actual tracked idle before final dependency hooks. RED real HTTP runtime mode plus two Nest cases; GREEN12suites83tests, both typechecks, scoped coordinator branch coverage87.5%. Independent bounded review approved; secret scans clean. Existing no-hook counterexample retained, no all-writer/real-persistence claim. No schema/env/endpoint/migration or live operations. Frontend next-env remains unrelated WIP. Current-focus records limits and next grouped artifact/isolated acceptance milestone.
