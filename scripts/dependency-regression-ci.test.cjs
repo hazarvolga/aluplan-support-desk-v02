@@ -10,9 +10,11 @@ const reviewed = [
     'axios-dependency-security',
     'browser-target-dependency',
     'consolidated-dependency-behavior',
+    'cookie-dependency-security',
     'css-dependency-security',
     'defu-dependency-compatibility',
     'dependency-regression-ci',
+    'form-data-dependency-security',
     'glob-dependency-compatibility',
     'grpc-dependency-security',
     'mail-dependency-security',
@@ -30,7 +32,7 @@ const reviewed = [
 ].map((name) => `scripts/${name}.test.cjs`);
 
 test('dependency regression command explicitly runs the reviewed files exactly once', () => {
-    assert.equal(reviewed.length, 20);
+    assert.equal(reviewed.length, 22);
     assert.equal(new Set(reviewed).size, reviewed.length);
     for (const file of reviewed) assert.equal(existsSync(path.join(root, file)), true, file);
     // Exact command forbids glob expansion, shell chains, bypass flags and extra programs.
