@@ -33,11 +33,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm --filter @aluplan/frontend lint
-
       - name: Run Unit Tests with Coverage
         run: pnpm --filter @aluplan/frontend test:unit:cov
+
+      - name: Lint
+        run: pnpm --filter @aluplan/frontend lint
 
       - name: Upload Coverage Report
         if: always()
