@@ -1,5 +1,15 @@
 # Session Summary - 2026-05-13
 
+## Exact production-configured frontend artifact — 2026-09-27
+
+Pinned c602031d matches backend source. Local curated225file source build with verified public API passed separate typecheck/Nextbuild; image3b6579da7b0e298fe0de0bac5f4da9fb5796cb13c43dbe289fc9189445873d2c. Independent helper/source/asset reviews found no actionable blocker; missing source og-image deferred. Three network-none nonroot permissions/vendor/HTTP smoke programs passed; exact public URL present in7static chunks, all owned containers removed. Same fresh advisory DB scan0C0H0M1L (esbuild), no suppression; first temporary-cache copy failed, direct readonly DB mount retry passed. Full hashes/provenance/limits in current-focus. No product/live/DB/push/deploy changes, unrelated next-env WIP preserved. Next mandatory gate is combined isolated application/data acceptance, not another optional upgrade batch.
+
+## Approved read-only Coolify configuration check — 2026-09-27
+
+Owner explicitly approved only frontend API URL/backend port observation. Firefox Coolify UI showed frontend resource h8k4ko84wkksgws4socsowgg configured with NEXT_PUBLIC_API_URL=https://api.allplan.net.tr/api/v1 and NEXT_INTERNAL_API_URL=http://backend-api:4000/api/v1, both available at buildtime/runtime. Backend dc4csokww8ss0cs0sc8c8gco domain https://api.allplan.net.tr, PORT4000 and Ports Exposes4000; UI explicitly reported their match. No settings saved, restart/deploy/DB operation or secret credential reveal.
+
+Important provenance limit: frontend resource status was Exited, backend Running (unknown). These are saved control-plane settings, not proof of the active frontend container, runtime listener or proxy routing. Old internal3001 note must not drive the new build; actual serving-container/network alias verification remains a separately scoped production gate. Local frontend preparation now uses the same c602031d committed source as the backend and the verified public URL, excluding dirty next-env and private data.
+
 ## Exact backend artifact after shutdown fix — 2026-09-27
 
 Frozen c602031d local amd64 build exit0; immutable image aa150a9c660cba09c4db6476b21f7da552ee59c2addd9c89acb82ab492691471. Network-none inert native-module/permissions/client/offline-schema smoke passed and owned cleanup verified. Same fresh advisory DB scan now0C3H14M3L (previous0C3H30M7L); same three scoped High findings remain, no blanket waiver. Seventeen pure rehearsal guards passed, not real-data application proof. Helpers only changed revision; independent helper review unavailable due agent limit. Full identities/evidence/limits in current-focus. No product changes/live/DB/push/deploy. Frontend production artifact and isolated application acceptance next.
