@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Jaeger checkpoint — 2026-09-27
+
+Local6cf13952 tests /3f5a12ba scoped Jaeger2.9 update. Pure malformed trace/baggage regression and valid Unicode roundtrip passed; prevented incidental frontend Sentry Core peer drift with restored lock binding+test. Final4tests, focused6/6 independently, aggregate28files234/234 and both typechecks passed. Frozenignore-scripts install, XLSX integrity and unrelated WIP preserved. No SDK activation, app/schema/startup change, image/rescan/live/data/push/deploy. Current-focus records next Prometheus cross-version reader proof and coherent-upgrade caveat; no production GO inferred.
+
 ## Hono / Node adapter checkpoint — 2026-09-27
 
 Localf113918f tests /97ebfb56 fixes @prisma/dev's Hono4.13.9 and node-server1.19.17, majors retained. Five tests RED3pass2fail ->GREEN5; focused7/7, aggregate26files225/225 and both typechecks passed. In-memory protected static path regression plus CORS compatibility and owned loopback adapter smoke only. No filesystem serving/Prisma/dev/Studio/env/DB/live execution or image/rescan/push/deploy. External override is NOT bundled Studio clearance. Independent reviews GO; WIP/XLSX preserved. Current-focus retains limits and next mysql2 batch.
