@@ -1,5 +1,13 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-27 — Local 4157dbee forward re-entry pass
+
+Rebuilt exact Linux/amd64 backend candidate after two small, test-first local fixes: Nest PID1 shutdown exit (`a0d3c265`/`f7ff49eb`) and preservation of existing announcement templates during startup (`d86ec9dc`/`4157dbee`). Targeted tests/typecheck and ops-safety suite passed before build; independent reviews found no blocker to bounded local rehearsal. The prior f7ff49e image stopped cleanly but changed existing template rows, so it is not the accepted candidate. Current image ID `sha256:45a47db7dfb713e01ebc26b8f96b0cccb6ff2dfba025a9fdcea48bddd4e303b6` and source archive SHA `ec7cf665c8026ba78f7fea294c1ba3ee5779e577fdcdaa524c9677c050a9391d` were checked.
+
+Fresh disposable local sanitized clone run `latest-reentry-100933a1ef5b` passed two 56-check probes, graceful stop exit 0, same DB/attachment volume re-entry with unchanged full fingerprint/migration ledger and two first-round attachment byte hashes, then further synthetic writes. Result remains `productionGo:false`; historical attachment bytes, all-writer drain and fresh production-window backup are unproved. Cleanup receipt and independent exact-label Docker audit found no leftover resources. No live access/change, push or deploy. Existing `apps/frontend/next-env.d.ts` WIP preserved. The private runner/evidence are not Git-tracked and may contain sensitive diagnostics.
+
+The `aluplan-support-intelligence` skill kept this a narrow release-blocker repair rather than a broader architecture change. Next mandatory path: artifact-specific security check and separately authorized production-window evidence for real data/storage/recovery, not immediate deployment.
+
 ## Frozen frontend browser gate — 2026-09-27
 
 Local-only final-c602031d frontend/backend Chromium authentication rehearsal passed twice on separate fresh disposable sanitized clones (`.private-data/release-evidence/final-browser-{0f30642921bc,c5f2eb54636c}`), including login, secure cookies, refresh, reset and old-session/password revocation. Fixture verification and owned-resource cleanup passed in both; no live operation. CSRF denial returned backend403 without CORS, so browser fetch was opaque; harness checks both layers. An earlier attempt passed auth steps but had one unclassified unexpected event; the two subsequent runs had zero. Docker VM gateway reachability remains unproven; external TCP/DNS blocked. Still NO-GO for production until historical bytes, drain/forward recovery and approved production-window gates. See current-focus for exact image/evidence limits.
