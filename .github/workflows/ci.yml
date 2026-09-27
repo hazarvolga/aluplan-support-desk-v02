@@ -29,6 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -77,7 +79,7 @@ jobs:
         timeout-minutes: 5
         run: pnpm test:security:dependencies
       - name: Prisma Generate
-        run: npx prisma generate
+        run: pnpm --filter @aluplan/database db:generate
       - name: Operational Safety Contracts (blocking)
         run: pnpm test:ops-safety
       - name: RBAC Source Contract (blocking)
@@ -125,7 +127,7 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install
       - name: Prisma Generate
-        run: npx prisma generate
+        run: pnpm --filter @aluplan/database db:generate
       - name: Run Backend Tests
         run: cd apps/backend && pnpm test -- --coverage
       - name: Upload coverage
