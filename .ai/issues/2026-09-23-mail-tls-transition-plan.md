@@ -1,5 +1,11 @@
 # Mail transport transition plan — 2026-09-23
 
+## 2026-09-27 exact-image synthetic mail-library checkpoint
+
+The frozen Linux/amd64 backend image `sha256:e7962dbe5cda314ce8aa4143a72ab7275344b00adcb7194128737c3cf38b3e2c` was exercised against the pinned v15.1.0 Docker Mailserver in a local internal Docker network with no published ports. Its packaged Node mail libraries authenticated over trusted SMTP587 STARTTLS and IMAP993 TLS, sent one synthetic message with four binary attachment bytes, and retrieved the same bytes without marking the source read. The certificate-renewal/rejection harness also passed and cleaned its owned containers/network. Only a synthetic account and generated local CA were used; no production mailbox, provider or database was contacted.
+
+This **partially** closes local gate 3 below. The inline probe uses packaged `nodemailer`, `imap-simple` and `mailparser`, not the compiled Nest `SmtpProvider`/`EmailInboundService`; source-level DMS integration was separately proven earlier, but the combined exact-image application/claim/duplicate/hold path remains unproven. Nor does this prove live certificate/configuration, port-25 delivery, persistent mail-volume recreate, known-client compatibility, writer fencing, final backup or deploy readiness. Production remains **NO-GO**.
+
 ## 2026-09-27 bounded cutover decision sheet — local plan, not execution approval
 
 **Decision: NO-GO at this checkpoint, not a same-day prohibition.** The acceptable interruption has no fixed one-hour deadline; go/no-go depends on completed proofs, not elapsed time. No live action, restart, configuration save, push or deploy is authorized by this sheet. Production customers continue to use the current system until a separately approved maintenance decision. Keep the first release narrow: the frozen frontend, the exact backend candidate and mail TLS; defer optional features, dependency upgrades, credential rotations not needed for cutover, and the 500 unrelated failed knowledge-sync jobs.
