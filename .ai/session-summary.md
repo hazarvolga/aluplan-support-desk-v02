@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## DOMPurify source update — 2026-09-27
+
+Localfc98fc74 regression/CI and df22e760 scoped DOMPurify3.4.13 override. Six tests RED5pass1versionfail ->GREEN; aggregate32files249/249, existing frontend7/7, both typechecks and offline Chromium actual-sanitizer rendered fixture passed. Independent reviews GO; Sentry/XLSX integrity preserved. No exploit reproduction or updated-image-scan claim. Latent SSR raw-input fallback recorded as next bounded repair; current ticket SSR exposure not established due loading/useEffect flow. No app-source/schema/data/live/push/deploy changes; WIP intact. Full evidence limits in current-focus.
+
 ## Fresh DB scan and focused risk triage — 2026-09-27
 
 Same11d77fbb backend artifact re-scanned offline using separately refreshed2026-09-27 Trivy DB: still0C3H30M7L. Download and scan exited0, owned containers removed; hashes/paths in current-focus. Independent review reran7 isolated tests and supports patched OTel exporter chain/explicitly disabled MJML minifier path, not blanket waiver. Source review identifies active frontend DOMPurify and backend FileTypeValidator consumers among remaining Mediums; next scope is reachability-led compatible fixes, not count-driven wholesale upgrades. No product edits, live access, DB writes, restart, push or deploy; existing WIP intact.
