@@ -1,5 +1,9 @@
 # Current Focus
 
+## Canlı salt-okunur ingress kimliği — 2026-09-27
+
+Açık dar kullanıcı onayıyla yalnız router/konteyner/proxy metadata okundu. `allplan.net.tr` çalışan manuel frontend'de HTTP/HTTPS priority 9000; `api.allplan.net.tr` eski Coolify backend'de iki router ve açık priority yok. Traefik 3.6.7 Linux/amd64 dosya sağlayıcısını izliyor; mevcut durmuş bakım konteyneri tek host/302 olduğu için kullanılamaz. Yerel kesin backend/frontend imajları `87372fe4`/`c602031d` Linux/amd64 olarak mevcut; GitHub `main` salt-okunur sorguda hâlâ `d9b21b9d`, dolayısıyla Coolify frontend `main`/`HEAD` düğmesine basılmayacak. Sıradaki dar kapı iki-host 503'ün üretim için sahipli kurulumu/geri çekilmesi ve eski yazarların kesme/uzlaştırma yöntemini tek bakım planında kapatmak; ardından taze DB/mail/R2 checkpoint'i, canlı TLS kabulü ve ayrı `push et`/`deploy et`. Bu inceleme canlıda hiçbir değişiklik yapmadı. **Production NO-GO.**
+
 ## Yerel ingress geri dönüş bulgusu — 2026-09-27
 
 Aynı izole Traefik 3.6.7 sürecinde iki hedef host 200 → 503 → 200 döndü; `aluplan.net.tr` her aşamada 404 kaldı. Ancak bakım YAML dosyasını silmek tek başına 10 saniyede dönüş üretmedi; kalan temel dosyayı değiştirmek provider yeniden yüklemesini tetikledi. Canlıda dosya silerek rollback varsayılmayacak; kesin konfigürasyon sahipliği, güvenilir yükleme/geri çekme yöntemi ve iki-host yanıt kontrolü bakım planında ayrıca kanıtlanmalı. Yerel kaynaklar temizlendi, canlıya erişim/değişiklik yok. Eski yazıcıların güvenli kesilmesi, posta TLS, taze kurtarma noktası ve ayrı push/deploy onayı sürüyor. **Production NO-GO.**
