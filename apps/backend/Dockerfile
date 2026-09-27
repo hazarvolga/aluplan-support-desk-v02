@@ -51,8 +51,7 @@ ENV CHROME_BIN=/usr/bin/chromium-browser \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
     PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-RUN npm install -g pnpm@9.15.4 && \
-    npm install -g prisma@7.4.2
+RUN npm install -g pnpm@9.15.4
 
 # 1. Copy entire workspace (metadata + source needed for pnpm install)
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./
@@ -67,6 +66,11 @@ RUN pnpm config set registry https://registry.npmjs.org/ && \
     pnpm config set fetch-timeout 120000 && \
     pnpm config set network-concurrency 4 && \
     pnpm install --prod --frozen-lockfile
+
+# Preserve the migration CLI interface using the frozen workspace dependency.
+# Link the executable JS, not pnpm's location-dependent .bin shell wrapper.
+RUN test -x /app/packages/database/node_modules/prisma/build/index.js && \
+    ln -s /app/packages/database/node_modules/prisma/build/index.js /usr/local/bin/prisma
 
 # 3. Copy database package source files (NOT the generated client)
 COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
@@ -84,8 +88,8 @@ COPY --from=builder /app/scripts/verify-rbac-database.mjs ./scripts/verify-rbac-
 # 4. Generate Prisma client in runner (this creates packages/database/client/)
 RUN cd packages/database && prisma generate --schema ./prisma/schema.prisma
 
-# Installation and client generation are complete. Retain global Prisma for the
-# explicit migrate-once command and all workspace dependencies; remove only the
+# Installation and client generation are complete. Retain the workspace Prisma
+# CLI link and all workspace dependencies for migrate-once; remove only the
 # reviewed global package-manager locations from the pinned Node base image.
 RUN rm -rf /usr/local/lib/node_modules/npm \
     /usr/local/lib/node_modules/pnpm \
