@@ -24,7 +24,8 @@ export class RuleEngineService {
     async handleMessageAdded(event: { ticket: Ticket; message: TicketMessage }) {
         await this.evaluateRules('MESSAGE_ADDED', event.ticket.id, {
             ...event.ticket,
-            messageBody: event.message.message
+            messageBody: event.message.message,
+            messageId: event.message.id,
         });
     }
 
