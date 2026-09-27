@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-27 — Four-router HTTP/HTTPS maintenance-fence rehearsal
+
+An internal-only Traefik 3.6.7 file-provider fixture with synthetic trusted TLS and a digest-pinned Linux/amd64 Node responder exercised both `allplan.net.tr` and `api.allplan.net.tr` over HTTP and verified HTTPS. All four routes returned 200 → 503 (`Retry-After: 300`, no redirect) → 200 on same-file activation/withdrawal; unrelated HTTP/HTTPS host routing stayed 404. The 503 container was non-root, read-only, capability-dropped, no-new-privileges, bounded to 64 MiB/64 PIDs, with no published port, Docker socket, mount, secret or customer data. Exact local containers/network and synthetic certificate/key were removed. This does not prove live ACME, Docker+file provider coexistence, image security acceptance, in-flight drain or production state. The release change sheet was updated; no live access, push, deploy or product change; user frontend WIP preserved. Production remains NO-GO.
+
 ## 2026-09-27 — Single-file ingress toggle and consolidated cutover card
 
 An owned local Traefik 3.6.7 file-provider rehearsal tested one valid service-only YAML, added target-host routers in the same file, then returned it to service-only. A first inactive `http: {}` was rejected and not counted. The accepted same-process response sequence was 200 → 503 with `Retry-After:300` → 200 for `allplan.net.tr` and `api.allplan.net.tr`; unrelated host stayed404 and no redirect was emitted. Three exact-label disposable containers, network and temporary files were removed with absence checks. New `.ai/issues/2026-09-27-release-window-change-sheet.md` captures frozen artifacts, live route ownership, ingress/old-writer/DB-R2-mail/TLS gates, abort semantics and approval boundaries in one place. No production access/change, push, deploy or product edit; user frontend WIP preserved. This is not public TLS/four-router/production-responder acceptance, and release remains NO-GO.

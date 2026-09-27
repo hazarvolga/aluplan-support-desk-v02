@@ -1,5 +1,9 @@
 # Current Focus
 
+## Dört-router HTTP/HTTPS ingress provası — 2026-09-27
+
+İzole Traefik 3.6.7 ortamında iki host × HTTP/HTTPS için priority-10000 bakım router'ları, doğrulanan sentetik TLS sertifikası ve digest-sabit Linux/amd64 503 responder ile 200 → 503/`Retry-After: 300` → 200 geçti; ilgisiz host HTTP/HTTPS 404 kaldı ve yönlendirme yoktu. Responder root olmayan, salt-okunur, yetenekleri düşürülmüş ve kaynak sınırları olan iç ağ konteyneriydi. Yerel konteyner/ağ/sertifika kaldırıldı. Bu üretim ACME, Docker+file provider önceliği, responder zafiyet incelemesi veya canlı writer/mail/kurtarma kanıtı değil. Tek değişiklik kartı `.ai/issues/2026-09-27-release-window-change-sheet.md` güncellendi. Canlı erişim/değişiklik, push ve deploy yok; kullanıcı frontend WIP'i korunur. **Production NO-GO.**
+
 ## Tek değişiklik kartı ve geri çekilebilir ingress — 2026-09-27
 
 Kısa yayın GO/NO-GO kartı `.ai/issues/2026-09-27-release-window-change-sheet.md` altında hazırlandı. Yerel Traefik 3.6.7'de aynı dosyanın geçerli service-only → iki router'lı aktif → service-only biçimleri, hedef hostlarda 200 → 503 → 200 verdi; boş `http: {}` geçersiz olduğundan kabul sayılmadı. Bu yalnız tek sentetik HTTP girişidir. Dört canlı HTTP/HTTPS router'ı, kesin 503 responder imajı, eski backend yazıcı kesmesi, posta TLS ve taze kurtarma noktası açık. Canlı erişim/değişiklik, push veya deploy yapılmadı; yerel kaynaklar temizlendi. **Production NO-GO.**
