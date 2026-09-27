@@ -49,6 +49,7 @@
   "packageManager": "pnpm@9.15.4",
   "pnpm": {
     "overrides": {
+      "utf7@1.0.2>semver": "5.7.2",
       "path-to-regexp@>=8.0.0 <8.4.2": "8.4.2",
       "undici@>=7.0.0 <7.30.0": "7.30.0",
       "@grpc/grpc-js@>=1.14.0 <1.14.4": "1.14.4",

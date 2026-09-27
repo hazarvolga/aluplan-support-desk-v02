@@ -5,6 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
+  utf7@1.0.2>semver: 5.7.2
   path-to-regexp@>=8.0.0 <8.4.2: 8.4.2
   undici@>=7.0.0 <7.30.0: 7.30.0
   '@grpc/grpc-js@>=1.14.0 <1.14.4': 1.14.4
@@ -9356,8 +9357,8 @@ packages:
   selderee@0.12.0:
     resolution: {integrity: sha512-b1YMh3+DHZp59DLna3qVwQ5iOla/nrI6mLBNW02XxU77M3046Df6VLkoaJyFz20VsGIG5kkp+FK0kg4K4HnUFw==}
 
-  semver@5.3.0:
-    resolution: {integrity: sha512-mfmm3/H9+67MCVix1h+IXTpDwL6710LyHuk7+cWC9T1mE0qz4iHhh6r4hU2wrIT9iTsAAC2XQRvfblL028cpLw==}
+  semver@5.7.2:
+    resolution: {integrity: sha512-cBznnQ9KjJqU67B52RMC65CMarK2600WFnbkcaiwWq3xy/5haFJlshgnpjovMVJ+Hff49d8GEn0b87C5pDQ10g==}
     hasBin: true
 
   semver@6.3.1:
@@ -21071,7 +21072,7 @@ snapshots:
     dependencies:
       parseley: 0.13.1
 
-  semver@5.3.0: {}
+  semver@5.7.2: {}
 
   semver@6.3.1: {}
 
@@ -21971,7 +21972,7 @@ snapshots:
 
   utf7@1.0.2:
     dependencies:
-      semver: 5.3.0
+      semver: 5.7.2
 
   utf8-byte-length@1.0.5: {}
 
