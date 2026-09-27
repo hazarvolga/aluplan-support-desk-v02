@@ -1,5 +1,9 @@
 # Current Focus
 
+## Yerel ingress geri dönüş bulgusu — 2026-09-27
+
+Aynı izole Traefik 3.6.7 sürecinde iki hedef host 200 → 503 → 200 döndü; `aluplan.net.tr` her aşamada 404 kaldı. Ancak bakım YAML dosyasını silmek tek başına 10 saniyede dönüş üretmedi; kalan temel dosyayı değiştirmek provider yeniden yüklemesini tetikledi. Canlıda dosya silerek rollback varsayılmayacak; kesin konfigürasyon sahipliği, güvenilir yükleme/geri çekme yöntemi ve iki-host yanıt kontrolü bakım planında ayrıca kanıtlanmalı. Yerel kaynaklar temizlendi, canlıya erişim/değişiklik yok. Eski yazıcıların güvenli kesilmesi, posta TLS, taze kurtarma noktası ve ayrı push/deploy onayı sürüyor. **Production NO-GO.**
+
 ## Yerel iki-host ingress provası — 2026-09-27
 
 Sahipli, iç ağlı ve dış port/Docker socket/veri içermeyen Traefik 3.6.7 provasında ayrı `allplan.net.tr` ve `api.allplan.net.tr` yüksek-öncelikli bakım router'ları HTTP 503 + `Retry-After: 300` verdi; `Location` yok, `aluplan.net.tr` eşleşmedi (404). Üç sentetik konteyner/ağ ve geçici YAML temizlendi, etiketli artık yok. Bu canlı API önceliği/TLS/Coolify kalıcılığı veya eski yazarların durduğu kanıtı değil. Canlı uygulama/posta/DB ayarı değişmedi. Sıradaki kapı: tam canlı router öncelikleri ve bakım-fence kurulum/geri alma yönteminin ayrıca kapsamlı değerlendirmesi; ardından tüm eski yazıcılar, kuyruk ve posta için bakımlı durdurma/reconcile, taze kurtarma checkpoint'i, TLS kabulü ve açık push/deploy onayı. **Production NO-GO.**
