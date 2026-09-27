@@ -29,7 +29,7 @@ import { ProductsModule } from './products/products.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { ReportsModule } from './reports/reports.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
-import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD, DiscoveryModule } from '@nestjs/core';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { RedisModule } from './redis/redis.module';
 
@@ -51,6 +51,7 @@ import { ProactiveChatModule } from './proactive-chat/proactive-chat.module';
 import { OpsDashboardModule } from './ops-dashboard/ops-dashboard.module';
 import { ReviewCenterModule } from './review-center/review-center.module';
 import { CronShutdownService } from './common/services/cron-shutdown.service';
+import { WorkerShutdownService } from './common/services/worker-shutdown.service';
 
 @Module({
     imports: [
@@ -58,6 +59,7 @@ import { CronShutdownService } from './common/services/cron-shutdown.service';
         // discovery order during final shutdown, so workers finish before Redis.
         // Keep redis-shutdown-order.spec green when changing imports/Nest versions.
         RedisModule,
+        DiscoveryModule,
         SentryModule.forRoot(),
         LoggerModule.forRootAsync({
             imports: [ConfigModule],
@@ -181,6 +183,7 @@ import { CronShutdownService } from './common/services/cron-shutdown.service';
     ],
     providers: [
         CronShutdownService,
+        WorkerShutdownService,
         {
             provide: APP_INTERCEPTOR,
             useClass: AuditLogInterceptor,

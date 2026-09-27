@@ -9,7 +9,8 @@ export type WorkDrainResult = Readonly<{
 }>;
 
 /**
- * Process-local work accounting; partial integrations, no shutdown hook yet.
+ * Process-local work accounting; WorkerShutdownService joins registered work.
+ * Integrations remain partial: unregistered writers are outside this guarantee.
  * Every caller must return its actual operation promise, not a response lifetime.
  * Drained means settled tracked work, not successful delivery or global quiescence.
  */
