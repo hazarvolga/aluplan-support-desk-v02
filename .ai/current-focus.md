@@ -1,5 +1,11 @@
 # Current Focus
 
+## Güncel yayın kapısı — 2026-09-27 PostgreSQL restore geçti, R2 açık
+
+Ayrı dar onayla canlı PG17 `aluplan_support` veritabanının custom dump'ı doğrudan AES-256 şifreli ve Git dışı Mac imajına alındı. 144758018 bayt / SHA-256 `213523ac7a760d1b89606509e8b286ba9d1fa108826cb483a432bab72c48a8bc`; katalog ve ağsız/portsuz PG17 izole tam restore geçti. 62 tablo ve 182 bilet / 578 mesaj / 114 ek kaydı / 1289 kullanıcı anlık canlı sayımlarıyla eşleşti. İmaj ayrıldı, Docker Desktop yerel dosya tutamaçlarını bırakmak için düzgün durdurulup tekrar başlatıldı. Canlı DB yazısı, restart, migration, R2 değişikliği, push veya deploy yok. Kanıt `.ai/issues/2026-09-27-live-readonly-release-inventory.md`, yerel docs commit `7d75d75e`.
+
+Bu genel `devam edelim` yeni canlı erişim/yazma onayı değildir. Yerel kod incelemesinde `scripts/a14b/r2-adapter.mjs` yalnız `ListObjectsV2`/`HeadObject` destekliyor; önceki 109 R2 anahtar/boyut eşleşmesi object body restore kanıtı değil. `apps/backend/src/common/services/storage.service.ts` `DeleteObject` kullandığı için canlı uygulama bucket'ına retention lock koymak akışı bozabilir; ayrı backup hedefi daha güvenli adaydır. Beş tarihsel `FAILED_STORAGE_UPLOAD_...` kaydı ve 62,9 GB/477 nesnenin uygulama-bağımlı kapsamı açık. Sonraki dar faz: mevcut metadata ve DB referanslarından tam kopya kapsamı/maliyetini yerelde sabitle; sonra ayrı onayla sınırlandırılmış body-read canary ve ayrı hedefe kopya/geri-okuma kanıtı. PostgreSQL snapshot'ı tek başına production GO vermez; eski snapshot'ı yeni müşteri yazılarının üstüne restore etmek yasaktır.
+
 ## Canlı salt-okunur veri/depolama envanteri — 2026-09-27
 
 Kullanıcının dar onayıyla canlı SSH/Docker metadata, PostgreSQL `SELECT` ve R2 `ListObjectsV2` incelendi; hiçbir canlı yazma, backup, restart, migration, push veya deploy yapılmadı. Uygulama DB'sinde anlık 182 bilet / 578 mesaj / 114 ek / 1289 kullanıcı var. R2'de 477 nesne (~62,9 GB) listelendi. Etkin 114 ek kaydının 109 gerçek anahtarı ve boyutu eşleşiyor; 5 kayıt tarihsel `FAILED_STORAGE_UPLOAD_...` işareti ve bunların dosya baytları kanıtlanmadı. Tüm etkin ek paritesi başarısız; işaretsiz R2 anahtar/boyut paritesi başarılı. Bu listeleme byte bütünlüğü veya restore kanıtı değildir. Ayrıntı: `.ai/issues/2026-09-27-live-readonly-release-inventory.md`.
