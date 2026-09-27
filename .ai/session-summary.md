@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Dependency runtime boundary review — 2026-09-27
+
+Read-only telemetry/Prisma split: seven HIGH occurrences belong to the separately npm-global installed Prisma CLI, outside root pnpm overrides/lock. CLI is required by migrate-once and normal deploy entrypoint; do not remove or blindly major-upgrade it. Next candidate is compatibility-proven use of the already-retained locked workspace CLI at unchanged7.4.2, then narrow fixes; not implemented or accepted, and deduplication alone is not remediation. Network-denied boot contracts10/10. Independent inspection confirms latent otel.ts Resource export mismatch; no source preload found, live env unknown, Sentry remains in AppModule. Source contradicts stale skill preload claims. No app/config/dependency changes, build, live/data/provider operations, migration, push or deploy. WIP retained; last image0C43H unchanged. Details and test conditions in current-focus.
+
 ## Routing dependency checkpoint — 2026-09-26
 
 dd8ed7d7/c30d80a4 add six routing compatibility tests and scoped path-to-regexp8.3->8.4.2 across four actual Nest/Express consumer edges;6.3 unchanged, XLSX pin retained. RED5pass1versionfail ->6/6; combined dependency29/29, mocked auth/tickets/RBAC42/42 pre/post, backendtsc pre/post pass, XLSX7/7, local200. Independent reviews and secret scans pass. Synthetic routing tests do not certify actual authorization or live exploitability. No new image/scan: last0C43H remains. Telemetry initialization/Resource-export mismatch recorded for separate coordinated review, not changed or activated. No live/data/provider/migration/restart/push/deploy; WIP preserved. Sources, scope and next grouped risk/rebuild gates in current-focus.

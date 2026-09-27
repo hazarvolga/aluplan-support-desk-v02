@@ -1,5 +1,17 @@
 # Current Focus
 
+## Telemetry and migration-tool disposition — 2026-09-27
+
+Read-only follow-up at d0284ec1, not a dependency update or release acceptance. The previous cb8ecfd6 image report identifies exactly seven HIGH occurrences under usr/local/lib/node_modules/prisma: @hono/node-server1.19.9 (one), deepmerge-ts7.1.5 (one), effect3.18.4 (one), hono4.11.4 (two), lodash4.17.21 (one), mysql2 3.15.3 (one). These are distinct from workspace copies. Dockerfile separately installs npm-global prisma7.4.2; this dependency tree is outside pnpm-lock.yaml and root overrides. Pinning the CLI version alone does not lock its full transitive tree.
+
+Do not delete Prisma or blindly force major deepmerge-ts8 to reduce scan counts. migrate-once.sh invokes the global prisma command; deploy.sh invokes migrate-once before node, so even a packaging-only CLI change affects the startup/migration path. The normal API does not thereby become a Prisma Studio server, but CLI presence and infrequent execution do not prove all findings unreachable. Existing production-boot-safety tests repeated network-denied:10/10, no database connection. This is source/guard proof, not a migration rehearsal.
+
+Smallest next candidate to evaluate: preserve Prisma/client7.4.2 and the prisma command interface, but resolve the CLI from the already-retained, frozen workspace dependency tree rather than a second unlocked global installation. First prove command resolution, generation, version, offline schema diff and packaging/permissions under Linux/amd64; then handle compatible dependency fixes in that single tree. This is a proposal, NOT implemented or accepted. Removing a duplicate copy does not fix advisories in the remaining copy. If workspace execution differs, keep the existing toolchain until compatibility is established; no schema/migration changes as a shortcut.
+
+Independent telemetry inspection confirms resources2.6.0 exports resourceFromAttributes, while Resource is undefined. otel.ts constructs new Resource outside its catch, a latent startup failure if imported. Source startup does not import/preload otel.ts or instrument.ts; production NODE_OPTIONS remains unknown. AppModule still references Sentry, so do not describe all telemetry as absent. Skill reference claims that these files load before AppModule conflict with inspected source; source wins. Do not activate telemetry as a side effect of security dependency work. No broad OTel override, telemetry removal or risk waiver was made.
+
+No application/config edits, package install, image build, live access, DB/provider operation, restart, migration, push or deploy in this checkpoint. Preserved worker-shutdown/next-env work. Last verified backend image remains0C/43H; newer routing/Undici source fixes still await combined image validation. Release gates remain open.
+
 ## Routing dependency source checkpoint — 2026-09-26
 
 Local commits `dd8ed7d7` (tests), `c30d80a4` (dependency). Scoped override `path-to-regexp@>=8.0.0 <8.4.2` ->8.4.2 changes only one package/version/integrity and four consumer edges: Nest core/platform-express11.1.14, Swagger11.2.6, Express5.2.1->router2.2.0. Separate6.3.0 remains unchanged. No application routes, guards, schema or startup changes. pnpm9 frozen ignore-scripts installation passed; existing XLSX checksum restored after lock generation and regression7/7 passed.
