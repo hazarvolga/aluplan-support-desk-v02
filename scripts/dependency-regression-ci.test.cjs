@@ -29,6 +29,7 @@ const reviewed = [
     'otel-resource-compatibility',
     'path-routing-dependency-security',
     'prisma-cli-packaging',
+    'prometheus-dependency-security',
     'undici-dependency-security',
     'uri-dependency-security',
     'websocket-dependency-security',
@@ -38,7 +39,7 @@ const reviewed = [
 ].map((name) => `scripts/${name}.test.cjs`);
 
 test('dependency regression command explicitly runs the reviewed files exactly once', () => {
-    assert.equal(reviewed.length, 28);
+    assert.equal(reviewed.length, 29);
     assert.equal(new Set(reviewed).size, reviewed.length);
     for (const file of reviewed) assert.equal(existsSync(path.join(root, file)), true, file);
     // Exact command forbids glob expansion, shell chains, bypass flags and extra programs.
