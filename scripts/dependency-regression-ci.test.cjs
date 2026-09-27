@@ -12,6 +12,7 @@ const reviewed = [
     'consolidated-dependency-behavior',
     'cookie-dependency-security',
     'css-dependency-security',
+    'deepmerge-dependency-compatibility',
     'defu-dependency-compatibility',
     'dependency-regression-ci',
     'effect-dependency-compatibility',
@@ -40,7 +41,7 @@ const reviewed = [
 ].map((name) => `scripts/${name}.test.cjs`);
 
 test('dependency regression command explicitly runs the reviewed files exactly once', () => {
-    assert.equal(reviewed.length, 30);
+    assert.equal(reviewed.length, 31);
     assert.equal(new Set(reviewed).size, reviewed.length);
     for (const file of reviewed) assert.equal(existsSync(path.join(root, file)), true, file);
     // Exact command forbids glob expansion, shell chains, bypass flags and extra programs.
