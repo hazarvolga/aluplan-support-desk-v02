@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Hono / Node adapter checkpoint — 2026-09-27
+
+Localf113918f tests /97ebfb56 fixes @prisma/dev's Hono4.13.9 and node-server1.19.17, majors retained. Five tests RED3pass2fail ->GREEN5; focused7/7, aggregate26files225/225 and both typechecks passed. In-memory protected static path regression plus CORS compatibility and owned loopback adapter smoke only. No filesystem serving/Prisma/dev/Studio/env/DB/live execution or image/rescan/push/deploy. External override is NOT bundled Studio clearance. Independent reviews GO; WIP/XLSX preserved. Current-focus retains limits and next mysql2 batch.
+
 ## Effect source checkpoint — 2026-09-27
 
 Localc4795992 tests /a9a6d297 scoped @prisma/config7.4.2 Effect3.20.0 fix; Prisma and secondary dependencies unchanged. Five tests RED3pass2fail ->GREEN5, including synthetic two-fiber ALS isolation; aggregate25files220/220, focused7/7 incl CI and both typechecks passed. Independent code/security GO; no demonstrated live RPC/session exposure claim. Frozenignore-scripts install/XLSXintegrity preserved. No actual Prisma/config/.env load, migration, app boot, image/rescan/live/DB/push/deploy. Current-focus records sources/evidence limits and next tool/telemetry groups; WIP intact.
