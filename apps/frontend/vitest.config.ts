@@ -13,7 +13,7 @@ export default defineConfig({
             '@': path.resolve(__dirname, './src'),
             'next/navigation': path.resolve(__dirname, 'node_modules/next/navigation.js'),
         },
-        exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
+        exclude: ['e2e/**', 'scripts/**', 'node_modules/**', 'dist/**'],
         coverage: {
             provider: 'v8',
             reporter: ['text', 'json', 'html'],
