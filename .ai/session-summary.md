@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Email minifier boundary — 2026-09-27
+
+Localfd3b1a22 test/wiring /d7c289f1 explicitminify:false. Three realrenderpaths tested, no minifiercalls; existing default alreadydisabled, so notclaimingnewexploitclosure. Focused3/3 independently, aggregate30files238/238, mailmock23/23 and both typechecks passed. No packageversionchanges, realmail/data/live/image/scan/push/deploy. WIP preserved. Currentfocus records boundeddeepmerge8.0.2 candidate and proofneeded before nextupgrade; minifierpackageadvisory notwaived.
+
 ## Prometheus checkpoint — 2026-09-27
 
 Localaef9e0d8 tests /8870d4c0 scoped exporter0.217. Actual parentmetrics2.6/newreader2.7.1 compatibility proved with synthetic collection/serialization/flush/shutdown and malformedURL400; no listener or SDK activation. Focused9/9 independently, aggregate29files237/237 and both typechecks passed. Sentry peer bindings/XLSX integrity preserved, frozenignoreinstall passed, WIP untouched. Parent SDK/auto versionadvisory flags may remain; no blanketclearance or newimageclaim. No live/data/migration/push/deploy. Currentfocus records evidence limits and next deepmerge/html-minifier dispositions before grouped image verification.
