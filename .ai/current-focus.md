@@ -1,5 +1,9 @@
 # Current Focus
 
+## Tek değişiklik kartı ve geri çekilebilir ingress — 2026-09-27
+
+Kısa yayın GO/NO-GO kartı `.ai/issues/2026-09-27-release-window-change-sheet.md` altında hazırlandı. Yerel Traefik 3.6.7'de aynı dosyanın geçerli service-only → iki router'lı aktif → service-only biçimleri, hedef hostlarda 200 → 503 → 200 verdi; boş `http: {}` geçersiz olduğundan kabul sayılmadı. Bu yalnız tek sentetik HTTP girişidir. Dört canlı HTTP/HTTPS router'ı, kesin 503 responder imajı, eski backend yazıcı kesmesi, posta TLS ve taze kurtarma noktası açık. Canlı erişim/değişiklik, push veya deploy yapılmadı; yerel kaynaklar temizlendi. **Production NO-GO.**
+
 ## Canlı salt-okunur ingress kimliği — 2026-09-27
 
 Açık dar kullanıcı onayıyla yalnız router/konteyner/proxy metadata okundu. `allplan.net.tr` çalışan manuel frontend'de HTTP/HTTPS priority 9000; `api.allplan.net.tr` eski Coolify backend'de iki router ve açık priority yok. Traefik 3.6.7 Linux/amd64 dosya sağlayıcısını izliyor; mevcut durmuş bakım konteyneri tek host/302 olduğu için kullanılamaz. Yerel kesin backend/frontend imajları `87372fe4`/`c602031d` Linux/amd64 olarak mevcut; GitHub `main` salt-okunur sorguda hâlâ `d9b21b9d`, dolayısıyla Coolify frontend `main`/`HEAD` düğmesine basılmayacak. Sıradaki dar kapı iki-host 503'ün üretim için sahipli kurulumu/geri çekilmesi ve eski yazarların kesme/uzlaştırma yöntemini tek bakım planında kapatmak; ardından taze DB/mail/R2 checkpoint'i, canlı TLS kabulü ve ayrı `push et`/`deploy et`. Bu inceleme canlıda hiçbir değişiklik yapmadı. **Production NO-GO.**
