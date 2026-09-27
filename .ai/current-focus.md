@@ -6,7 +6,9 @@ Kullanıcının dar onayıyla canlı SSH/Docker metadata, PostgreSQL `SELECT` ve
 
 Production **NO-GO**: taze DB backup/restore, etkin R2 dosyalarının geri alınabilirliği, 5 marker istisnasının mahremiyetli kararı, kesin rollback ve ayrı açık deploy onayı henüz yok. Kullanıcının `apps/frontend/next-env.d.ts` değişikliği korunmalı.
 
-Sonraki genel `devam edelim` production erişimi sayılmadı. Yerel backup ön kontrolünde `scripts/backup-db.sh` güvenlik testleri 44/44 geçti; mevcut dış S3 backup hedefi canlıda doğrulanmadı. İlk dar yol, ayrı açık onayla PG17 custom dump'ı sunucuda dosya oluşturmadan Mac özel depolamasına tek yönlü almak ve izole yerel restore doğrulaması yapmaktır. Ham müşteri verisinin Mac'e taşınması ve retention onay kapsamına açıkça dahil edilmeli; R2/Redis/mail/deploy ayrı kalır.
+Sonraki genel `devam edelim` production erişimi sayılmadı. Yerel backup ön kontrolünde `scripts/backup-db.sh` güvenlik testleri 44/44 geçti; mevcut dış S3 backup hedefi canlıda doğrulanmadı. `fdesetup status` sonucu **FileVault is Off** olduğundan ham canlı DB'yi yalnız dosya izinlerine güvenerek Mac'e yazmak güvenli değil. Önce şifreli hedef/anahtar saklama yöntemi ve dar üretim backup onayı gerekli; sonra tek yönlü PG17 custom dump, hash/katalog ve izole restore doğrulaması yapılabilir. R2/Redis/mail/deploy ayrı kalır.
+
+Kullanıcının Cloudflare ekranında `aluplan-support-desk-db-backups-dev` yalnız 1 küçük DEV test nesnesi gösteriyor; doğrulanmış production DB backup'ı değil. Uygulama bucket'ı 477 nesne/62,9 GB ile canlı listelemeyi destekliyor. Bucket/token değişikliği yapılmadı.
 
 ## Combined candidate backend/frozen frontend browser acceptance — 2026-09-27
 
