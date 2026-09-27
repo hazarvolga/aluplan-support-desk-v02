@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Remaining advisory consumer disposition — 2026-09-27
+
+Documentation-only checkpoint after three-agent source review plus primary advisories. Current-focus matrix separates runtime utility/config consumers, opt-in telemetry, Prisma dev/Studio and disabled-by-default html-minifier paths. No blanket waivers; major deepmerge/OTel changes not applied. Notable limits: Prisma dev hostname omitted (not proven loopback); Studio may embed a separate copy; live OTel preloads/settings unknown; mysql advisory patchedNone conflicts with3.22 release's default-plugin disable. Nextbounded batch js-yaml4 then Lodash4 compatibility; Effect/OTel/Prisma-tool decisions follow. Aggregate158/158 rerun passed networkrestricted; no application/dependency/version changes, image scan, live/data/SDK/CLI/migration/push/deploy. Last image0C30H unchanged, WIP preserved.
+
 ## Multipart/cookie source checkpoint — 2026-09-27
 
 Same-major form-data2.5.6/4.0.6 and js-cookie3.0.8 patches, expectedhasownedge only; preserveXLSXintegrity/frozeninstall.17newtests RED7pass10fail ->GREEN17; with2CIcontracts19/19. Explicit22-file recurring aggregate158/158 and both tsc pre/post pass. Independent code/security GO. Type/test-tool and MJML dependency paths do not demonstrate public exploitability; fixtures are puremultipart buffers/fakecookie sink, not realuploads/auth. No schema/app/credentials/live/push/deploy changes or newimage; last0C30Hartifact unchanged. Current-focus contains sources/reachability/remaining gates; WIP preserved.
