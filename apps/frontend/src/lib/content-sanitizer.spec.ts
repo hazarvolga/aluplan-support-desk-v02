@@ -1,7 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ContentSanitizer } from './content-sanitizer';
 
 describe('ContentSanitizer', () => {
+    it('fails closed when a browser DOM is unavailable', () => {
+        vi.stubGlobal('window', undefined);
+        try {
+            expect(ContentSanitizer.sanitize('<p onclick="alert(1)">Hello<script>alert(1)</script></p>')).toBe('');
+            expect(ContentSanitizer.sanitize('Legacy text')).toBe('');
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
     it('returns an empty string for empty inputs', () => {
         expect(ContentSanitizer.sanitize('')).toBe('');
         expect(ContentSanitizer.sanitize(null)).toBe('');
@@ -26,4 +36,3 @@ describe('ContentSanitizer', () => {
         expect(ContentSanitizer.isEffectivelyEmpty('<p>Merhaba</p>')).toBe(false);
     });
 });
-
