@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Effect source checkpoint — 2026-09-27
+
+Localc4795992 tests /a9a6d297 scoped @prisma/config7.4.2 Effect3.20.0 fix; Prisma and secondary dependencies unchanged. Five tests RED3pass2fail ->GREEN5, including synthetic two-fiber ALS isolation; aggregate25files220/220, focused7/7 incl CI and both typechecks passed. Independent code/security GO; no demonstrated live RPC/session exposure claim. Frozenignore-scripts install/XLSXintegrity preserved. No actual Prisma/config/.env load, migration, app boot, image/rescan/live/DB/push/deploy. Current-focus records sources/evidence limits and next tool/telemetry groups; WIP intact.
+
 ## Lodash source checkpoint — 2026-09-27
 
 Committed3864c0c1 tests /99d9e3aa scoped Lodash4.18.1 update. Rejected deprecated4.18.0 before install;4.18.1 fixes modular packaging (template/fromPairs), covered by fixtures. RED42:17pass25fail ->GREEN42; focused44 incl CI; aggregate24files215/215; both typechecks and mocked mail23/23 passed. Three-agent planning/code/security review, no remaining scoped blocker. No app/schema/env change, image/rescan, real mail/DB/live access or push/deploy. Current-focus records sources, integrity, evidence limits and nextEffect batch. Existing WIP preserved; production GO remains separate.
