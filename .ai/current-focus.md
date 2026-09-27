@@ -1,5 +1,9 @@
 # Current Focus
 
+## Güncel engel — 2026-09-27 eski canlı yazıcı sınırı
+
+Yerel kaynak denetimi, kesin adayın normal açılışta dokuz BullMQ tüketicisini, zamanlayıcıları ve dakikalık IMAP poller'ı etkinleştirdiğini; CRM/SLA tekrarlı işlerini Redis'e kaydettiğini ve DB/R2 başlangıç yan etkileri olabildiğini doğruladı. `WORKER_MODE` işleyicileri durdurmaz. Adayın kısmi, süreç-içi shutdown kanıtı eski **canlı** imajın drain kanıtı değildir. Mevcut Redis aracı 90 bilinen anahtarda sayı/en çok 100 kimlik parmak izi sağlar, tek tek job kararı vermez; 15/15 yerel sözleşme/adapter testi geçti. `.ai/issues/2026-09-23-mail-tls-transition-plan.md` başına en küçük kesme/uzlaştırma kapısı kaydedildi. Sıradaki anlamlı kanıt, ayrıca kapsamlandırılmış salt-okunur canlı eski-imaj/replica/Redis/mail envanteri ve operatörün kuyruk kararıdır. **Production NO-GO; canlı erişim/değişiklik, push, deploy yok.** Kullanıcı frontend WIP'i korunur.
+
 ## Güncel dar kapı — 2026-09-27 yerel posta volume yeniden oluşturma provası
 
 Kesin `87372fe4` backend imajı ve aynı pinli DMS v15.1.0 ile yalnız sentetik, iç ağlı ve dış port açmayan prova geçti. İki teslim edilmiş INBOX iletisi üç aynı Docker volume (`/var/mail`, `/var/mail-state`, `/tmp/docker-mailserver`) üzerinde DMS stop/remove/recreate sonrasında ham içerik özeti, ikili ek baytları, UID/UIDVALIDITY ve `\\Seen` durumunu korudu. Derlenmiş posta servisleri, kütüphane turu ve sertifika yenileme/ret kontrolleri de aynı son koşuda geçti. Kasıtlı hata koşusu korunan sentetik kaynakları doğru raporladı; etiketleri doğrulanıp temizlendi. Bu bekleyen SMTP kuyruğu, MX/port25, canlı posta volume/config/istemcileri veya eski backend yazarlarının kesilmesi kanıtı değildir. Sıradaki zorunlu kapı eski-yazar/Redis/mail kaynak sınırı ve ayrı onaylı canlı pencere kanıtıdır. **Production NO-GO; canlı erişim/değişiklik, push, deploy yok.** Kullanıcı `apps/frontend/next-env.d.ts` WIP'i korunur.

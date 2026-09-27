@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-27 — First-cutover old-writer boundary audited locally
+
+Read-only candidate source inventory found nine auto-start BullMQ consumers, CRM/SLA repeat producers, minute IMAP poll, other cron/WebSocket/webhook/event writers and possible DB/R2 boot effects. `WORKER_MODE` skips only Bull Board. Frozen `87372fe4` product source stayed unchanged after later test/docs commits, but its process-local shutdown cannot certify the older live image. Existing A.1.4-B Redis adapter/contract tests passed 15/15; its 90-key counts and 100-ID-per-key fingerprints are baseline evidence, not job payload/replay or all-writer reconciliation. Last approved live inventory's 500 failed knowledge jobs remain a dated observation; no replay performed. Existing mail transition plan now states the minimum first-cutover NO-GO checks and separate scope needed for read-only live old-artifact/queue/mail inventory. No live access, writes, push, deploy or product edits. User frontend `next-env.d.ts` WIP untouched.
+
 ## 2026-09-27 — Synthetic DMS three-volume recreate proof
 
 Local-only opt-in harness now mounts three owner-labelled Docker volumes at `/var/mail`, `/var/mail-state` and `/tmp/docker-mailserver`. The exact pinned DMS and frozen backend image passed the combined synthetic mail-service/library/certificate run, then DMS stop/remove/recreate retained two delivered INBOX messages' raw hashes, binary attachment bytes, UID/UIDVALIDITY and `\\Seen` parity. A deliberate post-volume-create failure returned nonzero with truthful retained-resource names; exact label checks preceded cleanup. Volume enumeration in `finally` covers create-timeout/inspect ambiguity without deleting foreign resources. No live access/change, DB/R2 operation, push or deploy; no real customer data. Pending SMTP spool, MX/port25, live TLS/config and old-writer fencing remain open; production NO-GO. User frontend `next-env.d.ts` WIP untouched.
