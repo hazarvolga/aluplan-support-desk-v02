@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Tracked-work runtime shutdown fix — 2026-09-27
+
+a177411f tests /9a060806 product: existing worker coordinator WIP now joins workers, closes shared admission, then waits for actual tracked idle before final dependency hooks. RED real HTTP runtime mode plus two Nest cases; GREEN12suites83tests, both typechecks, scoped coordinator branch coverage87.5%. Independent bounded review approved; secret scans clean. Existing no-hook counterexample retained, no all-writer/real-persistence claim. No schema/env/endpoint/migration or live operations. Frontend next-env remains unrelated WIP. Current-focus records limits and next grouped artifact/isolated acceptance milestone.
+
 ## Shutdown evidence refreshed — 2026-09-27
 
 11 focused suites79/79 passed with external network denied/loopback allowed. The combined fixture deliberately proves disconnected tracked work can write after dependency closure; passing tests do NOT close that gap. Independent source review confirms no runtime admission-close/idle-join caller. Worker WIP alone is insufficient and remains untouched/unaccepted. Current-focus records smallest next runtime-sequencing fix and the distinct legacy first-cutover requirement. No application boot, actual DB/Redis/provider access, source changes, push or deploy.
