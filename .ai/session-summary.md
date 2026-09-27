@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Defu configuration dependency checkpoint — 2026-09-27
+
+Scoped defu6.1.4->6.1.5 override patches GHSA-737v-mqg7-c878; only three c12/giget/rc9 edges changed, Prisma/schema/boot untouched. XLSX integrity preserved after lock regeneration; frozen ignore-scripts install passed. Nine new consumer-resolved pure-library tests RED3pass6expectedfail ->GREEN9; combined51/51 network-denied, backendtsc pre/post and frontendtsc post pass. Independent code/security reviews GO for source only. Prisma substitutes deepmerge for c12 config merging but defu metadata path remains; no public exploit path established. No real config loader/CLI/env/app/DB/live execution. No new image/scan; last0C30H remains artifact-specific. WIP preserved; CI wiring, remaining risk groups and release operational/data gates stay open. Sources/integrity/details in current-focus.
+
 ## Scoped glob-family patches — 2026-09-27
 
 Four same-major overrides patch brace2/5, minimatch9 and picomatch2 while retaining other majors; lock/XLSX integrity reviewed and frozenignore-scripts install passed.14new tests RED9pass5versionfail ->GREEN14; combined25, mail23 pre/post, frontend4, both tsc pre/post pass. Actual consumer paths include MJML tooling/SentryFastify/Jest, not proof of public reachability. No newimage; last0C30H unchanged, ten corresponding HIGH occurrences not arithmetically subtracted. Code/security source reviews GO. New regression CI wiring remains pre-release task. No live/mail/DB/migration/push/deploy; WIP retained. Sources and scope in current-focus.
