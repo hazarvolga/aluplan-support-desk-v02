@@ -115,6 +115,21 @@ const transport = nodemailer.createTransport({host:'localhost',port:587,secure:f
     receipts.push('exact candidate image mail libraries: SMTP STARTTLS + IMAP TLS + synthetic attachment round-trip verified');
 }
 
+function probeCompiledMailServices() {
+    const script = fs.readFileSync(path.join(__dirname, 'mail-exact-image-service-probe.cjs'), 'utf8');
+    const output = command('docker', ['--host', endpoint, 'run', '--rm', '--name', `${name}-service`, '--label', label,
+        '--platform', 'linux/amd64', '--network', `container:${name}`, '--read-only', '--cap-drop', 'ALL',
+        '--security-opt', 'no-new-privileges', '--memory', '256m', '--pids-limit', '64',
+        '--mount', `type=bind,source=${fixture}/ca.pem,target=/fixture-ca.pem,readonly`,
+        '--env', 'NODE_EXTRA_CA_CERTS=/fixture-ca.pem',
+        '--workdir', '/app/apps/backend', '--entrypoint', 'node', '-i', CANDIDATE_IMAGE, '-'],
+        { input: script, timeout: 60000 });
+    const receipt = output.trim().split('\n').at(-1);
+    assert.deepEqual(JSON.parse(receipt), { compiledServices: true, trustedTls: true, attachmentParity: true,
+        inMemoryDedup: true, failedSourceHeldUnread: true });
+    receipts.push('exact candidate compiled mail services: synthetic intake, attachment, duplicate and hold verified');
+}
+
 function publish(cert, key) {
     // Validation happens before touching the watched pair or stopping the watcher.
     validatePair(cert, key);
@@ -189,7 +204,10 @@ async function run() {
     const initial = fingerprint(firstCert);
     await waitForCertificate(initial);
     receipts.push('initial SMTP+IMAP certificate verified');
-    if (process.env.MAIL_EXACT_IMAGE_REHEARSAL === 'synthetic-local-only') await probeExactCandidate();
+    if (process.env.MAIL_EXACT_IMAGE_REHEARSAL === 'synthetic-local-only') {
+        probeCompiledMailServices();
+        await probeExactCandidate();
+    }
     const before = JSON.parse(docker('inspect', name))[0];
     for (const [test, cert, key] of [
         ['mismatched-key', firstCert, path.join(fixture, 'renewed.key')],
@@ -229,7 +247,7 @@ async function main() {
         };
         if (dockerVerified) {
             // Query exact names even if a create/run command timed out after taking effect.
-            for (const ownedName of [name, `${name}-hash`, `${name}-candidate`]) cleanup(() => {
+            for (const ownedName of [name, `${name}-hash`, `${name}-candidate`, `${name}-service`]) cleanup(() => {
                 const id = docker('ps', '-aq', '--filter', `name=^/${ownedName}$`).trim();
                 if (!id) return;
                 const owned = JSON.parse(docker('inspect', id))[0];
