@@ -1,5 +1,9 @@
 # Current Focus
 
+## Yeni şifreli ön kurtarma noktası — 2026-09-27
+
+Kullanıcının ayrı yedekleme onayıyla yeni parolalı AES-256 APFS imajına canlı PG17 custom dump ve üç posta volume'ünün ön arşivi alındı. DB dump izole PG17'de tam restore edildi (62 tablo, 182/578/114/1289); posta arşivindeki 239 düzenli dosyanın çıkarılmış baytları eşleşti. Mevcut özel R2 yedeği 477/477 nesne ve 109 etkin ek için yeniden doğrulandı, delta 0; beş eski failed-upload marker değişmedi. İmaj temizce ayrıldı, yerel Docker yeniden çalışıyor; canlı servise ayar/restart/deploy uygulanmadı. Posta arşivi sıcak kopya, R2'nin tamamı byte-hash'li değil, müşteriler yazmaya devam ediyor. Son writer-quiesced checkpoint, mail TLS, eski backend'in çift-yazıcıdan korunması ve ayrı push/deploy onayı açık. **Production NO-GO.**
+
 ## Daha küçük 503 yanıtlayıcısı ve imaj taraması — 2026-09-27
 
 `scripts/release-maintenance/nginx.conf` en küçük bakım yanıtlayıcısı olarak yerel commit'te sabitlendi. Linux/amd64 `nginxinc/nginx-unprivileged:stable-alpine-slim@sha256:307ca0bd...` imajı Trivy 0.72.0/27 Eylül DB ile 0 Critical/0 High verdi; önceki Node/Caddy/non-slim seçenekleri sırasıyla 8/17/1 High taşıyordu. Aynı kesin Nginx config'iyle izole Traefik'te dört hedef HTTP/HTTPS rotası 200 → 503 (`Retry-After:300`, yönlendirme yok) → 200; ilgisiz host 404. `nginx -t`, GET/POST ve bağımsız kod/güvenlik incelemeleri geçti. Root olmayan/salt-okunur konteynerin 16 MiB `/tmp` tmpfs ve 64 MiB/64 PID sınırıyla ~7.2 MiB kullandığı görüldü. Geçici konteyner/ağ/sertifika ve üretilen 1.3 GiB genel imaj tarama önbelleği silindi. Canlı proxy/ACME/network, eski yazıcı kesmesi, mail TLS ve taze kurtarma hâlâ açık; canlı erişim/değişiklik, push/deploy yok; kullanıcı WIP korunur. **Production NO-GO.**
