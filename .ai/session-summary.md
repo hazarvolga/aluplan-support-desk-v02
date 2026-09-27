@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## File-type upload parser patch — 2026-09-27
+
+Local9e92bb35 tests/CI and00beed9d scoped Nest file-type21.3.2 patch. RealNest validator7tests RED5pass2fail (version+childASFtimeout) ->GREEN7; corrected patchedresult expectation to strictundefined after source inspection. Child hardtimeout avoids parent eventloop hang. Aggregate33files256/256, independent9/9, uploadlimits/durability30/30 andbothTSC passed. No ZIPbomb or E2Eclaim, no newimagecount. Sentrybindings/XLSXintegrity/WIP preserved; no live/data/push/deploy. Currentfocus records reachability and next request-parser/Nestcore disposition.
+
 ## Rich-text SSR guard — 2026-09-27
 
 Localaace599e tests /30daf45b fix: sanitizer failsclosed withoutDOM, renderer null SSR/initialhydration then sanitized client content via stable useSyncExternalStore. AI wrapper hydration covered. RED5fail/11pass ->GREEN19; scopedbranchcoverage83.33%, dependency249/249, bothTSC passed. Independent review and offline actual-component Chromium fixture passed; not fullappE2E. Browser exposed preexisting plain special-character double escaping, recorded separately. No schema/dependency/DB/live/push/deploy changes, WIP intact, image counts not refreshed. Next bounded batch upload/file-type security.
