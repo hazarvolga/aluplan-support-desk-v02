@@ -23,6 +23,7 @@ const reviewed = [
     'mail-dependency-security',
     'mail-semver-compatibility',
     'minifier-dependency',
+    'mysql2-dependency-security',
     'node-runtime-contract',
     'otel-resource-compatibility',
     'path-routing-dependency-security',
@@ -36,7 +37,7 @@ const reviewed = [
 ].map((name) => `scripts/${name}.test.cjs`);
 
 test('dependency regression command explicitly runs the reviewed files exactly once', () => {
-    assert.equal(reviewed.length, 26);
+    assert.equal(reviewed.length, 27);
     assert.equal(new Set(reviewed).size, reviewed.length);
     for (const file of reviewed) assert.equal(existsSync(path.join(root, file)), true, file);
     // Exact command forbids glob expansion, shell chains, bypass flags and extra programs.
