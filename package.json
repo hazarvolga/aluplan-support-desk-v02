@@ -50,6 +50,7 @@
   "packageManager": "pnpm@9.15.4",
   "pnpm": {
     "overrides": {
+      "dompurify@>=3.0.0 <3.4.13": "3.4.13",
       "@prisma/dev@0.20.0>hono": "4.13.9",
       "prisma@7.4.2>mysql2": "3.22.0",
       "@opentelemetry/sdk-node@0.213.0>@opentelemetry/propagator-jaeger": "2.9.0",
