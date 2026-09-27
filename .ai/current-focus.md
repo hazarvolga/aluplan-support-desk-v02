@@ -1,5 +1,9 @@
 # Current Focus
 
+## Yerel iki-host ingress provası — 2026-09-27
+
+Sahipli, iç ağlı ve dış port/Docker socket/veri içermeyen Traefik 3.6.7 provasında ayrı `allplan.net.tr` ve `api.allplan.net.tr` yüksek-öncelikli bakım router'ları HTTP 503 + `Retry-After: 300` verdi; `Location` yok, `aluplan.net.tr` eşleşmedi (404). Üç sentetik konteyner/ağ ve geçici YAML temizlendi, etiketli artık yok. Bu canlı API önceliği/TLS/Coolify kalıcılığı veya eski yazarların durduğu kanıtı değil. Canlı uygulama/posta/DB ayarı değişmedi. Sıradaki kapı: tam canlı router öncelikleri ve bakım-fence kurulum/geri alma yönteminin ayrıca kapsamlı değerlendirmesi; ardından tüm eski yazıcılar, kuyruk ve posta için bakımlı durdurma/reconcile, taze kurtarma checkpoint'i, TLS kabulü ve açık push/deploy onayı. **Production NO-GO.**
+
 ## Güncel frontend/Coolify ayrımı — 2026-09-27
 
 Coolify frontend kaydı `h8k4ko84wkksgws4socsowgg` GitHub `hazarvolga/aluplan-support-desk-v02` `main`/`HEAD` kaynağına bağlı ve `Exited`; UI logları çalışmayan kaynak nedeniyle yok, Deployments listesi 0. Salt-okunur Coolify terminalinde ada göre filtrelenmiş Docker listesinde bu kayda ait görünen çalışan/durmuş frontend konteyneri yok. Ayrı `allplan-frontend-ee4d70a7` konteyneri `running|healthy`, revizyon `ee4d70a7`, Coolify uygulama etiketi yok. Bu, orijinal kurulumun GitHub/Coolify üzerinden olmadığı anlamına gelmez; şu an hizmet veren örneğin Coolify kaydının dışında olduğunu gösterir. Yerel aday `security/release-candidate-20260919`/`cdc440c9`, yerel `main`/son çekilmiş `origin/main` referansları ise `d9b21b9d`: kırmızı kayda kör Deploy yanlış sürüm ve Traefik host çakışması riski taşır. Ayrılmanın kök nedeni UI geçmişiyle kanıtlanmadı. Sıradaki yerel iş iki host için 503 ingress provası; canlıdaki tüm yazıcı/posta/TLS/son yedek kapıları ve ayrı `push et`/`deploy et` onayları sürüyor. Kullanıcı `apps/frontend/next-env.d.ts` WIP'i korunur; canlı ayar/servis değişikliği yok.

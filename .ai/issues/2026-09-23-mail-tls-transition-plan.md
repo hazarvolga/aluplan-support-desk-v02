@@ -1,5 +1,11 @@
 # Mail transport transition plan — 2026-09-23
 
+## 2026-09-27 isolated two-host ingress-fence mechanism proof
+
+Local Docker acquired the official `traefik:v3.6.7` image at digest `sha256:a9890c898f379c1905ee5b28342f6b408dc863f08db2dab20e46c267d1ff463a`. Three explicitly named/labelled disposable containers (Traefik, normal synthetic HTTP service, maintenance synthetic HTTP service) ran on one `--internal` network with no published host ports, no Docker socket or customer data, read-only roots and dropped capabilities. A temporary file-provider configuration modelled existing frontend priority 9000, synthetic API priority 1000, and separate priority-10000 maintenance routers for both exact hosts. A fourth ephemeral Node client asserted `allplan.net.tr` and `api.allplan.net.tr` each return HTTP 503, body `maintenance`, `Retry-After: 300` and no `Location` redirect; unrelated `aluplan.net.tr` returned 404. All three named containers and the owned network were label-checked, removed and absence rechecked; the temporary configuration file was deleted. The pulled local Traefik image remains cached.
+
+This proves only local Traefik host/priority mechanics. It does **not** establish the actual live API router priority, persistent Coolify route ownership, TLS/ACME behavior, safe in-flight drain, protection against internal cron/BullMQ/IMAP writers, or an executable production change/rollback. Before a live window, review exact live router identities/priorities and the approved non-redirecting fence insertion/removal method without touching other hosted applications. Production remains NO-GO.
+
 ## 2026-09-27 Coolify frontend record versus active frontend
 
 At approximately 16:50 UTC the owner asked to diagnose Coolify's red frontend record. Read-only Firefox/Coolify UI inspection confirmed application UUID `h8k4ko84wkksgws4socsowgg` is `Exited`, configured for `https://allplan.net.tr`, and has Git source `hazarvolga/aluplan-support-desk-v02`, branch `main`, commit selector `HEAD`, Dockerfile `/apps/frontend/Dockerfile`, exposed port `3000`. Its Logs page says `The resource is not running`; its Deployments page shows `0`/`No deployments found`. Neither page proves why a prior Coolify-managed instance exited or disappeared.
