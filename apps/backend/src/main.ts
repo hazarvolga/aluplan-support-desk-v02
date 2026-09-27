@@ -79,7 +79,8 @@ async function bootstrap() {
     });
 
     // GAP-03: Graceful shutdown — drain BullMQ jobs and close connections on SIGTERM
-    app.enableShutdownHooks();
+    // Docker runs Node as PID 1; Nest's default self-SIGTERM is ignored there after hooks finish.
+    app.enableShutdownHooks(undefined, { useProcessExit: true });
 
     // Trust proxy for secure cookies and origin validation behind Coolify/Caddy
     app.set('trust proxy', 1);
