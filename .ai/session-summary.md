@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Prometheus checkpoint — 2026-09-27
+
+Localaef9e0d8 tests /8870d4c0 scoped exporter0.217. Actual parentmetrics2.6/newreader2.7.1 compatibility proved with synthetic collection/serialization/flush/shutdown and malformedURL400; no listener or SDK activation. Focused9/9 independently, aggregate29files237/237 and both typechecks passed. Sentry peer bindings/XLSX integrity preserved, frozenignoreinstall passed, WIP untouched. Parent SDK/auto versionadvisory flags may remain; no blanketclearance or newimageclaim. No live/data/migration/push/deploy. Currentfocus records evidence limits and next deepmerge/html-minifier dispositions before grouped image verification.
+
 ## Jaeger checkpoint — 2026-09-27
 
 Local6cf13952 tests /3f5a12ba scoped Jaeger2.9 update. Pure malformed trace/baggage regression and valid Unicode roundtrip passed; prevented incidental frontend Sentry Core peer drift with restored lock binding+test. Final4tests, focused6/6 independently, aggregate28files234/234 and both typechecks passed. Frozenignore-scripts install, XLSX integrity and unrelated WIP preserved. No SDK activation, app/schema/startup change, image/rescan/live/data/push/deploy. Current-focus records next Prometheus cross-version reader proof and coherent-upgrade caveat; no production GO inferred.

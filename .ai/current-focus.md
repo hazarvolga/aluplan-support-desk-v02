@@ -1,5 +1,15 @@
 # Current Focus
 
+## Prometheus source checkpoint — 2026-09-27
+
+Completed @opentelemetry/sdk-node@0.213.0>@opentelemetry/exporter-prometheus exact0.217.0 override from0.213.0. Registry version not deprecated; integrity sha512-U9MCXxJu0sBCh5aEkylYRR4xVIL8D1CW6dGwvYXbfFr0qveSorfD0XJchCAWoW6QfAAIcY/yxjf4Dj8OgkHBPw==. Only exporter subtree adds core/resources/sdk-metrics2.7.1; parent SDK/metrics remain0.213/2.6. Rejected regenerated Sentry2.9 peer drift again; preserved previous snapshots and XLSX integrity. Frozenignore-scripts install passed. No global OTel override or activation.
+
+Primary advisory https://github.com/open-telemetry/opentelemetry-js/security/advisories/GHSA-q7rr-3cgh-j5r3 recommends0.217 exporter+SDK/0.75auto. This bounded leaf fix does NOT change parent SDK0.213/auto0.71; scanner version flags may remain. Do not suppress or waive automatically; distinguish actual fixed exporter path from package-level advisory metadata in the next exact-image scan. No runtime exposure proof or full telemetry-system acceptance.
+
+Three pure tests resolve actual parent2.6 MeterProvider/resources plus new reader2.7.1: explicit host127.0.0.1/port9464/preventServerStart:true with listeningfalse assertions, direct handler synthetic badURL400/unknown404/metrics200, counter3->5 cumulative collection, histogramcount/sum, observablegauge7, resource label and serialized values, forceFlush and finallyshutdown, postshutdowncollect rejection and repeated shutdown. No NodeSDK/app/config execution, global provider registration, listener, HTTP traffic or database. Baseline had fixture label mismatch (corrected before upgrade); valid compatibility test then passed while version/InvalidURL failed. GREEN3/3; focused9/9 including Jaeger+CI independently passed. Explicit29-file aggregate237/237 under external-network denial/loopback allowance and both backend/frontend typechecks passed. Code/security GO for scope; local aef9e0d8 tests /8870d4c0 fix, staged secret scans clean.
+
+No image/rescan, hostedCI, live/customer data/mail access, migration, push/deploy. WIP unchanged; last exactimage2b90e02d0C30H is still old evidence. Next: deepmerge7->8 risk/compatibility decision and explicit html-minifier disabled-boundary test, then grouped exact-image build/scan to settle actual remaining findings. Avoid restarting dependency discovery or broad upgrades merely to reduce counts. Existing operational/data-preservation release gates remain required.
+
 ## Jaeger source checkpoint — 2026-09-27
 
 Completed exact consumer override @opentelemetry/sdk-node@0.213.0>@opentelemetry/propagator-jaeger2.9.0 from2.6.0. Registry version not deprecated; only its core2.9 subtree added, SDK0.213 and existing stable2.6/Sentry family retained. Lock regeneration initially moved frontend Sentry's Core peer to2.9: rejected this scope expansion, restored prior peer snapshots and added installed consumer-resolution guard for2.6. Preserve that binding in future lock updates; frozenignore-scripts install passed, XLSX integrity preserved.
