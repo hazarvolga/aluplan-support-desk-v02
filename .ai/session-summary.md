@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Shutdown evidence refreshed — 2026-09-27
+
+11 focused suites79/79 passed with external network denied/loopback allowed. The combined fixture deliberately proves disconnected tracked work can write after dependency closure; passing tests do NOT close that gap. Independent source review confirms no runtime admission-close/idle-join caller. Worker WIP alone is insufficient and remains untouched/unaccepted. Current-focus records smallest next runtime-sequencing fix and the distinct legacy first-cutover requirement. No application boot, actual DB/Redis/provider access, source changes, push or deploy.
+
 ## Minimum-release scope frozen — 2026-09-27
 
 Owner explicitly prioritizes mandatory security/data/working-flow gates and defers optional work. Current-focus now supersedes old dependency queues: conditional qs stringify/Nest SSE deferrals based on independent read-only consumer review, constrained existing OTel/minifier mitigations, and post-release cosmetic/new-feature work. No blanket vulnerability waiver. Three grouped gates remain: final immutable artifacts; isolated data/workflow/drain/forward-recovery rehearsal; separately approved production release window. Next priority is the existing writer-drain proof gap, not another broad dependency sweep. No code/tests/images/live/data operations this checkpoint; unrelated WIP preserved. Prior test/scan results remain historical and artifact-specific.

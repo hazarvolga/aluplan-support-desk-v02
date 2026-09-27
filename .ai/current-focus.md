@@ -1,5 +1,15 @@
 # Current Focus
 
+## Shutdown acceptance refresh: concrete remaining gap — 2026-09-27
+
+Executed 11 existing focused suites /79 tests successfully in this checkout with external network denied and owned loopback allowed. Eight lifecycle suites (worker WIP, worker pause, combined HTTP/cron, cron, inbound mail, queue/Prisma ordering, Redis ordering, CRM failure settlement) passed27; maintenance work/admission and Prisma shutdown passed52. Explicit installed langfuse-core NODE_PATH remains necessary for shared test setup. No AppModule boot, real DB/Redis/provider access or production operations. These tests use synthetic persistence/worker boundaries; they are not final-image integration evidence.
+
+IMPORTANT: green includes an intentional counterexample, not a repaired shutdown. maintenance-combined.spec.ts:157-176/201-207 confirms disconnected HTTP can continue tracked work after final dependency shutdown; its safe sequence at178-196 exists ONLY in the test. Independent read-only source review found zero non-test callers of MaintenanceWorkService.closeAdmission()/waitForIdle(). Thus the existing primitives are not connected to runtime shutdown. This is a demonstrated data/workflow risk, not optional polish.
+
+Unaccepted worker-shutdown/app.module WIP is preserved and not staged: BullExplorer already closes workers in onApplicationShutdown, with existing dependency-order tests; moving completion earlier may support sequencing, but does not itself fence HTTP/other producers or join detached work. Do not commit this WIP as a complete drain fix. Shared admission must not close before already-accepted workers/cron enter their tracked roots. New candidate shutdown code cannot retroactively make the legacy live backend safe to drain; the separately approved first-cutover operational procedure remains necessary.
+
+Next bounded implementation: connect existing completion/admission primitives in the required lifecycle order and make the disconnected-work counterexample pass against the real coordinator, preserving late accepted worker work and failing closed on incomplete drain. Use the existing writer inventory; no new generic maintenance framework, public control endpoint, broad refactor or dependency upgrade. This gate remains OPEN until runtime wiring and combined regression pass. Final-artifact construction follows acceptance, not before it.
+
 ## Owner-directed minimum release scope — 2026-09-27
 
 Supersedes earlier open-ended dependency work queues below. Owner explicitly requests only mandatory pre-deploy work; defer everything else. Apply existing delivery policy/ADR-022, not a new platform redesign. No production GO or remote-action approval is implied.
