@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Combined backend artifact checkpoint — 2026-09-27
+
+Exact2b90e02d Linux/amd64 build passed;415files/57migration checksums, index5f369d7d/config36f111fa. Updated isolated smoke confirms locked workspace Prisma7.4.2 command/permissions, absent global copy, generated client, identical62table offline SQL, PG17/native/permission checks; no appboot/DB/provider. Same pinned Trivy DB:0C30H71M10L, previously0C43H119M15L. Removed HIGH:5Undici+1routing+7globalduplicate occurrences; none added. Duplicate removal is not remaining-advisory remediation.21source/boot/runtime +29consumer tests pass. Evidence/hashes/caveats in current-focus. No frontend rebuild or production GO; remaining30HIGH, authenticated/drain/recovery/operational gates still open. No live/push/deploy; unrelated WIP untouched.
+
 ## Frozen workspace Prisma command candidate — 2026-09-27
 
 Dockerfile now links prisma command directly to frozen workspace Prisma7.4.2 JS instead of installing a second unlocked global dependency tree. Version/client/lock/schema/migrations/startup command unchanged. New4tests RED3pass1fail ->GREEN; combined boot/runtime21/21 network-denied. OLD cb8ecfd6 image comparison: global/workspace offline schema SQL identical62tables/58815bytes after disabling randomized dotenv advice; initial log-only mismatch recorded. Non-root direct-JS symlink version probe passes; all owned probe containers removed. No new image or scan yet, no claim seven findings fixed. Next combined image build must update smoke's obsolete global-path assertion and prove CLI/client/generation/permissions before rescan. Details/hash in current-focus; no live/data/provider/migration/push/deploy, WIP retained.
