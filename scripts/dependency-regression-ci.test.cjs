@@ -18,6 +18,7 @@ const reviewed = [
     'dompurify-dependency-security',
     'effect-dependency-compatibility',
     'email-minifier-boundary',
+    'file-type-dependency-security',
     'form-data-dependency-security',
     'glob-dependency-compatibility',
     'grpc-dependency-security',
@@ -42,7 +43,7 @@ const reviewed = [
 ].map((name) => `scripts/${name}.test.cjs`);
 
 test('dependency regression command explicitly runs the reviewed files exactly once', () => {
-    assert.equal(reviewed.length, 32);
+    assert.equal(reviewed.length, 33);
     assert.equal(new Set(reviewed).size, reviewed.length);
     for (const file of reviewed) assert.equal(existsSync(path.join(root, file)), true, file);
     // Exact command forbids glob expansion, shell chains, bypass flags and extra programs.
