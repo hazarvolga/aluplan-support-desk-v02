@@ -1,5 +1,6 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { cn } from '@/lib/utils';
 import { ContentSanitizer } from '@/lib/content-sanitizer';
 
@@ -7,6 +8,10 @@ interface RichTextRendererProps {
     content: string | null | undefined;
     className?: string;
 }
+
+const subscribe = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 const richTextClassName = [
     'rich-text-content text-[13px] leading-relaxed tracking-tight',
@@ -23,7 +28,10 @@ const richTextClassName = [
 ].join(' ');
 
 export function RichTextRenderer({ content, className }: RichTextRendererProps) {
-    if (!content) return null;
+    // Keep SSR and initial hydration identical, including callers that sanitize
+    // their content before rendering. Rich HTML requires the browser DOM.
+    const isClient = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
+    if (!isClient || !content) return null;
 
     if (!ContentSanitizer.containsAllowedHtml(content)) {
         const text = ContentSanitizer.sanitize(content);
@@ -41,4 +49,3 @@ export function RichTextRenderer({ content, className }: RichTextRendererProps) 
         />
     );
 }
-
