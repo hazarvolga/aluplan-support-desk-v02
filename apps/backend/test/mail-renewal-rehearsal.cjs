@@ -8,6 +8,7 @@ const { execFileSync } = require('node:child_process');
 const { generateMailTlsFixtures } = require('./mail-tls-fixtures.cjs');
 
 const IMAGE = 'ghcr.io/docker-mailserver/docker-mailserver@sha256:af51b15dd3fc72153c0e90eb7692bb5e3a463212d87959a80fa7aa89b617d44a';
+const CANDIDATE_IMAGE = 'sha256:e7962dbe5cda314ce8aa4143a72ab7275344b00adcb7194128737c3cf38b3e2c';
 const token = crypto.randomBytes(8).toString('hex');
 const name = `aluplan-renewal-${token}`;
 const label = `com.aluplan.synthetic-renewal=${token}`;
@@ -66,6 +67,54 @@ async function waitForCertificate(expected) {
     throw new Error(`TLS presentation deadline exceeded (${lastError?.name})`);
 }
 
+async function probeExactCandidate() {
+    const script = String.raw`
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+const nodemailer = require('nodemailer');
+const imaps = require('imap-simple');
+const { simpleParser } = require('mailparser');
+const ca = fs.readFileSync('/fixture-ca.pem');
+const user = 'rehearsal@example.invalid';
+const pass = 'SyntheticRehearsalOnly';
+const marker = 'candidate-' + require('node:crypto').randomBytes(8).toString('hex');
+const transport = nodemailer.createTransport({host:'localhost',port:587,secure:false,requireTLS:true,
+ auth:{user,pass},tls:{ca,servername:'localhost',rejectUnauthorized:true},connectionTimeout:8000,greetingTimeout:8000,socketTimeout:8000});
+(async()=>{
+ let client;
+ try {
+ await transport.verify();
+ const sent = await transport.sendMail({from:user,to:user,subject:marker,text:'synthetic only',
+  messageId:'<' + marker + '@example.invalid>',attachments:[{filename:'probe.bin',content:Buffer.from([0,1,2,255])}]});
+ assert.equal(sent.rejected.length,0);
+ client = await imaps.connect({imap:{user,password:pass,host:'localhost',port:993,tls:true,
+  tlsOptions:{ca,servername:'localhost',rejectUnauthorized:true},authTimeout:8000,connTimeout:8000}});
+  await client.openBox('INBOX');
+  let matches=[];
+  for(let attempt=0;attempt<12;attempt++){
+   matches=await client.search([['HEADER','MESSAGE-ID','<' + marker + '@example.invalid>']],{bodies:[''],markSeen:false});
+   if(matches.length) break;
+   await new Promise(resolve=>setTimeout(resolve,500));
+  }
+  assert.equal(matches.length,1);
+  const body=matches[0].parts.find(part=>part.which==='').body;
+  const parsed=await simpleParser(body);
+  assert.equal(parsed.subject,marker);
+  assert.equal(parsed.attachments.length,1);
+  assert.deepEqual(parsed.attachments[0].content,Buffer.from([0,1,2,255]));
+  console.log(JSON.stringify({candidate:true,smtpTls:true,imapTls:true,syntheticAttachment:true}));
+ } finally { try { if(client) client.end(); } finally { transport.close(); } }
+})().catch(error=>{console.error(error.name + ': ' + error.message);process.exitCode=1});`;
+    const output = command('docker', ['--host', endpoint, 'run', '--rm', '--name', `${name}-candidate`, '--label', label,
+        '--platform', 'linux/amd64', '--network', `container:${name}`, '--read-only', '--cap-drop', 'ALL',
+        '--security-opt', 'no-new-privileges', '--memory', '256m', '--pids-limit', '64',
+        '--mount', `type=bind,source=${fixture}/ca.pem,target=/fixture-ca.pem,readonly`,
+        '--workdir', '/app/apps/backend', '--entrypoint', 'node', '-i', CANDIDATE_IMAGE, '-'],
+        { input: script, timeout: 60000 });
+    assert.deepEqual(JSON.parse(output.trim()), { candidate: true, smtpTls: true, imapTls: true, syntheticAttachment: true });
+    receipts.push('exact candidate image mail libraries: SMTP STARTTLS + IMAP TLS + synthetic attachment round-trip verified');
+}
+
 function publish(cert, key) {
     // Validation happens before touching the watched pair or stopping the watcher.
     validatePair(cert, key);
@@ -88,6 +137,8 @@ function publish(cert, key) {
 
 async function run() {
     assert.equal(process.env.MAIL_RENEWAL_REHEARSAL, 'synthetic-local-only', 'Explicit opt-in required');
+    assert(!process.env.MAIL_EXACT_IMAGE_REHEARSAL || process.env.MAIL_EXACT_IMAGE_REHEARSAL === 'synthetic-local-only',
+        'Invalid exact-image rehearsal opt-in');
     assert.equal(process.platform, 'darwin', 'This bounded harness requires local macOS Docker Desktop');
     assert(!process.env.DOCKER_HOST && !process.env.DOCKER_CONTEXT && !process.env.DOCKER_TLS_VERIFY,
         'Docker endpoint overrides are not accepted');
@@ -138,6 +189,7 @@ async function run() {
     const initial = fingerprint(firstCert);
     await waitForCertificate(initial);
     receipts.push('initial SMTP+IMAP certificate verified');
+    if (process.env.MAIL_EXACT_IMAGE_REHEARSAL === 'synthetic-local-only') await probeExactCandidate();
     const before = JSON.parse(docker('inspect', name))[0];
     for (const [test, cert, key] of [
         ['mismatched-key', firstCert, path.join(fixture, 'renewed.key')],
@@ -177,7 +229,7 @@ async function main() {
         };
         if (dockerVerified) {
             // Query exact names even if a create/run command timed out after taking effect.
-            for (const ownedName of [name, `${name}-hash`]) cleanup(() => {
+            for (const ownedName of [name, `${name}-hash`, `${name}-candidate`]) cleanup(() => {
                 const id = docker('ps', '-aq', '--filter', `name=^/${ownedName}$`).trim();
                 if (!id) return;
                 const owned = JSON.parse(docker('inspect', id))[0];
