@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Rich-text SSR guard — 2026-09-27
+
+Localaace599e tests /30daf45b fix: sanitizer failsclosed withoutDOM, renderer null SSR/initialhydration then sanitized client content via stable useSyncExternalStore. AI wrapper hydration covered. RED5fail/11pass ->GREEN19; scopedbranchcoverage83.33%, dependency249/249, bothTSC passed. Independent review and offline actual-component Chromium fixture passed; not fullappE2E. Browser exposed preexisting plain special-character double escaping, recorded separately. No schema/dependency/DB/live/push/deploy changes, WIP intact, image counts not refreshed. Next bounded batch upload/file-type security.
+
 ## DOMPurify source update — 2026-09-27
 
 Localfc98fc74 regression/CI and df22e760 scoped DOMPurify3.4.13 override. Six tests RED5pass1versionfail ->GREEN; aggregate32files249/249, existing frontend7/7, both typechecks and offline Chromium actual-sanitizer rendered fixture passed. Independent reviews GO; Sentry/XLSX integrity preserved. No exploit reproduction or updated-image-scan claim. Latent SSR raw-input fallback recorded as next bounded repair; current ticket SSR exposure not established due loading/useEffect flow. No app-source/schema/data/live/push/deploy changes; WIP intact. Full evidence limits in current-focus.
