@@ -66,7 +66,6 @@ export class MaintenanceWorkService {
         }
         if (this.active.size === 0) return { drained: true, activeCount: 0 };
         return new Promise<WorkDrainResult>((resolve) => {
-            let timer: ReturnType<typeof setTimeout>;
             const finish = () => {
                 clearTimeout(timer);
                 this.idleWaiters.delete(finish);
@@ -76,7 +75,7 @@ export class MaintenanceWorkService {
                 });
             };
             this.idleWaiters.add(finish);
-            timer = setTimeout(finish, timeoutMs);
+            const timer = setTimeout(finish, timeoutMs);
         });
     }
 
