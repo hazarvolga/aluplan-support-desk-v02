@@ -3,10 +3,7 @@ import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentation
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { Logger } from '@nestjs/common';
-
-
-import * as resources from '@opentelemetry/resources';
-const Resource = (resources as any).Resource;
+import { resourceFromAttributes } from '@opentelemetry/resources';
 const logger = new Logger('OTel');
 
 // EXPLAIN: OTel must be initialized BEFORE any other imports to wrap dependencies.
@@ -16,7 +13,7 @@ const traceExporter = new OTLPTraceExporter({
 });
 
 const sdk = new NodeSDK({
-    resource: new Resource({
+    resource: resourceFromAttributes({
         [SemanticResourceAttributes.SERVICE_NAME]: 'aluplan-backend',
         [SemanticResourceAttributes.SERVICE_VERSION]: '1.0.0',
         [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
