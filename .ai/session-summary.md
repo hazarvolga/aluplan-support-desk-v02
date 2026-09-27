@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## Scoped inbound semver checkpoint — 2026-09-27
+
+utf7-only override semver5.3->5.7.2 for CVE-2022-25883; no other mail/library settings changed. Actual call uses runtime Node version, not proven untrusted Range. Four consumer tests RED3pass1versionfail ->GREEN4, mail/OTel/XLSX14/14; three mocked inbound suites30/30 pre/post; backendtsc pass. pnpm-generated unrelated editorconfig edge change/XLSX checksum loss restored before successful frozen ignore-scripts install. Upstream links/integrity/limitations in current-focus. No newimage/scan/live/mailbox/DB/migration/push/deploy; WIP retained, last image0C30H unchanged.
+
 ## OTel Resource factory compatibility — 2026-09-27
 
 Replaced undefined resources.Resource constructor/any workaround with existing typed resourceFromAttributes, preserving settings and startup nonactivation. New isolatedVM regression3RED constructor failures ->3GREEN; plus10boot tests13/13, backendtsc passes before/after. Real resources/conventions but mocked SDK/exporter/process; no telemetry started or lifecycle behavior certified. No dependency/version changes or newimage: prior2b90e02d0C30H still applies. Current-focus records limitations/next gates. No live/provider/DB/migration/push/deploy, unrelatedWIP retained.

@@ -1,5 +1,15 @@
 # Current Focus
 
+## Inbound-mail semver source patch — 2026-09-27
+
+Scoped override utf7@1.0.2>semver:5.7.2 replaces its sole5.3.0 edge. Actual backend chain imap-simple5.1.0 ->imap0.8.19 ->utf7 1.0.2 unchanged. Other semver majors/consumers remain unchanged. Official maintainer release https://github.com/npm/node-semver/releases/tag/v5.7.2 and advisory https://github.com/advisories/GHSA-c2qf-rxjj-qqgw identify the5.7.2 fix for CVE-2022-25883, involving untrusted Range input. Inspected utf7 uses gte(process.version,'6.0.0') only; no customer-controlled range input or demonstrated live exploitation established. Do not describe this as fixing a proven mail-message exploit.
+
+Registry5.7.2 has no runtime dependencies or install lifecycle script; SHA512cBznnQ9KjJqU67B52RMC65CMarK2600WFnbkcaiwWq3xy/5haFJlshgnpjovMVJ+Hff49d8GEn0b87C5pDQ10g== retained in lock. pnpm9 lock generation also removed XLSX integrity and changed editorconfig's semver7 edge/optional marker; restored both unrelated changes before frozen ignore-scripts install, which passed. Final lock diff only targeted override/package/snapshot/utf7 edge.
+
+New scripts/mail-semver-compatibility.test.cjs RED3compatPASS/1versionFAIL ->GREEN4/4; resolves actual dependency chain without importing an IMAP connection, tests v-prefixed Node version branches, fixed ASCII/ampersand/RFC mailbox fixtures and bounded Turkish modifiedUTF7 roundtrips. Combined mail/OTel/XLSX14/14 network-denied. Existing mocked inbound service/attachments/review suites30/30 before and after (documented langfuse-core NODE_PATH accommodation), backendtsc passes. These are offline compatibility/mocked behavior tests, not mail-server/TLS end-to-end acceptance or ReDoS stress testing.
+
+No mail settings/service code/schema change, live access, mailbox connection, DB operation, migration, restart, push or deploy. WIP preserved. No new image/rescan; latest exact2b90e02d result remains0C30H71M10L. This and OTel resource fix await next grouped artifact build. Next: review remaining consumer groups together, including telemetry dependencies and rendering/tool-only reachability, before choosing the next minimal compatible patch; do not rebuild per leaf or equate scan counts with release acceptance.
+
 ## Passive OTel resource compatibility fix — 2026-09-27
 
 apps/backend/src/otel.ts now imports typed resourceFromAttributes from the existing installed resources2.6.0 instead of casting nonexistent runtime Resource to any and constructing it. No package/lock/environment/endpoint/instrumentation/signal-handler/startup-import changes. Source search still finds no otel preload in backend main/scripts/Dockerfile; live NODE_OPTIONS unknown. Do not activate this module during security patching: shared Sentry ownership and its existing SIGTERM process.exit callback need separate lifecycle assessment.
