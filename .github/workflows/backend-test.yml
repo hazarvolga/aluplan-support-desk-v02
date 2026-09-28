@@ -102,7 +102,7 @@ jobs:
     needs: [test]
     services:
       postgres:
-        image: pgvector/pgvector:pg16
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: testpassword
@@ -139,20 +139,41 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Generate Prisma Client
         run: pnpm --filter @aluplan/database db:generate
+      - name: Prepare isolated CI database
+        env:
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5433/aluplan_test?schema=public
+        run: pnpm exec prisma migrate deploy --config packages/database/prisma.config.js
+      - name: Generate disposable test credentials
+        run: |
+          node - <<'NODE' >> "$GITHUB_ENV"
+          const { randomBytes } = require('node:crypto');
+          for (const name of ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'ENCRYPTION_KEY']) {
+            process.stdout.write(`${name}=${randomBytes(32).toString('hex')}\n`);
+          }
+          NODE
+      - name: Verify E2E database target guard
+        run: node --test apps/backend/test/e2e-db-guard.test.cjs
       - name: Run E2E Tests
         env:
           NODE_ENV: test
           DATABASE_URL: postgresql://postgres:testpassword@localhost:5433/aluplan_test?schema=public
+          BACKEND_E2E_DISPOSABLE_DB: aluplan-test-ephemeral
           REDIS_URL: redis://localhost:6380
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          ADMIN_BYPASS_EMAILS: e2e-admin@aluplan.test
+          FRONTEND_URL: http://localhost:3000
           NODE_OPTIONS: "--experimental-vm-modules --no-warnings"
         # Capture jest output and fail if `Tests: 0 total` appears.
         # Pre-`@swc/jest` migration the integration suite would silently
         # exit 0 with zero tests due to `--forceExit` masking OOM crashes.
         run: |
           set -o pipefail
-          pnpm --filter @aluplan/backend test:e2e 2>&1 | tee /tmp/be-e2e.log
+          # The customer-security rehearsal requires a separate guarded
+          # 127.0.0.1:55434 database. It is NOT covered by this generic job;
+          # keep its isolated execution as an explicit release gate.
+          pnpm --filter @aluplan/backend exec jest --config ./test/jest-e2e.json \
+            --runInBand --forceExit \
+            --testPathIgnorePatterns='integration/customer-security-rehearsal.integration.spec.ts' \
+            2>&1 | tee /tmp/be-e2e.log
           if grep -qE 'Tests: *0 total' /tmp/be-e2e.log; then
             echo "::error::Backend E2E ran zero tests — suite is broken"
             exit 1
