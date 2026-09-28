@@ -494,11 +494,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
     private async getAccessToken(config: any): Promise<string> {
         const { tenantId, clientId, clientSecret, instanceUrl: rawInstanceUrl } = config;
 
-        // Debug Phase: Secure Parameter Verification
-        const mask = (str: string) => (str ? (str.length < 8 ? '****' : `${str.substring(0, 4)}...${str.substring(str.length - 4)}`) : 'NULL');
-        this.logger.log(
-            `[TOKEN_ACQUISITION] Params: Tenant=${mask(tenantId)} (${tenantId?.length}), ClientID=${mask(clientId)} (${clientId?.length}), Secret=${mask(clientSecret)} (${clientSecret?.length}), Instance=${rawInstanceUrl}`,
-        );
+        this.logger.log('[TOKEN_ACQUISITION] Requesting Dynamics token');
 
         if (!tenantId || !clientId || !clientSecret || !rawInstanceUrl) {
             throw new Error(`Missing required Dynamics 365 credentials: T:${!!tenantId}, C:${!!clientId}, S:${!!clientSecret}, U:${!!rawInstanceUrl}`);
@@ -521,9 +517,20 @@ export class Dynamics365Adapter implements ICrmAdapter {
             });
             return response.data.access_token;
         } catch (error) {
-            const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-            this.logger.error(`[TOKEN_ACQUISITION_FAILED] URL: ${tokenUrl}, Error: ${errorDetails}`);
-            throw error;
+            const status = Number(error?.response?.status);
+            const rawCode = error?.response?.data?.error;
+            const safeCodes = new Set([
+                'invalid_client', 'invalid_grant', 'invalid_request', 'invalid_scope',
+                'unauthorized_client', 'unsupported_grant_type', 'temporarily_unavailable',
+                'server_error', 'interaction_required',
+            ]);
+            const code = typeof rawCode === 'string' && safeCodes.has(rawCode) ? rawCode : 'unknown';
+            const statusLabel = Number.isInteger(status) && status >= 400 && status <= 599
+                ? `HTTP ${status}`
+                : 'network error';
+            const diagnostic = `${statusLabel}; code=${code}`;
+            this.logger.error(`[TOKEN_ACQUISITION_FAILED] ${diagnostic}`);
+            throw new Error(`Dynamics 365 token request failed (${diagnostic})`);
         }
     }
 }
