@@ -20,7 +20,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 0 | **STAB-00** | Handoff Bölüm 8 | Ayrı worktree, dal, belge aktarımı ve TODO planı teslimi | Altyapı / Hazırlık | **COMPLETED** (Kabul Edildi) |
 | 1.1 | **SEC-01** | SEC-01 | CSAT / Bilet Çözüm Değerlendirmesi Müşteri Sahiplik ve Durum Doğrulaması | Paket A (Erişim/Oturum) | **COMPLETED** (Kabul Edildi) |
 | 1.2 | **SEC-02** | SEC-02 | Refresh Token Rotasyonunda Bcrypt 72-Bayt Sınırı ve Token Doğrulama Güvenliği | Paket A (Erişim/Oturum) | **COMPLETED** (Kabul Edildi) |
-| 1.3 | **SEC-03** | SEC-03 | Profil Parola Güncellemesinde Mevcut Parola, Model Uyumu ve Oturum İptal Zinciri | Paket A (Erişim/Oturum) | **PENDING** |
+| 1.3 | **SEC-03** | SEC-03 | Profil Parola Güncellemesinde Mevcut Parola, Model Uyumu ve Oturum İptal Zinciri | Paket A (Erişim/Oturum) | **COMPLETED** (Kod incelemesi kabul) |
 | 1.4 | **SEC-04** | SEC-04 | WhatsApp Webhook Tanınmayan Göndericide Güvenli Ret / Karantina İzolasyonu | Paket A (Erişim/Oturum) | **PENDING** |
 | 1.5 | **SEC-05** | Röntgen Bölüm 5.3 / 13 | Genel / Bulk Bilet Güncellemelerinde Yetki ve Durum Geçiş Sınırları | Paket A (Erişim/Oturum) | **PENDING** |
 | 2.1 | **REL-01** | Handoff Bölüm 7 (Sıra 2) | Paket A Sonrası Tip Kontrolü, Derleme ve Odaklı Testler (Ara Yayın Yok) | Paket A (Kalite Kontrolü) | **PENDING** |
@@ -142,23 +142,43 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
   - Gelecekte canlıya alındığında: Eski raw-bcrypt formatındaki refresh token'lara sahip mevcut aktif oturumlar yenileme yapamayacak ve bir kereye mahsus yeniden kullanıcı adı/şifre ile giriş yapmaları gerekecektir. Normal giriş yapan kullanıcılara otomatik olarak yeni `v2:` formatı atanacaktır. Şifreler ve access token mimarisi etkilenmez.
 
 ### SEC-03: Profil Parola Güncellemesinde Mevcut Parola, Model Uyumu ve Oturum İptal Zinciri
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (Kod incelemesi kabul)
 - **Rapor ID / Kanıt:** SEC-03; Röntgen Bölüm 13 (Satır 335); `B/users/dto/update-profile.dto.ts:35-38`, `B/users/users.service.ts:191-204`, `B/auth/auth.service.ts:450-480`.
-- **Dosya / Modül:** `apps/backend/src/users/users.service.ts`, `apps/backend/src/users/dto/update-profile.dto.ts`, `apps/frontend/src/app/[locale]/(dashboard)/profile/page.tsx` (gerekirse).
-- **Minimum Değişiklik:** 
-  - Profil üzerinden parola güncellenirken kullanıcının mevcut parolasını (`currentPassword`) girmesinin zorunlu kılınması ve backend'de `bcrypt.compare` ile doğrulanması.
-  - Yeni parolanın mevcut kayıt/sıfırlama DTO politikasıyla uyumlu olması (`@MinLength(8, { message: 'Şifre en az 8 karakter olmalıdır' })` - keyfi karmaşıklık kuralı eklenmeden).
-  - Başarılı parola değişiminde kullanıcı modelinde mevcut reset akışıyla uyumlu atomik oturum iptal zincirinin işletilmesi:
-    1. `sessionVersion: { increment: 1 }`
-    2. `refreshTokenHash: null`
-    3. Bekleyen herhangi bir parola sıfırlama token'ının iptali (`passwordResetJtiHash: null`)
-    4. Redis oturum işaretçisinin temizlenmesi (`authService.invalidateAccessSessions(userId)`).
-- **Kapsam Dışı:** Şifremi unuttum / e-posta sıfırlama (reset password) akışının baştan yazılması (mevcut akış model olarak korunur).
-- **Bağımlılık:** SEC-02 tamamlanmış olmalı.
-- **Kabul Ölçütü:** Yanlış mevcut parola ile profil şifre değişimi reddedilmeli (400/401); doğru mevcut parola ile şifre güncellenmeli; güncellenen kullanıcının eski refresh token'ı ve varsa bekleyen reset challenge token'ı geçersiz kalmalı.
-- **Dar Doğrulama:** `pnpm --filter @aluplan/backend test -- src/users/users.service.spec.ts` odaklı test; frontend profil sayfası etkilenirse render ve typecheck kontrolü.
-- **Veri / Migration Etkisi:** Sıfır şema değişikliği (mevcut `User` model alanları kullanılır).
-- **Açık Kullanıcı Kararı:** Parola profil ekranından değiştiğinde kullanıcının o anki tarayıcı oturumu kapatılıp login ekranına mı yönlendirilsin, yoksa o oturum için hemen yeni bir access/refresh token çifti mi üretilsin?
+- **Dosya / Modül:** `apps/backend/src/users/users.service.ts`, `apps/backend/src/users/dto/update-profile.dto.ts`, `apps/frontend/src/app/[locale]/(dashboard)/profile/page.tsx`, `apps/frontend/src/components/auth/role-guard.tsx`, `apps/frontend/messages/{tr,en,de}.json`.
+- **Kullanıcı Kararı (Kesinleşen):**
+  - Profil ekranından parola güncellendiğinde mevcut parola (`currentPassword`) zorunlu tutulmalı; yanlış veya eksik mevcut parola 400 Bad Request ile reddedilmelidir.
+  - Başarılı parola değişiminde tüm eski oturumlar iptal edilmeli (`sessionVersion: { increment: 1 }`, `refreshTokenHash: null`, `passwordResetJtiHash: null`, Redis `user:${id}:force_logout_at`); mevcut tarayıcı oturumu kapatılıp (`logout()`) kullanıcı anlaşılır bilgilendirme metniyle (`toasts.password_changed_relogin`) locale uyumlu login ekranına (`/${locale}/login`) yönlendirilmelidir.
+  - Normal ad/telefon/şirket vb. profil güncellemeleri oturumu kapatmamalıdır (`passwordChanged: false`).
+  - Gerçek kullanıcı kimlik bilgileri değiştirilmemeli; yalnızca kod ve sentetik testler kullanılmalıdır.
+- **Uygulanan Değişiklikler ve Güvenlik Sınırları:**
+  - **DTO Güvenliği (`update-profile.dto.ts`):** `currentPassword`, `newPassword` ve geriye dönük uyumlu `password` alanları eklendi; `@MinLength(8)` şartı kondu. `main.ts` global ValidationPipe `enableImplicitConversion: true` tip zorlamasını önlemek için `@Transform` koruyucuları eklendi (boolean veya numeric değerlerin string'e dönüştürülmesi engellendi).
+  - **Ham Parola Bütünlüğü (Zero-Trim):** Hashlenecek yeni parola (`rawNewPassword`) asla `.trim()` ile kırpılmamakta, bayt bütünlüğü korunmaktadır. Boşluk içeren geçerli parolalar (`'  Pass with spaces!  '`) aynen hashlenip login aşamasındaki `bcrypt.compare` ile %100 uyumlu doğrulanmaktadır. Trim yalnızca boşluk-only (`rawNewPassword.trim().length === 0`) geçersiz parolaları yakalamak için kullanılmaktadır.
+  - **İlişkili DB Yazımlarında Atomik Prisma Transaction:** Parola CAS güncellemesi (`user.updateMany`), profil senkronizasyonu (`updateOrCreateCustomerProfile`) ve taze kullanıcı okuması (`user.findUnique`) aynı `this.prisma.$transaction(async (tx) => { ... })` bloğuna alındı. Profil güncellemesi (ör. müşteri profili kısıt ihlali) veya veri tabanı hatası durumunda parola ve oturum sürümündeki değişiklikler otomatik olarak geri alınır (rollback); Redis oturum iptal işaretçisi çağrılmaz ve fail-closed kalınır.
+  - **Müşteri Profili İsim Tutarlılığı:** `updateOrCreateCustomerProfile` metodu, güncellenen `dto.fullName` değerini esas alarak `firstName` ve `lastName` türetmektedir. Parola, ad-soyad ve şirket alanları aynı anda güncellendiğinde eski `user.fullName` kullanılma regresyonu giderilmiştir.
+  - **Durable Oturum İptal Zinciri:** Prisma CAS koşulu (`where: { id, status: 'ACTIVE', deletedAt: null, sessionVersion, passwordHash }`) ile eşzamanlı yarışlar önlendi. Başarılı commit sonrasında Redis oturum iptal anahtarı (`user:${userId}:force_logout_at`) fail-safe try-catch ile işaretlendi.
+  - **Gizlilik:** Servis yanıtından `passwordHash`, `refreshTokenHash` ve `passwordResetJtiHash` alanları kesin olarak temizlendi; yanıt nesnesi `{ ...result, passwordChanged: boolean }` döndürmektedir.
+  - **Frontend UX & Tek Yönlendirme:** `role-guard.tsx` içerisindeki `logout` metodu isteğe bağlı yönlendirme hedefi (`redirectTo?: string`) alacak ve bulunulan sayfaya göre (`pathname` içinden `routing.locales` prefix'i) varsayılan locale uyumlu login rotasını (`/${localePrefix}/login`) belirleyecek şekilde güncellendi. `profile/page.tsx` içerisindeki ikinci `router.push` çağrısı kaldırılarak doğrudan tek ve locale uyumlu `await logout(`/${locale}/login`)` çağrısına dönüştürüldü; böylece çift yönlendirme riski ortadan kaldırıldı ve diğer mevcut `logout()` çağrılarının davranışları bozulmadan korundu.
+  - **Çeviriler:** `tr.json`, `en.json`, `de.json` dosyalarına `current_password` placeholder/etiket ve gerekli toast mesajları eklendi.
+- **Kapsam Dışı:** Şifremi unuttum / e-posta sıfırlama (reset password) akışının baştan yazılması; migration; global ValidationPipe ayarlarının değiştirilmesi.
+- **Bağımlılık:** SEC-02 tamamlandı (`b125a24d`, `765ed689`, `7df9f3cd`).
+- **Kabul Ölçütü:** Yanlış veya eksik mevcut parola ile şifre değişimi reddedilmeli (400); doğru mevcut parola ile şifre güncellenmeli; boşluk içeren parolalar bozulmadan saklanmalı; transaction içi profil yazımı hata verirse parola/session değişimi rollback olmalı ve Redis çağrılmamalı; başarılı şifre değişiminde tarayıcı oturumu kapatılıp login ekranına yönlendirilmeli; normal profil güncellemesi oturumu kapatmamalıdır.
+- **Doğrulama Kanıtı ve Mock Test Sınırı:**
+  - **Bağımsız İnceleme Onayı:** Backend (37/37 hedefli test) ve frontend (iki dar suite 8/8 test) bağımsız incelemeden geçerek KABUL edildi.
+  - **Backend Testleri (`src/users`):** 4 test suite, 48/48 test PASS (0 fail).
+    - `src/users/profile-password-security.spec.ts`: 15/15 test PASS (ham parola bütünlüğü, login uyumu, whitespace-only ret, birleşik profil senkronizasyonu, transaction rollback ve Redis izolasyonu, CAS yarış koruması, soft-delete ve inaktif kullanıcı koruması).
+    - `src/users/dto/update-profile.dto.spec.ts`: 11/11 test PASS (global ValidationPipe ayarlarıyla tip güvenliği, boolean/numeric engellemesi, 8 karakter alt sınır).
+    - `src/users/users.service.spec.ts`: 14/14 test PASS.
+    - `src/users/__tests__/users.controller.spec.ts`: 8/8 test PASS.
+  - **Backend Tip Denetimi:** `pnpm --filter @aluplan/backend typecheck` (`tsc --noEmit`) 0 hata ile PASS.
+  - **Frontend Testleri:**
+    - `src/app/[locale]/(dashboard)/profile/ProfilePage.spec.tsx`: 5/5 test PASS (mevcut parola zorunluluğu, min length, parola uyuşmazlığı, başarılı parola değişiminde toast + tek locale login yönlendirmeli logout, normal güncellemede oturum korunması).
+    - `src/components/auth/role-guard.spec.tsx`: 3/3 test PASS (varsayılan locale duyarlı logout ve özel redirectTo doğrulaması).
+  - **Frontend Tip Denetimi:** `pnpm --filter @aluplan/frontend typecheck` (`tsc --noEmit`) 0 hata ile PASS.
+  - **Çeviri Bütünlüğü:** `pnpm --filter @aluplan/frontend i18n:check` TR, EN, DE %100 eksiksiz ve yeşil.
+  - **Mock Test Sınırı ve Kanıt Dili:** Doğrulamalar NestJS ve Vitest/Jest mock ortamında (mock bcrypt, mock Prisma transaction ve mock Redis) yapılmıştır. bcrypt ve Prisma transaction mock'ları gerçek login/DB rollback entegrasyon kanıtı değildir; yalnız iletilen parametrelerin (untrimmed raw string, BCRYPT_ROUNDS) ve transaction hata bağlantısının (hata durumunda transaction'ın istisna fırlatması ve Redis'in çağrılmaması) doğrulanmasıdır. Mock testleri tarayıcı veya canlı DB entegrasyon kanıtı olarak sunulamaz. Gerçek tarayıcı/render doğrulaması bu aşamada yapılmamıştır; Paket A kalite kontrolü olan REL-01 maddesi altında beklemektedir. Canlı kullanıcı kimlik bilgileri, gerçek veritabanı veya canlı dış servisler kesinlikle kullanılmamıştır.
+  - **İnceleme Notu (Non-blocking):** `logout` API çağrısının 401/reject dönmesi sonrasında `finally` bloğundaki yerel temizliğin (`setUser(null)`) ve yönlendirmenin işletilmesine dair hata yolu birim testi eksiktir. Kapsamı büyütmemek adına yeni iş açılmamış olup ileride auth hata davranışları ele alınırken incelenecektir.
+- **Veri / Migration Etkisi:** Sıfır şema değişikliği (mevcut `User` ve `CustomerProfile` alanları kullanıldı).
+- **Operasyonel Etki:** Profil ekranından parola değiştiren kullanıcıların oturumları derhal sonlanır ve yeni parolalarıyla tekrar giriş yapmaları gerekir. Normal profil bilgisi güncelleyenlerin oturumu kesilmez.
 
 ### SEC-04: WhatsApp Webhook Tanınmayan Göndericide Güvenli Ret / Karantina İzolasyonu
 - **Durum:** `PENDING`
