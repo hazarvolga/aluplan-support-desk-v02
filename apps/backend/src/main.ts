@@ -9,7 +9,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import compression from 'compression';
-import { json, urlencoded } from 'express';
+import { urlencoded } from 'express';
 import * as net from 'net';
 import { Request, Response, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
@@ -20,6 +20,7 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { XssValidationPipe } from './common/pipes/xss-validation.pipe';
 import { MaintenanceAdmissionMiddleware } from './common/middleware/maintenance-admission.middleware';
 import { MaintenanceWorkService } from './common/services/maintenance-work.service';
+import { signedWebhookJsonParser } from './common/http/signed-webhook-json-parser';
 
 async function checkConnection(host: string, port: number, timeout = 3000): Promise<boolean> {
     return new Promise((resolve) => {
@@ -126,7 +127,7 @@ async function bootstrap() {
     app.use(cookieParser());
 
     // Payload Limit restriction
-    app.use(json({ limit: '10mb' }));
+    app.use(signedWebhookJsonParser);
     app.use(urlencoded({ extended: true, limit: '10mb' }));
 
     const cacheableApiPaths = [
