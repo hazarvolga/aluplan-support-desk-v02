@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-28 — Local CI fixture and signed-webhook stabilization
+
+Only local candidate work. The stale CRM webhook integration test was updated from legacy `x-api-key` to HMAC, with a RED exact-raw-JSON request proving that noncanonical whitespace was rejected. A scoped JSON parser now preserves raw bytes under the existing 10 MB limit for the four signed webhook routes; focused CRM/parser/guard tests passed 34/34, backend typecheck and production build passed. Independent code review reported no blocker. The stale ticket/SLA integration fixture now provides current dependencies and uses the real `MaintenanceWorkService`; focused tests passed 8/8 and typecheck passed. This fixture still mocks Prisma and does not prove database persistence. Tests and product code are in separate local commits `fdb56a15`, `53646460`; SLA test commit is `e225318b`. GitHub draft PR #26 remains red on other jobs, and these commits have not been pushed. No live access, push, deploy, migration or customer-data write; user frontend `next-env.d.ts` WIP preserved. Production remains NO-GO.
+
 ## 2026-09-28 — Encrypted recapture remount verified
 
 After the operator confirmed storing the new password, the recapture sparsebundle was checked as AES-256/encrypted, its 144,801,989-byte PG17 archive matched SHA-256 `dde6ab3520dd36e1c3bef8cc1c862661c256d62fc554eea9080104b92b78dae4`, and the image was cleanly detached. macOS DiskImageMounter was opened; the operator reported successful unlock. The same exact sparsebundle remounted at `/Volumes/Aluplan-Release-20260927`, and the archive size/hash again matched the protected checksum and READY metadata. No password was entered in chat or a shell command. This verifies local access and bytes, not a final quiesced production checkpoint. No live system, Git remote, or deployment was changed; production remains NO-GO.

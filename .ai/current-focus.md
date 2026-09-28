@@ -1,5 +1,9 @@
 # Current Focus
 
+## 28 Eylül — CI kapıları ve yerel aday
+
+Aday dalında ham JSON baytlarını yalnız dört imzalı webhook yolu için koruyan düzeltme `53646460` ve testleri `fdb56a15` yerel commit olarak sabitlendi; CRM HTTP, parser ve ilgili guard odaklı set 34/34, backend typecheck/build geçti. Eski bilet/SLA test düzeneği güncel `TicketsService` bağımlılıkları ve gerçek `MaintenanceWorkService` ile onarıldı (`e225318b`); 8/8 ve backend typecheck geçti. Bu test sahte Prisma kullandığından gerçek DB kalıcılığı kanıtı değildir. PR #26 hâlâ kırmızı: eski CRM Dynamics testi, özel güvenlik provası, CI E2E ortamı, frontend lint ve bağımlılık denetimi ayrı ele alınmalı. Yerel commit'ler push edilmedi; canlı erişim, ayar, migration, deploy veya veri yazma yok. Kullanıcının `apps/frontend/next-env.d.ts` değişikliği korunuyor. **Production NO-GO.**
+
 ## Yeni 28 Eylül kurtarma provası ve parola teyidi
 
 Yeni operatör parolalı şifreli APFS imajındaki 144.801.989 baytlık canlı PG17 kopyası sunucuyla SHA-256 eşleşti; kesin `86ef3b2c` Linux/amd64 imajıyla izole tam restore, migration, ikinci tur no-op ve korunan veri paritesi geçti. Geçici açık VPS dökümü ve iki başarısız kısmi akış silindi; tam kopya ve özel prova kanıtları duruyor. Kullanıcı yeni parolayı güvenli yerde kaydettiğini bildirdi. İmaj düzgünce ayrılıp macOS parola penceresiyle yeniden bağlandı; aynı dökümün boyutu ve SHA-256 değeri kayıtlı checksum/READY değeriyle eşleşti. Yerel doküman commit'leri `82ca36d9` ve `9e59f118`; kullanıcıya ait `apps/frontend/next-env.d.ts` değişikliği korunuyor. Mail ayarı iki-alan köprüsünün izole testi yeniden geçti. Canlı mail TLS, eski yazıcı sınırı, son durdurulmuş-yazıcı DB/mail/R2 checkpoint'i, kırmızı PR kontrolleri ve açık bakım kapsamı hâlâ yayın kapısıdır. **Canlı deploy yapılmadı; Production NO-GO.**
