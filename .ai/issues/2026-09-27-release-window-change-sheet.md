@@ -2,6 +2,14 @@
 
 Status: **NO-GO / preparation only.** This document is not authorization to access or mutate production, publish Git, stop services, migrate data, or deploy. The only customer-facing application hosts in this change are `allplan.net.tr` and `api.allplan.net.tr`. `aluplan.net.tr` is not a release target.
 
+## 2026-09-28 local release-gate update
+
+- Removed Dynamics token credential fragments and untrusted OAuth response bodies from the token-acquisition log/error path. A fixed allowlist retains only known OAuth error codes and numeric HTTP status. Tests first reproduced leakage through both `error_description` and the ostensibly safe `error` field; the corrected adapter passed 24/24 focused tests, the selected CRM suites 73/73, and backend TypeScript no-emit.
+- Backend generic E2E CI now prepares its own PG17 schema and disposable test secrets, excluding the guarded customer-security rehearsal from the shared test database. Before Jest imports any app module, its setup guard requires `NODE_ENV=test`, an explicit disposable-test opt-in, and the exact local `aluplan_test` target on port 5433; seven guard tests passed. The auth integration fixture creates a synthetic database role required by the current fail-closed session-authority contract. Against a disposable local PG17 with all 57 migrations applied, the guarded generic backend E2E suite passed **72/72**. The labelled, volume-free local test container was removed. This is not a test against current customer data.
+- The customer-security rehearsal requires its exact separate `127.0.0.1:55434` database, role and marker; there is **no current CI launcher** for it. It is an explicit unresolved release gate until a guarded isolated run is completed and recorded. Generic E2E green must not be called full security acceptance.
+- Current `pnpm audit --prod --audit-level high` still exits 1 with **7 High** advisories. The package manager warns that root `package.json` `pnpm.overrides` is ignored; investigate actual lockfile resolution and reachability before changing dependency policy. Frontend lint and browser E2E CI are also not yet green. Do not suppress these findings to force CI green.
+- This local checkpoint did not touch production, GitHub, R2, live mail, or customer data. September 27 protected DB/mail/R2 checkpoints remain preliminary and increasingly stale as customers write. Live mail TLS, writer fencing, final recovery checkpoint, exact image rebuild, CI/review and separate `push et`/`deploy et` authority remain required. **NO-GO.**
+
 ## Fixed candidate and current route ownership
 
 | Surface | Frozen candidate | Last verified live state |
@@ -13,6 +21,8 @@ Status: **NO-GO / preparation only.** This document is not authorization to acce
 | GitHub | Candidate branch published as draft PR #26; no merge or deployment | `origin/main` read-only remote check: `d9b21b9d`; the exited Coolify frontend entry points to `main`/`HEAD` and is **not** the release button |
 
 Last read-only live inspection: 2026-09-27 18:23 UTC. Recheck moving identities before any maintenance. Do not run the old historical backend image against the migrated schema as an automatic rollback. Preserve the user's uncommitted `apps/frontend/next-env.d.ts` change.
+
+**2026-09-28 candidate invalidation:** The previously staged backend image at revision `86ef3b2c` predates the local Dynamics OAuth secret-log fix. It is no longer the exact intended backend release. Do not activate that staged image as a shortcut. A new reviewed Linux/amd64 image and exact-source digest/parity proof are required after local changes are committed. This update changes no live container.
 
 ### 18:23 UTC scoped live preflight (read-only)
 
