@@ -29,14 +29,19 @@ describe('Ticket management HTTP authorization', () => {
         ];
         update = jest.fn(async ({ where, data }) => ({ ...rows.find(row => row.id === where.id), ...data }));
         messages = jest.fn(async () => ({ count: 2 }));
-        const prisma = { ticket: {
-            findFirst: jest.fn(async ({ where }) => rows.find(row => row.id === where.id) ?? null),
-            findUnique: jest.fn(async ({ where }) => rows.find(row => row.id === where.id) ?? null),
-            count: jest.fn(async ({ where }) => rows.filter(row => where.id.in.includes(row.id)
-                && (!where.userId || row.userId === where.userId)).length),
-            updateMany: update,
-            update,
-        }, ticketMessage: { createMany: messages } };
+        const prisma = {
+            ticket: {
+                findFirst: jest.fn(async ({ where }) => rows.find(row => row.id === where.id) ?? null),
+                findUnique: jest.fn(async ({ where }) => rows.find(row => row.id === where.id) ?? null),
+                findMany: jest.fn(async ({ where }) => rows.filter(row => !where?.id?.in || where.id.in.includes(row.id))),
+                count: jest.fn(async ({ where }) => rows.filter(row => where.id.in.includes(row.id)
+                    && (!where.userId || row.userId === where.userId)).length),
+                updateMany: update,
+                update,
+            },
+            ticketMessage: { createMany: messages },
+            $transaction: jest.fn(async (cb: any) => typeof cb === 'function' ? cb(prisma) : Promise.all(cb)),
+        };
         const service = new TicketsService(prisma as any, {} as any, {} as any, { emit: jest.fn() } as any,
             {} as any, {} as any, new TicketAccessService(prisma as any), new MaintenanceWorkService());
         const module = await Test.createTestingModule({
@@ -99,6 +104,38 @@ describe('Ticket management HTTP authorization', () => {
         expect(update).not.toHaveBeenCalled();
         await request(app.getHttpServer()).patch('/tickets/bulk').set('x-test-principal', 'staff')
             .send({ ticketIds: ['own', 'other'], status: 'RESOLVED' }).expect(200);
+        expect(update).toHaveBeenCalledTimes(2);
+    });
+
+    it.each(['status', 'priority', 'assignedTo', 'slaPolicyId', 'teamId', 'departmentId', 'tags'])(
+        'rejects customer generic update on restricted field %s via HTTP', async (field) => {
+            const payload = {
+                [field]: field === 'priority' ? 'URGENT' : field === 'tags' ? ['vip'] : 'custom-value',
+            };
+            await request(app.getHttpServer()).patch('/tickets/own')
+                .set('x-test-principal', 'customer')
+                .send(payload)
+                .expect(403);
+            expect(update).not.toHaveBeenCalled();
+        },
+    );
+
+    it.each(['slaPolicyId', 'teamId', 'departmentId'])(
+        'rejects staff generic update on unsupported field %s with 400', async (field) => {
+            const payload = { [field]: 'unsupported-value' };
+            await request(app.getHttpServer()).patch('/tickets/own')
+                .set('x-test-principal', 'staff')
+                .send(payload)
+                .expect(400);
+            expect(update).not.toHaveBeenCalled();
+        },
+    );
+
+    it('allows customer generic update on subject and description via HTTP', async () => {
+        await request(app.getHttpServer()).patch('/tickets/own')
+            .set('x-test-principal', 'customer')
+            .send({ subject: 'Updated title', description: 'Updated description' })
+            .expect(200);
         expect(update).toHaveBeenCalledTimes(1);
     });
 });
