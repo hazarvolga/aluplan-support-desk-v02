@@ -372,10 +372,10 @@ test("orchestrator enforces its own monotonic deadline and AbortSignal", async (
     collectA14bInventory({
       runContext,
       ...blocking,
-      captureTimeoutMs: 10,
-      observationTimeoutMs: 20,
+      captureTimeoutMs: 1000,
+      observationTimeoutMs: 10000,
     }),
-    /timed out/i,
+    /r2-before capture timed out/i,
   );
   assert.equal(transportAborted, true);
 
