@@ -22,7 +22,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 1.2 | **SEC-02** | SEC-02 | Refresh Token Rotasyonunda Bcrypt 72-Bayt Sınırı ve Token Doğrulama Güvenliği | Paket A (Erişim/Oturum) | **COMPLETED** (Kabul Edildi) |
 | 1.3 | **SEC-03** | SEC-03 | Profil Parola Güncellemesinde Mevcut Parola, Model Uyumu ve Oturum İptal Zinciri | Paket A (Erişim/Oturum) | **COMPLETED** (Kod incelemesi kabul) |
 | 1.4 | **SEC-04** | SEC-04 | WhatsApp Webhook Tanınmayan Göndericide Güvenli Ret / Karantina İzolasyonu | Paket A (Erişim/Oturum) | **COMPLETED** (dar kapsam kabul) |
-| 1.5 | **SEC-05** | Röntgen Bölüm 5.3 / 13 | Genel / Bulk Bilet Güncellemelerinde Yetki ve Durum Geçiş Sınırları | Paket A (Erişim/Oturum) | **PENDING** |
+| 1.5 | **SEC-05** | Röntgen Bölüm 5.3 / 13 | Genel / Bulk Bilet Güncellemelerinde Yetki ve Durum Geçiş Sınırları | Paket A (Erişim/Oturum) | **REVIEW** |
 | 2.1 | **REL-01** | Handoff Bölüm 7 (Sıra 2) | Paket A Sonrası Tip Kontrolü, Derleme ve Odaklı Testler (Ara Yayın Yok) | Paket A (Kalite Kontrolü) | **PENDING** |
 | 2.2 | **REL-02** | Handoff Bölüm 5 (P1) | Erişilebilir High Bağımlılık Denetimi ve Quality Gate CI/E2E Analizi | Paket A (Yayın Hazırlığı) | **PENDING** |
 | 3.1 | **RAG-01** | RAG-01 | Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi | Paket B (Güvenilir Bilgi) | **PENDING** |
@@ -222,18 +222,74 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Açık Kullanıcı Kararı:** Çözüldü (güvenli teknik varsayılan: tanınmayan numara reddedilir, anonim bilet/müşteri açılmaz, migration yapılmaz).
 
 ### SEC-05: Genel / Bulk Bilet Güncellemelerinde Yetki ve Durum Geçiş Sınırları
-- **Durum:** `PENDING`
-- **Rapor ID / Kanıt:** Röntgen Bölüm 5.3 (Satır 118), Bölüm 13 (Satır 342), Bölüm 14 (Satır 349); `B/tickets/tickets.service.ts`.
-- **Dosya / Modül:** `apps/backend/src/tickets/tickets.service.ts`, `apps/backend/src/tickets/tickets.controller.ts`.
-- **Minimum Değişiklik:** 
-  - Toplu (bulk) veya genel bilet güncelleme yollarında, durum makinelerindeki (`reopen`, `close`, `assign`) özel yetki ve geçerlilik kontrollerinin atlanmasını önleyecek guard kontrollerinin eklenmesi.
-  - Müşteri rolünün kendi biletleri üzerinde izin verilmeyen alanları (ör. `assignedTo`, `priority`, `slaPolicyId`) toplu olarak güncelleyememesi.
-- **Kapsam Dışı:** UI toplu işlem menüsünün baştan tasarlanması.
-- **Bağımlılık:** SEC-01..SEC-04 tamamlanmış olmalı.
-- **Kabul Ölçütü:** Yetkisiz rol toplu işlemde kısıtlı alanları değiştirememeli; kapalı biletler geçersiz yollarla doğrudan açık yapılamamalı.
-- **Dar Doğrulama:** `pnpm --filter @aluplan/backend test -- src/tickets/tickets.service.spec.ts` odaklı izin testleri.
+- **Durum:** `COMPLETED` (Bağımsız kod incelemesi kabul edildi; yerel checkpoint oluşturuluyor)
+- **Rapor ID / Kanıt:** Röntgen Bölüm 5.3 (Satır 118), Bölüm 13 (Satır 342), Bölüm 14 (Satır 349); `B/tickets/tickets.service.ts`, `B/tickets/dto/update-ticket.dto.ts`.
+- **Dosya / Modül:** `apps/backend/src/tickets/tickets.service.ts`, `apps/backend/src/tickets/dto/update-ticket.dto.ts`, `apps/backend/src/tickets/ticket-management-security.spec.ts`, `apps/backend/src/tickets/ticket-management.http.spec.ts`.
+- **Minimum Değişiklik ve Güvenlik Sınırları:**
+  - **Müşteri Alan Kısıtlamaları (`assertTicketFieldUpdateAllowed`):**
+    - Müşteri rolü (`CUSTOMER` veya `VIEWER`), genel `PATCH /tickets/:id` veya toplu `PATCH /tickets/bulk` üzerinden atama (`assignedTo`), öncelik (`priority`), SLA alanları (`slaPolicyId`), yönetim alanları (`teamId`, `departmentId`, `tags`) veya durum (`status`) alanlarını güncelleyemez. Herhangi biri gönderildiğinde doğrudan `ForbiddenException('TICKET_FIELD_AGENT_ONLY')` (403) fırlatılır ve veri tabanına sıfır yazım yapılır.
+    - `UpdateTicketDto` sınıfına yalnızca geçerli `status?: TicketStatus;` eklendi; gereksiz `slaPolicyId`, `teamId`, `departmentId` ekleri kaldırıldı. Servis katmanında personelin bu alanları genel güncellemeden göndermesi durumunda sessizce yok sayılmayıp `BadRequestException` (400) ile açıkça reddedilmesi sağlandı.
+  - **Müşteri Yetkili Yeteneklerinin Korunması:**
+    - Müşterinin kendi biletinde konu (`subject`) ve açıklama (`description`) güncelleme izni korundu.
+    - Müşterinin kendi biletini onay incelemesine gönderme hakkı (`PATCH /tickets/:id/status/PENDING_CUSTOMER_REVIEW` via `transition`) korundu.
+    - VIP müşteri profiline sahip kullanıcıların canlı destek talep etme hakkı (`chatStatus: REQUESTED`) korundu.
+    - Müşterinin `PENDING_CUSTOMER` durumundaki biletine yanıt vererek bileti yeniden açması (`addMessage` içinde reopen on customer reply) korundu.
+    - Müşterinin CSAT çözümlenme değerlendirmesi sunması (`POST /tickets/:id/feedback`) korundu.
+  - **P1: No-op / Aynı-Status Güncellemede Skaler Güvenli Yanıt ve Veri Sızıntısı Engeli:**
+    - `findOne(id, requester)` personelde çağrıldığında `messages` (dahili notlar dahil) ve `attachments` ilişkilerini genişletilmiş olarak getirmektedir. `update()` metodunda no-op veya salt alan güncellemesi durumunda bu genişletilmiş nesnenin controller'a ve oradan `emitTicketUpdated` ile istemci WebSocket odalarına sızması engellendi. No-op dahil her durumda yalnızca skaler `Ticket` alanları (ilişkilerden arındırılmış) döndürülür.
+  - **Genel Birleşik Güncellemede (`update`) Erken Doğrulama ve Atomiklik:**
+    - Birleşik isteklerde (ör. geçerli `status` geçişi + geçersiz `assignedTo`) tüm doğrulamalar (durum makinesi yetki/geçiş kuralları, kapalı bilet kontrolü, personelin aktif ekip/departman üyeliği) herhangi bir DB yazımından önce işletilir.
+    - Geçersiz bir atama yapıldığında durum geçişi veritabanına yazılmaz, işlem anında durdurulur ve sıfır olay yayılır (kısmi başarı/hata asimetrisi önlendi).
+    - Yazım aşamasında eşzamanlı yarışlara karşı durum değişsin veya değişmesin (yalnızca atama dahil) tüm mutasyon yazımları `where: { id: ticket.id, status: ticket.status, deletedAt: null, ...(closedAt if CLOSED) }` koşullandırması ile sınırlandırılır; yarış durumunda `ConflictException` üretilir ve commit öncesi hiçbir olay fırlatılmaz.
+  - **Personel Toplu Güncelleme (`bulkUpdate`) Sınırları ve "All-or-Nothing" Atomikliği:**
+    - **Yazım Öncesi Doğrulama (Pre-Validation, Fail-Closed):** Veri tabanında hiçbir bilet güncellenmeden önce:
+      1. Batch'teki her bir biletin durum geçişi `ALLOWED_TRANSITIONS[ticket.status]` kuralına göre denetlenir. Tek bir bilet dahi kuralı ihlal ediyorsa işlem anında `BadRequestException` ile durdurulur.
+      2. `assignedTo` belirtilmişse batch'teki biletlerin ait olduğu her bir benzersiz departman (`distinctDeptIds`) için personelin aktif, arşivlenmemiş bir ekipte yer aldığı (`assign()` ile birebir aynı `teamMembers.some.team` sorgusuyla) doğrulanır. Herhangi bir departman kısıtı karşılanmazsa işlem anında reddedilir.
+      3. `assignedTo` belirtilmişse batch'teki hiçbir biletin `CLOSED` durumunda olmaması şart koşulur (aynı bulk işlemde `status: OPEN` ile yeniden açılmıyorsa); ihlalde `BadRequestException('Cannot assign a closed ticket')` fırlatılır.
+    - **Bilet Başına Bağımsız Hedef Durum Hesaplaması:** Yalnızca atama yapılan bulk isteklerde batch içinde `NEW` durumundaki biletler `OPEN` durumuna geçirilirken, `IN_PROGRESS` veya `RESOLVED` durumundaki diğer biletlerin mevcut durumları kesin olarak korunur (tüm batch'in körü körüne `OPEN` yapılması engellendi).
+    - **İlk Yanıt Zamanı Bütünlüğü (`slaRespondedAt`):** Mevcut `slaRespondedAt` zaman damgasına sahip biletlerde bu değer korunur, yeniden `now` yapılarak SLA metriğinin ezilmesi engellendi.
+    - **Atomik Prisma Transaction & Optimistic Concurrency:**
+      - Tüm bilet güncellemeleri `this.prisma.$transaction(async (tx) => { ... })` içinde tek tip çalıştırılır.
+      - Her bilet güncellemesi `where: { id: ticket.id, status: ticket.status, deletedAt: null, ...(closedAt if CLOSED) }` ile koşullandırılır. Okuma sonrası eşzamanlı olarak kapatılan veya durumu değişen biletlerde Prisma `P2025` hatası yakalanarak `ConflictException` fırlatılır ve transaction rollback edilir.
+      - Kapalı biletler `OPEN` durumuna toplu açılırken (`CLOSED -> OPEN`) her bir bilet için `closedAt: null` yapılır ve dahili denetim mesajı (`TICKET_REOPENED`) atomik olarak eklenir.
+    - **Commit Sonrası Güvenli Olay Yayımı (Post-Commit Event Emission):**
+      - `ticket.status_changed` ve `ticket.resolved` olayları transaction başarıyla commit edildikten sonra tetiklenir; rollback veya hata durumunda asılsız olay yayılmaz.
+  - **Prisma Mock Uyumu ve Kod Hijyeni:** Production kodunda mock yetersizliklerini örtmek için konulan `findMany/$transaction/updateMany var mı` fallback'leri tamamen temizlendi; test mock'ları gerçek Prisma Client sözleşmesine uyarlandı.
+- **Kapsam Dışı:** UI toplu işlem menüsünün baştan tasarlanması; yeni veritabanı migration'ı; kapsamlı rol/RBAC mimarisi değişikliği.
+- **Bağımlılık:** SEC-01..SEC-04 tamamlandı (`dfa49a0c`, `336f8115`, `570e5725`).
+- **Kabul Ölçütü:** Müşteri genel/bulk yollarla kısıtlı alanları değiştirememeli (403); kapalı biletler geçersiz yollarla doğrudan açık/işlemde yapılamamalı (400); kapalı bilet atanamamalı (400); toplu işlemde tek bir geçersiz bilet tüm batch'i durdurmalı ve hiçbir yazım yapılmamalı (all-or-nothing); yetkili personelin geçerli reopen/close/assign akışları ve müşterinin konu/açıklama düzenleme hakları bozulmamalıdır.
+- **Açık Kullanıcı Kararı:** Çözüldü (Kullanıcı kararı: Müşteri genel/bulk PATCH üzerinden atama, öncelik, SLA ve yönetim alanları veya status değişimi yapamaz; mevcut açıkça yetkilendirilmiş müşteri reopen/feedback ve onay incelemesi akışları korunur; yetkili personel reopen/close/assign işlevleri kısıtlanmaz).
+- **Doğrulama Kanıtı ve Mock Test Sınırı:**
+  - **Birim ve Güvenlik Testleri (`src/tickets/ticket-management-security.spec.ts`):** 53/53 test PASS (0 fail).
+    - 7 ayrı kısıtlı alanda (`status`, `assignedTo`, `priority`, `slaPolicyId`, `teamId`, `departmentId`, `tags`) müşteri generic update denemelerinin `TICKET_FIELD_AGENT_ONLY` ile engellendiği ve sıfır yazım yapıldığı kanıtlandı.
+    - Müşterinin kendi biletinde `subject` ve `description` güncelleyebildiği kanıtlandı.
+    - Personelin kapalı bileti generic `update` üzerinden atamasının `Cannot assign a closed ticket` ile engellendiği kanıtlandı.
+    - Personelin inaktif/müşteri kullanıcıya bilet atamasının engellendiği kanıtlandı.
+    - Personelin kapalı bileti generic `update` ile `IN_PROGRESS` yapmasının engellendiği kanıtlandı.
+    - Personelin kapalı bileti generic `update` ile `OPEN` yaparak atomik `TICKET_REOPENED` mesajı ve `ticket.status_changed` olayıyla yeniden açabildiği kanıtlandı.
+    - **Bulk Update All-or-Nothing Kanıtı:** Batch içindeki tek bir bilet kural ihlali yaptığında (geçersiz durum geçişi veya kapalı bilet ataması) sıfır yazımla reddedildiği kanıtlandı.
+    - Bulk update ile kapalı biletlerin atomik mesaj ve olaylarla toplu yeniden açılması kanıtlandı.
+    - Bulk update ile `NEW` biletlerin atamayla `OPEN` durumuna geçirilmesi kanıtlandı.
+    - **Hedefli Regresyon Testleri (8 Vaka):**
+      1. *P1 No-op Scalar Return:* Boş update veya aynı-status update durumunda genişletilmiş ilişkilerin (`messages`, `attachments`, `escalations`) döndürülmediği, salt skaler `Ticket` döndürüldüğü kanıtlandı.
+      2. *Bulk Target Status Independence:* `NEW` ve `IN_PROGRESS` biletleri içeren batch atandığında `NEW` bilet `OPEN` olurken `IN_PROGRESS` biletin durumunun korunduğu kanıtlandı.
+      3. *Bulk Assignee Department Check:* Batch içindeki tüm departmanlar için personelin aktif ekip üyeliği arandığı, yetkisiz departman biletinde işlemin sıfır yazımla reddedildiği kanıtlandı.
+      4. *Optimistic Locking:* Eşzamanlı yarışta bilet durumu değiştiğinde `ConflictException` üretilerek transaction'ın geri alındığı ve olay yayılmadığı kanıtlandı.
+      5. *Combined Update Atomicity:* Geçerli status + geçersiz assignee birleşik isteğinde atama hatasının erken yakalandığı, durum geçişinin yapılmadığı ve sıfır olay fırlatıldığı kanıtlandı.
+      6. *Existing SLA Preservation:* Var olan `slaRespondedAt` zaman damgasının bulk veya generic atamada ezilmediği kanıtlandı.
+      7. *Unsupported Fields Rejection:* Personelin `slaPolicyId`, `teamId`, `departmentId` göndermesinin 400 `BadRequestException` ile reddedildiği kanıtlandı.
+      8. *Generic Assignment-Only Optimistic Lock and Race Protection:* `OPEN` durumundaki bir bilete yalnızca `assignedTo` ataması yapılırken `where` koşuluna `{ status: OPEN, deletedAt: null }` eklendiği, okuma sonrası eşzamanlı kapatılma/silinme simülasyonunda (`P2025` hatası) `ConflictException` fırlatıldığı ve WebSocket/audit olaylarının kesinlikle yayılmadığı (sıfır event) kanıtlandı.
+  - **HTTP Katmanı Testleri (`src/tickets/ticket-management.http.spec.ts`):** 23/23 test PASS (0 fail).
+    - Müşteri rolünün HTTP `PATCH /tickets/:id` üzerinden kısıtlı alanları güncelleme denemelerinin 403 ile reddedildiği ve sıfır yazım yapıldığı doğrulandı.
+    - Personelin HTTP üzerinden desteklenmeyen yönetim alanlarını (`slaPolicyId`, `teamId`, `departmentId`) güncelleme denemelerinin 400 ile reddedildiği doğrulandı.
+    - Müşteri rolünün HTTP üzerinden konu ve açıklama güncelleyebildiği (200) doğrulandı.
+  - **Odaklı Bilet Testleri:** 4 test suite (`ticket-management-security.spec.ts`, `ticket-management.http.spec.ts`, `ticket-reopen.spec.ts`, `tickets.service.spec.ts`), 120/120 test PASS (0 fail).
+  - **Tüm Bilet Modülü Testleri (`src/tickets`):** 18 test suite, 245/245 test PASS (0 fail, 0 regresyon).
+  - **Backend Tip Denetimi:** `pnpm --filter @aluplan/backend typecheck` (`tsc --noEmit`) 0 hata ile PASS.
+  - **Biçim ve Kod Kontrolü:** `git diff --check` 0 hata ile PASS.
+  - **Mock Test Sınırı:** Doğrulamalar NestJS ve Jest izole mock ortamında yürütülmüştür. Mock Prisma transaction, whereClause sorgu assertion'ları ve P2025 hata simülasyonları servis seviyesinde mantıksal doğrulama olup gerçek PostgreSQL veritabanı eşzamanlı kilit mekanizması veya tarayıcı render testi REL-01 altında Paket A kalite kontrolünde beklemektedir. Canlı veritabanı, gerçek müşteri verisi veya dış CRM servisleri kesinlikle kullanılmamıştır.
 - **Veri / Migration Etkisi:** Sıfır şema değişikliği.
-- **Açık Kullanıcı Kararı:** Müşterilerin bilet durumunu doğrudan değiştirebildiği durumlar yalnız `reopen` (yeniden açma) ve `feedback` (değerlendirme) ile mi sınırlandırılmalı?
+- **Operasyonel Etki:** Müşterilerin bilet yönetim alanlarını genel PATCH üzerinden manipüle etmesi kesin olarak engellendi. Toplu bilet yönetiminde kapalı biletlerin veya geçersiz durumların atlanması önlendi; hatalı isteklerde kısmi bozulma yerine tüm işlem atomik olarak durdurulur. İç not ve eklerin WebSocket üzerinden sızma riski ortadan kaldırıldı.
 
 ---
 
