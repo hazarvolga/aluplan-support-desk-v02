@@ -33,6 +33,7 @@ function durationToSeconds(value: string): number {
 
 @Injectable()
 export class AuthService {
+    private static readonly REFRESH_TOKEN_PREFIX = 'v2:';
     private readonly logger = new Logger(AuthService.name);
 
     constructor(
@@ -118,7 +119,7 @@ export class AuthService {
             throw new ForbiddenException('Access denied');
         }
 
-        const rtMatches = await bcrypt.compare(refreshToken, user.refreshTokenHash);
+        const rtMatches = await this.verifyRefreshToken(refreshToken, user.refreshTokenHash);
         if (!rtMatches) {
             throw new ForbiddenException('Access denied');
         }
@@ -137,7 +138,7 @@ export class AuthService {
         const tokens = await this.generateTokens(
             userId, user.email, user.fullName, role, permissions, user.sessionVersion ?? 0,
         );
-        const nextRefreshTokenHash = await bcrypt.hash(tokens.refresh_token, BCRYPT_ROUNDS);
+        const nextRefreshTokenHash = await this.hashRefreshToken(tokens.refresh_token);
         const rotated = await this.prisma.user.updateMany({
             where: {
                 id: user.id,
@@ -613,8 +614,30 @@ export class AuthService {
         });
     }
 
+    private hashRefreshTokenValue(token: string): string {
+        return crypto.createHash('sha256').update(token).digest('hex');
+    }
+
+    private async hashRefreshToken(token: string): Promise<string> {
+        const digest = this.hashRefreshTokenValue(token);
+        const bcryptHash = await bcrypt.hash(digest, BCRYPT_ROUNDS);
+        return `${AuthService.REFRESH_TOKEN_PREFIX}${bcryptHash}`;
+    }
+
+    private async verifyRefreshToken(token: string, storedHash: string): Promise<boolean> {
+        if (!storedHash || !storedHash.startsWith(AuthService.REFRESH_TOKEN_PREFIX)) {
+            return false;
+        }
+        const bcryptHash = storedHash.slice(AuthService.REFRESH_TOKEN_PREFIX.length);
+        if (!bcryptHash) {
+            return false;
+        }
+        const digest = this.hashRefreshTokenValue(token);
+        return bcrypt.compare(digest, bcryptHash);
+    }
+
     private async updateRefreshTokenHash(userId: string, refreshToken: string) {
-const hash = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
+        const hash = await this.hashRefreshToken(refreshToken);
         await this.prisma.user.update({
             where: { id: userId },
             data: { refreshTokenHash: hash },
