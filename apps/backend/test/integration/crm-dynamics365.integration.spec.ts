@@ -17,7 +17,9 @@ jest.mock('axios');
 import axios from 'axios';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Dynamics365Adapter } from '../../src/crm/adapters/dynamics365.adapter';
+import { CrmRecordSyncService } from '../../src/crm/services/crm-record-sync.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 import { SyncStatus } from '@aluplan/database';
 import {
     MOCK_TOKEN_RESPONSE,
@@ -39,15 +41,17 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 // ─── Mock Prisma ──────────────────────────────────────────────────────────────
 
 const mockTx = {
-    user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
-    role: { findUnique: jest.fn(), findFirst: jest.fn() },
+    user: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+    role: { findUnique: jest.fn(), findFirst: jest.fn(), create: jest.fn() },
     crmAccount: { findUnique: jest.fn() },
-    customerProfile: { upsert: jest.fn(), findUnique: jest.fn(), update: jest.fn(), create: jest.fn() },
+    customerProfile: { findUnique: jest.fn(), update: jest.fn(), create: jest.fn() },
+    crmChangeLog: { createMany: jest.fn() },
 };
 
 const mockPrisma = {
-    crmAccount: { upsert: jest.fn() },
-    role: { findFirst: jest.fn(), create: jest.fn() },
+    crmAccount: { findUnique: jest.fn(), findMany: jest.fn(), upsert: jest.fn(), updateMany: jest.fn() },
+    customerProfile: { updateMany: jest.fn(), findMany: jest.fn() },
+    crmChangeLog: { createMany: jest.fn() },
     $transaction: jest.fn((cb: any) => cb(mockTx)),
 };
 
@@ -71,7 +75,9 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 Dynamics365Adapter,
+                CrmRecordSyncService,
                 { provide: PrismaService, useValue: mockPrisma },
+                { provide: ConfigService, useValue: { get: jest.fn() } },
             ],
         }).compile();
 
@@ -83,18 +89,29 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
 
         // Default tx mocks
         mockPrisma.$transaction = jest.fn((cb: any) => cb(mockTx));
-        mockPrisma.role.findFirst.mockResolvedValue({ id: 'role-cust', name: 'customer' });
-        mockPrisma.role.create.mockResolvedValue({ id: 'role-cust', name: 'customer' });
-        mockTx.user.findUnique.mockResolvedValue(null);
+        mockPrisma.crmAccount.findUnique.mockResolvedValue(null);
+        mockPrisma.crmAccount.findMany.mockResolvedValue([]);
+        mockPrisma.crmAccount.updateMany.mockResolvedValue({ count: 0 });
+        mockPrisma.customerProfile.findMany.mockResolvedValue([]);
+        mockPrisma.customerProfile.updateMany.mockImplementation(async ({ where }: { where: { accountId: string } }) => {
+            expect(where.accountId).toBe('db-acc-1');
+            return { count: 0 };
+        });
+        mockTx.role.findFirst.mockResolvedValue({ id: 'role-cust', name: 'CUSTOMER' });
+        mockTx.role.create.mockResolvedValue({ id: 'role-cust', name: 'CUSTOMER' });
+        mockTx.user.findFirst.mockResolvedValue(null);
         mockTx.user.update.mockResolvedValue({});
-        mockTx.role.findUnique.mockResolvedValue({ id: 'role-cust', name: 'customer' });
+        mockTx.role.findUnique.mockResolvedValue({ id: 'role-cust', name: 'CUSTOMER' });
         mockTx.user.create.mockResolvedValue({ id: 'user-new', email: 'test@test.com' });
         mockTx.crmAccount.findUnique.mockResolvedValue({ id: 'db-acc-1', industry: 'Manufacturing' });
-        mockTx.customerProfile.upsert.mockResolvedValue({});
         mockTx.customerProfile.findUnique.mockResolvedValue(null);
         mockTx.customerProfile.update.mockResolvedValue({});
-        mockTx.customerProfile.create.mockResolvedValue({});
-        mockPrisma.crmAccount.upsert.mockResolvedValue({});
+        mockTx.customerProfile.create.mockImplementation(async ({ data }: { data: { externalContactId: string; userId: string; accountId: string | null } }) => ({
+            id: `profile-${data.externalContactId}`,
+            userId: data.userId,
+            accountId: data.accountId,
+        }));
+        mockPrisma.crmAccount.upsert.mockResolvedValue({ id: 'db-acc-1' });
     });
 
     // ── Token Acquisition ─────────────────────────────────────────────────────
@@ -102,7 +119,6 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
     describe('Token Acquisition', () => {
         it('should POST to correct Microsoft OAuth2 endpoint', async () => {
             mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365AccountsResponse() });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             await adapter.syncAccounts(BASE_CONFIG);
 
@@ -114,7 +130,6 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
 
         it('should use instanceUrl as scope resource', async () => {
             mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365AccountsResponse() });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             await adapter.syncAccounts(BASE_CONFIG);
 
@@ -148,7 +163,6 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
         it('should strip trailing slash from instanceUrl in scope', async () => {
             const configWithSlash = { ...BASE_CONFIG, instanceUrl: 'https://org.crm4.dynamics.com/' };
             mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365AccountsResponse() });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             await adapter.syncAccounts(configWithSlash);
 
@@ -166,7 +180,6 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
                 'industrycode@OData.Community.Display.V1.FormattedValue': 'Manufacturing',
             });
             mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365AccountsResponse([account]) });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             await adapter.syncAccounts(BASE_CONFIG);
 
@@ -180,7 +193,6 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
         it('should save customerNo from accountnumber (C3XXXXXX format)', async () => {
             const account = buildD365Account({ accountnumber: 'C300042' });
             mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365AccountsResponse([account]) });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             await adapter.syncAccounts(BASE_CONFIG);
 
@@ -195,7 +207,6 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
         it('should save customerNo as null when accountnumber is absent', async () => {
             const account = buildD365Account({ accountnumber: null });
             mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365AccountsResponse([account]) });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             await adapter.syncAccounts(BASE_CONFIG);
 
@@ -210,7 +221,6 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
             // Real D365 responses include @odata.etag — should not break parsing
             const account = buildD365Account(); // includes '@odata.etag'
             mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365AccountsResponse([account]) });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             const result = await adapter.syncAccounts(BASE_CONFIG);
 
@@ -220,7 +230,6 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
 
         it('should send OData-MaxVersion and Prefer headers', async () => {
             mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365AccountsResponse() });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             await adapter.syncAccounts(BASE_CONFIG);
 
@@ -240,6 +249,30 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
             expect(result.totalRecords).toBe(0);
             expect(result.successCount).toBe(0);
             expect(mockPrisma.crmAccount.upsert).not.toHaveBeenCalled();
+            expect(mockPrisma.crmAccount.findMany).not.toHaveBeenCalled();
+            expect(mockPrisma.crmAccount.updateMany).not.toHaveBeenCalled();
+        });
+
+        it('should reconcile missing accounts only after a complete successful fetch', async () => {
+            const account = buildD365Account();
+            mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365AccountsResponse([account]) });
+            mockPrisma.crmAccount.findMany.mockResolvedValue([{
+                id: 'db-stale-account',
+                externalAccountId: 'crm-stale-account',
+                crmVerified: true,
+                deletedAt: null,
+            }]);
+
+            const result = await adapter.syncAccounts(BASE_CONFIG);
+
+            expect(result.status).toBe(SyncStatus.SUCCESS);
+            expect(mockPrisma.crmAccount.findMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({ externalAccountId: { not: null, notIn: [account.accountid] } }),
+            }));
+            expect(mockPrisma.crmAccount.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: { id: { in: ['db-stale-account'] } },
+                data: expect.objectContaining({ crmVerified: false, deletedAt: expect.any(Date) }),
+            }));
         });
     });
 
@@ -252,7 +285,6 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
             mockedAxios.get = jest.fn()
                 .mockResolvedValueOnce({ data: buildD365AccountPage1(nextLinkUrl) })
                 .mockResolvedValueOnce({ data: buildD365AccountPage2() });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             const result = await adapter.syncAccounts(BASE_CONFIG);
 
@@ -268,12 +300,36 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
             mockedAxios.get = jest.fn()
                 .mockResolvedValueOnce({ data: buildD365AccountPage1(nextLinkUrl) })
                 .mockResolvedValueOnce({ data: buildD365AccountPage2() });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             await adapter.syncAccounts(BASE_CONFIG);
 
             const secondCallUrl = (mockedAxios.get as jest.Mock).mock.calls[1][0];
             expect(secondCallUrl).toBe(nextLinkUrl);
+        });
+
+        it('should reject a cross-origin nextLink before sending the bearer token', async () => {
+            const untrustedNextLink = 'https://attacker.example/api/data/v9.2/accounts';
+            mockedAxios.get = jest.fn().mockResolvedValueOnce({ data: buildD365AccountPage1(untrustedNextLink) });
+
+            const result = await adapter.syncAccounts(BASE_CONFIG);
+
+            expect(result.status).toBe(SyncStatus.ERROR);
+            expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+            expect(mockPrisma.crmAccount.upsert).not.toHaveBeenCalled();
+        });
+
+        it('should not reconcile or write a partial import when the second page fails', async () => {
+            const nextLinkUrl = 'https://org.crm4.dynamics.com/api/data/v9.2/accounts?$skiptoken=page2';
+            mockedAxios.get = jest.fn()
+                .mockResolvedValueOnce({ data: buildD365AccountPage1(nextLinkUrl) })
+                .mockRejectedValueOnce(new Error('Second page unavailable'));
+
+            const result = await adapter.syncAccounts(BASE_CONFIG);
+
+            expect(result.status).toBe(SyncStatus.ERROR);
+            expect(mockPrisma.crmAccount.upsert).not.toHaveBeenCalled();
+            expect(mockPrisma.crmAccount.findMany).not.toHaveBeenCalled();
+            expect(mockPrisma.crmAccount.updateMany).not.toHaveBeenCalled();
         });
 
         it('should follow nextLink for contacts across pages', async () => {
@@ -313,7 +369,6 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
                         value: [buildD365Account({ accountid: 'a3', name: 'A3' })],
                     },
                 });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             const result = await adapter.syncAccounts(BASE_CONFIG);
 
@@ -326,7 +381,6 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
             mockedAxios.get = jest.fn().mockResolvedValue({
                 data: buildD365AccountsResponse([buildD365Account()]),
             });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             await adapter.syncAccounts(BASE_CONFIG);
 
@@ -377,6 +431,9 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
                     data: expect.objectContaining({ customerNo: 'C300001-c1d2e' }),
                 }),
             );
+            expect(mockTx.customerProfile.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({ userId: 'user-new', accountId: 'db-acc-1' }),
+            }));
         });
 
         it('should generate a placeholder email for contact with null emailaddress1', async () => {
@@ -569,9 +626,9 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
             mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365AccountsResponse(accounts) });
 
             mockPrisma.crmAccount.upsert
-                .mockResolvedValueOnce({}) // OK
+                .mockResolvedValueOnce({ id: 'db-acc-1' }) // OK
                 .mockRejectedValueOnce(new Error('Unique constraint violation')) // FAIL
-                .mockResolvedValueOnce({}); // OK
+                .mockResolvedValueOnce({ id: 'db-acc-1' }); // OK
 
             const result = await adapter.syncAccounts(BASE_CONFIG);
 
@@ -615,7 +672,6 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
                 'industrycode@OData.Community.Display.V1.FormattedValue': 'Technology',
             });
             mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365AccountsResponse([account]) });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             const result = await adapter.syncAccounts(BASE_CONFIG);
 
@@ -628,13 +684,12 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
             );
         });
 
-        it('should handle null FormattedValue and fall back to raw integer', async () => {
+        it('should store a mapped raw industrycode integer as text when FormattedValue is null', async () => {
             const account = buildD365Account({
                 industrycode: 6,
                 'industrycode@OData.Community.Display.V1.FormattedValue': null,
             });
             mockedAxios.get = jest.fn().mockResolvedValue({ data: buildD365AccountsResponse([account]) });
-            mockPrisma.crmAccount.upsert.mockResolvedValue({});
 
             await adapter.syncAccounts(
                 buildConfig({ syncSettings: { accountMapping: { industry: 'industrycode' }, contactMapping: {} } }),
@@ -642,7 +697,7 @@ describe('Dynamics365Adapter — Integration (OData format)', () => {
 
             expect(mockPrisma.crmAccount.upsert).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    update: expect.objectContaining({ industry: 6 }),
+                    update: expect.objectContaining({ industry: '6' }),
                 }),
             );
         });
