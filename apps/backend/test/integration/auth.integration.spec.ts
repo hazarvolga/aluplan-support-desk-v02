@@ -32,6 +32,7 @@ describe('Auth Flow (Integration)', () => {
     let prisma: PrismaService;
     let authService: AuthService;
     let jwtService: JwtService;
+    let customerRoleId: string;
 
     beforeAll(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -44,6 +45,11 @@ describe('Auth Flow (Integration)', () => {
         prisma = module.get<PrismaService>(PrismaService);
         authService = module.get<AuthService>(AuthService);
         jwtService = module.get<JwtService>(JwtService);
+        customerRoleId = (await prisma.role.upsert({
+            where: { name: 'CUSTOMER' },
+            create: { name: 'CUSTOMER' },
+            update: {},
+        })).id;
     });
 
     afterAll(async () => {
@@ -60,7 +66,7 @@ describe('Auth Flow (Integration)', () => {
         const email = uniqueEmail('happy');
         const passwordHash = await bcrypt.hash('password123', 10);
         await prisma.user.create({
-            data: { email, passwordHash, fullName: 'Happy User', status: 'ACTIVE' },
+            data: { email, passwordHash, fullName: 'Happy User', status: 'ACTIVE', roleId: customerRoleId },
         });
 
         const result = await authService.login({ email, password: 'password123' });
@@ -83,7 +89,7 @@ describe('Auth Flow (Integration)', () => {
         const email = uniqueEmail('wrongpw');
         const passwordHash = await bcrypt.hash('correct-horse-battery-staple', 10);
         await prisma.user.create({
-            data: { email, passwordHash, fullName: 'Wrong PW User', status: 'ACTIVE' },
+            data: { email, passwordHash, fullName: 'Wrong PW User', status: 'ACTIVE', roleId: customerRoleId },
         });
 
         await expect(
@@ -95,7 +101,7 @@ describe('Auth Flow (Integration)', () => {
         const email = uniqueEmail('inactive');
         const passwordHash = await bcrypt.hash('password123', 10);
         await prisma.user.create({
-            data: { email, passwordHash, fullName: 'Inactive', status: 'INACTIVE' },
+            data: { email, passwordHash, fullName: 'Inactive', status: 'INACTIVE', roleId: customerRoleId },
         });
 
         await expect(
@@ -112,6 +118,7 @@ describe('Auth Flow (Integration)', () => {
                 passwordHash,
                 fullName: 'Deleted',
                 status: 'ACTIVE',
+                roleId: customerRoleId,
                 deletedAt: new Date(),
             },
         });
@@ -125,7 +132,7 @@ describe('Auth Flow (Integration)', () => {
         const email = uniqueEmail('refresh');
         const passwordHash = await bcrypt.hash('password123', 10);
         await prisma.user.create({
-            data: { email, passwordHash, fullName: 'Refresh User', status: 'ACTIVE' },
+            data: { email, passwordHash, fullName: 'Refresh User', status: 'ACTIVE', roleId: customerRoleId },
         });
 
         const initial = await authService.login({ email, password: 'password123' });
