@@ -21,7 +21,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 1.1 | **SEC-01** | SEC-01 | CSAT / Bilet Çözüm Değerlendirmesi Müşteri Sahiplik ve Durum Doğrulaması | Paket A (Erişim/Oturum) | **COMPLETED** (Kabul Edildi) |
 | 1.2 | **SEC-02** | SEC-02 | Refresh Token Rotasyonunda Bcrypt 72-Bayt Sınırı ve Token Doğrulama Güvenliği | Paket A (Erişim/Oturum) | **COMPLETED** (Kabul Edildi) |
 | 1.3 | **SEC-03** | SEC-03 | Profil Parola Güncellemesinde Mevcut Parola, Model Uyumu ve Oturum İptal Zinciri | Paket A (Erişim/Oturum) | **COMPLETED** (Kod incelemesi kabul) |
-| 1.4 | **SEC-04** | SEC-04 | WhatsApp Webhook Tanınmayan Göndericide Güvenli Ret / Karantina İzolasyonu | Paket A (Erişim/Oturum) | **PENDING** |
+| 1.4 | **SEC-04** | SEC-04 | WhatsApp Webhook Tanınmayan Göndericide Güvenli Ret / Karantina İzolasyonu | Paket A (Erişim/Oturum) | **COMPLETED** (dar kapsam kabul) |
 | 1.5 | **SEC-05** | Röntgen Bölüm 5.3 / 13 | Genel / Bulk Bilet Güncellemelerinde Yetki ve Durum Geçiş Sınırları | Paket A (Erişim/Oturum) | **PENDING** |
 | 2.1 | **REL-01** | Handoff Bölüm 7 (Sıra 2) | Paket A Sonrası Tip Kontrolü, Derleme ve Odaklı Testler (Ara Yayın Yok) | Paket A (Kalite Kontrolü) | **PENDING** |
 | 2.2 | **REL-02** | Handoff Bölüm 5 (P1) | Erişilebilir High Bağımlılık Denetimi ve Quality Gate CI/E2E Analizi | Paket A (Yayın Hazırlığı) | **PENDING** |
@@ -181,21 +181,45 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Operasyonel Etki:** Profil ekranından parola değiştiren kullanıcıların oturumları derhal sonlanır ve yeni parolalarıyla tekrar giriş yapmaları gerekir. Normal profil bilgisi güncelleyenlerin oturumu kesilmez.
 
 ### SEC-04: WhatsApp Webhook Tanınmayan Göndericide Güvenli Ret / Karantina İzolasyonu
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (dar kapsam kabul)
 - **Rapor ID / Kanıt:** SEC-04; Röntgen Bölüm 13 (Satır 336), Bölüm 5.5 (Satır 131); `B/whatsapp/whatsapp.service.ts:35-69`.
-- **Dosya / Modül:** `apps/backend/src/whatsapp/whatsapp.service.ts`.
-- **Minimum Değişiklik:** 
-  - Telefon numarası bir müşteri profiliyle eşleşmediğinde (`profile === null`), açık bilet arama sorgusunun `userId: undefined` ile çalıştırılmasının kesin olarak engellenmesi.
-  - Eşleşmeyen göndericiden gelen mesajın, CRM kabul kuralları çiğnenerek otomatik müşteri veya anonim bilet oluşturulmasına izin verilmeden, mevcut loglama altyapısı üzerinden güvenli bir ret/uyarı kaydı ile izole edilmesi.
-  - Yeni veritabanı karantina tablosu veya şema migration'ı eklenmemesi (mevcut hata loglama yapısının kullanılması).
-  - Bilinen manuel test hesaplarının ve yetkili personel telefonlarının yanlışlıkla engellenmemesi.
-  - WhatsApp kanalının canlıya açılmaması / etkinleştirilmemesi.
-- **Kapsam Dışı:** Yeni bir veritabanı tablosu veya Prisma migration'ı eklemek; WhatsApp kanalını canlı trafiğe açmak; Meta webhook sözleşmesini değiştirmek.
-- **Bağımlılık:** SEC-03 tamamlanmış olmalı.
-- **Kabul Ölçütü:** Tanınmayan bir telefon numarasından gelen webhook isteğinde asla başka bir müşterinin biletine mesaj eklenmemeli; anonim müşteri/bilet oluşturulmamalı; istek güvenli biçimde reddedilip loglanmalı.
-- **Dar Doğrulama:** `pnpm --filter @aluplan/backend test -- src/whatsapp/whatsapp.service.spec.ts` odaklı birim testleri.
+- **Dosya / Modül:** `apps/backend/src/whatsapp/whatsapp.service.ts`, `apps/backend/src/whatsapp/whatsapp.service.spec.ts`.
+- **Minimum Değişiklik ve Güvenlik Sınırları:**
+  - **Desteklenmeyen / Boş Metin Erken Reddi (`no_text/unsupported`):** Eksik veya metin içermeyen mesaj tipleri (görsel, çıkartma, konum, boş metin) veri tabanı ve bilet yazımı yapılmadan doğrudan `{ status: 'no_text', reason: 'unsupported' }` ile erken sonlandırıldı; genel içerikli bilet oluşturma davranışı kaldırıldı.
+  - **Erken Güvenli Ret ve Çapraz Kiracı İzolasyonu:** Telefon numarası müşteri profiliyle eşleşmediğinde (`!profile`) veya profilde ilişkili kullanıcı kimliği eksik olduğunda (`!profile.userId`), bilet arama sorgusunun `userId: undefined` ile çalıştırılması kesin olarak engellendi. İşlem erken sonlandırılarak `{ status: 'rejected', reason: 'unrecognized_sender' }` veya `{ status: 'rejected', reason: 'missing_user_identity' }` güvenli durum nesnesi döndürüldü.
+  - **Başka Müşterinin Biletini Arama / Mesaj Ekleme Engeli:** `prisma.ticket.findFirst` sorgusu yalnızca eşleşen bir profil ve `userId` mevcut olduğunda çalıştırılır. Tanınmayan gönderici durumunda bilet sorgusu, bilet mesajı ekleme (`prisma.ticketMessage.create`) ve bilet güncelleme çağrıları kesinlikle yapılmaz.
+  - **Anonim Müşteri / Bilet Açma Engeli:** Tanınmayan veya ilişkisiz göndericiler için `ticketsService.create` çağrılmaz; CRM kabul kuralları korunarak yetkisiz anonim bilet oluşturulması engellendi.
+  - **Güvenli Loglama ve PII Koruması:** Loglardan açık incoming telefon (`fromPhone`, `cleanPhone`), e-posta ve outbound alıcı telefon numarası (`to`) ile ham mesaj metinleri kaldırıldı; ret ve doğrulama akışlarında neden/durum kodları (`unrecognized_sender`, `missing_user_identity`, `invalid_sender_phone`, `no_text/unsupported`) kullanıldı. İç `userId`, bilet kimliği ve sağlayıcı `error.message` sınırları residual riskler bölümünde açıkça kayıtlıdır.
+  - **Outbound Sadeliği:** Outbound tarafındaki gereksiz emoji ve optional-chain değişiklikleri geri alınarak minimal tutuldu; telefon numarasının logdan kaldırılması korundu.
+  - **Sıfır Yeni Altyapı:** Yeni bir veritabanı karantina tablosu veya Prisma migration'ı eklenmemiştir.
+  - **Canlı Kanal Durumu:** WhatsApp kanalı canlıya açılmamış / etkinleştirilmemiştir.
+- **Kapsam Dışı:** Yeni bir veritabanı tablosu veya Prisma migration'ı eklemek; WhatsApp kanalını canlı trafiğe açmak; Meta webhook sözleşmesini değiştirmek; CRM veri kurallarını veya telefon normalizasyon altyapısını yeniden yazmak.
+- **Bağımlılık:** SEC-03 tamamlandı (`95f05899`, `bcbd578d`, `5c8868c9`).
+- **Kabul Ölçütü:** Tanınmayan veya ilişkisiz bir telefon numarasından gelen webhook isteğinde asla başka bir müşterinin biletine mesaj eklenmemeli; anonim müşteri/bilet oluşturulmamalı; desteklenmeyen/boş metin bilet açmadan reddedilmeli; istek erken ve güvenli biçimde reddedilip güvenli kodla loglanmalı; meşru kullanıcı akışı bozulmamalıdır.
+- **Bakiye Riskler ve İddia Sınırları (Residual Risks):**
+  - **1. Substring Telefon Eşleme Belirsizliği:** Mevcut `phoneNumber: { contains: cleanPhone }` ve `findFirst` mantığı, kısa veya ortak rakam dizileri içeren numaralarda yanlış profile eşleşme belirsizliğini çözmez. Bu turda kapsamı büyütmemek adına telefon normalizasyon altyapısı / E.164 CRM kural refactor'ü başlatılmamıştır.
+  - **2. Kullanıcı Varlık/Durum/Silinme Denetimi Eksikliği:** `include: { user: true }` çekilmekle birlikte kullanıcının `status` (örn. `ACTIVE`/`SUSPENDED`) veya `deletedAt` durumu bu dar patch kapsamında denetlenmemektedir; yalnızca `profile.userId` varlığı denetlenmektedir.
+  - **3. Outbound Sağlayıcı Hata İçeriği:** `sendOutgoing` hata logunda yer alan `error.message`, Meta sağlayıcısının döndürdüğü hata ayrıntılarını barındırabilir.
+  - **4. SEC-04 Kapsam Sınırı ve Canlı Yayın Yasağı:** SEC-04 yalnızca `no-profile` ve `missing-userId` kaynaklı `userId: undefined` kapsam açığının kapatılmasıdır; tüm müşteri izolasyonunun veya kanal olgunluğunun nihai kanıtı değildir. Bu bakiye riskler giderilmeden WhatsApp kanalının canlıda etkinleştirilmesi kesinlikle önerilmeyecektir.
+- **Doğrulama Kanıtı ve Mock Test Sınırı:**
+  - **Birim ve Güvenlik Testleri (`src/whatsapp/whatsapp.service.spec.ts`):** 12/12 test PASS (0 fail).
+    1. Boş payload'da `no_message` dönüşü ve DB sorgusu yapılmaması.
+    2. Eksik message entry'de `no_message` dönüşü.
+    3. **Desteklenmeyen / Boş Metin Kanıtı:** Görsel/çıkartma gibi metin içermeyen veya boşluk-only text payload'larında DB ve ticket yazımı olmadan `no_text/unsupported` ile erken sonlandığı kanıtlandı.
+    4. Rakam içermeyen/geçersiz gönderici numarasında `invalid_sender_phone` erken reddi ve DB sorgusu yapılmaması.
+    5. Normalize edilmiş telefon rakamlarıyla profil eşleştirme araması ve bulunamadığında `unrecognized_sender` erken reddi.
+    6. **SEC-04 Çapraz Kiracı / İzolasyon Kanıtı:** Veritabanında/mock'ta başka bir müşteriye ait açık WhatsApp bileti bulunsa dahi tanınmayan numarada `ticket.findFirst` sorgusunun **asla çağrılmadığı**, kurbanın biletine mesaj eklenmediği ve anonim bilet oluşturulmadığı kanıtlandı.
+    7. **SEC-04 Eksik Kullanıcı Kimliği Kanıtı:** Müşteri profili var ancak ilişkili `userId` null/eksik ise `missing_user_identity` ile erken ret, bilet sorgulanmaması ve mesaj eklenmemesi kanıtlandı.
+    8. **SEC-04 Güvenli Loglama Kanıtı:** Reddedilen isteklerde Logger `warn`, `debug`, `log` çıktılarında açık incoming telefon numarası, gönderilen gizli mesaj metni bulunmadığı, `unrecognized_sender` kodunun loglandığı spy assertion'ları ile doğrulandı.
+    9. **Eşleşen Profil (Aktif Biletli):** Müşteri profilinde açık WhatsApp biletine `senderId` ile güvenle mesaj eklenmesi.
+    10. **Eşleşen Profil (Yeni Bilet):** Açık bileti olmayan müşteriye `tickets.create` ve `WHATSAPP` kanalı ile bilet oluşturulması.
+    11. **Ajan Yanıtı (Outbound):** WhatsApp biletine ajan yanıt verdiğinde müşterinin telefonuna dış mesaj gönderilmesi.
+    12. **Dahili Not İzolasyonu:** Dahili notların ve müşterinin kendi mesajlarının dış WhatsApp mesajı tetiklememesi.
+  - **Tüm WhatsApp Modülü Testleri (`src/whatsapp`):** 3 test suite (`whatsapp.service.spec.ts`, `whatsapp.controller.spec.ts`, `whatsapp-webhook-signature.guard.spec.ts`), 17/17 testin tamamı PASS (0 fail, 0 regresyon).
+  - **Backend Tip Denetimi:** `pnpm --filter @aluplan/backend typecheck` (`tsc --noEmit`) 0 hata ile PASS.
+  - **Mock Test Sınırı:** Doğrulamalar NestJS ve Jest izole mock ortamında çalıştırılmıştır. Canlı Meta/WhatsApp Graph API çağrısı, harici Dynamics 365 CRM bağlantısı veya canlı ağ trafiği kullanılmamıştır; kanal canlıya açılmamıştır.
 - **Veri / Migration Etkisi:** Sıfır şema değişikliği.
-- **Açık Kullanıcı Kararı:** Yok (güvenli teknik varsayılan: tanınmayan numara reddedilir, anonim bilet/müşteri açılmaz, migration yapılmaz).
+- **Açık Kullanıcı Kararı:** Çözüldü (güvenli teknik varsayılan: tanınmayan numara reddedilir, anonim bilet/müşteri açılmaz, migration yapılmaz).
 
 ### SEC-05: Genel / Bulk Bilet Güncellemelerinde Yetki ve Durum Geçiş Sınırları
 - **Durum:** `PENDING`
