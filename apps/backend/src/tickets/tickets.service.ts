@@ -482,48 +482,198 @@ export class TicketsService {
     // UPDATE
     // =============================================
     async update(id: string, dto: UpdateTicketDto, requester: any) {
-        const ticket = await this.findOne(id, requester); // throws if not found or no access
         this.assertTicketFieldUpdateAllowed(dto, requester);
 
-        if (dto.chatStatus) {
+        if (
+            (dto as any).slaPolicyId !== undefined ||
+            (dto as any).teamId !== undefined ||
+            (dto as any).departmentId !== undefined
+        ) {
+            throw new BadRequestException('Updating slaPolicyId, teamId, or departmentId is not supported via generic update');
+        }
+
+        const ticket = await this.findOne(id, requester); // throws if not found or no access
+
+        if (dto.chatStatus !== undefined) {
             this.assertChatStatusUpdateAllowed(ticket, dto.chatStatus, requester);
         }
 
-        let slaUpdate = {};
-        if (dto.priority) {
-            const ticket = await this.prisma.ticket.findUnique({ where: { id } });
-            const deadlines = await this.slaService.calculateDeadlines(dto.priority, ticket?.departmentId as string);
+        // ── Status Transition Pre-validation ─────────────────────────────
+        const hasStatusChange = dto.status !== undefined && dto.status !== ticket.status;
+        if (hasStatusChange) {
+            const allowedAccess = await this.ticketAccess.canManageTicket(requester, id);
+            if (!allowedAccess) {
+                throw new ForbiddenException('Ticket status management is available to authorized support staff only');
+            }
+            const allowedTransitions = ALLOWED_TRANSITIONS[ticket.status] ?? [];
+            if (!allowedTransitions.includes(dto.status!)) {
+                throw new BadRequestException(
+                    `Cannot transition from ${ticket.status} to ${dto.status}. Allowed: ${allowedTransitions.join(', ')}`,
+                );
+            }
+        }
+
+        // ── Assignee Pre-validation ──────────────────────────────────────
+        if (dto.assignedTo !== undefined) {
+            const effectiveNextStatus = dto.status ?? ticket.status;
+            if (ticket.status === TicketStatus.CLOSED && effectiveNextStatus !== TicketStatus.OPEN) {
+                throw new BadRequestException('Cannot assign a closed ticket');
+            }
+
+            const assignee = await this.prisma.user.findFirst({
+                where: {
+                    id: dto.assignedTo,
+                    deletedAt: null,
+                    status: 'ACTIVE',
+                    role: {
+                        name: {
+                            not: 'CUSTOMER',
+                            mode: 'insensitive',
+                        },
+                    },
+                    teamMembers: {
+                        some: {
+                            team: {
+                                isArchived: false,
+                                deletedAt: null,
+                                ...(ticket.departmentId ? { departmentId: ticket.departmentId } : {}),
+                            },
+                        },
+                    },
+                },
+                select: { id: true },
+            });
+
+            if (!assignee) {
+                throw new BadRequestException('Ticket can only be assigned to an active support team member');
+            }
+        }
+
+        // ── Priority & SLA Pre-calculation ───────────────────────────────
+        let slaUpdate: Record<string, any> = {};
+        if (dto.priority !== undefined && dto.priority !== ticket.priority) {
+            const deadlines = await this.slaService.calculateDeadlines(dto.priority, ticket.departmentId as string);
             slaUpdate = {
+                priority: dto.priority,
                 slaResponseDue: deadlines.slaResponseDue,
                 slaResolveDue: deadlines.slaResolveDue,
                 isSlaBreached: false,
             };
         }
 
-        return this.prisma.ticket.update({
-            where: { id },
-            data: {
-                ...this.buildTicketUpdateData(dto),
-                ...slaUpdate,
-            },
-        });
-    }
+        const actorId = requester?.sub ?? requester?.id ?? 'system';
+        const now = new Date();
 
-    private buildTicketUpdateData(dto: UpdateTicketDto) {
-        const data: Partial<UpdateTicketDto> = {};
-        if (dto.subject !== undefined) data.subject = dto.subject;
-        if (dto.description !== undefined) data.description = dto.description;
-        if (dto.priority !== undefined) data.priority = dto.priority;
-        if (dto.chatStatus !== undefined) data.chatStatus = dto.chatStatus;
-        if (dto.assignedTo !== undefined) data.assignedTo = dto.assignedTo;
-        if (dto.tags !== undefined) data.tags = dto.tags;
-        return data;
+        // Calculate target status
+        let targetStatus = ticket.status;
+        if (dto.status !== undefined) {
+            targetStatus = dto.status;
+        } else if (dto.assignedTo !== undefined && ticket.status === TicketStatus.NEW) {
+            targetStatus = TicketStatus.OPEN;
+        }
+
+        const statusChanged = targetStatus !== ticket.status;
+        const isReopening = ticket.status === TicketStatus.CLOSED && targetStatus === TicketStatus.OPEN;
+
+        // Build atomic update payload
+        const updateData: any = {};
+        if (dto.subject !== undefined && dto.subject !== ticket.subject) updateData.subject = dto.subject;
+        if (dto.description !== undefined && dto.description !== ticket.description) updateData.description = dto.description;
+        if (dto.chatStatus !== undefined && dto.chatStatus !== ticket.chatStatus) updateData.chatStatus = dto.chatStatus;
+        if (dto.tags !== undefined) updateData.tags = dto.tags;
+        if (dto.assignedTo !== undefined && dto.assignedTo !== ticket.assignedTo) updateData.assignedTo = dto.assignedTo;
+        Object.assign(updateData, slaUpdate);
+
+        if (statusChanged) {
+            updateData.status = targetStatus;
+            if (targetStatus === TicketStatus.IN_PROGRESS && !ticket.slaRespondedAt) {
+                updateData.slaRespondedAt = now;
+            }
+            if (targetStatus === TicketStatus.RESOLVED) {
+                updateData.resolvedAt = now;
+                updateData.slaSolvedAt = now;
+            }
+            if (targetStatus === TicketStatus.CLOSED) {
+                updateData.closedAt = now;
+            }
+            if (isReopening) {
+                updateData.closedAt = null;
+                updateData.messages = {
+                    create: {
+                        message: 'Ticket reopened by authorized support staff.',
+                        isInternal: true,
+                        sender: { connect: { id: actorId } },
+                        metadata: {
+                            action: 'TICKET_REOPENED',
+                            previousClosedAt: ticket.closedAt instanceof Date
+                                ? ticket.closedAt.toISOString()
+                                : ticket.closedAt ? new Date(ticket.closedAt).toISOString() : null,
+                        },
+                    },
+                };
+            }
+        }
+
+        if (dto.assignedTo !== undefined && !ticket.slaRespondedAt && !updateData.slaRespondedAt) {
+            updateData.slaRespondedAt = now;
+        }
+
+        const hasChanges = Object.keys(updateData).length > 0;
+        if (!hasChanges) {
+            // Return safe scalar ticket on no-op (no expanded relations/internal notes)
+            const scalar = await this.prisma.ticket.findUnique({ where: { id } });
+            const source = scalar ?? ticket;
+            const { messages, attachments, escalations, creator, assignee, interaction, embeddings, ...safeTicket } = source as any;
+            return safeTicket;
+        }
+
+        const whereClause: any = {
+            id: ticket.id,
+            status: ticket.status,
+            deletedAt: null,
+            ...(ticket.status === TicketStatus.CLOSED ? { closedAt: ticket.closedAt } : {}),
+        };
+
+        const updated = await this.prisma.ticket.update({
+            where: whereClause,
+            data: updateData,
+        }).catch((error: unknown) => {
+            if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2025') {
+                throw new ConflictException(
+                    isReopening
+                        ? 'Ticket changed; refresh before reopening'
+                        : 'Ticket changed; refresh before updating',
+                );
+            }
+            throw error;
+        });
+
+        // Strictly post-commit event emissions
+        if (statusChanged) {
+            this.eventEmitter.emit('ticket.status_changed', {
+                ticketId: updated.id,
+                oldStatus: ticket.status,
+                newStatus: updated.status,
+                actorId,
+            });
+            if (updated.status === TicketStatus.RESOLVED) {
+                this.eventEmitter.emit('ticket.resolved', updated);
+            }
+            this.logger.log(`🔄 Ticket ${ticket.ticketNumber}: ${ticket.status} → ${targetStatus} by ${actorId}`);
+        }
+
+        if (dto.assignedTo !== undefined && dto.assignedTo !== ticket.assignedTo) {
+            this.logger.log(`📌 Ticket ${ticket.ticketNumber} assigned to ${dto.assignedTo}`);
+        }
+
+        const { messages, attachments, escalations, creator, assignee, interaction, embeddings, ...safeUpdated } = updated as any;
+        return safeUpdated;
     }
 
     private assertTicketFieldUpdateAllowed(dto: UpdateTicketDto, requester: any) {
         if (!this.isCustomerRole(requester?.role)) return;
 
-        const restrictedFields = ['assignedTo', 'priority', 'teamId', 'departmentId'] as const;
+        const restrictedFields = ['status', 'assignedTo', 'priority', 'slaPolicyId', 'teamId', 'departmentId', 'tags'] as const;
         const attemptedRestrictedField = restrictedFields.find(
             (field) => Object.prototype.hasOwnProperty.call(dto, field) && (dto as Record<string, unknown>)[field] !== undefined,
         );
@@ -1257,46 +1407,210 @@ export class TicketsService {
         }
         const actorId = requester.sub;
 
-        const updateData: Prisma.TicketUpdateInput = {};
-        if (status) updateData.status = status;
-        if (priority) updateData.priority = priority;
-        if (assignedTo) updateData.assignee = { connect: { id: assignedTo } };
-
-        // If priority changes, we must recalculate SLAs individually (Optimized for N+1)
-        if (priority) {
-            // 1. Fetch all required tickets in a single batch
-            const tickets = await this.prisma.ticket.findMany({
-                where: { id: { in: ticketIds } },
-                select: { id: true, departmentId: true }
-            });
-
-            await this.prisma.$transaction(async (tx) => {
-                for (const ticket of tickets) {
-                    // We call SLA service for calculation logic. Since we optimized 
-                    // BusinessHoursService cache, the O(N*M) pressure is gone.
-                    const deadlines = await this.slaService.calculateDeadlines(priority, ticket.departmentId as string);
-
-                    await tx.ticket.update({
-                        where: { id: ticket.id },
-                        data: {
-                            ...updateData,
-                            slaResponseDue: deadlines.slaResponseDue,
-                            slaResolveDue: deadlines.slaResolveDue,
-                            isSlaBreached: false,
-                        },
-                    });
-                }
-            });
-            return { count: ticketIds.length };
+        if (!ticketIds.length) {
+            return { count: 0 };
         }
 
-        const result = await this.prisma.ticket.updateMany({
-            where: { id: { in: ticketIds } },
-            data: updateData,
+        const tickets = await this.prisma.ticket.findMany({
+            where: { id: { in: ticketIds }, deletedAt: null },
+            select: {
+                id: true,
+                ticketNumber: true,
+                status: true,
+                closedAt: true,
+                departmentId: true,
+                slaRespondedAt: true,
+            },
         });
 
-        this.logger.log(`🎫 Bulk updated ${result.count} tickets (Agent: ${actorId})`);
-        return result;
+        if (tickets.length !== ticketIds.length) {
+            throw new ForbiddenException('Bulk ticket management is available to authorized support staff only');
+        }
+
+        // ── Pre-validation 1: Status Transitions ─────────────────────────
+        if (status) {
+            for (const ticket of tickets) {
+                if (ticket.status !== status) {
+                    const allowed: TicketStatus[] = ALLOWED_TRANSITIONS[ticket.status] ?? [];
+                    if (!allowed.includes(status)) {
+                        throw new BadRequestException(
+                            `Cannot transition from ${ticket.status} to ${status}. Allowed: ${allowed.join(', ')}`,
+                        );
+                    }
+                }
+            }
+        }
+
+        // ── Pre-validation 2: Assignee and Department Rules ──────────────
+        if (assignedTo) {
+            for (const ticket of tickets) {
+                const targetStatus = status ?? ticket.status;
+                if (ticket.status === TicketStatus.CLOSED && targetStatus !== TicketStatus.OPEN) {
+                    throw new BadRequestException('Cannot assign a closed ticket');
+                }
+            }
+
+            const distinctDeptIds = Array.from(new Set(tickets.map((t) => t.departmentId)));
+            for (const deptId of distinctDeptIds) {
+                const assignee = await this.prisma.user.findFirst({
+                    where: {
+                        id: assignedTo,
+                        deletedAt: null,
+                        status: 'ACTIVE',
+                        role: {
+                            name: {
+                                not: 'CUSTOMER',
+                                mode: 'insensitive',
+                            },
+                        },
+                        teamMembers: {
+                            some: {
+                                team: {
+                                    isArchived: false,
+                                    deletedAt: null,
+                                    ...(deptId ? { departmentId: deptId } : {}),
+                                },
+                            },
+                        },
+                    },
+                    select: { id: true },
+                });
+
+                if (!assignee) {
+                    throw new BadRequestException('Ticket can only be assigned to an active support team member');
+                }
+            }
+        }
+
+        // ── Pre-calculate SLA Deadlines per Department ────────────────────
+        const deadlinesByDept = new Map<string, { slaResponseDue: Date; slaResolveDue: Date }>();
+        if (priority) {
+            for (const ticket of tickets) {
+                const deptKey = ticket.departmentId ?? 'none';
+                if (!deadlinesByDept.has(deptKey)) {
+                    const d = await this.slaService.calculateDeadlines(priority, ticket.departmentId as string);
+                    deadlinesByDept.set(deptKey, d);
+                }
+            }
+        }
+
+        const now = new Date();
+        const eventsToEmit: Array<() => void> = [];
+
+        await this.prisma.$transaction(async (tx) => {
+            for (const ticket of tickets) {
+                const data: any = {};
+                let isReopening = false;
+
+                // Determine target status individually for each ticket
+                let targetStatus = ticket.status;
+                if (status) {
+                    targetStatus = status;
+                } else if (assignedTo && ticket.status === TicketStatus.NEW) {
+                    targetStatus = TicketStatus.OPEN;
+                }
+
+                const statusChanged = targetStatus !== ticket.status;
+
+                if (statusChanged) {
+                    data.status = targetStatus;
+                    if (targetStatus === TicketStatus.IN_PROGRESS && !ticket.slaRespondedAt) {
+                        data.slaRespondedAt = now;
+                    }
+                    if (targetStatus === TicketStatus.RESOLVED) {
+                        data.resolvedAt = now;
+                        data.slaSolvedAt = now;
+                    }
+                    if (targetStatus === TicketStatus.CLOSED) {
+                        data.closedAt = now;
+                    }
+                    if (ticket.status === TicketStatus.CLOSED && targetStatus === TicketStatus.OPEN) {
+                        isReopening = true;
+                        data.closedAt = null;
+                        data.messages = {
+                            create: {
+                                message: 'Ticket reopened by authorized support staff.',
+                                isInternal: true,
+                                sender: { connect: { id: actorId } },
+                                metadata: {
+                                    action: 'TICKET_REOPENED',
+                                    previousClosedAt: ticket.closedAt instanceof Date
+                                        ? ticket.closedAt.toISOString()
+                                        : ticket.closedAt ? new Date(ticket.closedAt).toISOString() : null,
+                                },
+                            },
+                        };
+                    }
+                }
+
+                if (assignedTo) {
+                    data.assignedTo = assignedTo;
+                    // Preserve existing response time if already recorded
+                    if (!ticket.slaRespondedAt && !data.slaRespondedAt) {
+                        data.slaRespondedAt = now;
+                    }
+                }
+
+                if (priority) {
+                    data.priority = priority;
+                    const deadlines = deadlinesByDept.get(ticket.departmentId ?? 'none');
+                    if (deadlines) {
+                        data.slaResponseDue = deadlines.slaResponseDue;
+                        data.slaResolveDue = deadlines.slaResolveDue;
+                        data.isSlaBreached = false;
+                    }
+                }
+
+                const whereClause: any = {
+                    id: ticket.id,
+                    status: ticket.status,
+                    deletedAt: null,
+                };
+                if (ticket.status === TicketStatus.CLOSED) {
+                    whereClause.closedAt = ticket.closedAt;
+                }
+
+                await tx.ticket.update({
+                    where: whereClause,
+                    data,
+                }).catch((error: unknown) => {
+                    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2025') {
+                        throw new ConflictException(
+                            isReopening
+                                ? 'Ticket changed; refresh before reopening'
+                                : 'Ticket changed; refresh before updating',
+                        );
+                    }
+                    throw error;
+                });
+
+                if (statusChanged) {
+                    eventsToEmit.push(() => {
+                        this.eventEmitter.emit('ticket.status_changed', {
+                            ticketId: ticket.id,
+                            oldStatus: ticket.status,
+                            newStatus: targetStatus,
+                            actorId,
+                        });
+                        if (targetStatus === TicketStatus.RESOLVED) {
+                            this.eventEmitter.emit('ticket.resolved', {
+                                id: ticket.id,
+                                ticketNumber: ticket.ticketNumber,
+                                status: TicketStatus.RESOLVED,
+                            });
+                        }
+                    });
+                }
+            }
+        });
+
+        // Strictly post-commit event emissions
+        for (const emitEvent of eventsToEmit) {
+            emitEvent();
+        }
+
+        this.logger.log(`🎫 Bulk updated ${ticketIds.length} tickets (Agent: ${actorId})`);
+        return { count: ticketIds.length };
     }
 
     // =============================================
