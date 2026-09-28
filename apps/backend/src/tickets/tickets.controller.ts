@@ -9,6 +9,7 @@ import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { BulkUpdateTicketDto } from './dto/bulk-update-ticket.dto';
 import { AddMessageDto } from './dto/add-message.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
+import { SubmitFeedbackDto } from './dto/submit-feedback.dto';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { RequirePermissions, Roles } from '../rbac/decorators/rbac.decorators';
 import { ChatStatus, TicketStatus, TicketPriority } from '@aluplan/database';
@@ -259,10 +260,11 @@ export class TicketsController {
     @ApiOperation({ summary: 'Submit Customer Satisfaction (CSAT) rating and comment' })
     async submitFeedback(
         @Param('id') id: string,
-        @Body() body: { score: number, comment?: string },
+        @Body() dto: SubmitFeedbackDto,
         @Request() req: any,
     ) {
-        const updated = await this.ticketsService.submitFeedback(id, body.score, body.comment, req.user.sub);
+        const actorUserId = req.user?.sub || req.user?.id;
+        const updated = await this.ticketsService.submitFeedback(id, dto.score, dto.comment, actorUserId);
         this.notificationsGateway.emitTicketUpdated(updated);
         return updated;
     }

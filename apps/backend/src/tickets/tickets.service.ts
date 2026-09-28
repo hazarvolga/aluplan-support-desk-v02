@@ -3,6 +3,7 @@ import {
     NotFoundException,
     BadRequestException,
     ForbiddenException,
+    UnauthorizedException,
     ConflictException,
     Logger,
     Inject,
@@ -1141,24 +1142,51 @@ export class TicketsService {
     // =============================================
     // SUBMIT FEEDBACK (Self-Learning KB Trigger)
     // =============================================
-    async submitFeedback(id: string, score: number, comment?: string, _customerId?: string) {
-        const ticket = await this.findOne(id);
+    async submitFeedback(id: string, score: number, comment?: string, customerId?: string) {
+        if (!customerId || !customerId.trim()) {
+            throw new UnauthorizedException('Authentication required to submit feedback.');
+        }
+
+        const ticket = await this.prisma.ticket.findFirst({
+            where: { id, deletedAt: null },
+        });
+
+        if (!ticket) {
+            throw new NotFoundException('Ticket not found.');
+        }
+
+        if (!ticket.userId || ticket.userId !== customerId) {
+            throw new ForbiddenException('Only the ticket creator can submit feedback.');
+        }
 
         if (ticket.status !== TicketStatus.PENDING_CUSTOMER_REVIEW && ticket.status !== TicketStatus.RESOLVED) {
             throw new BadRequestException('Feedback can only be submitted for tickets pending review or recently resolved.');
         }
 
-        const updated = await this.prisma.ticket.update({
-            where: { id },
-            data: {
-                satisfactionScore: score,
-                satisfactionComment: comment,
-                status: TicketStatus.CLOSED, // Auto-close upon feedback
-                closedAt: new Date()
+        let updated;
+        try {
+            updated = await this.prisma.ticket.update({
+                where: {
+                    id,
+                    userId: customerId,
+                    deletedAt: null,
+                    status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                },
+                data: {
+                    satisfactionScore: score,
+                    satisfactionComment: comment || null,
+                    status: TicketStatus.CLOSED, // Auto-close upon feedback
+                    closedAt: new Date(),
+                },
+            });
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new BadRequestException('Feedback has already been submitted or ticket is no longer eligible.');
             }
-        });
+            throw error;
+        }
 
-        this.logger.log(`⭐ Ticket ${ticket.ticketNumber} received feedback: ${score}/5`);
+        this.logger.log(`⭐ Ticket ${ticket.ticketNumber || updated.ticketNumber} received feedback: ${score}/5`);
 
         // Option C Core: If it's a solved issue and the user agrees (score 4 or 5)
         if (score >= 4) {
