@@ -149,6 +149,17 @@ pnpm --filter @aluplan/frontend typecheck
 
 ## DevOps / Commit Hygiene
 
+### Owner-approved delivery policy — 2026-09-17
+
+- Goal: promote existing local improvements safely and promptly while preserving live customer data and working workflows. Prefer the smallest compatible change; do not redesign the platform to reach theoretical perfection.
+- Challenge over-engineering even when the owner requests it. Be direct, evidence-based and respectful: state the concrete problem, release delay, maintenance cost and risk, then propose a smaller safe alternative before expanding scope. Apply the same skepticism to your own proposals.
+- Classify work as release-blocking security/data/compatibility fixes, small relevant improvements, or deferred work. Judge vulnerability reachability and impact, not advisory counts alone. Never defer a demonstrated unacceptable risk merely to ship faster.
+- Freeze each release scope. No speculative abstractions, new infrastructure, broad refactors or mass dependency upgrades without a demonstrated need and explicit scope decision. Preserve intentional existing architecture and security controls.
+- Use targeted regression tests first, broaden by affected risk, and retain required quality gates. Do not weaken tests, suppress findings, or claim absolute security/zero data loss. Deferred work needs a reason and a review trigger in the existing backlog; avoid duplicate planning systems.
+- Follow Git/GitHub discipline: small topic branches where appropriate, explicit file staging, Conventional Commits and local checkpoints after verification. Keep unrelated work intact. When publication is authorized, use a focused PR with scope, test evidence, data/migration impact and rollback notes; required CI/review must pass before merge.
+- Local commits/tags are not remote backups, published PRs or release approval. Require explicit "push et" before remote push/tag/publication and explicit "deploy et" for deployment. General "continue" approval does not authorize production access or changes.
+- Never copy a local development database over production. Prove backup restoration and approved recovery that preserves newly accepted customer writes and attachment bytes before release. For this stabilization release, owner-approved ADR-022 permits forward recovery instead of producing an older-version fallback; restart/re-entry is not version rollback, and extended maintenance remains possible. Do not reinstate known-unsafe historical images. Any production access/change needs separately scoped approval.
+
 - Keep docs/memory, regression tests, product code, DB/config, generated graph output, and agent/spec/tooling files in separate commits.
 - Before committing, run `git diff --name-only` and a focused test set.
 - Before product commits, run GitNexus detect changes when available.

@@ -147,6 +147,68 @@ describe('CrmService', () => {
             expect(mockCrypto.encrypt).toHaveBeenCalledWith('plain-secret');
             expect(mockCrypto.encrypt).toHaveBeenCalledWith('plain-webhook');
         });
+
+        it('preserves the caller payload and never returns encrypted secrets', async () => {
+            const dto = {
+                provider: CrmProvider.DYNAMICS_365,
+                tenantId: 'tenant-id',
+                clientId: 'client-id',
+                clientSecret: '********',
+                webhookSecret: '********',
+                instanceUrl: 'https://org.crm4.dynamics.com',
+            };
+            const snapshot = { ...dto };
+            mockAdapter.verifyConnection.mockResolvedValue(true);
+            mockPrisma.crmConnection.findFirst.mockResolvedValue({
+                id: 'connection-1',
+                clientSecret: 'enc:existing-secret',
+                webhookSecret: 'enc:existing-webhook',
+            });
+            mockPrisma.crmConnection.update.mockResolvedValue({
+                id: 'connection-1',
+                clientSecret: 'enc:existing-secret',
+                webhookSecret: 'enc:existing-webhook',
+            });
+
+            const result = await service.upsertConnection(dto);
+
+            expect(dto).toEqual(snapshot);
+            expect(mockAdapter.verifyConnection).toHaveBeenCalledWith(expect.objectContaining({
+                clientSecret: 'existing-secret',
+                webhookSecret: 'existing-webhook',
+            }));
+            expect(result).toEqual(expect.objectContaining({
+                clientSecret: '********',
+                webhookSecret: '********',
+            }));
+            expect(JSON.stringify(result)).not.toContain('enc:');
+        });
+
+        it('preserves an existing webhook secret when the optional field is omitted', async () => {
+            mockAdapter.verifyConnection.mockResolvedValue(true);
+            mockPrisma.crmConnection.findFirst.mockResolvedValue({
+                id: 'connection-1',
+                clientSecret: 'enc:existing-secret',
+                webhookSecret: 'enc:existing-webhook',
+            });
+            mockPrisma.crmConnection.update.mockResolvedValue({
+                id: 'connection-1',
+                clientSecret: 'enc:existing-secret',
+                webhookSecret: 'enc:existing-webhook',
+            });
+
+            await service.upsertConnection({
+                provider: CrmProvider.DYNAMICS_365,
+                tenantId: 'tenant-id',
+                clientId: 'client-id',
+                clientSecret: '********',
+                instanceUrl: 'https://org.crm4.dynamics.com',
+            });
+
+            expect(mockPrisma.crmConnection.update).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({ webhookSecret: 'enc:existing-webhook' }),
+            }));
+        });
     });
 
     // ── triggerSync ───────────────────────────────────────────────────────────

@@ -1,6 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
+import { createCliLogger } from './common/utils/cli-logger';
+
+const cliLogger = createCliLogger('RestoreRunner');
 
 const faqs = [
     {
@@ -244,7 +247,7 @@ async function bootstrap() {
     const app = await NestFactory.createApplicationContext(AppModule);
     const prisma = app.get(PrismaService);
 
-    console.log('Restoring 47 FAQ items...');
+    cliLogger.log('Restoring 47 FAQ items...');
 
     try {
         for (const faq of faqs) {
@@ -260,9 +263,9 @@ async function bootstrap() {
             });
         }
 
-        console.log(`Successfully restored ${faqs.length} FAQ items.`);
+        cliLogger.log(`Successfully restored ${faqs.length} FAQ items.`);
     } catch (error) {
-        console.error('Restoration failed:', error);
+        cliLogger.error('Restoration failed:', error);
     } finally {
         await app.close();
     }

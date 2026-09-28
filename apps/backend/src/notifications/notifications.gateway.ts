@@ -7,9 +7,10 @@ import {
     OnGatewayDisconnect,
     OnGatewayInit,
     MessageBody,
+    WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Logger, ServiceUnavailableException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -24,6 +25,13 @@ import Redis from 'ioredis';
 import { PROACTIVE_CHAT_QUEUE } from '../proactive-chat/proactive-chat.constants';
 import { AiHealthEventService } from '../ai/ai-health-event.service';
 import { AiHealthEventType } from '@aluplan/database';
+import { TicketAccessService } from '../common/services/ticket-access.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
+import type { JwtPayload } from '../auth/strategies/jwt.strategy';
+
+type SocketSession = JwtPayload & { exp: number };
+type AiFallbackPayload = { primaryProvider: string; fallbackProvider: string; task: string; error: string };
+type SessionClient = { id: string; data: Record<string, unknown>; disconnect(close?: boolean): unknown };
 
 const resolveAllowedOrigins = (): string[] => {
     const configuredOrigins = [
@@ -54,6 +62,47 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     @WebSocketServer() server: Server;
     private readonly logger = new Logger(NotificationsGateway.name);
     private connectedClients = 0;
+    private readonly connectionReady = new Map<string, Promise<void>>();
+
+    private async isSessionValid(payload: SocketSession | undefined): Promise<boolean> {
+        if (!payload || typeof payload.sub !== 'string' || !payload.sub
+            || typeof payload.role !== 'string' || !payload.role.trim()
+            || !Number.isFinite(payload.exp) || payload.exp * 1000 <= Date.now()) return false;
+
+        const user = await this.prisma.user.findUnique({
+            where: { id: payload.sub },
+            select: { status: true, deletedAt: true, sessionVersion: true, role: { select: { name: true } } },
+        });
+        if (!user || user.status !== 'ACTIVE' || user.deletedAt
+            || user.sessionVersion !== (payload.sessionVersion ?? 0)) return false;
+        if (!user.role?.name || this.normalizeRole(user.role.name) !== this.normalizeRole(payload.role)) return false;
+        if (payload.jti && await this.redisService.get(`jwt:blacklist:${payload.jti}`)) return false;
+
+        const forceLogoutAt = await this.redisService.get(`user:${payload.sub}:force_logout_at`);
+        const issuedAtMs = payload.sessionIssuedAt ?? (payload.iat ? payload.iat * 1000 : undefined);
+        if (forceLogoutAt && (!Number.isFinite(issuedAtMs) || !Number.isFinite(Number(forceLogoutAt))
+            || issuedAtMs! <= Number(forceLogoutAt))) return false;
+        return true;
+    }
+
+    private async ensureSession(client: SessionClient): Promise<boolean> {
+        try {
+            // Nest binds events without awaiting handleConnection. A buffered join
+            // or sweep must wait for trusted authentication, never race it.
+            await this.connectionReady.get(client.id);
+            const session = client.data.session as SocketSession | undefined;
+            if (session?.sub === client.data.userId && session?.role === client.data.role
+                && await this.isSessionValid(session)) return true;
+        } catch {
+            this.logger.warn('Socket session validation unavailable; disconnecting client');
+        }
+        client.disconnect(true);
+        return false;
+    }
+
+    private isValidIdentifier(value: unknown): value is string {
+        return typeof value === 'string' && value.length > 0 && value.length <= 128 && !/\s/.test(value);
+    }
 
     constructor(
         private readonly jwtService: JwtService,
@@ -62,7 +111,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         private readonly redisService: RedisService,
         private readonly emailService: EmailService,
         private readonly aiHealthEventService: AiHealthEventService,
+        private readonly ticketAccess: TicketAccessService,
         @InjectQueue(PROACTIVE_CHAT_QUEUE) private readonly proactiveChatQueue: Queue,
+        private readonly work: MaintenanceWorkService,
     ) { }
 
     private get isProduction(): boolean {
@@ -82,7 +133,17 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         }
     }
 
-    async handleConnection(client: Socket) {
+    handleConnection(client: Socket): Promise<void> {
+        const ready = this.initializeConnection(client);
+        this.connectionReady.set(client.id, ready);
+        return ready.finally(() => {
+            if (this.connectionReady.get(client.id) === ready) {
+                this.connectionReady.delete(client.id);
+            }
+        });
+    }
+
+    private async initializeConnection(client: Socket) {
         try {
             const rawCookies = client.handshake.headers?.cookie || '';
             const cookieToken = rawCookies
@@ -107,10 +168,16 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
                 return;
             }
 
-            const payload = this.jwtService.verify(token, {
+            const payload = this.jwtService.verify<SocketSession>(token, {
                 secret: this.config.get('JWT_SECRET'),
             });
 
+            if (!await this.isSessionValid(payload)) {
+                client.disconnect(true);
+                return;
+            }
+
+            client.data.session = payload;
             client.data.userId = payload.sub;
             client.data.role = payload.role;
             this.connectedClients++;
@@ -158,6 +225,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     }
 
     async handleDisconnect(client: Socket) {
+        this.connectionReady.delete(client.id);
         this.connectedClients = Math.max(0, this.connectedClients - 1);
         const userId = client.data.userId;
 
@@ -223,18 +291,13 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     // Subscribe to a specific ticket room
     @SubscribeMessage('ticket:join')
     async joinTicket(@ConnectedSocket() client: Socket, @MessageBody() ticketId: string) {
-        // Authorization check: User must be an agent or the creator of the ticket
-        const ticket = await this.prisma.ticket.findUnique({
-            where: { id: ticketId },
-            select: { userId: true }
-        });
-
-        if (!ticket) return { error: 'Ticket not found' };
-
-        const isCreator = ticket.userId === client.data.userId;
-        const isAgent = client.data.role && client.data.role.toUpperCase() !== 'CUSTOMER';
-
-        if (!isCreator && !isAgent) {
+        if (!this.isValidIdentifier(ticketId)) return { error: 'Invalid payload' };
+        if (!await this.ensureSession(client)) return { error: 'Unauthorized' };
+        const canAccess = await this.ticketAccess.canAccessTicket(
+            { id: client.data.userId, role: client.data.role },
+            ticketId,
+        );
+        if (!canAccess) {
             return { error: 'Unauthorized' };
         }
 
@@ -254,6 +317,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     @SubscribeMessage('ticket:leave')
     async leaveTicket(@ConnectedSocket() client: Socket, @MessageBody() ticketId: string) {
+        if (!this.isValidIdentifier(ticketId)) return { error: 'Invalid payload' };
+        if (!await this.ensureSession(client)) return { error: 'Unauthorized' };
+        if (!client.rooms?.has(`ticket:${ticketId}`)) return { error: 'Unauthorized' };
         await client.leave(`ticket:${ticketId}`);
 
         // Presence Logic
@@ -269,24 +335,74 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     // Live Chat Presence
     @SubscribeMessage('ticket:typing')
     async announceTyping(@ConnectedSocket() client: Socket, @MessageBody() data: { ticketId: string, isTyping: boolean }) {
-        client.to(`ticket:${data.ticketId}`).emit('ticket:typing', {
+        if (!data || !this.isValidIdentifier(data.ticketId) || typeof data.isTyping !== 'boolean') return { error: 'Invalid payload' };
+        if (!await this.ensureSession(client)) return { error: 'Unauthorized' };
+        const room = `ticket:${data.ticketId}`;
+        const canAccess = await this.ticketAccess.canAccessTicket(
+            { id: client.data.userId, role: client.data.role },
+            data.ticketId,
+        );
+        if (!canAccess || !client.rooms?.has(room)) return { error: 'Unauthorized' };
+
+        client.to(room).emit('ticket:typing', {
             userId: client.data.userId,
             isTyping: data.isTyping,
         });
+        return { typing: data.isTyping };
     }
 
     @SubscribeMessage('ticket:message_read')
     async markAsRead(@ConnectedSocket() client: Socket, @MessageBody() data: { ticketId: string, messageId: string }) {
+        let started = false;
+        try {
+            // Each client event is new ingress, even on an existing connection.
+            return await this.work.runRoot('ws.ticket.message-read', () => {
+                started = true;
+                return this.markAsReadTracked(client, data);
+            });
+        } catch (error) {
+            if (!started && error instanceof ServiceUnavailableException) {
+                throw new WsException({ code: 'MAINTENANCE', message: 'Service temporarily unavailable' });
+            }
+            throw error;
+        }
+    }
 
-        // Smart Buffer: If message is read via chat, cancel the pending email notification
-        const jobId = `email-ntf-msg-${data.messageId}`;
-        await this.emailService.cancelEmail(jobId);
+    private async markAsReadTracked(client: Socket, data: { ticketId: string, messageId: string }) {
+        if (!data || !this.isValidIdentifier(data.ticketId) || !this.isValidIdentifier(data.messageId)) return { error: 'Invalid payload' };
+        if (!await this.ensureSession(client) || !client.rooms?.has(`ticket:${data.ticketId}`)) return { error: 'Unauthorized' };
+        const canAccess = await this.ticketAccess.canAccessTicket(
+            { id: client.data.userId, role: client.data.role },
+            data.ticketId,
+        );
+        if (!canAccess) return { error: 'Unauthorized' };
+
+        const message = await this.prisma.ticketMessage.findFirst({
+            where: { id: data.messageId, ticketId: data.ticketId },
+            select: { id: true, isInternal: true, senderId: true, ticket: { select: { userId: true } } },
+        });
+        if (!message) return { error: 'Message not found' };
+        if (message.isInternal && this.isCustomerRole(client.data.role)) return { error: 'Unauthorized' };
+
+        // Only the customer recipient may suppress their own public-reply email.
+        // A staff read must not suppress delivery to a different recipient/group.
+        if (message.isInternal === false && message.ticket.userId === client.data.userId
+            && message.senderId !== client.data.userId) {
+            await this.emailService.cancelEmail(`email-ntf-msg-${data.messageId}`);
+        }
+
+        if (message.isInternal) {
+            this.emitToStaff('ticket:message_read', { messageId: data.messageId, readerId: client.data.userId });
+            return { read: data.messageId };
+        }
 
         // Broadcast that a message was read
         client.to(`ticket:${data.ticketId}`).emit('ticket:message_read', {
             messageId: data.messageId,
             readerId: client.data.userId,
         });
+
+        return { read: data.messageId };
     }
 
     // ─── Proactive Chat Handlers ─────────────────────────────────────────────────
@@ -296,6 +412,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         @ConnectedSocket() client: Socket,
         @MessageBody() sessionId: string,
     ) {
+        if (!this.isValidIdentifier(sessionId)) return { error: 'Invalid payload' };
+        if (!await this.ensureSession(client)) return { error: 'Unauthorized' };
         const userId = client.data.userId;
         if (!userId) return { error: 'Unauthorized' };
 
@@ -320,6 +438,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         @ConnectedSocket() client: Socket,
         @MessageBody() sessionId: string,
     ) {
+        if (!this.isValidIdentifier(sessionId)) return { error: 'Invalid payload' };
+        if (!await this.ensureSession(client) || !client.rooms?.has(`proactive_chat:${sessionId}`)) return { error: 'Unauthorized' };
         await client.leave(`proactive_chat:${sessionId}`);
         return { left: sessionId };
     }
@@ -329,6 +449,13 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         @ConnectedSocket() client: Socket,
         @MessageBody() data: { sessionId: string; isTyping: boolean },
     ) {
+        if (!data || !this.isValidIdentifier(data.sessionId) || typeof data.isTyping !== 'boolean') return { error: 'Invalid payload' };
+        if (!await this.ensureSession(client) || !client.rooms?.has(`proactive_chat:${data.sessionId}`)) return { error: 'Unauthorized' };
+        const session = await this.prisma.proactiveChatSession.findUnique({
+            where: { id: data.sessionId },
+            select: { agentId: true, customerId: true },
+        });
+        if (!session || (session.agentId !== client.data.userId && session.customerId !== client.data.userId)) return { error: 'Unauthorized' };
         // Relay typing event to the other party — do NOT persist
         client.to(`proactive_chat:${data.sessionId}`).emit('proactive_chat:typing', {
             sessionId: data.sessionId,
@@ -337,7 +464,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         });
     }
 
-    @OnEvent('ticket.created', { async: true })
+    @OnEvent('ticket.created', { async: true, promisify: true })
     async emitTicketCreated(ticket: any) {
         this.logger.log(`📢 Broadcasting ticket:created event to admins/agents for Ticket #${ticket.ticketNumber} (ID: ${ticket.id})`);
         const payload = {
@@ -459,6 +586,10 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     emitNewMessage(ticketId: string, message: any) {
         if (!this.server) return;
+        if (message?.isInternal !== false) {
+            this.emitToStaff('ticket:new_message', { ticketId, message });
+            return;
+        }
         this.server.to(`ticket:${ticketId}`).emit('ticket:new_message', {
             ticketId,
             message,
@@ -466,9 +597,39 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     }
 
     @OnEvent('attachment.created', { async: true })
-    emitAttachmentAdded(payload: { ticketId: string, messageId: string, attachment: any }) {
+    emitAttachmentAdded(payload: { ticketId: string, messageId: string, isInternal?: boolean, attachment: any }) {
         if (!this.server) return;
+        if (payload.isInternal !== false) {
+            this.emitToStaff('ticket:attachment_added', payload);
+            return;
+        }
         this.server.to(`ticket:${payload.ticketId}`).emit('ticket:attachment_added', payload);
+    }
+
+    private emitToStaff(event: string, payload: unknown) {
+        const staffRoleRooms = [
+            'admin',
+            'super-admin', 'super_admin',
+            'superuser',
+            'department-manager', 'department_manager',
+            'team-lead', 'team_lead',
+            'senior-agent', 'senior_agent',
+            'agent',
+            'support-agent', 'support_agent',
+            'support-manager', 'support_manager',
+        ];
+        for (const role of staffRoleRooms) {
+            this.server.to(`role:${role}`).emit(event, payload);
+        }
+    }
+
+    private isCustomerRole(role: unknown): boolean {
+        const normalized = typeof role === 'string' ? this.normalizeRole(role) : '';
+        return normalized === 'CUSTOMER' || normalized === 'VIEWER';
+    }
+
+    private normalizeRole(role: string): string {
+        return role.trim().toUpperCase().replace(/-/g, '_');
     }
 
     emitBulkUpdate(ticketIds: string[]) {
@@ -480,8 +641,21 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             .emit('tickets:bulk_updated', { ticketIds });
     }
 
-    @OnEvent('system.ai_fallback', { async: true })
-    async handleAiFallback(payload: { primaryProvider: string, fallbackProvider: string, task: string, error: string }) {
+    @OnEvent('system.ai_fallback')
+    handleAiFallback(payload: AiFallbackPayload): Promise<void> {
+        // Reserve inside the synchronous listener before emit() returns, not
+        // after EventEmitter's deferred scheduling. Keep persistence deferred.
+        const parent = this.work.currentLease();
+        const operation = async () => {
+            await new Promise<void>(resolve => setImmediate(resolve));
+            await this.persistAiFallback(payload);
+        };
+        return parent
+            ? this.work.runChild(parent, 'ai.fallback.notification', operation)
+            : this.work.runRoot('ai.fallback.notification', operation);
+    }
+
+    private async persistAiFallback(payload: AiFallbackPayload): Promise<void> {
         this.logger.warn(`⚠️ AI Fallback Triggered: ${payload.primaryProvider} -> ${payload.fallbackProvider} (Task: ${payload.task}). Error: ${payload.error}`);
 
         // 1. Record to database
@@ -605,6 +779,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     @SubscribeMessage('heartbeat')
     async handleHeartbeat(@ConnectedSocket() client: Socket) {
+        if (!await this.ensureSession(client)) return { error: 'Unauthorized' };
         const userId = client.data.userId;
         if (!userId) return;
         const redis = this.redisService.getClient();
@@ -612,7 +787,21 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         await redis.set(presenceKey, 'active', 'EX', 60);
     }
 
-    @Cron('*/1 * * * *')
+    // Idle clients cannot retain revoked role/ticket subscriptions indefinitely.
+    @Cron('*/30 * * * * *', { waitForCompletion: true })
+    async revalidateSessions() {
+        if (!this.server) return;
+        try {
+            const sockets = await this.server.local.fetchSockets();
+            for (let offset = 0; offset < sockets.length; offset += 20) {
+                await Promise.all(sockets.slice(offset, offset + 20).map(socket => this.ensureSession(socket)));
+            }
+        } catch {
+            this.logger.warn('Unable to enumerate local sockets for session revalidation');
+        }
+    }
+
+    @Cron('*/1 * * * *', { waitForCompletion: true })
     async cleanupGhostUsers() {
         this.logger.log('🧹 Running ghost user presence cleanup...');
         const redis = this.redisService.getClient();

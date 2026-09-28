@@ -8,43 +8,56 @@ import {
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MaintenanceWorkService } from '../services/maintenance-work.service';
 
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {
     private readonly logger = new Logger(AuditLogInterceptor.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly work: MaintenanceWorkService,
+    ) { }
 
     intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+        if (context.getType() !== 'http') return next.handle();
         const request = context.switchToHttp().getRequest();
         const { method, url, user, ip, headers } = request;
+        const path = url.split('?')[0];
         const userAgent = headers['user-agent'];
 
         // Only track mutating administrative actions (POST, PATCH, DELETE)
         // and only for authenticated users (admins/agents)
         const isMutating = ['POST', 'PATCH', 'DELETE'].includes(method);
-        const isAdminAction = url.includes('/admin') || url.includes('/settings') || url.includes('/users');
+        const isAdminAction = path.includes('/admin') || path.includes('/settings') || path.includes('/users');
 
         return next.handle().pipe(
-            tap(async (data) => {
+            tap((data) => {
                 if (isMutating && user && isAdminAction) {
                     try {
-                        const action = this.mapUrlToAction(method, url);
-                        const entityInfo = this.extractEntityInfo(url, request.body, data);
+                        const action = this.mapUrlToAction(method, path);
+                        const entityInfo = this.extractEntityInfo(path, data);
 
-                        await this.prisma.auditLog.create({
+                        // Metadata only: settings payloads can contain arbitrary secrets.
+                        const audit = {
                             data: {
                                 actorId: user.id,
                                 action,
                                 entityType: entityInfo.type,
                                 entityId: entityInfo.id,
-                                newValue: request.body ? JSON.parse(JSON.stringify(request.body)) : null,
                                 ipAddress: ip,
                                 userAgent,
                             },
-                        });
-                    } catch (error) {
-                        this.logger.error(`Failed to create audit log: ${error.message}`);
+                        };
+                        const operation = () => this.prisma.auditLog.create(audit);
+                        const parent = this.work.currentLease();
+                        const pending = parent
+                            ? this.work.runChild(parent, 'http.audit', operation)
+                            : this.work.runRoot('http.audit', operation);
+                        // Preserve streaming/response timing while tracking actual persistence.
+                        void pending.catch(() => this.logger.error('Failed to create audit log'));
+                    } catch {
+                        this.logger.error('Failed to create audit log');
                     }
                 }
             }),
@@ -62,18 +75,16 @@ export class AuditLogInterceptor implements NestInterceptor {
         return `${entity}.${actionMap[method] || method.toLowerCase()}`;
     }
 
-    private extractEntityInfo(url: string, body: any, response: any): { type: string | null, id: string | null } {
+    private extractEntityInfo(url: string, response: any): { type: string | null, id: string | null } {
         const parts = url.split('/').filter(p => p && p !== 'api' && p !== 'v1');
         const type = parts[0] || null;
 
-        // Try to find an ID in the URL or body or response
+        // Never derive metadata from the request body.
         let id = null;
         if (parts.length > 1 && parts[1].length > 20) { // Likely a UUID
             id = parts[1];
         } else if (response?.id) {
             id = response.id;
-        } else if (body?.id) {
-            id = body.id;
         }
 
         return { type, id };

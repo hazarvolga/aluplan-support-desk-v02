@@ -1,11 +1,11 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Inject } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnApplicationShutdown, Logger, Inject } from '@nestjs/common';
 import { PrismaClient } from '@aluplan/database';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import { MetricsService } from '../metrics/metrics.service';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService extends PrismaClient implements OnModuleInit, OnApplicationShutdown {
     private readonly logger = new Logger(PrismaService.name);
     private pool: Pool;
     private poolInterval: NodeJS.Timeout;
@@ -54,7 +54,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
     }
 
-    async onModuleDestroy() {
+    // Keep the database available while destroy-phase workers finish their work.
+    async onApplicationShutdown() {
         if (this.poolInterval) clearInterval(this.poolInterval);
         await this.$disconnect();
         this.logger.log('💤 Database connection disconnected successfully');

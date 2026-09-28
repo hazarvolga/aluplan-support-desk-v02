@@ -3,18 +3,19 @@
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard, Ticket, BookOpen, Bot,
-    MessageSquareQuote, Settings, LogOut, ChevronRight, Users, User,
+    Settings, LogOut, Users, User,
     Brain, Database, Layers, Mail, Link2, Megaphone, HelpCircle, MailCheck,
-    Activity, Bell
+    Activity, Bell, ClipboardCheck
 } from 'lucide-react';
 
-import { api } from '@/lib/api';
+import { api, type ReviewCenterSummary } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth/role-guard';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { LanguageSwitcher } from './language-switcher';
 import { useAnnouncementStore } from '@/stores/announcement-store';
+import { getReviewCenterDefinition } from './review-center/review-center-registry';
 
 const ADMIN_NAV = [
     { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
@@ -23,7 +24,6 @@ const ADMIN_NAV = [
         sectionKey: 'kb_section',
         items: [
             { href: '/knowledge-base', icon: BookOpen, labelKey: 'articles' },
-            { href: '/kb-approvals', icon: MessageSquareQuote, labelKey: 'ai_approvals' },
         ]
     },
     {
@@ -56,6 +56,20 @@ const ADMIN_NAV = [
     { href: '/profile', icon: User, labelKey: 'profile' },
 ];
 
+const STAFF_NAV = [
+    { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
+    { href: '/tickets', icon: Ticket, labelKey: 'tickets' },
+    { href: '/knowledge-base', icon: BookOpen, labelKey: 'articles' },
+    { href: '/help', icon: HelpCircle, labelKey: 'help' },
+    { href: '/profile', icon: User, labelKey: 'profile' },
+];
+
+const STAFF_ROLES = new Set([
+    'ADMIN', 'AGENT', 'DEPARTMENT_MANAGER', 'KB_EDITOR', 'MANAGER',
+    'SENIOR_AGENT', 'SUPER_ADMIN', 'SUPERUSER', 'SUPPORT_AGENT',
+    'SUPPORT_MANAGER', 'TEAM_LEAD',
+]);
+
 const CUSTOMER_NAV = [
     { href: '/dashboard', icon: LayoutDashboard, labelKey: 'overview' },
     { href: '/my-tickets', icon: Ticket, labelKey: 'my_tickets' },
@@ -73,31 +87,51 @@ interface SidebarProps {
 export function Sidebar({ onNavClick }: SidebarProps) {
     const pathname = usePathname();
     const t = useTranslations('sidebar');
+    const reviewT = useTranslations('review_center');
     const { user, logout } = useAuth();
-    const [pendingCount, setPendingCount] = useState(0);
+    const [reviewSummary, setReviewSummary] = useState<ReviewCenterSummary | null>(null);
     const { unreadCount, setUnreadCount, openArchive } = useAnnouncementStore();
 
-    useEffect(() => {
-        // KB Approvals count check
-        const checkPending = async () => {
-            try {
-                const res = await api.kb.listPending();
-                setPendingCount(res.total || 0);
-            } catch (e) { }
-        };
-        if (user?.role?.toUpperCase() === 'ADMIN') {
-            checkPending();
-        }
-    }, [user]);
+    const rawRole = typeof user?.role === 'object' && user.role !== null
+        ? (user.role as { name?: string }).name
+        : user?.role;
+    const role = typeof rawRole === 'string'
+        ? rawRole.trim().replace(/-/g, '_').toUpperCase()
+        : '';
+    const isCustomer = role === 'CUSTOMER' || role === 'VIEWER';
+    const isStaff = STAFF_ROLES.has(role);
 
     useEffect(() => {
-        const role = user?.role?.toUpperCase?.() ?? '';
+        let active = true;
+        const loadReviewSummary = async () => {
+            try {
+                const result = await api.reviewCenter.summary();
+                if (active) setReviewSummary(result);
+            } catch {
+                if (active) setReviewSummary(null);
+            }
+        };
+
+        if (isStaff) {
+            void loadReviewSummary();
+        } else {
+            setReviewSummary(null);
+        }
+
+        return () => { active = false; };
+    }, [isStaff, role]);
+
+    useEffect(() => {
         if (role === 'CUSTOMER' || role === 'VIEWER') {
             api.announcements.getUnreadCount().then((r) => setUnreadCount(r.count)).catch(() => {});
         }
-    }, [user]);
+    }, [role, setUnreadCount]);
 
-    const navItems = user?.role?.toUpperCase() === 'ADMIN' ? ADMIN_NAV : CUSTOMER_NAV;
+    const navItems = role === 'ADMIN' ? ADMIN_NAV : isStaff ? STAFF_NAV : CUSTOMER_NAV;
+    const reviewItems = (reviewSummary?.items ?? []).flatMap((item) => {
+        const definition = getReviewCenterDefinition(item.id);
+        return definition ? [{ ...item, definition }] : [];
+    });
 
     const handleLogout = async () => {
         await logout();
@@ -119,6 +153,59 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                 </div>
 
                 <nav className="flex-1 space-y-6 overflow-y-auto pr-2">
+                    {isStaff && (
+                        <div className="space-y-2" data-testid="review-center-section">
+                            <h4 className="px-3 text-[10px] font-semibold uppercase tracking-wider text-primary/70">
+                                {t('nav.review_section')}
+                            </h4>
+                            <div className="space-y-1 border-l border-primary/20 pl-2">
+                                <Link
+                                    href="/review-center"
+                                    onClick={onNavClick}
+                                    data-testid="nav-review_center"
+                                    className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all ${pathname.endsWith('/review-center')
+                                        ? 'bg-primary/10 text-primary'
+                                        : 'text-muted-foreground hover:bg-white/5 hover:text-white'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <ClipboardCheck className="h-4 w-4" />
+                                        <span>{t('nav.review_center')}</span>
+                                    </div>
+                                    {(reviewSummary?.pendingActions ?? 0) > 0 && (
+                                        <span data-testid="review-center-badge" className="min-w-5 rounded-full bg-primary px-1.5 py-0.5 text-center text-[9px] font-bold text-primary-foreground">
+                                            {reviewSummary!.pendingActions > 99 ? '99+' : reviewSummary!.pendingActions}
+                                        </span>
+                                    )}
+                                </Link>
+                                {reviewItems.map((item) => {
+                                    const Icon = item.definition.icon;
+                                    const targetPath = item.href.split('?')[0];
+                                    const active = pathname === targetPath || pathname.endsWith(targetPath);
+                                    return (
+                                        <Link
+                                            key={item.id}
+                                            href={item.href}
+                                            onClick={onNavClick}
+                                            data-testid={`review-task-${item.id}`}
+                                            className={`group flex items-center justify-between rounded-lg px-3 py-1.5 text-xs transition-colors ${active
+                                                ? 'bg-primary/[0.07] text-primary'
+                                                : 'text-muted-foreground/80 hover:bg-white/5 hover:text-white'
+                                                }`}
+                                        >
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <Icon className="h-3.5 w-3.5 shrink-0" />
+                                                <span className="truncate">{reviewT(item.definition.titleKey)}</span>
+                                            </div>
+                                            {item.kind === 'ACTION' && (item.count ?? 0) > 0 && (
+                                                <span className="ml-2 text-[10px] tabular-nums text-primary">{item.count}</span>
+                                            )}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                     {navItems.map((item: any, idx) => {
                         if (item.sectionKey) {
                             return (
@@ -144,11 +231,6 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                                                         <sub.icon className={`h-4 w-4 ${active ? 'text-primary' : 'group-hover:text-white'}`} />
                                                         <span>{t(`nav.${sub.labelKey}`)}</span>
                                                     </div>
-                                                    {sub.href === '/kb-approvals' && pendingCount > 0 && (
-                                                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
-                                                            {pendingCount}
-                                                        </span>
-                                                    )}
                                                 </Link>
                                             );
                                         })}
@@ -203,7 +285,7 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                 </nav>
 
                 <div className="mt-auto border-t border-white/5 pt-4 space-y-4">
-                    <LanguageSwitcher />
+                    <LanguageSwitcher persistToProfile />
                     <button
                         onClick={handleLogout}
                         className="group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:bg-red-500/10 hover:text-red-400"
@@ -216,4 +298,3 @@ export function Sidebar({ onNavClick }: SidebarProps) {
         </aside>
     );
 }
-

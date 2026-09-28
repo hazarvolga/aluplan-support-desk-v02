@@ -21,7 +21,7 @@ describe('SlaCronService', () => {
             },
         };
         const mockEventEmitter = {
-            emit: jest.fn(),
+            emitAsync: jest.fn().mockResolvedValue([]),
         };
         const mockNotificationsGateway = {
             emitSlaBreached: jest.fn(),
@@ -61,7 +61,7 @@ describe('SlaCronService', () => {
     it('should query tickets and not emit warnings if no tickets breach SLA', async () => {
         await service.checkSlaWarnings();
         expect(prismaService.ticket.findMany).toHaveBeenCalledTimes(2);
-        expect(eventEmitter.emit).not.toHaveBeenCalled();
+        expect(eventEmitter.emitAsync).not.toHaveBeenCalled();
     });
 
     it('should emit sla.warning and update ticket when tickets are close to SLA limits', async () => {
@@ -80,9 +80,12 @@ describe('SlaCronService', () => {
 
         await service.checkSlaWarnings();
 
-        expect(eventEmitter.emit).toHaveBeenCalledWith('sla.warning', {
+        expect(eventEmitter.emitAsync).toHaveBeenCalledWith('sla.warning', {
+            agentName: 'Temsilci',
             agentEmail: 'agent@aluplan.com',
+            ticketId: 'ticket-1',
             ticketNumber: '#TICKET1',
+            ticketStatus: 'OPEN',
             subject: 'Help',
             timeLeft: '30 dakikadan az',
             breachType: 'response'

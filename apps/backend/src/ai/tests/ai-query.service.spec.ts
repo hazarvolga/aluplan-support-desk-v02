@@ -20,6 +20,7 @@ import { RagObservabilityService } from '../rag-observability.service';
 import { StorageService } from '../../common/services/storage.service';
 import { AiSemanticCache } from '../ai-semantic-cache.service';
 import { SupportAnswerOrchestrator } from '../support-answer-orchestrator.service';
+import { MaintenanceWorkService } from '../../common/services/maintenance-work.service';
 
 const mockEmbeddingService = {
     search: jest.fn(),
@@ -96,6 +97,7 @@ describe('AiQueryService', () => {
             providers: [
                 AiQueryService,
                 SupportAnswerOrchestrator,
+                MaintenanceWorkService,
                 PrismaServiceProvider,
                 { provide: AiService, useValue: mockAiService },
                 { provide: EmbeddingService, useValue: mockEmbeddingService },

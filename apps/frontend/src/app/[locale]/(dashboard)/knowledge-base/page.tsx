@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
 import {
     BookOpen,
@@ -25,6 +25,8 @@ import { Card } from '@/components/ui/card';
 import { useAuth } from '@/components/auth/role-guard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations, useLocale } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
+import { getKnowledgeBaseDeepLink } from '@/components/review-center/deep-link-filters';
 
 
 
@@ -32,11 +34,14 @@ export default function KnowledgeBasePage() {
     const t = useTranslations('admin.knowledge_base');
     const locale = useLocale();
     const { user } = useAuth();
+    const searchParams = useSearchParams();
+    const deepLinkStatus = getKnowledgeBaseDeepLink(searchParams);
     const [articles, setArticles] = useState<any[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('PUBLISHED');
+    const [statusFilter, setStatusFilter] = useState<string>(deepLinkStatus);
+    const previousDeepLinkStatusRef = useRef(deepLinkStatus);
 
     const STATUS_LABELS: Record<string, { label: string; color: string }> = {
         DRAFT: { label: t('filters.draft'), color: 'bg-slate-500/10 text-slate-400 border-white/5' },
@@ -60,6 +65,12 @@ export default function KnowledgeBasePage() {
     };
 
     useEffect(() => { load(); }, [statusFilter]);
+
+    useEffect(() => {
+        if (previousDeepLinkStatusRef.current === deepLinkStatus) return;
+        previousDeepLinkStatusRef.current = deepLinkStatus;
+        setStatusFilter(deepLinkStatus);
+    }, [deepLinkStatus]);
 
     const handleSearch = (e: React.FormEvent) => { e.preventDefault(); load(); };
 

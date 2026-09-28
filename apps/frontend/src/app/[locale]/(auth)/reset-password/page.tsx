@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { api } from '@/lib/api';
 export const dynamic = "force-dynamic";
 
@@ -12,8 +12,8 @@ import { useTranslations } from 'next-intl';
 
 function ResetPasswordForm() {
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const token = searchParams.get('token');
+    const [token, setToken] = useState<string | null>(null);
+    const fragmentRead = useRef(false);
     const t = useTranslations('auth.reset_password');
 
     const [loading, setLoading] = useState(false);
@@ -23,37 +23,42 @@ function ResetPasswordForm() {
     const [showConfirm, setShowConfirm] = useState(false);
 
     useEffect(() => {
-        if (!token) {
-            toast.error(t('error_invalid_link'));
+        if (fragmentRead.current) return;
+        fragmentRead.current = true;
+        const fragmentToken = new URLSearchParams(window.location.hash.slice(1)).get('token');
+        window.history.replaceState(null, '', window.location.pathname);
+        setToken(fragmentToken);
+        if (!fragmentToken) {
+            toast({ title: t('error_invalid_link'), variant: 'destructive' });
             router.push('/login');
         }
-    }, [token, router, t]);
+    }, [router, t]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!token) {
-            toast.error(t('error_missing_token'));
+            toast({ title: t('error_missing_token'), variant: 'destructive' });
             return;
         }
 
         if (password.length < 8) {
-            toast.error(t('error_length'));
+            toast({ title: t('error_length'), variant: 'destructive' });
             return;
         }
 
         if (password !== confirm) {
-            toast.error(t('error_mismatch'));
+            toast({ title: t('error_mismatch'), variant: 'destructive' });
             return;
         }
 
         setLoading(true);
         try {
             const result = await api.auth.resetPassword(token, password);
-            toast.success(result.message || t('success_message'));
+            toast({ title: result.message || t('success_message') });
             router.push('/login');
         } catch (error: any) {
-            toast.error(error.message || t('error_failed'));
+            toast({ title: error.message || t('error_failed'), variant: 'destructive' });
         } finally {
             setLoading(false);
         }

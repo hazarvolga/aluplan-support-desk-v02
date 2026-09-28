@@ -148,27 +148,23 @@ export function RoleGuard({
     const pathname = usePathname();
     const t = useTranslations('common');
 
+    const userRoleName = typeof user?.role === 'object' && user.role !== null
+        ? (user.role as { name?: string }).name
+        : user?.role;
+    const userRole = (typeof userRoleName === 'string' ? userRoleName : 'viewer').toLowerCase();
+    const isCustomer = userRole === 'customer' || userRole === 'viewer';
+    const cleanPath = stripLocale(pathname);
+    const adminOnlyPaths = ['/users', '/settings', '/reports', '/customers', '/faq/review', '/ai', '/ai/training', '/faq-learning', '/review-center'];
+    const isUnauthorizedTarget = adminOnlyPaths.some(path => cleanPath.startsWith(path));
+    const hasRequiredRole = !allowedRoles
+        || allowedRoles.some(role => role.toLowerCase() === userRole);
+    const redirectTarget = !loading && user && (!hasRequiredRole || (isCustomer && isUnauthorizedTarget))
+        ? isCustomer ? '/my-tickets' : '/dashboard'
+        : null;
+
     useEffect(() => {
-        if (!loading && user) {
-            const userRoleName = typeof user?.role === 'object' && user.role !== null ? (user.role as { name?: string }).name : user?.role;
-            const userRole = (typeof userRoleName === 'string' ? userRoleName : 'viewer').toLowerCase();
-            const isCustomer = userRole === 'customer' || userRole === 'viewer';
-            const cleanPath = stripLocale(pathname);
-
-            // Routes that are definitely NOT for customers
-            const adminOnlyPaths = ['/users', '/settings', '/reports', '/customers', '/faq/review', '/ai', '/ai/training', '/faq-learning'];
-            const isUnauthorizedTarget = adminOnlyPaths.some(path => cleanPath.startsWith(path));
-
-            if (allowedRoles) {
-                const hasRequiredRole = allowedRoles.some(r => r.toLowerCase() === userRole);
-                if (!hasRequiredRole) {
-                    router.push(isCustomer ? '/my-tickets' : '/dashboard');
-                }
-            } else if (isCustomer && isUnauthorizedTarget) {
-                router.push('/my-tickets');
-            }
-        }
-    }, [user, loading, pathname, router, allowedRoles]);
+        if (redirectTarget) router.push(redirectTarget);
+    }, [redirectTarget, router]);
 
     if (loading) {
         return (
@@ -192,6 +188,14 @@ export function RoleGuard({
                         {t('retry')}
                     </Button>
                 </div>
+            </div>
+        );
+    }
+
+    if (!user || redirectTarget) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500" />
             </div>
         );
     }

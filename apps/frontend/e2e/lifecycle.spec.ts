@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
 
 /**
  * FULL TICKET LIFECYCLE E2E TEST — Hybrid Strategy
@@ -25,7 +26,10 @@ async function apiPost(url: string, body: any, token?: string) {
         const err = await res.text();
         throw new Error(`API POST ${url} failed (${res.status}): ${err}`);
     }
-    return res.json();
+    const payload = await res.json();
+    return url === '/auth/login'
+        ? { ...payload, access_token: extractAccessTokenFromSetCookie(res.headers.get('set-cookie')) }
+        : payload;
 }
 
 async function apiPatch(url: string, token: string) {
@@ -42,9 +46,9 @@ async function apiPatch(url: string, token: string) {
 
 test.describe('Ticket Lifecycle Orchestration', () => {
     const customerEmail = 'e2e-customer@aluplan.com';
-    const customerPassword = 'Vol1872017';
+    const customerPassword = 'E2E-Only-Not-A-Secret-2026!';
     const adminEmail = 'admin@example.com';
-    const adminPassword = 'Vol1872017';
+    const adminPassword = 'E2E-Only-Not-A-Secret-2026!';
 
     test('full ticket lifecycle via API setup + UI resolution', async ({ page }) => {
         const subject = `[E2E] Lifecycle - ${Date.now()}`;

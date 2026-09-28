@@ -10,10 +10,9 @@ import {
     ParseFilePipe,
     MaxFileSizeValidator,
     FileTypeValidator,
-    HttpStatus,
     Request,
-    ForbiddenException,
     Logger,
+    ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -23,7 +22,6 @@ import { RequirePermissions } from '../rbac/decorators/rbac.decorators';
 import { StorageService } from '../common/services/storage.service';
 import { Response } from 'express';
 import { HotinfoParserService } from '../customers/hotinfo-parser.service';
-import { TicketsService } from '../tickets/tickets.service';
 
 @Controller('attachments')
 @UseGuards(RbacGuard)
@@ -34,7 +32,6 @@ export class AttachmentsController {
         private readonly attachmentsService: AttachmentsService,
         private readonly storageService: StorageService,
         private readonly hotinfoParser: HotinfoParserService,
-        private readonly ticketsService: TicketsService,
     ) { }
 
     @Post('upload/:messageId')
@@ -42,10 +39,13 @@ export class AttachmentsController {
     @UseInterceptors(
         FileInterceptor('file', {
             storage: memoryStorage(), // Use memory storage so we can stream to R2/S3
+            // Busboy emits partsLimit at the ceiling; allow one terminating boundary.
+            limits: { fileSize: 25 * 1024 * 1024, files: 1, fields: 0, parts: 2 },
         }),
     )
     async uploadFile(
-        @Param('messageId') messageId: string,
+        @Param('messageId', new ParseUUIDPipe()) messageId: string,
+        @Request() req: any,
         @UploadedFile(
             new ParseFilePipe({
                 validators: [
@@ -61,17 +61,9 @@ export class AttachmentsController {
         )
         file: Express.Multer.File,
     ) {
-        let storageKey = '';
-        let uploadError = null;
+        await this.attachmentsService.assertCanCreateForMessage(messageId, req.user);
 
-        try {
-            storageKey = await this.storageService.uploadFile(file, `tickets/msg_${messageId}`);
-        } catch (e: any) {
-            uploadError = e;
-            // We log but don't THROW yet because we want to try parsing hotinfo metadata 
-            // to ensure the technical snapshot reaches the admin even if S3 is down.
-            this.logger.error(`[AttachmentsController] S3 Upload Failed: ${e.message}`);
-        }
+        const storageKey = await this.storageService.uploadFile(file, `tickets/msg_${messageId}`);
 
         let parsedHotinfo = null;
         const lowName = file.originalname.toLowerCase();
@@ -84,36 +76,22 @@ export class AttachmentsController {
             }
         }
 
-        // We CREATE the record regardless of S3 state to ensure visibility in UI
+        // Publish attachment metadata only after the configured storage accepted the bytes.
         const attachment = await this.attachmentsService.create({
             messageId,
             fileName: file.originalname,
             fileSize: file.size,
             mimeType: file.mimetype,
-            url: storageKey || `FAILED_STORAGE_UPLOAD_${Date.now()}`,
-        }, parsedHotinfo);
-
-        // If storage failed AND we have no hotinfo fallback, we inform the user it didn't save to cloud
-        if (uploadError && !parsedHotinfo) {
-            // Note: We return the attachment object so the meta-data is saved.
-            // The agent will see the file record but won't be able to download it.
-            this.logger.warn(`Attachment ${attachment.id} created but physical file upload failed.`);
-        }
+            url: storageKey,
+        }, parsedHotinfo, req.user);
 
         return attachment;
     }
 
     @Get(':id/download')
     @RequirePermissions('ticket:read')
-    async download(@Param('id') id: string, @Request() req: any, @Res() res: Response) {
-        const attachment = await this.attachmentsService.findOne(id);
-
-        // Security Resolve: Find the message and ticket to check ownership
-        const message = await this.attachmentsService.findMessageByAttachment(id);
-        if (!message) throw new ForbiddenException('Invalid attachment context');
-
-        // This will throw ForbiddenException if requester has no access to the ticket
-        await this.ticketsService.findOne(message.ticketId, req.user);
+    async download(@Param('id', new ParseUUIDPipe()) id: string, @Request() req: any, @Res() res: Response) {
+        const attachment = await this.attachmentsService.findAuthorizedForDownload(id, req.user);
 
         // Generate a presigned URL from R2/S3
         const downloadUrl = await this.storageService.getDownloadUrl(attachment.url);

@@ -17,6 +17,7 @@ import { StorageService } from '../common/services/storage.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 
 describe('AiQueryService', () => {
@@ -27,6 +28,8 @@ describe('AiQueryService', () => {
     let redis: any;
     let diagnosisService: any;
     let storageService: any;
+    let maintenanceWork: MaintenanceWorkService;
+    let semanticCache: any;
 
     const mockInteraction = { id: 'int-1', confidence: 'HIGH' };
 
@@ -34,6 +37,7 @@ describe('AiQueryService', () => {
         user: { findUnique: jest.fn() },
         aiInteraction: {
             create: jest.fn().mockResolvedValue(mockInteraction),
+            findUnique: jest.fn(),
             update: jest.fn(),
             aggregate: jest.fn(),
             groupBy: jest.fn(),
@@ -130,6 +134,7 @@ describe('AiQueryService', () => {
             providers: [
                 AiQueryService,
                 SupportAnswerOrchestrator,
+                MaintenanceWorkService,
                 { provide: PrismaService, useValue: mockPrismaService },
                 { provide: AiService, useValue: mockAiService },
                 { provide: EmbeddingService, useValue: mockEmbeddingService },
@@ -156,6 +161,8 @@ describe('AiQueryService', () => {
         redis = module.get<RedisService>(RedisService);
         diagnosisService = module.get<AiDiagnosisService>(AiDiagnosisService);
         storageService = module.get<StorageService>(StorageService);
+        maintenanceWork = module.get(MaintenanceWorkService);
+        semanticCache = module.get(AiSemanticCache);
 
         jest.clearAllMocks();
         mockAiService.generate.mockReset();
@@ -165,9 +172,130 @@ describe('AiQueryService', () => {
         mockRedisService.get.mockResolvedValue(null);
         mockAiService.getActiveProviderName.mockResolvedValue('ollama');
         mockAiService.getActiveModelName.mockResolvedValue('llama3');
+        mockLangfuseService.traceRetrieval.mockReset().mockResolvedValue(undefined);
+        mockPrismaService.trainingQueue.create.mockReset().mockResolvedValue(undefined);
+    });
+
+    describe('query maintenance completion', () => {
+        it.each(['query', 'queryInternal'] as const)(
+            '%s rejects new work with 503 before external IO when admission is closed',
+            async (entrypoint) => {
+                mockPrismaService.user.findUnique.mockResolvedValue(null);
+                mockEmbeddingService.search.mockResolvedValue({
+                    results: [],
+                    diagnostics: { topScore: 0.5, passedThreshold: 0, queryEmbeddingModel: 'nomic', thresholdUsed: 0.78 },
+                });
+                maintenanceWork.closeAdmission();
+                await expect(service[entrypoint]({
+                    userQuery: 'how to install?',
+                    userId: '11111111-1111-4111-8111-111111111111',
+                })).rejects.toMatchObject({ status: 503 });
+                expect(prisma.user.findUnique).not.toHaveBeenCalled();
+                expect(mockRedisService.getClient).not.toHaveBeenCalled();
+                expect(mockRedisService.get).not.toHaveBeenCalled();
+                expect(semanticCache.get).not.toHaveBeenCalled();
+                expect(mockEmbeddingService.search).not.toHaveBeenCalled();
+                expect(prisma.aiInteraction.create).not.toHaveBeenCalled();
+            },
+        );
+
+        describe.each(['retrieval trace', 'training review', 'semantic cache'] as const)(
+            '%s child',
+            (operation) => {
+                it.each(['success', 'failure'] as const)(
+                    'does not delay the response but remains counted until %s',
+                    async (outcome) => {
+                        let release!: () => void;
+                        let reject!: (reason: Error) => void;
+                        const held = new Promise<void>((resolve, fail) => {
+                            release = resolve;
+                            reject = fail;
+                        });
+                        // Observe rejection even if a regression skips invoking this child.
+                        void held.catch(() => undefined);
+                        const target = operation === 'retrieval trace'
+                            ? mockLangfuseService.traceRetrieval
+                            : operation === 'training review'
+                                ? prisma.trainingQueue.create
+                                : semanticCache.set;
+                        target.mockReturnValueOnce(held);
+                        const highConfidence = operation === 'semantic cache';
+                        // A retrieved but unclassified result reaches late NO_MATCH
+                        // escalation; empty results take the earlier return instead.
+                        const hasContext = operation !== 'retrieval trace';
+                        prisma.user.findUnique.mockResolvedValue(null);
+                        mockEmbeddingService.search.mockResolvedValue({
+                            results: hasContext ? [{
+                                articleId: 'art-1', sourceType: 'ARTICLE',
+                                title: 'Installation Guide', content: 'Step 1: install.',
+                                similarity: 0.95, confidence: highConfidence ? 'HIGH' : 'NO_MATCH',
+                            }] : [],
+                            diagnostics: {
+                                topScore: hasContext ? 0.95 : 0.5,
+                                passedThreshold: hasContext ? 1 : 0,
+                                queryEmbeddingModel: 'nomic', thresholdUsed: 0.78,
+                            },
+                        });
+                        mockAiService.generate.mockResolvedValue('Formatted AI answer');
+                        const response = service.queryInternal({
+                            userQuery: 'how to install?',
+                            userId: '11111111-1111-4111-8111-111111111111',
+                        });
+                        try {
+                            // A scheduling turn, not a sleep: fully mocked query IO settles
+                            // while the selected real service branch is deliberately held.
+                            const result = await Promise.race([
+                                response,
+                                new Promise<'response-still-pending'>((resolve) =>
+                                    setImmediate(() => resolve('response-still-pending'))),
+                            ]);
+                            expect(result).not.toBe('response-still-pending');
+                            expect(result).toMatchObject({
+                                confidence: highConfidence ? 'HIGH' : 'NO_MATCH',
+                            });
+                            expect(target).toHaveBeenCalledTimes(1);
+                            maintenanceWork.closeAdmission();
+                            const heldWork = await maintenanceWork.waitForIdle(0);
+                            expect(heldWork.drained).toBe(false);
+                            expect(heldWork.activeCount).toBeGreaterThan(0);
+                            if (outcome === 'failure') reject(new Error('Synthetic child failure'));
+                            else release();
+                            await expect(maintenanceWork.waitForIdle(1000)).resolves.toEqual({
+                                drained: true, activeCount: 0,
+                            });
+                        } finally {
+                            release();
+                            await response;
+                        }
+                    },
+                );
+            },
+        );
     });
 
     describe('query — Cache', () => {
+        it('builds different cache keys when requester scope changes', () => {
+            const buildScope = (service as any).buildCacheScope.bind(service);
+            const buildHash = (service as any).buildQueryHash.bind(service);
+            const baseOptions = {
+                userQuery: 'test query',
+                userId: '11111111-1111-4111-8111-111111111111',
+                productId: 'allplan',
+                language: 'tr',
+                routeLocale: 'tr',
+                history: [{ role: 'user' as const, content: 'ilk bağlam' }],
+                hotinfoContext: { version: '2026' },
+            };
+            const baseScope = buildScope(baseOptions, false, 'tr');
+            const changedScope = buildScope({
+                ...baseOptions,
+                userId: '22222222-2222-4222-8222-222222222222',
+                routeLocale: 'en',
+            }, false, 'tr');
+
+            expect(buildHash('test query', baseScope)).not.toEqual(buildHash('test query', changedScope));
+        });
+
         it('should return cached result without hitting DB when cache exists', async () => {
             // Arrange
             const cached: AiQueryResult = {
@@ -177,7 +305,10 @@ describe('AiQueryService', () => {
             mockRedisService.get.mockResolvedValue(JSON.stringify(cached));
 
             // Act
-            const result = await service.query({ userQuery: 'test query' });
+            const result = await service.query({
+                userQuery: 'test query',
+                userId: '11111111-1111-4111-8111-111111111111',
+            });
 
             // Assert
             expect(result.answer).toBe('cached answer');
@@ -368,6 +499,21 @@ describe('AiQueryService', () => {
 
             // Assert
             expect(result.tags).toEqual([]);
+            expect(mockAiService.reformat).not.toHaveBeenCalled();
+            expect(mockPrismaService.product.findUnique).toHaveBeenCalledWith({
+                where: { id: 'p1', isActive: true, deletedAt: null },
+                include: { categories: { where: { isActive: true, deletedAt: null } } },
+            });
+        });
+
+        it('should not search or call AI when the selected product is archived', async () => {
+            mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+            const result = await service.smartTagTicket('archived-product', 'license issue');
+
+            expect(result.tags).toEqual([]);
+            expect(mockEmbeddingService.searchTickets).not.toHaveBeenCalled();
+            expect(mockEmbeddingService.search).not.toHaveBeenCalled();
             expect(mockAiService.reformat).not.toHaveBeenCalled();
         });
 
@@ -1508,7 +1654,7 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
                 userId: 'admin-1',
             });
 
-            expect(result.sources.map(source => source.articleId)).toEqual([
+            expect(result.sources.map((source: { articleId: string }) => source.articleId)).toEqual([
                 'network-startup',
                 'workgroup-network',
                 'license-offline',
@@ -1549,7 +1695,7 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
                 userId: 'admin-1',
             });
 
-            expect(result.sources.map(source => source.articleId)).toEqual([
+            expect(result.sources.map((source: { articleId: string }) => source.articleId)).toEqual([
                 'workgroup-checkout',
                 'visual-scripting',
             ]);
@@ -1670,14 +1816,38 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
 
     describe('submitTelemetry', () => {
         it('should update aiInteraction with accepted status', async () => {
+            mockPrismaService.aiInteraction.findUnique.mockResolvedValue({ id: 'int-1', userId: 'user-1' });
             mockPrismaService.aiInteraction.update.mockResolvedValue({ id: 'int-1', isAccepted: true });
 
-            await service.submitTelemetry('int-1', true, 'edited response');
+            await service.submitTelemetry('int-1', 'user-1', true, 'edited response');
+
+            expect(mockPrismaService.aiInteraction.findUnique).toHaveBeenCalledWith({
+                where: { id: 'int-1' },
+                select: { id: true, userId: true },
+            });
 
             expect(mockPrismaService.aiInteraction.update).toHaveBeenCalledWith({
                 where: { id: 'int-1' },
                 data: { isAccepted: true, editedResponse: 'edited response' },
             });
+        });
+
+        it('should reject telemetry updates for another user interaction', async () => {
+            mockPrismaService.aiInteraction.findUnique.mockResolvedValue({ id: 'int-1', userId: 'owner-1' });
+
+            await expect(service.submitTelemetry('int-1', 'attacker-1', true, 'edited response'))
+                .rejects.toThrow('AI_INTERACTION_FORBIDDEN');
+
+            expect(mockPrismaService.aiInteraction.update).not.toHaveBeenCalled();
+        });
+
+        it('should reject telemetry updates when the interaction does not exist', async () => {
+            mockPrismaService.aiInteraction.findUnique.mockResolvedValue(null);
+
+            await expect(service.submitTelemetry('missing', 'user-1', true))
+                .rejects.toThrow('AI_INTERACTION_NOT_FOUND');
+
+            expect(mockPrismaService.aiInteraction.update).not.toHaveBeenCalled();
         });
     });
 
@@ -1891,7 +2061,7 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             // Only the image/png with url should produce an inlineData part
             expect(result).toHaveLength(1);
             expect(result[0].inlineData).toBeDefined();
-            expect(result.every(p => !p.fileData)).toBe(true);
+            expect(result.every((p: { fileData?: unknown }) => !p.fileData)).toBe(true);
         });
 
         it('StorageService.getFile() returns empty buffer → attachment skipped', async () => {
@@ -1927,7 +2097,10 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             mockRedisService.get.mockResolvedValue('cached stream answer');
 
             const chunks: any[] = [];
-            for await (const c of service.streamQuery({ userQuery: 'test query' })) {
+            for await (const c of service.streamQuery({
+                userQuery: 'test query',
+                userId: '11111111-1111-4111-8111-111111111111',
+            })) {
                 chunks.push(c);
             }
 

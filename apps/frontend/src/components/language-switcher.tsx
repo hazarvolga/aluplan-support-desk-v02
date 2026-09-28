@@ -4,7 +4,11 @@ import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/routing';
 import { api } from '@/lib/api';
 
-export function LanguageSwitcher() {
+interface LanguageSwitcherProps {
+    persistToProfile?: boolean;
+}
+
+export function LanguageSwitcher({ persistToProfile = false }: LanguageSwitcherProps) {
     const locale = useLocale();
     const pathname = usePathname();
     const router = useRouter();
@@ -21,6 +25,8 @@ export function LanguageSwitcher() {
 
         // 1. Immediate UI switch via URL
         router.replace(pathname, { locale: newLocale as string });
+
+        if (!persistToProfile) return;
 
         // 2. Background sync with DB
         try {

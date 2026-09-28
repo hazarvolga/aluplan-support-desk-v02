@@ -1,12 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
-import * as fs from 'fs-extra';
 import { StorageController } from './storage.controller';
-
-jest.mock('fs-extra', () => ({
-    pathExists: jest.fn(),
-    stat: jest.fn(),
-    createReadStream: jest.fn(),
-}));
 
 describe('StorageController', () => {
     const configService = {
@@ -14,22 +7,20 @@ describe('StorageController', () => {
     };
 
     let controller: StorageController;
+    const prisma = { attachment: { findMany: jest.fn().mockResolvedValue([]) } };
 
     beforeEach(() => {
         jest.clearAllMocks();
-        controller = new StorageController(configService as any);
+        controller = new StorageController(configService as any, prisma as any, {} as any);
     });
 
     it('normalizes wildcard path arrays before local file lookup', async () => {
-        (fs.pathExists as jest.Mock).mockResolvedValue(false);
-
-        await expect(controller.getFile(['tickets', 'test.png'], {} as any)).rejects.toThrow(NotFoundException);
-
-        expect(fs.pathExists).toHaveBeenCalledWith(expect.stringContaining('tickets/test.png'));
+        await expect(controller.getFile(['tickets', 'test.png'], {} as any, { user: { id: 'user' } })).rejects.toThrow(NotFoundException);
+        expect(prisma.attachment.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { url: 'tickets/test.png' } }));
     });
 
     it('returns 404 instead of crashing when no path segment is provided', async () => {
-        await expect(controller.getFile(undefined as any, {} as any)).rejects.toThrow(NotFoundException);
-        expect(fs.pathExists).not.toHaveBeenCalled();
+        await expect(controller.getFile(undefined as any, {} as any, {})).rejects.toThrow(NotFoundException);
+        expect(prisma.attachment.findMany).not.toHaveBeenCalled();
     });
 });

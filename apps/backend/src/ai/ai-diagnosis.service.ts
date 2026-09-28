@@ -28,8 +28,8 @@ export class AiDiagnosisService {
         // 1. Fetch products
         if (productId && productId !== 'general') {
             const p = await this.prisma.product.findUnique({
-                where: { id: productId },
-                include: { categories: { where: { isActive: true } } },
+                where: { id: productId, isActive: true, deletedAt: null },
+                include: { categories: { where: { isActive: true, deletedAt: null } } },
             });
             if (p) {
                 matchedProduct = p;
@@ -39,8 +39,8 @@ export class AiDiagnosisService {
 
         if (!matchedProduct) {
             products = await this.prisma.product.findMany({
-                where: { isActive: true },
-                include: { categories: { where: { isActive: true } } },
+                where: { isActive: true, deletedAt: null },
+                include: { categories: { where: { isActive: true, deletedAt: null } } },
             });
         }
 

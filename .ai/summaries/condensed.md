@@ -1,5 +1,55 @@
 # Condensed Project Memory
 
+## Live mail read-only findings — 2026-09-23
+
+Explicitly approved configuration-only inspection completed viaSSH; no settings/restart/deploy/testmail or customercontentread. Source-consolidation topsection records exactscope/limits. LiveIMAP143/tlsfalse confirmed; Dovecotssl=no/disable_plaintext_auth=no; maildataonpersistentvolume andselectedautoexpunge0. Persistence isnotbackup/recoveryproof. Ports publishedallinterfaces, externalreachabilitynotprobed. Livewebhookcontroller lacks expectedrouteguard/signaturefile andglobalguard inspectedisthrottler; upstreamaccess/callersunknown, no exploitprobe. Thereforewebhookunusednotproven.
+
+CurrentlocaldirectTLScandidate would beincompatiblewithoutapprovedmailtransportwork; productionNO-GO. Nextplan TLS/certificatecompatibility and identifyactualwebhookroute/callers withseparatelyscopedmetadata-only evidence; do notflipTLSblindly,disableingressorbuildanarchivewithoutneed. Secretsnotprinted/decrypted. Existing175testproofunchanged; no newtests/sourcechanges. Independentsecurityagentunavailable(threadlimit).
+
+## Webhook outcome mitigation checkpoint — 2026-09-23
+
+Explicit completed alone returns success; held/unknown resolves to fixed503. Controller10/10, combined17suites175tests, backend294roots0diagnostics; controller-only coverage100%. Synthetic/networkdenied proof, not realHTTP/provider/DB proof. No schema/dependency/live/push/deploy changes. Dedicated reviewer unavailable; final acceptance open. Detailed evidence and source-retention decision tree in source-consolidation top section.
+
+HIGH source-recovery blocker remains:503 is not custody of original message/attachments. Actual webhook provider/use/retention cannot be established from local sources. Next smallest step is separately approved read-only configuration evidence, not blind archive engineering, disabled webhook or automatic replay. Preserve explicit live-access and publication gates. Production NO-GO.
+
+## Local shared inbound claim patch — 2026-09-23
+
+**WIP / HIGH blocker found in final security review:** webhook controller returns HTTP200 even when service returns held; log metadata/fingerprint is not recoverable original content. A pre-write failure or concurrent pending delivery can therefore be acknowledged with no locally recoverable payload. Provider retention/retrieval is unverified. Do not call this durable webhook intake acceptance or source-preserving delivery. Non-2xx alone is insufficient: next batch must prove provider-specific retained-source retrieval or a bounded protected durable-source design plus explicit controller outcome tests. IMAP source retention does not establish webhook recovery. Security-review agent subsequently started successfully and identified this blocker; dedicated code-review agent remained unavailable. No patch approval or release acceptance is claimed.
+
+Owner accepted conservative hold/manual-review behavior. Implemented shared unique-create claim before IMAP/webhook ticket effects, compare-and-set completion, fingerprint identity conflict holds, success-only IMAP acknowledgement, per-message isolation and finally cleanup. Ambiguous/interrupted/legacy deliveries never automatically replay. Partial-attachment completion remains a duplicate fence with retained failure evidence. Missing identity, invalid text and parse failures are held; IMAP holds include safe INBOX UID/UIDVALIDITY locators. No schema/migration or dependency change in this batch.
+
+Read-only GET /email/admin/inbound/review requires JWT plus settings:read, uses no-store and bounded pagination, excludes raw errors/claim owner/fingerprint. This is an API, not a new frontend review screen; there is no retry/delete/clear action. Settings permission is the existing authorization boundary, not a newly invented role. Manual reconciliation must inspect the mailbox, ticket and attachments before any separately approved action. Webhook HTTP success proves neither recoverable intake nor ticket creation. Unconditional success and absent payload persistence predate this patch; newly held missing-identity/legacy/pending/conflict paths expand that recovery gap.
+
+Local proof: combined14suites/158tests PASS; actual dependency controls13/13 PASS; backend no-emit294roots/0diagnostics. New helper19tests coverage90.12% statements/85.29% branches/100% functions/97.05% lines, NOT whole-project coverage. Initial behavioral RED9/11 and later malformed-input/UIDVALIDITY RED2/15 verified before fixes. All synthetic, cleared environment and network-denied macOS Node24.18.0; existing schema-matched sibling DB declarations used, no real database/bootstrap/mailbox. Architect independently reviewed parent integration; parent reviewed helper/endpoint. Dedicated final code-reviewer could not start due agent-thread limit: final independent code/security acceptance remains OPEN. GitNexus/report unavailable, direct callpath review used.
+
+Remaining release blockers for this patch: disposable PostgreSQL concurrency/failure proof, exact Node20/Linux image acceptance, operator review workflow, verified ingress sender authentication/resource limits and current TLS compatibility. All writers must be quiesced and upgraded together: legacy writers do not honor new markers. No mixed-version rollout or blind replay of held rows. Existing image76432 does not contain mail patches. Existing broader vulnerability/bytes/forward-recovery/host/fresh-backup gates remain. No production access, provider/DB action, push or deploy; production NO-GO. Local checkpoint is work-in-progress evidence, not release approval.
+
+## Current release checkpoint — 2026-09-23 (supersedes historical status below)
+
+- Latest step is TEST/PLAN-only:9known-gap characterizations reproduce unsafe earlyACK/batchabort/cleanup and duplicatewrite paths; green is defect reproduction, not safetyacceptance. Existing105mail and13dependency controls pass. No product/config/data change. Independentplanner/security agree IMAP+webhook need shared durableclaim; markSeenfalse alone unsafe. Await owner agreement to visible manualreview for ambiguous/interrupted/legacy states before implementing; no current inboundlog adminread surface. No production access/push/deploy, globalNO-GO.
+
+- Latest mail source patch f73a6902 / tests bcc84323: exactmailparser3.9.28+nodemailer10.0.10, minimal namedtype-only SMTP imports. Original8controls RED6pass/2fail→8pass;5newcompatibilitycontrols total13pass; mockedmail105pass, loopbackwireTLS10pass, WebSocket15pass, backend293roots/0typeerrors. Independentreview/Gitleaks pass. Actual localNode24 with disclosed matchingborrowedDBdeclarations, not Node20image or provider delivery proof.
+- Existing76432image and2C123H are PRE-mail-patch; no newimage/rescan/production action. Next separate mockedIMAPfailure/ack/idempotence characterization and minimal reliabilityfix. markSeen-before-success/resourcebounds/historicalTLSconfig remain open; productionNO-GO. The older mail-triage-only bullet below is superseded.
+
+- WebSocket patch source2e9c7ebf is now in exact Linux/amd64 image76432eed. Static smoke passed; actual-image15tests RED7pass/8fail onold6ae3→GREEN15/15 onnew. CompiledCSRF/log and nonroot/app-write boundary unchanged. No app bootstrap/currentcustomerdata.
+- Same Trivy0.72.0/frozenDB:2C128H183M23L→2C123H182M23L, exactly6removed/0added. Independent identity/report/test evidence reviewPASS; privateevidencevuln-ws-20260922-amWugP retained and ownedcontainers removed. TwoCriticals remain globalnpm/pnpm tar; not production-ready.
+- Next mailparser/nodemailer compatibility/advisory review and synthetic tests; no realmailbox. Remaining document/tooling/crawler, exactartifact browser/DB/mail, attachmentbytes/newwrite forwardrecovery and separately approved host/credential/freshbackup gates remain. Local-only; no push/deploy or live action authorized by "continue".
+- Mail triage completed after artifactcheckpointf8b3a9f5:9mockedsuites/105tests pass; no mailchanges. Nestedaddressparser precedes CRMeligibility, markSeen-before-processing risks retryloss, historic143/tlsfalse conflicts with localdirectTLS (liveunverified). Next actualparser/compile and ack-failure characterization tests, then separately reviewed pins/fix. mailparser3.9.28→nodemailer10.0.10 is an upstream candidate, not accepted/installed; no blind majoroverride.
+
+## Current release checkpoint — 2026-09-22 (supersedes historical status below)
+
+- Latest gate: exact candidate6ae3 and previousLOCALb112 scanned offline with same freshSeptember22DB/Trivy0.72.0. Identical2Critical/128High/183Medium/23Low;336occurrences,90uniqueHighCriticalIDs. Criticals are tar6.2.1 under npm+pnpm. Source/deps unchanged; no production access/appboot. Private evidencevuln-6ae3-20260922-GNSnSY, full OCIindex→manifest→config identity verified, scanner containers absent.
+- Next smallest patch: engine.io/socket.io-parser/ws with gateway/auth regressions and bounded malformed-input tests; mail/parser and retained tooling separate. Crawler has privileged URL intake but no wiredSSRFguard and no browser sandbox; requires containment decision. Full advisory triage and independent security review incomplete (agents hit usage limit). No scan-clean/readiness claim; productionNO-GO. Prior bullet stating scan pending is now historical.
+
+- Latest artifact supersedes the old3403/b112 limitation below: clean source6a0be372 → Linux/amd64 image6ae3a638; build/static smoke and compiled two-warning CSRF redaction verified. Run cde676d3cece passed all12 real-browser auth/reset checks and durable fixture verification, unexpected0/proxyErrors0. Original reference unchanged; exact owned resources absent after cleanup. No tracked product change in this step.
+- Next: exact-image vulnerability assessment with scanner/advisory DB provenance. OS packages re-resolved during build despite unchanged Dockerfile/lock; older advisory counts do not apply. No new-image scan yet. Historical180/563/114 counts are not live or full content/byte parity. Browser remains localdev53f55fae, not production frontend/TLS/dashboard/automatic refresh proof. Mail/bytes/forward-recovery/approved-host/fresh-backup gates remain; production NO-GO. The remaining bullets describe the preceding checkpoint.
+
+- Canonical working checkout: `aluplan-release-candidate-20260919`, branch `security/release-candidate-20260919`; latest tooling checkpoint `1b625c45`. Existing architecture and release scope retained; no production/push/deploy authority from "continue".
+- Actual-backend browser run `46931334e73b` passed all12 auth/reset assertions plus durable fixture verification, unexpected0/proxyErrors0. Test-only graceful close on known403 denials resolved the observed idle-connection teardown failure in two bounded synthetic repeats; no counter suppression. Combined44 focused tests passed.
+- Evidence applies to older backend3403ae61/imageb112 and local dev frontend/browser53f55fae, NOT final release artifacts. Backend source-only CSRF log fix0dc5aac0 still needs exact Linux/amd64 build/rehearsal. Browser uses a bounded dev redirect adapter and scoped local certificate exception; dashboard/publicTLS/automatic frontend refresh remain outside this gate.
+- Historical sanitized September17 reference unchanged. Pre/post clone counts180tickets/563messages/114attachment records; users1285→1286 is one test identity. Owned test resources removed and absence verified. No live access or customer-data overwrite; no whole-dataset/attachment-byte preservation claim from counts alone.
+- Next: existing exact-image build and final-artifact verification. Remaining release gates include mail transport, attachment bytes, new-write/byte forward recovery under ADR-022, vulnerability decisions and separately approved host/credential/fresh backup checks. Production NO-GO. Use current-focus/session-summary/source-consolidation for evidence; the older RAG/status notes below are historical, not current validation.
+
 ## Project Purpose
 
 Aluplan Support Desk is an AI-assisted ticket system for Allplan/BIM support workflows. It combines a NestJS backend, Next.js frontend, PostgreSQL/Prisma database, pgvector retrieval, knowledge pool imports, and customer-facing ticket flows.
@@ -39,6 +89,8 @@ Aluplan Support Desk is an AI-assisted ticket system for Allplan/BIM support wor
 - Root Markdown, imported agent blocks, and duplicated AGENTS/CLAUDE content may be stale.
 - Uncommitted changes currently mix product RAG edits with tooling/spec/agent noise.
 - Legacy `General` knowledge sources can still appear behind new categorized PDF sources and should be watched during acceptance testing.
+- Production release remains NO-GO despite successful local A.1.3 restore evidence and DEV R2/SharePoint canaries. A.1.4 now has an offline, network-incapable inventory contract, but no live PostgreSQL/R2/Redis inventory has been authorized or collected.
+- Production age key custody is unresolved: keeping both DEV recovery identities on one Mac is acceptable only for DEV evidence, not production disaster recovery.
 
 ## Do Not Assume
 
@@ -47,3 +99,4 @@ Aluplan Support Desk is an AI-assisted ticket system for Allplan/BIM support wor
 - Do not assume AI must answer before a customer can create a ticket.
 - Do not change high-blast-radius AI symbols without Graphify/GitNexus context when available.
 - Do not commit `.agents`, `.kiro`, or generated tool context together with product-code fixes unless explicitly requested.
+- Do not treat A.1.4 preparation artifacts or DEV backup canaries as live production evidence or deploy authorization. Live read-only inventory requires a separate user approval and least-privilege credentials.

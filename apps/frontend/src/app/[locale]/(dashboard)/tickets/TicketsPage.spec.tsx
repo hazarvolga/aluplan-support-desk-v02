@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import TicketsClient from './TicketsClient';
 import { useAuth } from '@/components/auth/role-guard';
 import { server } from '@/test/setup';
-import { http, HttpResponse } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
+import { useSearchParams } from 'next/navigation';
 
 // Mock the Auth Hook
 vi.mock('@/components/auth/role-guard', () => ({
@@ -17,6 +18,7 @@ describe('TicketsPage', () => {
         vi.clearAllMocks();
         // Mock confirm
         vi.stubGlobal('confirm', vi.fn(() => true));
+        vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams() as never);
     });
 
     it('renders empty state when no tickets', async () => {
@@ -236,6 +238,36 @@ describe('TicketsPage', () => {
         expect(url.searchParams.get('limit')).toBe('100');
     });
 
+    it('reloads when the review-center query changes on the same route', async () => {
+        (useAuth as any).mockReturnValue({
+            user: { id: 'agent-1', role: 'SUPPORT_AGENT', isSupportTeamMember: true },
+        });
+        vi.mocked(useSearchParams).mockReturnValue(
+            new URLSearchParams('chatStatus=REQUESTED&activeOnly=true') as never,
+        );
+        const requestedUrls: string[] = [];
+        server.use(
+            http.get(`${API_BASE}/tickets`, ({ request }) => {
+                requestedUrls.push(request.url);
+                return HttpResponse.json({ data: [], total: 0 });
+            }),
+        );
+
+        const view = render(<TicketsClient initialTickets={[]} initialTotal={0} />);
+        await waitFor(() => expect(requestedUrls.length).toBeGreaterThan(0));
+
+        vi.mocked(useSearchParams).mockReturnValue(
+            new URLSearchParams('assignment=UNASSIGNED&activeOnly=true') as never,
+        );
+        view.rerender(<TicketsClient initialTickets={[]} initialTotal={0} />);
+
+        await waitFor(() => expect(requestedUrls.length).toBeGreaterThan(1));
+        const lastUrl = new URL(requestedUrls.at(-1)!);
+        expect(lastUrl.searchParams.get('chatStatus')).toBeNull();
+        expect(lastUrl.searchParams.get('assignment')).toBe('UNASSIGNED');
+        expect(lastUrl.searchParams.get('activeOnly')).toBe('true');
+    });
+
     it('handles empty state', async () => {
         (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
 
@@ -250,5 +282,76 @@ describe('TicketsPage', () => {
         await waitFor(() => {
             expect(screen.getByText(/table.empty/i)).toBeDefined();
         }, { timeout: 10000 });
+    });
+
+    it('distinguishes a loading failure from an empty queue and retries', async () => {
+        (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
+        let attempts = 0;
+
+        server.use(
+            http.get(`${API_BASE}/tickets`, () => {
+                attempts += 1;
+                if (attempts === 1) {
+                    return HttpResponse.json({ message: 'temporary failure' }, { status: 503 });
+                }
+                return HttpResponse.json({ data: [], total: 0 });
+            }),
+        );
+
+        render(<TicketsClient initialTickets={[]} initialTotal={0} />);
+
+        await waitFor(() => {
+            expect(screen.getByText(/table\.load_error/i)).toBeDefined();
+        }, { timeout: 10000 });
+        expect(screen.queryByText(/table\.empty/i)).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: /table\.retry/i }));
+
+        await waitFor(() => {
+            expect(screen.getByText(/table\.empty/i)).toBeDefined();
+        }, { timeout: 10000 });
+        expect(attempts).toBe(2);
+    });
+
+    it('ignores a stale failed request after a newer filtered request succeeds', async () => {
+        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        let staleRequestCompleted = false;
+
+        server.use(
+            http.get(`${API_BASE}/tickets`, async ({ request }) => {
+                const status = new URL(request.url).searchParams.get('status');
+                if (!status) {
+                    await delay(100);
+                    staleRequestCompleted = true;
+                    return HttpResponse.json({ message: 'stale failure' }, { status: 503 });
+                }
+
+                return HttpResponse.json({
+                    data: [{
+                        id: 't-new',
+                        ticketNumber: 'SUP-NEW',
+                        subject: 'Newest filtered result',
+                        status: 'OPEN',
+                        priority: 'MEDIUM',
+                        channel: 'WEB',
+                        createdAt: new Date().toISOString(),
+                    }],
+                    total: 1,
+                    statusCounts: { OPEN: 1 },
+                });
+            }),
+        );
+
+        render(<TicketsClient initialTickets={[]} initialTotal={0} />);
+        fireEvent.click(screen.getByRole('button', { name: /status\.OPEN/i }));
+
+        await waitFor(() => {
+            expect(screen.getByText('Newest filtered result')).toBeDefined();
+        });
+        await waitFor(() => {
+            expect(staleRequestCompleted).toBe(true);
+            expect(screen.queryByText(/table\.load_error/i)).toBeNull();
+            expect(screen.getByText('Newest filtered result')).toBeDefined();
+        });
     });
 });

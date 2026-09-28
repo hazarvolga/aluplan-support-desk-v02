@@ -1,6 +1,7 @@
 import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, Logger } from '@nestjs/common';
 import { CrmService } from '../crm.service';
 import { CrmWebhookGuard } from '../guards/crm-webhook.guard';
+import { Public } from '../../auth/decorators/public.decorator';
 
 @Controller('crm/webhooks')
 export class CrmWebhookController {
@@ -9,6 +10,7 @@ export class CrmWebhookController {
     constructor(private readonly crmService: CrmService) { }
 
     @Post('dynamics365')
+    @Public()
     @UseGuards(CrmWebhookGuard)
     @HttpCode(HttpStatus.OK)
     async handleDynamics365Webhook(@Body() payload: any) {

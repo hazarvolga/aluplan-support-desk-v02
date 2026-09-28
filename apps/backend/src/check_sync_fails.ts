@@ -1,4 +1,7 @@
 import { PrismaClient } from '@aluplan/database';
+import { createCliLogger } from './common/utils/cli-logger';
+
+const cliLogger = createCliLogger('CheckSyncFails');
 
 async function main() {
     const prisma = new PrismaClient();
@@ -8,16 +11,16 @@ async function main() {
             orderBy: { syncStartedAt: 'desc' },
             take: 5
         });
-        console.log("Latest 5 sync fails:");
+        cliLogger.log("Latest 5 sync fails:");
         for (const log of latestFails) {
-            console.log(`ID: ${log.id} - Source: ${log.sourceId}`);
-            console.log(`Error: ${log.error}`);
-            console.log(`Time: ${log.syncStartedAt?.toISOString()}`);
-            console.log('---');
+            cliLogger.log(`ID: ${log.id} - Source: ${log.sourceId}`);
+            cliLogger.log(`Error: ${log.error}`);
+            cliLogger.log(`Time: ${log.syncStartedAt?.toISOString()}`);
+            cliLogger.log('---');
         }
     } finally {
         await prisma.$disconnect();
     }
 }
 
-main().catch(console.error);
+main().catch((error) => cliLogger.error(error));

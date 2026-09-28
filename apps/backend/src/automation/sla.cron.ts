@@ -82,7 +82,7 @@ export class SlaCronService implements OnApplicationBootstrap {
                 this.logger.warn(`SLA Warning (Response): Ticket ${ticket.ticketNumber} is breaching soon!`);
 
                 if (ticket.assignee?.email) {
-                    this.eventEmitter.emit('sla.warning', {
+                    await this.eventEmitter.emitAsync('sla.warning', {
                         agentEmail: ticket.assignee.email,
                         agentName: ticket.assignee.fullName || 'Temsilci',
                         ticketId: ticket.id,
@@ -94,7 +94,7 @@ export class SlaCronService implements OnApplicationBootstrap {
                     });
                 }
 
-                // Mark as sent
+                // Record the warning attempt after listeners settle; not delivery proof.
                 await this.prisma.ticket.update({
                     where: { id: ticket.id },
                     data: { slaWarningSentAt: new Date() }
@@ -122,7 +122,7 @@ export class SlaCronService implements OnApplicationBootstrap {
                 this.logger.warn(`SLA Warning (Resolution): Ticket ${ticket.ticketNumber} is breaching soon!`);
 
                 if (ticket.assignee?.email) {
-                    this.eventEmitter.emit('sla.warning', {
+                    await this.eventEmitter.emitAsync('sla.warning', {
                         agentEmail: ticket.assignee.email,
                         agentName: ticket.assignee.fullName || 'Temsilci',
                         ticketId: ticket.id,
@@ -134,7 +134,7 @@ export class SlaCronService implements OnApplicationBootstrap {
                     });
                 }
 
-                // Mark as sent
+                // Record the warning attempt after listeners settle; not delivery proof.
                 await this.prisma.ticket.update({
                     where: { id: ticket.id },
                     data: { slaWarningSentAt: new Date() }

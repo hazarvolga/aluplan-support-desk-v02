@@ -161,7 +161,7 @@ export class HotinfoParserService {
             }
 
             // ── Registry Paths ──
-            let registryPaths: Record<string, string> = {};
+            const registryPaths: Record<string, string> = {};
             if (cadinfo?.registry?.item) {
                 const items = Array.isArray(cadinfo.registry.item) ? cadinfo.registry.item : [cadinfo.registry.item];
                 items.forEach((item: any) => {
@@ -327,7 +327,7 @@ export class HotinfoParserService {
             if (errorTrace.endsWith(' | ')) errorTrace = errorTrace.substring(0, errorTrace.length - 3);
 
             // ── Environment Variables ──
-            let envVars: Record<string, string> = {};
+            const envVars: Record<string, string> = {};
             if (system?.variables?.item) {
                 const items = Array.isArray(system.variables.item) ? system.variables.item : [system.variables.item];
                 const targets = ['USERNAME', 'COMPUTERNAME', 'USERDOMAIN'];

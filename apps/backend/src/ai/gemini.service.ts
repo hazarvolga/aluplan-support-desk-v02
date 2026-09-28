@@ -184,7 +184,9 @@ export class GeminiService implements AiProvider {
                             const json = JSON.parse(line.slice(6));
                             const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
                             if (text) yield text;
-                        } catch (e) {}
+                        } catch (error) {
+                            this.logger.warn(`⚠️ Gemini stream emitted an unparsable SSE chunk; skipping chunk. Reason: ${error instanceof Error ? error.message : String(error)}`);
+                        }
                     }
                 }
             }

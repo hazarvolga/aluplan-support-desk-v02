@@ -9,7 +9,7 @@ export class AutoAssignmentService {
 
     constructor(private readonly prisma: PrismaService) { }
 
-    @OnEvent('ticket.created', { async: true })
+    @OnEvent('ticket.created', { async: true, promisify: true })
     async handleTicketCreated(ticket: Ticket) {
         if (ticket.assignedTo) return;
 

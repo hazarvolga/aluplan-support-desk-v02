@@ -64,8 +64,50 @@ export const RAG_CONFIG = {
     CACHE: {
         /** Default TTL for AI query cache in seconds */
         DEFAULT_TTL: parseInt(process.env.AI_CACHE_TTL || '3600', 10), // Increased to 1 hour
+        /** Minimum semantic similarity required to reuse a cached AI response */
+        SEMANTIC_THRESHOLD: parseFloat(process.env.AI_SEMANTIC_CACHE_THRESHOLD || '0.95'),
         /** Cache key version — bump to invalidate all caches */
         VERSION: 'v11',
+    },
+
+    /** FAQ candidate generation thresholds */
+    FAQ: {
+        /** Confidence required for automatic publication of FAQ candidates */
+        AUTO_PUBLISH_THRESHOLD: parseFloat(process.env.FAQ_AUTO_PUBLISH_THRESHOLD || '0.85'),
+    },
+
+    /** Ticket clustering parameters for FAQ candidate discovery */
+    CLUSTERING: {
+        /** Minimum ticket similarity required to join a cluster */
+        SIMILARITY_THRESHOLD: parseFloat(process.env.TICKET_CLUSTERING_SIMILARITY_THRESHOLD || '0.85'),
+        /** Minimum number of similar tickets required to generate a candidate */
+        MIN_CLUSTER_SIZE: parseInt(process.env.TICKET_CLUSTERING_MIN_CLUSTER_SIZE || '5', 10),
+    },
+
+    /** Trust score formula parameters for source ranking */
+    TRUST_SCORE: {
+        BASE: {
+            ARTICLE: parseFloat(process.env.TRUST_SCORE_ARTICLE || '0.95'),
+            DOCUMENT: parseFloat(process.env.TRUST_SCORE_DOCUMENT || '0.85'),
+            URL_WHITELIST: parseFloat(process.env.TRUST_SCORE_URL_WHITELIST || '0.70'),
+            URL_EXTERNAL: parseFloat(process.env.TRUST_SCORE_URL_EXTERNAL || '0.55'),
+            FAQ_APPROVED: parseFloat(process.env.TRUST_SCORE_FAQ_APPROVED || '0.75'),
+            FAQ_AUTO: parseFloat(process.env.TRUST_SCORE_FAQ_AUTO || '0.50'),
+            TICKET: parseFloat(process.env.TRUST_SCORE_TICKET || '0.10'),
+        },
+        AGE: {
+            FRESH_DAYS: parseInt(process.env.TRUST_SCORE_FRESH_DAYS || '30', 10),
+            RECENT_DAYS: parseInt(process.env.TRUST_SCORE_RECENT_DAYS || '90', 10),
+            STALE_DAYS: parseInt(process.env.TRUST_SCORE_STALE_DAYS || '180', 10),
+            FRESH_FACTOR: parseFloat(process.env.TRUST_SCORE_FRESH_FACTOR || '1.00'),
+            RECENT_FACTOR: parseFloat(process.env.TRUST_SCORE_RECENT_FACTOR || '0.95'),
+            STALE_FACTOR: parseFloat(process.env.TRUST_SCORE_STALE_FACTOR || '0.85'),
+            OLD_FACTOR: parseFloat(process.env.TRUST_SCORE_OLD_FACTOR || '0.70'),
+        },
+        FEEDBACK: {
+            MIN_FACTOR: parseFloat(process.env.TRUST_SCORE_FEEDBACK_MIN_FACTOR || '0.8'),
+            SPAN: parseFloat(process.env.TRUST_SCORE_FEEDBACK_SPAN || '0.4'),
+        },
     },
 
     /** Re-ranking boost factors and weights */

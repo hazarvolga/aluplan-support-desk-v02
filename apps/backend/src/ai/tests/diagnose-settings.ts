@@ -1,9 +1,12 @@
 import { PrismaClient } from '@aluplan/database';
+import { createCliLogger } from '../../common/utils/cli-logger';
+
+const cliLogger = createCliLogger('DiagnoseSettings');
 
 async function diagnose() {
     const prisma = new PrismaClient();
     try {
-        console.log('🔍 Diagnosing AI Settings in Database...');
+        cliLogger.log('🔍 Diagnosing AI Settings in Database...');
         const aiSettings = await prisma.setting.findMany({
             where: {
                 key: {
@@ -12,19 +15,19 @@ async function diagnose() {
             }
         });
 
-        console.table(aiSettings.map(s => ({
+        cliLogger.log(JSON.stringify(aiSettings.map(s => ({
             key: s.key,
             isSecret: s.isSecret,
             valueLength: s.value?.length || 0,
             hasColons: s.value?.includes(':') || false,
             // Don't log the actual value for security
-        })));
+        })), null, 2));
 
         const activeProvider = aiSettings.find(s => s.key === 'ai.active_provider')?.value;
-        console.log(`\n🤖 Active Provider: ${activeProvider}`);
+        cliLogger.log(`\n🤖 Active Provider: ${activeProvider}`);
 
     } catch (err) {
-        console.error('❌ Diagnosis failed:', err);
+        cliLogger.error('❌ Diagnosis failed:', err);
     } finally {
         await prisma.$disconnect();
     }

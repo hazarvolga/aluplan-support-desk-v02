@@ -1,11 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TicketsService } from './tickets.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlaService } from './sla.service';
 import { PiiMaskingService } from '../common/services/pii-masking.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiQueryService } from '../ai/ai-query.service';
 import { RedisService } from '../redis/redis.service';
+import { TicketAccessService } from '../common/services/ticket-access.service';
 import { mockPrismaService } from '../test/mock.utils';
 import { TicketStatus, TicketPriority, ChatStatus, Prisma } from '@aluplan/database';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
@@ -25,6 +27,7 @@ describe('TicketsService', () => {
     };
 
     const mockEventEmitter = {
+        emitAsync: jest.fn().mockResolvedValue([]),
         emit: jest.fn(),
     };
 
@@ -36,17 +39,23 @@ describe('TicketsService', () => {
         get: jest.fn(),
         set: jest.fn(),
     };
+    const mockTicketAccessService = {
+        canAccessTicket: jest.fn().mockResolvedValue(true),
+        canManageTicket: jest.fn().mockResolvedValue(true),
+    };
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 TicketsService,
+                MaintenanceWorkService,
                 { provide: PrismaService, useValue: mockPrismaService },
                 { provide: SlaService, useValue: mockSlaService },
                 { provide: PiiMaskingService, useValue: mockPiiMaskingService },
                 { provide: EventEmitter2, useValue: mockEventEmitter },
                 { provide: AiQueryService, useValue: mockAiQueryService },
                 { provide: RedisService, useValue: mockRedisService },
+                { provide: TicketAccessService, useValue: mockTicketAccessService },
             ],
         }).compile();
 
@@ -77,8 +86,26 @@ describe('TicketsService', () => {
 
             // Assert
             expect(result).toEqual(expectedTicket);
-            expect(mockEventEmitter.emit).toHaveBeenCalledWith('ticket.created', expectedTicket);
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('ticket.created', expectedTicket);
             expect(prisma.ticket.create).toHaveBeenCalled();
+        });
+
+        it('should reject an archived or unknown product before creating a ticket', async () => {
+            const dto = {
+                subject: 'License problem',
+                description: 'Activation fails',
+                productId: '11111111-1111-4111-8111-111111111111',
+            };
+            prisma.product.findFirst.mockResolvedValue(null);
+
+            await expect(service.create(dto, 'user1')).rejects.toThrow(BadRequestException);
+
+            expect(prisma.product.findFirst).toHaveBeenCalledWith({
+                where: { id: dto.productId, isActive: true, deletedAt: null },
+                select: { id: true },
+            });
+            expect(prisma.ticket.create).not.toHaveBeenCalled();
+            expect(mockAiQueryService.smartTagTicket).not.toHaveBeenCalled();
         });
 
         it('should reuse an existing ticket for the same AI interaction', async () => {
@@ -105,7 +132,7 @@ describe('TicketsService', () => {
                 where: { id: dto.interactionId },
                 data: { ticketCreated: true },
             });
-            expect(mockEventEmitter.emit).not.toHaveBeenCalledWith('ticket.created', expect.anything());
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalledWith('ticket.created', expect.anything());
         });
 
         it('should recover from a duplicate AI interaction race by returning the existing ticket', async () => {
@@ -142,7 +169,7 @@ describe('TicketsService', () => {
             const result = await service.create(dto, 'user1');
 
             expect(result).toEqual({ ...existingTicket, alreadyCreated: true });
-            expect(mockEventEmitter.emit).not.toHaveBeenCalledWith('ticket.created', expect.anything());
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalledWith('ticket.created', expect.anything());
         });
     });
 
@@ -210,6 +237,47 @@ describe('TicketsService', () => {
 
             expect(result.chatStatus).toBe(ChatStatus.LIVE);
         });
+
+        it('should reject customer attempts to assign a ticket via generic update', async () => {
+            const ticket = {
+                id: 'tik1',
+                userId: 'customer1',
+                chatStatus: ChatStatus.NORMAL,
+                creator: { customerProfile: { isVip: true } },
+                messages: [],
+                escalations: [],
+            };
+            prisma.ticket.findFirst.mockResolvedValue(ticket);
+
+            await expect(service.update(
+                'tik1',
+                { assignedTo: '11111111-1111-4111-8111-111111111111' },
+                { id: 'customer1', role: 'CUSTOMER' },
+            )).rejects.toThrow(ForbiddenException);
+
+            expect(prisma.ticket.update).not.toHaveBeenCalled();
+        });
+
+        it('should reject customer attempts to change priority via generic update', async () => {
+            const ticket = {
+                id: 'tik1',
+                userId: 'customer1',
+                chatStatus: ChatStatus.NORMAL,
+                creator: { customerProfile: { isVip: true } },
+                messages: [],
+                escalations: [],
+            };
+            prisma.ticket.findFirst.mockResolvedValue(ticket);
+
+            await expect(service.update(
+                'tik1',
+                { priority: TicketPriority.URGENT },
+                { id: 'customer1', role: 'CUSTOMER' },
+            )).rejects.toThrow(ForbiddenException);
+
+            expect(mockSlaService.calculateDeadlines).not.toHaveBeenCalled();
+            expect(prisma.ticket.update).not.toHaveBeenCalled();
+        });
     });
 
     describe('transition', () => {
@@ -219,7 +287,7 @@ describe('TicketsService', () => {
             prisma.ticket.findFirst.mockResolvedValue(ticket);
 
             // Act & Assert
-            await expect(service.transition('tik1', TicketStatus.RESOLVED, 'agent1')).rejects.toThrow(BadRequestException);
+            await expect(service.transition('tik1', TicketStatus.RESOLVED, { sub: 'agent1', role: 'AGENT' })).rejects.toThrow(BadRequestException);
         });
 
         it('should update status and emit event for valid transition', async () => {
@@ -231,7 +299,7 @@ describe('TicketsService', () => {
             prisma.ticket.update.mockResolvedValue(updatedTicket);
 
             // Act
-            const result = await service.transition('tik1', TicketStatus.OPEN, 'agent1');
+            const result = await service.transition('tik1', TicketStatus.OPEN, { sub: 'agent1', role: 'AGENT' });
 
             // Assert
             expect(result.status).toBe('OPEN');
@@ -317,6 +385,27 @@ describe('TicketsService', () => {
             }));
         });
         describe('findAll', () => {
+            it('filters review-center queues by requested chat and null assignment', async () => {
+                prisma.ticket.findMany.mockResolvedValue([]);
+                prisma.ticket.count.mockResolvedValue(0);
+
+                await service.findAll({
+                    chatStatus: ChatStatus.REQUESTED,
+                    assignment: 'UNASSIGNED',
+                    activeOnly: true,
+                });
+
+                expect(prisma.ticket.findMany).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        where: expect.objectContaining({
+                            chatStatus: ChatStatus.REQUESTED,
+                            assignedTo: null,
+                            AND: [{ status: { notIn: [TicketStatus.RESOLVED, TicketStatus.CLOSED] } }],
+                        }),
+                    }),
+                );
+            });
+
             it('should return paginated and filtered tickets', async () => {
                 // Arrange
                 const mockTickets = [{ id: '1' }, { id: '2' }];
@@ -469,6 +558,73 @@ describe('TicketsService', () => {
         });
 
         describe('addMessage', () => {
+            it('resolves department recipients before writing and preserves the successful event payload', async () => {
+                const ticket = { id: 'tik1', status: 'OPEN', userId: 'user1', departmentId: 'dep1' };
+                prisma.ticket.findFirst.mockResolvedValue(ticket);
+                prisma.user.findMany.mockResolvedValue([{ email: 'one@example.invalid' }, { email: 'two@example.invalid' }]);
+                prisma.ticketMessage.create.mockResolvedValue({ id: 'msg1' });
+                await service.addMessage('tik1', { message: 'hello' }, 'user1', 'CUSTOMER');
+                expect(prisma.user.findMany).toHaveBeenCalledWith({
+                    where: { teamMembers: { some: { team: { departmentId: 'dep1' } } }, role: { name: { not: 'CUSTOMER' } } },
+                    select: { email: true },
+                });
+                expect(prisma.user.findMany.mock.invocationCallOrder[0]).toBeLessThan(prisma.ticketMessage.create.mock.invocationCallOrder[0]);
+                expect(eventEmitter.emit).toHaveBeenCalledWith('ticket.message_added', {
+                    ticket, message: { id: 'msg1' }, recipientEmail: 'one@example.invalid,two@example.invalid', userName: 'Destek Ekibi',
+                });
+            });
+
+            it.each([
+                ['user1', 'CUSTOMER', 'assigned@example.invalid', 'Assigned Agent'],
+                ['agent1', 'AGENT', 'customer@example.invalid', 'Customer'],
+            ])('preserves direct recipient routing for %s', async (senderId, role, recipientEmail, userName) => {
+                const ticket = { id: 'tik1', status: 'OPEN', userId: 'user1', departmentId: 'dep1',
+                    slaRespondedAt: new Date(), assignee: { email: 'assigned@example.invalid', fullName: 'Assigned Agent' },
+                    creator: { email: 'customer@example.invalid', fullName: 'Customer' } };
+                prisma.ticket.findFirst.mockResolvedValue(ticket);
+                prisma.ticketMessage.create.mockResolvedValue({ id: 'msg1' });
+                await service.addMessage('tik1', { message: 'hello' }, senderId, role);
+                expect(prisma.user.findMany).not.toHaveBeenCalled();
+                expect(eventEmitter.emit).toHaveBeenCalledWith('ticket.message_added', expect.objectContaining({ recipientEmail, userName }));
+            });
+
+            it.each(['CUSTOMER', 'AGENT'])(
+                'rejects forged inline attachment keys before any write for %s',
+                async (role) => {
+                    prisma.ticket.findFirst.mockResolvedValue({ id: 'tik1', status: 'OPEN', userId: 'user1' });
+                    prisma.ticketMessage.create.mockResolvedValue({ id: 'msg1' });
+                    const createAttachments = jest.fn().mockResolvedValue({ count: 1 });
+                    prisma.attachment = { createMany: createAttachments };
+
+                    await expect(service.addMessage('tik1', {
+                        message: 'Please attach this file',
+                        attachments: [{
+                            url: 'tickets/msg_victim/private-note.pdf',
+                            fileName: 'private-note.pdf',
+                            fileSize: 100,
+                            mimeType: 'application/pdf',
+                        }],
+                    }, 'user1', role)).rejects.toThrow(BadRequestException);
+
+                    expect(prisma.ticketMessage.create).not.toHaveBeenCalled();
+                    expect(createAttachments).not.toHaveBeenCalled();
+                    expect(prisma.ticket.update).not.toHaveBeenCalled();
+                    expect(eventEmitter.emit).not.toHaveBeenCalled();
+                },
+            );
+
+            it.each([[], null])('rejects even empty or null inline attachment metadata: %p', async (attachments) => {
+                prisma.ticket.findFirst.mockResolvedValue({ id: 'tik1', status: 'OPEN', userId: 'user1' });
+                prisma.ticketMessage.create.mockResolvedValue({ id: 'msg1' });
+
+                await expect(service.addMessage('tik1', {
+                    message: 'Reply', attachments,
+                } as any, 'user1', 'CUSTOMER')).rejects.toThrow(BadRequestException);
+
+                expect(prisma.ticketMessage.create).not.toHaveBeenCalled();
+                expect(eventEmitter.emit).not.toHaveBeenCalled();
+            });
+
             it('should throw BadRequestException when adding a message to a closed ticket', async () => {
                 // Arrange
                 const ticket = { id: 'tik1', status: 'CLOSED', userId: 'user1' };
@@ -523,6 +679,19 @@ describe('TicketsService', () => {
         });
 
         describe('getAiTrace', () => {
+            it('rejects staff who cannot access the requested ticket before loading trace details', async () => {
+                mockTicketAccessService.canAccessTicket.mockResolvedValueOnce(false);
+
+                await expect(service.getAiTrace('tik-private', { id: 'agent-1', role: 'AGENT' }))
+                    .rejects.toBeInstanceOf(ForbiddenException);
+
+                expect(mockTicketAccessService.canAccessTicket).toHaveBeenCalledWith(
+                    { id: 'agent-1', role: 'AGENT' },
+                    'tik-private',
+                );
+                expect(prisma.ticket.findFirst).not.toHaveBeenCalled();
+            });
+
             it('reconstructs visual evidence from a matched URL source for older interactions', async () => {
                 prisma.ticket.findFirst.mockResolvedValue({
                     id: 'tik1',
@@ -602,7 +771,7 @@ describe('TicketsService', () => {
                 prisma.ticket.update.mockResolvedValue({ ...ticket, status: 'CLOSED' });
 
                 // Act
-                await service.transition('tik1', TicketStatus.CLOSED, 'agent1');
+                await service.transition('tik1', TicketStatus.CLOSED, { sub: 'agent1', role: 'AGENT' });
 
                 // Assert
                 expect(prisma.ticket.update).toHaveBeenCalledWith(

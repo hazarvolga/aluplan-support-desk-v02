@@ -2,20 +2,22 @@
  * CRM Webhook — Integration Tests (NestJS + Supertest)
  *
  * Bu testler gerçek NestJS HTTP katmanını test eder:
- * - Guard (x-api-key doğrulama) → Controller → Service akışı
+ * - Guard (HMAC-SHA256 x-signature doğrulama) → Controller → Service akışı
  * - HTTP status kodları (200, 400, 401)
  * - Webhook payload işleme (account + contact)
- * - Güvenlik: eksik key, yanlış key, desteklenmeyen entity
+ * - Güvenlik: eksik/geçersiz imza, değiştirilmiş gövde, desteklenmeyen entity
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
+import { createHmac } from 'crypto';
 import { CrmWebhookController } from '../../src/crm/webhooks/crm-webhook.controller';
 import { CrmWebhookGuard } from '../../src/crm/guards/crm-webhook.guard';
 import { CrmService } from '../../src/crm/crm.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { CryptoService } from '../../src/utils/crypto.service';
+import { signedWebhookJsonParser } from '../../src/common/http/signed-webhook-json-parser';
 import {
     MOCK_WEBHOOK_ACCOUNT_PAYLOAD,
     MOCK_WEBHOOK_CONTACT_PAYLOAD,
@@ -24,8 +26,14 @@ import {
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
-const VALID_API_KEY = 'test-webhook-secret-123';
+const WEBHOOK_SECRET = 'test-webhook-secret-123';
 const ENCRYPTED_SECRET = 'enc:test-webhook-secret-123';
+const signatureFor = (payload: unknown) => createHmac('sha256', WEBHOOK_SECRET)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+const signatureForRaw = (payload: string) => createHmac('sha256', WEBHOOK_SECRET)
+    .update(payload)
+    .digest('hex');
 
 const mockPrisma = {
     crmConnection: {
@@ -65,6 +73,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
         }).compile();
 
         app = module.createNestApplication();
+        app.use(signedWebhookJsonParser);
         app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
         await app.init();
     });
@@ -86,19 +95,35 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
 
     // ── Authentication ────────────────────────────────────────────────────────
 
-    describe('Authentication (x-api-key)', () => {
-        it('should return 401 when x-api-key header is missing', async () => {
+    describe('Authentication (x-signature)', () => {
+        it('should return 401 when x-signature header is missing', async () => {
             await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
                 .send(MOCK_WEBHOOK_ACCOUNT_PAYLOAD)
                 .expect(401);
         });
 
-        it('should return 401 when x-api-key is wrong', async () => {
+        it('should reject the legacy x-api-key header', async () => {
             await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
-                .set('x-api-key', 'WRONG-KEY')
+                .set('x-api-key', WEBHOOK_SECRET)
                 .send(MOCK_WEBHOOK_ACCOUNT_PAYLOAD)
+                .expect(401);
+        });
+
+        it('should return 401 when x-signature is wrong', async () => {
+            await request(app.getHttpServer())
+                .post('/crm/webhooks/dynamics365')
+                .set('x-signature', '0'.repeat(64))
+                .send(MOCK_WEBHOOK_ACCOUNT_PAYLOAD)
+                .expect(401);
+        });
+
+        it('should reject a changed body under a valid signature for the original body', async () => {
+            await request(app.getHttpServer())
+                .post('/crm/webhooks/dynamics365')
+                .set('x-signature', signatureFor(MOCK_WEBHOOK_ACCOUNT_PAYLOAD))
+                .send({ ...MOCK_WEBHOOK_ACCOUNT_PAYLOAD, entity: 'contact' })
                 .expect(401);
         });
 
@@ -107,7 +132,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
 
             await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
-                .set('x-api-key', VALID_API_KEY)
+                .set('x-signature', signatureFor(MOCK_WEBHOOK_ACCOUNT_PAYLOAD))
                 .send(MOCK_WEBHOOK_ACCOUNT_PAYLOAD)
                 .expect(401);
         });
@@ -120,17 +145,31 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
 
             await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
-                .set('x-api-key', VALID_API_KEY)
+                .set('x-signature', signatureFor(MOCK_WEBHOOK_ACCOUNT_PAYLOAD))
                 .send(MOCK_WEBHOOK_ACCOUNT_PAYLOAD)
                 .expect(401);
         });
 
-        it('should return 200 with valid x-api-key', async () => {
+        it('should return 200 with a valid x-signature', async () => {
             await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
-                .set('x-api-key', VALID_API_KEY)
+                .set('x-signature', signatureFor(MOCK_WEBHOOK_ACCOUNT_PAYLOAD))
                 .send(MOCK_WEBHOOK_ACCOUNT_PAYLOAD)
                 .expect(200);
+        });
+
+        it('authenticates the exact HTTP bytes, including JSON whitespace and key order', async () => {
+            const rawPayload = ` {"data":${JSON.stringify(MOCK_WEBHOOK_ACCOUNT_PAYLOAD.data)},"entity":"account"} `;
+            await request(app.getHttpServer())
+                .post('/crm/webhooks/dynamics365')
+                .set('content-type', 'application/json')
+                .set('x-signature', signatureForRaw(rawPayload))
+                .send(rawPayload)
+                .expect(200);
+
+            expect(mockCrmService.processDynamics365Webhook).toHaveBeenCalledWith(
+                MOCK_WEBHOOK_ACCOUNT_PAYLOAD,
+            );
         });
     });
 
@@ -140,7 +179,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
         it('should return { status: "success" } for valid account payload', async () => {
             const response = await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
-                .set('x-api-key', VALID_API_KEY)
+                .set('x-signature', signatureFor(MOCK_WEBHOOK_ACCOUNT_PAYLOAD))
                 .send(MOCK_WEBHOOK_ACCOUNT_PAYLOAD)
                 .expect(200);
 
@@ -153,7 +192,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
         it('should call processDynamics365Webhook with account payload', async () => {
             await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
-                .set('x-api-key', VALID_API_KEY)
+                .set('x-signature', signatureFor(MOCK_WEBHOOK_ACCOUNT_PAYLOAD))
                 .send(MOCK_WEBHOOK_ACCOUNT_PAYLOAD)
                 .expect(200);
 
@@ -175,7 +214,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
 
             await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
-                .set('x-api-key', VALID_API_KEY)
+                .set('x-signature', signatureFor(payloadWithAnnotations))
                 .send(payloadWithAnnotations)
                 .expect(200);
 
@@ -195,7 +234,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
         it('should return { status: "success" } for valid contact payload', async () => {
             const response = await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
-                .set('x-api-key', VALID_API_KEY)
+                .set('x-signature', signatureFor(MOCK_WEBHOOK_CONTACT_PAYLOAD))
                 .send(MOCK_WEBHOOK_CONTACT_PAYLOAD)
                 .expect(200);
 
@@ -205,7 +244,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
         it('should call processDynamics365Webhook with contact payload', async () => {
             await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
-                .set('x-api-key', VALID_API_KEY)
+                .set('x-signature', signatureFor(MOCK_WEBHOOK_CONTACT_PAYLOAD))
                 .send(MOCK_WEBHOOK_CONTACT_PAYLOAD)
                 .expect(200);
 
@@ -220,7 +259,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
 
             await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
-                .set('x-api-key', VALID_API_KEY)
+                .set('x-signature', signatureFor(MOCK_WEBHOOK_CONTACT_NO_EMAIL))
                 .send(MOCK_WEBHOOK_CONTACT_NO_EMAIL)
                 .expect(200);
         });
@@ -237,7 +276,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
 
             await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
-                .set('x-api-key', VALID_API_KEY)
+                .set('x-signature', signatureFor({ entity: 'lead', data: {} }))
                 .send({ entity: 'lead', data: {} })
                 .expect(400);
         });
@@ -253,7 +292,7 @@ describe('CrmWebhookController — Integration (HTTP)', () => {
 
             await request(app.getHttpServer())
                 .post('/crm/webhooks/dynamics365')
-                .set('x-api-key', VALID_API_KEY)
+                .set('x-signature', signatureFor(MOCK_WEBHOOK_ACCOUNT_PAYLOAD))
                 .send(MOCK_WEBHOOK_ACCOUNT_PAYLOAD)
                 .expect(500);
         });

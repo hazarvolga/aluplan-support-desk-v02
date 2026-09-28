@@ -1,8 +1,11 @@
 import { PrismaClient } from '@aluplan/database';
+import { createCliLogger } from '../common/utils/cli-logger';
+
+const cliLogger = createCliLogger('VerifySchema');
 
 async function verifySchema() {
     const prisma = new PrismaClient();
-    console.log('🔍 Starting Schema Verification...');
+    cliLogger.log('🔍 Starting Schema Verification...');
 
     const checks = [
         { table: 'products', column: 'deleted_at' },
@@ -30,13 +33,13 @@ async function verifySchema() {
             `);
 
             if (result.length > 0) {
-                console.log(`✅ ${check.table}.${check.column} exists.`);
+                cliLogger.log(`✅ ${check.table}.${check.column} exists.`);
             } else {
-                console.log(`❌ ${check.table}.${check.column} MISSING!`);
+                cliLogger.log(`❌ ${check.table}.${check.column} MISSING!`);
                 allOk = false;
             }
         } catch (e: any) {
-            console.log(`⚠️ Error checking ${check.table}.${check.column}: ${e.message}`);
+            cliLogger.log(`⚠️ Error checking ${check.table}.${check.column}: ${e.message}`);
             allOk = false;
         }
     }
@@ -44,15 +47,15 @@ async function verifySchema() {
     await prisma.$disconnect();
 
     if (allOk) {
-        console.log('\n✨ DATABASE SCHEMA VERIFIED: ALL GHOST COLUMNS RESOLVED.');
+        cliLogger.log('\n✨ DATABASE SCHEMA VERIFIED: ALL GHOST COLUMNS RESOLVED.');
         process.exit(0);
     } else {
-        console.log('\n🚨 SCHEMA VERIFICATION FAILED: SOME COLUMNS ARE STILL MISSING.');
+        cliLogger.log('\n🚨 SCHEMA VERIFICATION FAILED: SOME COLUMNS ARE STILL MISSING.');
         process.exit(1);
     }
 }
 
 verifySchema().catch(err => {
-    console.error(err);
+    cliLogger.error(err);
     process.exit(1);
 });

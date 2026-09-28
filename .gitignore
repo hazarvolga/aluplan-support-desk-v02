@@ -41,6 +41,7 @@ packages/database/client/
 # Testing / Coverage
 # ========================
 coverage/
+apps/frontend/playwright-report/
 *.lcov
 .nyc_output/
 # Playwright test artifacts
@@ -113,13 +114,18 @@ venv/
 .venv/
 env/
 .env*
+canli-degiskenler.md
 bin/
 obj/
 
 # Archives / Backups
+extracted_users.json
 backups/
+.private-data/
 *.zip
 *.sql
+*.dump
+*.backup
 !packages/database/prisma/migrations/**/*.sql
 *.log
 *_err.txt

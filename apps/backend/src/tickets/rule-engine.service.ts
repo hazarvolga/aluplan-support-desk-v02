@@ -15,7 +15,7 @@ export class RuleEngineService {
         private readonly audit: AuditService,
     ) { }
 
-    @OnEvent('ticket.created', { async: true })
+    @OnEvent('ticket.created', { async: true, promisify: true })
     async handleTicketCreated(ticket: Ticket) {
         await this.evaluateRules('TICKET_CREATED', ticket.id, ticket);
     }
@@ -24,7 +24,8 @@ export class RuleEngineService {
     async handleMessageAdded(event: { ticket: Ticket; message: TicketMessage }) {
         await this.evaluateRules('MESSAGE_ADDED', event.ticket.id, {
             ...event.ticket,
-            messageBody: event.message.message
+            messageBody: event.message.message,
+            messageId: event.message.id,
         });
     }
 
@@ -78,8 +79,8 @@ export class RuleEngineService {
                         } else if (key === 'assignTo') {
                             updateData.assignedTo = strValue;
                         } else if (key === 'translateTo') {
-                            // Trigger translation in background
-                            this.eventEmitter.emit('ai.translate_message', {
+                            // Join the nested background operation, not the HTTP response.
+                            await this.eventEmitter.emitAsync('ai.translate_message', {
                                 ticketId,
                                 messageId: (context as Record<string, unknown>).messageId as string,
                                 targetLanguage: strValue

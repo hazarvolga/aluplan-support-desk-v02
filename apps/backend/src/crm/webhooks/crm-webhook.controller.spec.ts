@@ -4,6 +4,7 @@ import { CrmWebhookController } from './crm-webhook.controller';
 import { CrmService } from '../crm.service';
 import { CrmWebhookGuard } from '../guards/crm-webhook.guard';
 import { BadRequestException } from '@nestjs/common';
+import { IS_PUBLIC_KEY } from '../../auth/decorators/public.decorator';
 
 const mockCrmService = {
     processDynamics365Webhook: jest.fn(),
@@ -37,6 +38,20 @@ describe('CrmWebhookController', () => {
             entity: 'account',
             data: { accountid: 'acc-1', name: 'Test' },
         });
+    });
+
+    it('keeps the Dynamics webhook route public while retaining the signature guard', async () => {
+        const publicMetadata = Reflect.getMetadata(
+            IS_PUBLIC_KEY,
+            CrmWebhookController.prototype.handleDynamics365Webhook,
+        );
+        const guards = Reflect.getMetadata(
+            '__guards__',
+            CrmWebhookController.prototype.handleDynamics365Webhook,
+        );
+
+        expect(publicMetadata).toBe(true);
+        expect(guards).toContain(CrmWebhookGuard);
     });
 
     it('should propagate BadRequestException for unsupported entity', async () => {

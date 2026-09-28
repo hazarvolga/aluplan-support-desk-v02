@@ -19,27 +19,57 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
     console.log('🌱 Seeding database...');
 
-    // 1. Seed Admin User
-    const adminPassword = process.env.ADMIN_PASSWORD ?? 'Vol1872017';
-    const hash = await bcrypt.hash(adminPassword, 12);
+    const isProduction = process.env.NODE_ENV === 'production';
+    const allowE2eSeed = process.env.ALLOW_E2E_SEED === 'true';
 
-    let adminRole = await prisma.role.findFirst({ where: { name: 'ADMIN' } });
-    if (!adminRole) { // Fallback if roles aren't seeded yet
-        adminRole = await prisma.role.create({ data: { name: 'ADMIN', isSystem: true } });
+    // Fail before the first Prisma query. Database seeding is a deliberate
+    // maintenance operation and must never be an implicit boot side effect.
+    if (process.env.ALLOW_DATABASE_SEED !== 'true') {
+        throw new Error(
+            'Database seeding is disabled. Set ALLOW_DATABASE_SEED=true only for an approved maintenance run.',
+        );
+    }
+    if (isProduction && allowE2eSeed) {
+        throw new Error('E2E data must never be seeded in production.');
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+    const adminEmail =
+        process.env.ADMIN_EMAIL?.trim() ||
+        (allowE2eSeed ? 'e2e-admin@aluplan.test' : undefined);
+    if (!adminEmail) {
+        throw new Error('ADMIN_EMAIL is required for database seeding.');
+    }
+
+    // 1. Seed Admin User
     let admin = await prisma.user.findUnique({ where: { email: adminEmail } });
-    if (admin) {
-        admin = await prisma.user.update({
-            where: { id: admin.id },
-            data: {
-                roleId: adminRole.id,
-                passwordHash: hash,
-                fullName: 'hazarvolga',
-            }
+    let adminPassword: string | undefined;
+    if (!admin) {
+        if (process.env.ALLOW_ADMIN_BOOTSTRAP !== 'true') {
+            throw new Error(
+                'Admin bootstrap is disabled. Set ALLOW_ADMIN_BOOTSTRAP=true only when creating the initial administrator.',
+            );
+        }
+        adminPassword =
+            process.env.ADMIN_PASSWORD ??
+            (allowE2eSeed ? 'E2E-Only-Not-A-Secret-2026!' : undefined);
+        if (!adminPassword) {
+            throw new Error(
+                'ADMIN_PASSWORD is required when bootstrapping an administrator.',
+            );
+        }
+    }
+
+    let adminRole = await prisma.role.findFirst({ where: { name: 'ADMIN' } });
+    if (!adminRole) {
+        adminRole = await prisma.role.create({
+            data: { name: 'ADMIN', isSystem: true },
         });
+    }
+
+    if (admin) {
+        console.log('ℹ️ Existing admin user preserved; seed does not reset credentials or role.');
     } else {
+        const hash = await bcrypt.hash(adminPassword, 12);
         admin = await prisma.user.create({
             data: {
                 email: adminEmail,
@@ -50,53 +80,57 @@ async function main() {
             }
         });
     }
-    console.log('✅ Admin user seeded');
+    console.log('✅ Admin seed check completed');
 
     // 1.5 Seed E2E Test Users
-    const e2ePasswordHashAdmin = await bcrypt.hash('E2eAdmin!Pass123', 12);
-    const e2ePasswordHashAgent = await bcrypt.hash('E2eAgent!Pass123', 12);
-    const e2ePasswordHashCustomer = await bcrypt.hash('E2eCustomer!Pass123', 12);
+    if (allowE2eSeed) {
+        const e2ePasswordHashAdmin = await bcrypt.hash('E2eAdmin!Pass123', 12);
+        const e2ePasswordHashAgent = await bcrypt.hash('E2eAgent!Pass123', 12);
+        const e2ePasswordHashCustomer = await bcrypt.hash('E2eCustomer!Pass123', 12);
 
-    let agentRole = await prisma.role.findFirst({ where: { name: 'AGENT' } });
-    if (!agentRole) {
-        agentRole = await prisma.role.create({ data: { name: 'AGENT', isSystem: true } });
-    }
-
-    let customerRole = await prisma.role.findFirst({ where: { name: 'CUSTOMER' } });
-    if (!customerRole) {
-        customerRole = await prisma.role.create({ data: { name: 'CUSTOMER', isSystem: true } });
-    }
-
-    const e2eUsers = [
-        { email: 'e2e-admin@aluplan.test', fullName: 'E2E Admin', role: 'ADMIN', passwordHash: e2ePasswordHashAdmin },
-        { email: 'e2e-agent@aluplan.test', fullName: 'E2E Agent', role: 'AGENT', passwordHash: e2ePasswordHashAgent },
-        { email: 'e2e-customer@aluplan.test', fullName: 'E2E Customer', role: 'CUSTOMER', passwordHash: e2ePasswordHashCustomer },
-    ];
-
-    for (const eu of e2eUsers) {
-        const targetRole = eu.role === 'ADMIN' ? adminRole : eu.role === 'AGENT' ? agentRole : customerRole;
-        let user = await prisma.user.findUnique({ where: { email: eu.email } });
-        if (!user) {
-            await prisma.user.create({
-                data: {
-                    email: eu.email,
-                    fullName: eu.fullName,
-                    passwordHash: eu.passwordHash,
-                    roleId: targetRole.id,
-                    status: 'ACTIVE',
-                }
-            });
-        } else {
-            await prisma.user.update({
-                where: { email: eu.email },
-                data: {
-                    passwordHash: eu.passwordHash,
-                    roleId: targetRole.id,
-                }
-            });
+        let agentRole = await prisma.role.findFirst({ where: { name: 'AGENT' } });
+        if (!agentRole) {
+            agentRole = await prisma.role.create({ data: { name: 'AGENT', isSystem: true } });
         }
+
+        let customerRole = await prisma.role.findFirst({ where: { name: 'CUSTOMER' } });
+        if (!customerRole) {
+            customerRole = await prisma.role.create({ data: { name: 'CUSTOMER', isSystem: true } });
+        }
+
+        const e2eUsers = [
+            { email: 'e2e-admin@aluplan.test', fullName: 'E2E Admin', role: 'ADMIN', passwordHash: e2ePasswordHashAdmin },
+            { email: 'e2e-agent@aluplan.test', fullName: 'E2E Agent', role: 'AGENT', passwordHash: e2ePasswordHashAgent },
+            { email: 'e2e-customer@aluplan.test', fullName: 'E2E Customer', role: 'CUSTOMER', passwordHash: e2ePasswordHashCustomer },
+        ];
+
+        for (const eu of e2eUsers) {
+            const targetRole = eu.role === 'ADMIN' ? adminRole : eu.role === 'AGENT' ? agentRole : customerRole;
+            const user = await prisma.user.findUnique({ where: { email: eu.email } });
+            if (!user) {
+                await prisma.user.create({
+                    data: {
+                        email: eu.email,
+                        fullName: eu.fullName,
+                        passwordHash: eu.passwordHash,
+                        roleId: targetRole.id,
+                        status: 'ACTIVE',
+                    }
+                });
+            } else {
+                await prisma.user.update({
+                    where: { email: eu.email },
+                    data: {
+                        passwordHash: eu.passwordHash,
+                        roleId: targetRole.id,
+                    }
+                });
+            }
+        }
+        console.log('✅ E2E test users seeded');
+    } else {
+        console.log('ℹ️ E2E user seed skipped; set ALLOW_E2E_SEED=true in a non-production environment to enable it.');
     }
-    console.log('✅ E2E test users seeded');
 
     // 2. Default Departments Seeding (from ekip.md)
     const DEFAULT_DEPARTMENTS = [
@@ -578,59 +612,68 @@ async function main() {
     }
     console.log('✅ Products and Categories seeded');
 
-    // 5. Seed Test Customers
-    const testCustomers = [
-        {
-            email: 'e2e-customer@aluplan.com',
-            fullName: 'E2E Test Customer',
-            phoneNumber: '905550009988'
-        },
-        {
-            email: 'admin@example.com', // Admin but also having profile for testing convenience
-            fullName: 'hazarvolga',
-            phoneNumber: '905550007766'
-        }
-    ];
+    // 5. Seed Test Customers — explicit non-production only
+    if (allowE2eSeed) {
 
-    for (const testCust of testCustomers) {
-        let user = await prisma.user.findUnique({ where: { email: testCust.email } });
-        if (user) {
-            user = await prisma.user.update({
-                where: { id: user.id },
-                data: { fullName: testCust.fullName }
-            });
-        } else {
-            user = await prisma.user.create({
-                data: {
-                    email: testCust.email,
-                    fullName: testCust.fullName,
-                    passwordHash: hash,
-                    roleId: testCust.email === 'admin@example.com' ? adminRole.id : customerRole.id,
-                    status: 'ACTIVE',
-                }
-            });
-        }
+        const customerRole = await prisma.role.findFirstOrThrow({
+            where: { name: 'CUSTOMER' },
+        });
+        const e2eCustomerPasswordHash = await bcrypt.hash(
+            process.env.E2E_CUSTOMER_PASSWORD ?? 'E2eCustomer!Pass123',
+            12,
+        );
+        const testCustomers = [
+            {
+                email: 'e2e-customer@aluplan.com',
+                fullName: 'E2E Test Customer',
+                phoneNumber: '905550009988'
+            }
+        ];
 
-        const existingProfile = await prisma.customerProfile.findUnique({ where: { userId: user.id } });
-        if (existingProfile) {
-            await prisma.customerProfile.update({
-                where: { id: existingProfile.id },
-                data: { phoneNumber: testCust.phoneNumber }
-            });
-        } else {
-            await prisma.customerProfile.create({
-                data: {
-                    userId: user.id,
-                    firstName: testCust.fullName.split(' ')[0],
-                    lastName: testCust.fullName.split(' ')[1] || 'User',
-                    companyName: 'Test Corp',
-                    customerNo: `CUST-${user.id.substring(0, 5)}`,
-                    phoneNumber: testCust.phoneNumber
-                }
-            });
+        for (const testCust of testCustomers) {
+            let user = await prisma.user.findUnique({ where: { email: testCust.email } });
+            if (user) {
+                user = await prisma.user.update({
+                    where: { id: user.id },
+                    data: {
+                        fullName: testCust.fullName,
+                        passwordHash: e2eCustomerPasswordHash,
+                        roleId: customerRole.id,
+                    }
+                });
+            } else {
+                user = await prisma.user.create({
+                    data: {
+                        email: testCust.email,
+                        fullName: testCust.fullName,
+                        passwordHash: e2eCustomerPasswordHash,
+                        roleId: customerRole.id,
+                        status: 'ACTIVE',
+                    }
+                });
+            }
+
+            const existingProfile = await prisma.customerProfile.findUnique({ where: { userId: user.id } });
+            if (existingProfile) {
+                await prisma.customerProfile.update({
+                    where: { id: existingProfile.id },
+                    data: { phoneNumber: testCust.phoneNumber }
+                });
+            } else {
+                await prisma.customerProfile.create({
+                    data: {
+                        userId: user.id,
+                        firstName: testCust.fullName.split(' ')[0],
+                        lastName: testCust.fullName.split(' ')[1] || 'User',
+                        companyName: 'Test Corp',
+                        customerNo: `CUST-${user.id.substring(0, 5)}`,
+                        phoneNumber: testCust.phoneNumber
+                    }
+                });
+            }
         }
+        console.log('✅ E2E test customers seeded');
     }
-    console.log('✅ Test customers seeded');
 
     console.log('\n🎉 Seed complete!');
 }

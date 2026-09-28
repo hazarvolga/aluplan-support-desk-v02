@@ -81,7 +81,7 @@ export class GmailProvider implements EmailProvider {
     }
 
     // Build the Google consent/authorization URL — called by controller
-    async buildAuthUrl(): Promise<string> {
+    async buildAuthUrl(state?: string): Promise<string> {
         const [clientId, clientSecret, email] = await Promise.all([
             this.settings.getValue('mail.gmail.client_id'),
             this.settings.getValue('mail.gmail.client_secret'),
@@ -101,6 +101,7 @@ export class GmailProvider implements EmailProvider {
             access_type: 'offline',       // Required for refresh_token
             prompt: 'consent',            // Always show consent to get fresh refresh_token
             login_hint: email ?? undefined,  // Pre-select the newsletters@aluplan.info account
+            state,
             scope: [
                 'https://www.googleapis.com/auth/gmail.send',
                 'https://www.googleapis.com/auth/gmail.readonly',

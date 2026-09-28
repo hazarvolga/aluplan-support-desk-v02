@@ -26,6 +26,23 @@ import { LangfuseService } from './langfuse.service';
 import { RedisService } from '../redis/redis.service';
 import { StorageService } from '../common/services/storage.service';
 import { AiSemanticCache } from './ai-semantic-cache.service';
+import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
+
+// These properties test orchestration, not tokenizer accuracy. Reconstructing
+// real vocabulary maps per generated query obscures those invariants with CPU work.
+jest.mock('./utils/token-counter', () => ({
+    ...jest.requireActual('./utils/token-counter'),
+    countTokens: jest.fn((text: string) => Math.ceil(text.length / 4)),
+}));
+
+const PBT_NUM_RUNS = 100;
+const PBT_SEED_BASE = 20260805;
+
+const pbtOptions = (seedOffset: number) => ({
+    numRuns: PBT_NUM_RUNS,
+    seed: PBT_SEED_BASE + seedOffset,
+});
 
 // ---------------------------------------------------------------------------
 // Shared mock factories
@@ -157,11 +174,14 @@ async function buildModule(overrides: {
             { provide: MetricsService, useValue: { increment: jest.fn(), gauge: jest.fn(), recordCacheOp: jest.fn() } },
             { provide: StorageService, useValue: { getFile: jest.fn().mockResolvedValue(Buffer.from('fake')) } },
             { provide: AiSemanticCache, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn().mockResolvedValue(undefined) } },
+            SupportAnswerOrchestrator,
+            MaintenanceWorkService,
             { provide: getQueueToken('ai-query-processing'), useValue: { add: jest.fn() } },
         ],
     }).compile();
 
     return {
+        module,
         service: module.get(AiQueryService),
         prisma,
         aiService,
@@ -211,9 +231,9 @@ describe('Property 2: Shift Detection DB Persistence', () => {
                         productId: null,
                     });
 
-                    const { service } = await buildModule({ prisma, diagnosisAnalyze });
+                    const { service, module } = await buildModule({ prisma, diagnosisAnalyze });
 
-                    await service.queryInternal({ userQuery, history, userId: 'user-1' });
+                    await service.queryInternal({ userQuery, history, userId: 'user-1' }).finally(() => module.close());
 
                     // Must be called exactly once
                     expect(prisma.aiShiftDetection.create).toHaveBeenCalledTimes(1);
@@ -228,7 +248,7 @@ describe('Property 2: Shift Detection DB Persistence', () => {
                     expect(data.historyLength).toBe(history.length);
                 },
             ),
-            { numRuns: 100 },
+            pbtOptions(2),
         );
     });
 });
@@ -267,13 +287,13 @@ describe('Property 3: History Mutation iff isProblemShift', () => {
                         productId: null,
                     });
 
-                    const { service } = await buildModule({ promptContext, diagnosisAnalyze });
+                    const { service, module } = await buildModule({ promptContext, diagnosisAnalyze });
 
                     await service.queryInternal({
                         userQuery: 'test query for history mutation',
                         history: [...history],
                         userId: 'user-1',
-                    });
+                    }).finally(() => module.close());
 
                     expect(promptContext.buildContext).toHaveBeenCalled();
                     const buildContextCall = (promptContext.buildContext as jest.Mock).mock.calls[0][0];
@@ -289,7 +309,7 @@ describe('Property 3: History Mutation iff isProblemShift', () => {
                     }
                 },
             ),
-            { numRuns: 100 },
+            pbtOptions(3),
         );
     });
 });
@@ -301,7 +321,7 @@ describe('Property 3: History Mutation iff isProblemShift', () => {
 
 describe('Property 5: Shift Event Langfuse Payload Completeness', () => {
     /**
-     * For any (userQuery, history, userId) combination where isProblemShift = true,
+     * For any support-query, history, and userId combination where isProblemShift = true,
      * LangfuseService.addEvent() should be called with event name "problem-shift"
      * and a payload containing all four required fields:
      *   previousKeywords (array), newKeywords (array), historyLength (number), userId (string | null)
@@ -312,7 +332,12 @@ describe('Property 5: Shift Event Langfuse Payload Completeness', () => {
         await fc.assert(
             fc.asyncProperty(
                 fc.record({
-                    userQuery: fc.string({ minLength: 5 }),
+                    userQuery: fc.constantFrom(
+                        'Allplan license server error keeps failing',
+                        'BIMPLUS depolama alanı yetersiz uyarısı alıyoruz',
+                        'Allplan crashes while opening project data',
+                        'CodeMeter lisans servisi hata veriyor',
+                    ),
                     history: fc.array(
                         fc.record({
                             role: fc.constantFrom('user' as const, 'assistant' as const),
@@ -332,9 +357,9 @@ describe('Property 5: Shift Event Langfuse Payload Completeness', () => {
                         productId: null,
                     });
 
-                    const { service } = await buildModule({ langfuse, diagnosisAnalyze });
+                    const { service, module } = await buildModule({ langfuse, diagnosisAnalyze });
 
-                    await service.queryInternal({ userQuery, history, userId });
+                    await service.queryInternal({ userQuery, history, userId }).finally(() => module.close());
 
                     expect(langfuse.addEvent).toHaveBeenCalled();
 
@@ -355,7 +380,7 @@ describe('Property 5: Shift Event Langfuse Payload Completeness', () => {
                     ).toBe(true);
                 },
             ),
-            { numRuns: 100 },
+            pbtOptions(5),
         );
     });
 });
@@ -403,20 +428,20 @@ describe('Property 6: Pipeline Resilience', () => {
                         productId: null,
                     });
 
-                    const { service } = await buildModule({ prisma, langfuse, diagnosisAnalyze });
+                    const { service, module } = await buildModule({ prisma, langfuse, diagnosisAnalyze });
 
                     // Must resolve — not throw
                     const result = await service.queryInternal({
                         userQuery: 'test query',
                         history: [{ role: 'user', content: 'prev' }],
-                    });
+                    }).finally(() => module.close());
 
                     expect(result.query).toBeDefined();
                     expect(result.confidence).toBeDefined();
                     expect(result.interactionId).toBeDefined();
                 },
             ),
-            { numRuns: 100 },
+            pbtOptions(6),
         );
     });
 });

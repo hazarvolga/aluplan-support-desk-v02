@@ -1,8 +1,11 @@
 import { PrismaClient } from '@aluplan/database';
+import { createCliLogger } from './common/utils/cli-logger';
+const cliLogger = createCliLogger('CheckKnowledge');
+
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('--- KNOWLEDGE SOURCE CHECK ---');
+    cliLogger.log('--- KNOWLEDGE SOURCE CHECK ---');
     const sources = await prisma.knowledgeSource.findMany({
         where: {
             OR: [
@@ -14,12 +17,12 @@ async function main() {
         include: { _count: { select: { embeddings: true } } }
     });
 
-    console.log(`Found ${sources.length} sources related to Python/Visual Scripting.`);
+    cliLogger.log(`Found ${sources.length} sources related to Python/Visual Scripting.`);
     sources.forEach(s => {
-        console.log(`- [${s.status}] ${s.name} (${s.fileName}): ${s._count.embeddings} chunks`);
+        cliLogger.log(`- [${s.status}] ${s.name} (${s.fileName}): ${s._count.embeddings} chunks`);
     });
 
-    console.log('\n--- EMBEDDING CONTENT SEARCH ---');
+    cliLogger.log('\n--- EMBEDDING CONTENT SEARCH ---');
     const embeddings = await prisma.knowledgePoolEmbedding.findMany({
         where: {
             OR: [
@@ -31,10 +34,10 @@ async function main() {
         select: { content: true }
     });
 
-    console.log(`Found ${embeddings.length} content chunks containing keywords (top 5 shown).`);
+    cliLogger.log(`Found ${embeddings.length} content chunks containing keywords (top 5 shown).`);
     embeddings.forEach((e, i) => {
-        console.log(`--- Chunk ${i + 1} ---\n${e.content.substring(0, 150)}...\n`);
+        cliLogger.log(`--- Chunk ${i + 1} ---\n${e.content.substring(0, 150)}...\n`);
     });
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+main().catch((error) => cliLogger.error(error)).finally(() => prisma.$disconnect());

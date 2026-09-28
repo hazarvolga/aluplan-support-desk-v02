@@ -40,6 +40,30 @@ export type KnowledgePoolBulkUploadResult = {
     total: number;
 };
 
+export type CrmConnection = {
+    id: string;
+    provider: 'DYNAMICS_365';
+    tenantId: string | null;
+    clientId: string | null;
+    clientSecret: string | null;
+    webhookSecret: string | null;
+    instanceUrl: string | null;
+    isActive: boolean;
+    syncSettings?: Record<string, unknown> | null;
+    lastSyncAt?: string | null;
+    syncStatus?: string;
+};
+
+export type UpsertCrmConnectionInput = {
+    provider: 'DYNAMICS_365';
+    tenantId: string;
+    clientId: string;
+    clientSecret: string;
+    webhookSecret?: string;
+    instanceUrl: string;
+    syncSettings?: Record<string, unknown>;
+};
+
 export type LearnNowCrawlFormat =
     | 'knowledge_article'
     | 'pdf'
@@ -86,6 +110,31 @@ export type DiscoverAllplanHelpPayload = {
     maxCandidates?: number;
     includeHidden?: boolean;
     dryRun?: boolean;
+};
+
+export type AiInteractionHistoryItem = {
+    id: string;
+    userQuery: string;
+    responseGenerated: string | null;
+    confidenceBand: 'HIGH' | 'MEDIUM' | 'LOW' | null;
+    similarityScore: number | null;
+    autoAnswered: boolean;
+    ticketCreated: boolean;
+    channel: string;
+    provider: string | null;
+    model: string | null;
+    createdAt: string;
+    user: { id: string; fullName: string; email: string; companyName: string | null } | null;
+    ticket: { id: string; ticketNumber: string; subject: string; status: string } | null;
+    matchedArticle: { id: string; title: string } | null;
+};
+
+export type AiInteractionHistoryResponse = {
+    data: AiInteractionHistoryItem[];
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
 };
 
 export type OpsDashboardData = {
@@ -141,6 +190,20 @@ export type OpsDashboardData = {
     };
     learnNow: Record<string, any>;
     liveFeed: Array<{ id: string; type: string; title: string; description?: string; status?: string; at: string; href: string }>;
+};
+
+export type ReviewCenterItem = {
+    id: string;
+    kind: 'ACTION' | 'AUDIT';
+    group: 'OPERATIONAL' | 'EDITORIAL' | 'FOLLOW_UP';
+    href: string;
+    priority: 'URGENT' | 'NORMAL';
+    count?: number;
+};
+
+export type ReviewCenterSummary = {
+    items: ReviewCenterItem[];
+    pendingActions: number;
 };
 
 const processQueue = (error: Error | null, token: string | null = null) => {
@@ -266,8 +329,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
             } else {
                 errStr = `Error Detail Missing (Status ${res.status})`;
             }
-            // Suppress noisy 401 logs for auth-check endpoints (handled gracefully by AuthProvider)
-            if (!(res.status === 401 && path.includes('/auth/me'))) {
+            const isHandledKnowledgeUrlDuplicate = res.status === 409
+                && (errBody.code === 'KNOWLEDGE_SOURCE_URL_DUPLICATE'
+                    || errBody.message === 'KNOWLEDGE_SOURCE_URL_DUPLICATE');
+            // Suppress errors that are deliberately handled as normal UI states.
+            if (!(res.status === 401 && path.includes('/auth/me')) && !isHandledKnowledgeUrlDuplicate) {
                 console.error(`API Error [${res.status}]:`, errBody);
             }
         } catch (e) {
@@ -313,9 +379,12 @@ export const api = {
     dashboard: {
         ops: (days = 7) => request<OpsDashboardData>(`/dashboard/ops?days=${days}`),
     },
+    reviewCenter: {
+        summary: () => request<ReviewCenterSummary>('/review-center/summary'),
+    },
     auth: {
         login: (email: string, password: string) =>
-            request<{ access_token: string; refresh_token: string }>('/auth/login', {
+            request<{ user: { id: string; email: string; fullName: string } }>('/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ email, password }),
             }),
@@ -329,9 +398,15 @@ export const api = {
                 method: 'POST',
                 body: JSON.stringify({ email }),
             }),
+        resendVerification: (email: string) =>
+            request<{ success: boolean }>('/auth/resend-verification', {
+                method: 'POST',
+                body: JSON.stringify({ email }),
+            }),
         verifyEmail: (token: string) =>
-            request<{ success: boolean; message: string }>(`/auth/verify-email?token=${token}`, {
-                method: 'GET',
+            request<{ success: boolean; message: string }>('/auth/verify-email', {
+                method: 'POST',
+                body: JSON.stringify({ token }),
             }),
         resetPassword: (token: string, newPassword: string) =>
             request<{ success: boolean; message?: string }>('/auth/reset-password', {
@@ -355,24 +430,6 @@ export const api = {
             }
         }>('/auth/me'),
         logout: () => request<{ success: boolean }>('/auth/logout', { method: 'POST' }),
-        mfa: {
-            generate: () => request<{ secret: string; qrCodeDataUrl: string }>('/auth/mfa/generate', { method: 'POST' }),
-            setup: (token: string, secret: string) =>
-                request<{ success: boolean }>('/auth/mfa/setup', {
-                    method: 'POST',
-                    body: JSON.stringify({ token, secret }),
-                }),
-            verify: (userId: string, token: string) =>
-                request<{
-                    user: any;
-                    access_token: string;
-                    refresh_token: string;
-                }>('/auth/mfa/verify', {
-                    method: 'POST',
-                    body: JSON.stringify({ userId, token }),
-                }),
-            disable: () => request<{ success: boolean }>('/auth/mfa/disable', { method: 'POST' }),
-        },
     },
     pool: {
         list: () => request<any[]>('/knowledge-pool/sources'),
@@ -513,6 +570,24 @@ export const api = {
             request<any>(`/ai/interactions/${interactionId}/feedback`, {
                 method: 'POST', body: JSON.stringify({ rating, comment }),
             }),
+        listInteractions: (params: {
+            page?: number;
+            limit?: number;
+            ticketState?: 'ALL' | 'TICKETED' | 'TICKETLESS';
+            confidence?: 'ALL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
+            search?: string;
+            interactionId?: string;
+        } = {}) => {
+            const query = new URLSearchParams();
+            if (params.page) query.set('page', String(params.page));
+            if (params.limit) query.set('limit', String(params.limit));
+            if (params.ticketState && params.ticketState !== 'ALL') query.set('ticketState', params.ticketState);
+            if (params.confidence && params.confidence !== 'ALL') query.set('confidence', params.confidence);
+            if (params.search?.trim()) query.set('search', params.search.trim());
+            if (params.interactionId) query.set('interactionId', params.interactionId);
+            const suffix = query.toString();
+            return request<AiInteractionHistoryResponse>(`/ai/interactions${suffix ? `?${suffix}` : ''}`);
+        },
         status: () => request<any>('/ai/status'),
         getHealthStatus: () => request<{
             status: 'HEALTHY' | 'DEGRADED' | 'DOWN';
@@ -708,10 +783,21 @@ export const api = {
     },
     products: {
         list: () => request<any[]>('/products'),
+        create: (body: { name: string; description?: string }) =>
+            request<any>('/products', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: { name?: string; description?: string }) =>
+            request<any>(`/products/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        archive: (id: string) => request<any>(`/products/${id}`, { method: 'DELETE' }),
+        createCategory: (productId: string, body: { name: string; keywords?: string[] }) =>
+            request<any>(`/products/${productId}/categories`, { method: 'POST', body: JSON.stringify(body) }),
+        updateCategory: (categoryId: string, body: { name?: string; keywords?: string[] }) =>
+            request<any>(`/products/categories/${categoryId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        archiveCategory: (categoryId: string) =>
+            request<any>(`/products/categories/${categoryId}`, { method: 'DELETE' }),
     },
     settings: {
         list: (decrypt = false) => request<any[]>(`/settings${decrypt ? '?decrypt=true' : ''}`),
-        get: (key: string) => request<any>(`/settings/${key}`),
+        get: (key: string, decrypt = false) => request<any>(`/settings/${key}${decrypt ? '?decrypt=true' : ''}`),
         upsert: (body: any) => request<any>('/settings', { method: 'POST', body: JSON.stringify(body) }),
         bulkUpsert: (body: { settings: any[] }) => request<any>('/settings/bulk', { method: 'POST', body: JSON.stringify(body) }),
         delete: (key: string) => request<any>(`/settings/${key}`, { method: 'DELETE' }),
@@ -740,8 +826,6 @@ export const api = {
         getTemplateSource: (name: string) => request<{ content: string }>(`/email/admin/templates/${name}/source`),
         saveTemplate: (name: string, content: string) => request<{ success: true }>(`/email/admin/templates/${name}/save`, { method: 'POST', body: JSON.stringify({ content }) }),
         previewTemplate: (name: string, data: any) => request<any>(`/email/admin/templates/${name}/preview`, { method: 'POST', body: JSON.stringify(data) }),
-        getContentBlocks: (name: string) => request<{ blocks: any[] }>(`/email/admin/templates/${name}/content`),
-        saveContentBlocks: (name: string, blocks: any[]) => request<{ success: true }>(`/email/admin/templates/${name}/content`, { method: 'POST', body: JSON.stringify({ blocks }) }),
         verifyProvider: () => request<{ provider: string; available: boolean }>('/email/admin/provider/verify', { method: 'POST' }),
         verifyImap: () => request<{ available: boolean; message: string }>('/email/admin/imap/verify', { method: 'POST' }),
         getGmailAuthUrl: () => request<{ url: string }>('/email/gmail/auth-url'),
@@ -792,8 +876,8 @@ export const api = {
         },
     },
     crm: {
-        getConnections: () => request<any[]>('/crm/connections'),
-        upsertConnection: (data: any) => request<any>('/crm/connections', {
+        getConnections: () => request<CrmConnection[]>('/crm/connections'),
+        upsertConnection: (data: UpsertCrmConnectionInput) => request<CrmConnection>('/crm/connections', {
             method: 'POST',
             body: JSON.stringify(data)
         }),

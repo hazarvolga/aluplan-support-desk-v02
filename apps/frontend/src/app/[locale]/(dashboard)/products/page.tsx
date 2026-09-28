@@ -18,6 +18,7 @@ export default function ProductsPage() {
     const tc = useTranslations('common');
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [mutationPending, setMutationPending] = useState(false);
 
     // Dialog states
     const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
@@ -51,81 +52,74 @@ export default function ProductsPage() {
 
     // Product Handlers
     const handleProductSubmit = async () => {
+        if (mutationPending) return;
+        setMutationPending(true);
         try {
             if (editingProduct) {
-                await api.post(`/products/${editingProduct.id}`, { name: productName, description: productDescription });
-                // NOTE: api helper uses POST inside. We should maybe add a real PUT/PATCH or just use raw fetch if generic POST isn't sufficient. 
-                // Assuming standard REST, I'll use generic fetch for updates if `api.products` isn't fully built out.
-                await fetch(`${api.getBaseUrl()}/products/${editingProduct.id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: productName, description: productDescription })
-                });
+                await api.products.update(editingProduct.id, { name: productName, description: productDescription });
                 toast.success(t('toasts.product_updated'));
             } else {
-                await fetch(`${api.getBaseUrl()}/products`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: productName, description: productDescription })
-                });
+                await api.products.create({ name: productName, description: productDescription });
                 toast.success(t('toasts.product_added'));
             }
             setIsProductDialogOpen(false);
-            fetchProducts();
+            await fetchProducts();
         } catch (error: any) {
-            toast.error(t('toasts.save_failed'));
+            toast.error(error.message || t('toasts.save_failed'));
+        } finally {
+            setMutationPending(false);
         }
     };
 
     const handleDeleteProduct = async (id: string) => {
+        if (mutationPending) return;
         if (!confirm(t('confirms.delete_product'))) return;
+        setMutationPending(true);
         try {
-            await fetch(`${api.getBaseUrl()}/products/${id}`, {
-                method: 'DELETE'
-            });
+            await api.products.archive(id);
             toast.success(t('toasts.product_deleted'));
-            fetchProducts();
-        } catch (error) {
-            toast.error(t('toasts.delete_failed'));
+            await fetchProducts();
+        } catch (error: any) {
+            toast.error(error.message || t('toasts.delete_failed'));
+        } finally {
+            setMutationPending(false);
         }
     };
 
     // Category Handlers
     const handleCategorySubmit = async () => {
+        if (mutationPending) return;
+        setMutationPending(true);
         try {
             const keywordsArray = categoryKeywords.split(',').map(k => k.trim()).filter(Boolean);
             if (editingCategory) {
-                await fetch(`${api.getBaseUrl()}/products/categories/${editingCategory.id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: categoryName, keywords: keywordsArray })
-                });
+                await api.products.updateCategory(editingCategory.id, { name: categoryName, keywords: keywordsArray });
                 toast.success(t('toasts.category_updated'));
             } else {
-                await fetch(`${api.getBaseUrl()}/products/${activeProductId}/categories`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: categoryName, keywords: keywordsArray })
-                });
+                await api.products.createCategory(activeProductId, { name: categoryName, keywords: keywordsArray });
                 toast.success(t('toasts.category_added'));
             }
             setIsCategoryDialogOpen(false);
-            fetchProducts();
-        } catch (error) {
-            toast.error(t('toasts.save_failed'));
+            await fetchProducts();
+        } catch (error: any) {
+            toast.error(error.message || t('toasts.save_failed'));
+        } finally {
+            setMutationPending(false);
         }
     };
 
     const handleDeleteCategory = async (id: string) => {
+        if (mutationPending) return;
         if (!confirm(t('confirms.delete_category'))) return;
+        setMutationPending(true);
         try {
-            await fetch(`${api.getBaseUrl()}/products/categories/${id}`, {
-                method: 'DELETE'
-            });
+            await api.products.archiveCategory(id);
             toast.success(t('toasts.category_deleted'));
-            fetchProducts();
-        } catch (error) {
-            toast.error(t('toasts.delete_failed'));
+            await fetchProducts();
+        } catch (error: any) {
+            toast.error(error.message || t('toasts.delete_failed'));
+        } finally {
+            setMutationPending(false);
         }
     };
 
@@ -171,7 +165,7 @@ export default function ProductsPage() {
                                 )}
                             </div>
                             <div className="flex items-center gap-2 m-0 p-0">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => {
+                                <Button aria-label={t('actions.edit_product')} disabled={mutationPending} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => {
                                     setEditingProduct(product);
                                     setProductName(product.name);
                                     setProductDescription(product.description || '');
@@ -179,7 +173,7 @@ export default function ProductsPage() {
                                 }}>
                                     <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-400" onClick={() => handleDeleteProduct(product.id)}>
+                                <Button aria-label={t('actions.archive_product')} disabled={mutationPending} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-400" onClick={() => handleDeleteProduct(product.id)}>
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -187,7 +181,7 @@ export default function ProductsPage() {
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-sm font-medium text-slate-300">{t('labels.subcategories')}</h4>
-                                <Button variant="outline" size="sm" className="h-8 text-xs bg-transparent border-white/10 hover:bg-white/5" onClick={() => {
+                                <Button variant="outline" size="sm" disabled={mutationPending} className="h-8 text-xs bg-transparent border-white/10 hover:bg-white/5" onClick={() => {
                                     setActiveProductId(product.id);
                                     setEditingCategory(null);
                                     setCategoryName('');
@@ -213,7 +207,7 @@ export default function ProductsPage() {
                                                     {cat.name}
                                                 </div>
                                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                                                    <Button aria-label={t('actions.edit_category')} disabled={mutationPending} variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
                                                         setActiveProductId(product.id);
                                                         setEditingCategory(cat);
                                                         setCategoryName(cat.name);
@@ -222,7 +216,7 @@ export default function ProductsPage() {
                                                     }}>
                                                         <Edit className="h-3 w-3" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-red-500/10" onClick={() => handleDeleteCategory(cat.id)}>
+                                                    <Button aria-label={t('actions.archive_category')} disabled={mutationPending} variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-400 hover:bg-red-500/10" onClick={() => handleDeleteCategory(cat.id)}>
                                                         <Trash2 className="h-3 w-3" />
                                                     </Button>
                                                 </div>
@@ -277,7 +271,8 @@ export default function ProductsPage() {
                     </div>
                     <DialogFooter>
                         <Button variant="ghost" onClick={() => setIsProductDialogOpen(false)}>{tc('cancel')}</Button>
-                        <Button onClick={handleProductSubmit} disabled={!productName.trim()} className="bg-brand-600 hover:bg-brand-500">
+                        <Button onClick={handleProductSubmit} disabled={!productName.trim() || mutationPending} className="bg-brand-600 hover:bg-brand-500">
+                            {mutationPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                             {tc('save')}
                         </Button>
                     </DialogFooter>
@@ -318,7 +313,8 @@ export default function ProductsPage() {
                     </div>
                     <DialogFooter>
                         <Button variant="ghost" onClick={() => setIsCategoryDialogOpen(false)}>{tc('cancel')}</Button>
-                        <Button onClick={handleCategorySubmit} disabled={!categoryName.trim()} className="bg-brand-600 hover:bg-brand-500">
+                        <Button onClick={handleCategorySubmit} disabled={!categoryName.trim() || mutationPending} className="bg-brand-600 hover:bg-brand-500">
+                            {mutationPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                             {tc('save')}
                         </Button>
                     </DialogFooter>

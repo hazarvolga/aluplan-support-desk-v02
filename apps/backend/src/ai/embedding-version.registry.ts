@@ -25,6 +25,12 @@ export class EmbeddingVersionRegistry {
     'gemini:models/gemini-embedding-2': { version: 'v2_2', dimension: 3072 },
     'gemini:gemini-embedding-2-preview': { version: 'v2_2p', dimension: 3072 },
     'gemini:models/gemini-embedding-2-preview': { version: 'v2_2p', dimension: 3072 },
+    'llmapi:gemini-embedding-2': { version: 'v2_2', dimension: 3072 },
+    'llmapi:models/gemini-embedding-2': { version: 'v2_2', dimension: 3072 },
+    'llmapi:gemini-embedding-2-preview': { version: 'v2_2p', dimension: 3072 },
+    'llmapi:models/gemini-embedding-2-preview': { version: 'v2_2p', dimension: 3072 },
+    'llmapi:text-embedding-3-small': { version: 'v3s', dimension: 1536 },
+    'llmapi:text-embedding-3-large': { version: 'v3l', dimension: 3072 },
     'ollama:nomic-embed-text': { version: 'v_nom', dimension: 768 },
     'ollama:mxbai-embed-large': { version: 'v_mxb', dimension: 1024 }
   };
@@ -32,17 +38,23 @@ export class EmbeddingVersionRegistry {
   constructor(private settingsService: SettingsService) {}
 
   async getActiveVersionConfig(): Promise<VersionConfig> {
-    let provider = await this.settingsService.getValue('ai.embed_provider');
+    let provider = this.normalizeProvider(
+      await this.settingsService.getValue('ai.embed_provider')
+      || await this.settingsService.getValue('ai.active_provider')
+      || process.env.EMBEDDING_PROVIDER
+      || process.env.EMBED_PROVIDER,
+    );
     if (!provider) {
-      provider = 'openai'; // fallback
+      provider = 'gemini';
     }
 
-    let model = await this.settingsService.getValue(`ai.${provider}.embed_model`);
+    let model = this.normalizeModel(await this.settingsService.getValue(`ai.${provider}.embed_model`));
     if (!model) {
       // Basic defaults if DB is missing
       if (provider === 'gemini') model = 'gemini-embedding-2';
-      else if (provider === 'openai') model = 'text-embedding-ada-002';
-      else model = 'unknown';
+      else if (provider === 'llmapi') model = 'gemini-embedding-2';
+      else if (provider === 'openai') model = 'text-embedding-3-small';
+      else if (provider === 'ollama') model = 'nomic-embed-text';
     }
 
     const key = `${provider}:${model}`;
@@ -53,25 +65,29 @@ export class EmbeddingVersionRegistry {
         version: mapped.version,
         dimension: mapped.dimension,
         provider,
-        model
+        model,
       };
     }
 
-    // Dynamic fallback for unknown models. 
-    // Truncate to ensure it fits in VARCHAR(10)
-    const fallbackVersion = `v_${provider.substring(0,2)}_${model.substring(0,4)}`.toLowerCase().substring(0, 10);
-    
-    this.logger.warn(`Unknown embedding model: ${key}. Using fallback version code: ${fallbackVersion}. Dimension might be inaccurate until first embedding generation.`);
-    
-    return {
-      version: fallbackVersion,
-      dimension: 1536, // default guess, will be updated during actual embedding generation if needed
-      provider,
-      model
-    };
+    this.logger.error(`Unknown embedding model/version mapping: ${key}. Refusing to guess embedding dimension.`);
+    throw new Error(`UNKNOWN_EMBEDDING_MODEL_MAPPING: ${key}`);
   }
 
   getVersionConfig(provider: string, model: string): { version: string; dimension: number } | null {
-    return this.configMap[`${provider}:${model}`] || null;
+    const normalizedProvider = this.normalizeProvider(provider);
+    const normalizedModel = this.normalizeModel(model);
+    return this.configMap[`${normalizedProvider}:${normalizedModel}`] || null;
+  }
+
+  private normalizeProvider(provider?: string | null): string {
+    return provider?.trim().toLowerCase() ?? '';
+  }
+
+  private normalizeModel(model?: string | null): string {
+    const normalized = model?.trim() ?? '';
+    if (normalized === 'text-embeding-3-small') {
+      return 'text-embedding-3-small';
+    }
+    return normalized;
   }
 }

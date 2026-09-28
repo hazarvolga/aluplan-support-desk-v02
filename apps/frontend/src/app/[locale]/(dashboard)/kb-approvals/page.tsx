@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, RefreshCw, Bot, FileText, ExternalLink, ShieldCheck } from 'lucide-react';
+import { RefreshCw, Bot, FileText, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -143,15 +143,23 @@ export default function KbApprovalsPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="align-top text-center py-3">
-                                            {draft.sourceTicketId ? (
-                                                <Link href={`/${locale}/tickets/${draft.sourceTicketId}`} target="_blank" className="font-mono text-[10px] text-primary hover:underline uppercase tracking-normal">
-                                                    INC_{draft.sourceTicketId.substring(0, 6)}
-                                                </Link>
-                                            ) : '-'}
+                                            <div className="flex flex-col items-center gap-1">
+                                                {Array.isArray(draft.sources) && draft.sources.length > 0 ? draft.sources.map((source: any) => (
+                                                    source.sourceType === 'TICKET' && source.ticket ? (
+                                                        <Link key={source.id} href={`/${locale}/tickets/${source.ticket.id}`} target="_blank" className="font-mono text-[10px] text-primary hover:underline tracking-normal">
+                                                            {source.ticket.ticketNumber}
+                                                        </Link>
+                                                    ) : source.sourceType === 'AI_INTERACTION' && source.interaction ? (
+                                                        <Link key={source.id} href={`/${locale}/admin/ai-interactions?interactionId=${encodeURIComponent(source.interaction.id)}`} className="font-mono text-[10px] text-primary hover:underline tracking-normal">
+                                                            {t('table.ai_interaction')}
+                                                        </Link>
+                                                    ) : null
+                                                )) : <span className="text-[10px] text-muted-foreground">{t('table.legacy_source')}</span>}
+                                            </div>
                                         </TableCell>
                                         <TableCell className="align-top text-right py-3">
                                             <div className="flex justify-end gap-1.5">
-                                                <Button size="sm" variant="outline" onClick={() => handleApprove(draft.id)} className="h-6 text-[10px] font-bold uppercase border-emerald-900/50 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 transition-none">
+                                                <Button size="sm" variant="outline" onClick={() => handleApprove(draft.id)} disabled={!draft.question?.trim() || !draft.answer?.trim()} className="h-6 text-[10px] font-bold uppercase border-emerald-900/50 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 transition-none">
                                                     {t('buttons.approve')}
                                                 </Button>
                                                 <Button size="sm" variant="outline" onClick={() => handleDismiss(draft.id)} className="h-6 text-[10px] font-bold uppercase border-red-900/50 text-red-500 bg-red-500/5 hover:bg-red-500/10 transition-none">

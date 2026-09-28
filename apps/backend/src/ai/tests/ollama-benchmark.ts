@@ -1,10 +1,13 @@
 import axios from 'axios';
+import { createCliLogger } from '../../common/utils/cli-logger';
+
+const cliLogger = createCliLogger('OllamaBenchmark');
 
 async function testOllama() {
     const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
     const model = process.env.OLLAMA_MODEL || 'nomic-embed-text';
 
-    console.log(`🚀 Starting Ollama Stress Test (${baseUrl}, model: ${model})`);
+    cliLogger.log(`🚀 Starting Ollama Stress Test (${baseUrl}, model: ${model})`);
 
     const testTexts = [
         "This is a test chunk for Allplan architectural design and BIM modelling.",
@@ -25,7 +28,7 @@ async function testOllama() {
     for (let i = 0; i < 20; i++) {
         const text = testTexts[i % testTexts.length];
         const sequenceNum = i + 1;
-        console.log(`[${sequenceNum}/20] Requesting embedding...`);
+        cliLogger.log(`[${sequenceNum}/20] Requesting embedding...`);
 
         const startTime = Date.now();
         try {
@@ -37,10 +40,10 @@ async function testOllama() {
             });
 
             const duration = Date.now() - startTime;
-            console.log(`✅ Success in ${duration}ms`);
+            cliLogger.log(`✅ Success in ${duration}ms`);
             successCount++;
         } catch (err: any) {
-            console.error(`❌ Error during request ${sequenceNum}: ${err.message}`);
+            cliLogger.error(`❌ Error during request ${sequenceNum}: ${err.message}`);
             failCount++;
         }
 
@@ -48,7 +51,7 @@ async function testOllama() {
         await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    console.log(`\nFinal Result: ${successCount} Success, ${failCount} Failed.`);
+    cliLogger.log(`\nFinal Result: ${successCount} Success, ${failCount} Failed.`);
 }
 
-testOllama().catch(console.error);
+testOllama().catch((error) => cliLogger.error(error));

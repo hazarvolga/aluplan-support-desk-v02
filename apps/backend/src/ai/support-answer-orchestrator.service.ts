@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 import { AiService } from './ai.service';
 import { AiPart } from './interfaces/ai-provider.interface';
 import { hasAnswerLanguageLeak, isNoKnowledgeAnswer } from './ai-answer-quality';
@@ -62,7 +63,10 @@ export interface SupportLanguageRepairResult {
 export class SupportAnswerOrchestrator {
     private readonly logger = new Logger(SupportAnswerOrchestrator.name);
 
-    constructor(private readonly ai: AiService) { }
+    constructor(
+        private readonly ai: AiService,
+        private readonly work: MaintenanceWorkService,
+    ) { }
 
     shouldGenerateFromRetrievedContext(options: SupportAnswerContextDecisionOptions): SupportAnswerContextDecision {
         const rawTopScore = Number(options.topScore ?? 0);
@@ -101,6 +105,16 @@ export class SupportAnswerOrchestrator {
     }
 
     async generate(options: SupportAnswerGenerationOptions): Promise<SupportAnswerGenerationResult> {
+        const parent = this.work.currentLease();
+        const operation = () => this.generateTracked(options);
+        return parent
+            ? this.work.runChild(parent, 'ai.answer', operation)
+            : this.work.runRoot('ai.answer', operation);
+    }
+
+    private async generateTracked(options: SupportAnswerGenerationOptions): Promise<SupportAnswerGenerationResult> {
+        const parent = this.work.currentLease();
+        if (!parent) throw new Error('Expected active answer work lease');
         const synthesisPrompt = this.buildResponseDraftPrompt(options.finalPrompt);
         let timeoutHandle: NodeJS.Timeout | null = null;
         const timeoutPromise = new Promise<null>((resolve) => {
@@ -108,14 +122,16 @@ export class SupportAnswerOrchestrator {
         });
 
         const generated = await Promise.race([
-            this.generateOrReformat({
+            // The response deadline does not cancel generation. Reserve its full
+            // lifetime so late reformatting remains counted after the fallback.
+            this.work.runChild(parent, 'ai.answer.generation', () => this.generateOrReformat({
                 synthesisPrompt,
                 finalPrompt: options.finalPrompt,
                 userQuery: options.userQuery,
                 kbContent: options.kbContent,
                 attachments: options.attachments ?? [],
                 timeoutMs: options.timeoutMs,
-            }),
+            })),
             timeoutPromise,
         ]).finally(() => {
             if (timeoutHandle) {

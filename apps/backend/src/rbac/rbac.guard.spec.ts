@@ -71,6 +71,18 @@ describe('RbacGuard', () => {
             expect(guard.canActivate(makeContext({ role: { name: 'admin' } }))).toBe(true);
         });
 
+        it.each([
+            ['SUPPORT_MANAGER', 'support-manager'],
+            ['department-manager', 'DEPARTMENT_MANAGER'],
+            [{ name: 'support_agent' }, 'SUPPORT-AGENT'],
+        ])(
+            'normalizes underscore and hyphen aliases between user role %p and required role %s',
+            (userRole, requiredRole) => {
+                setRequiredRoles([requiredRole]);
+                expect(guard.canActivate(makeContext({ role: userRole }))).toBe(true);
+            },
+        );
+
         it('rejects when role does not match and no wildcard permission', () => {
             setRequiredRoles(['ADMIN']);
             expect(() =>

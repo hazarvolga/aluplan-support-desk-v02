@@ -1,5 +1,6 @@
 // P1 — Kritik iş mantığı: Dynamics365Adapter
 import { Test, TestingModule } from '@nestjs/testing';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Dynamics365Adapter } from './dynamics365.adapter';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -151,6 +152,22 @@ describe('Dynamics365Adapter', () => {
 
             expect(result.status).toBe(SyncStatus.ERROR);
             expect(result.errorMessage).toContain('Account Sync Error');
+        });
+
+        it('does not return an OAuth response that echoes the client secret', async () => {
+            mockedAxios.post = jest.fn().mockRejectedValue({
+                response: {
+                    status: 401,
+                    data: { error: 'invalid_client', error_description: 'Rejected ABCDWXYZ' },
+                },
+                message: 'Rejected ABCDWXYZ',
+            });
+
+            const result = await adapter.syncAccounts(buildConfig({ clientSecret: 'ABCDWXYZ' }));
+
+            expect(result.status).toBe(SyncStatus.ERROR);
+            expect(result.errorMessage).toContain('HTTP 401');
+            expect(JSON.stringify(result)).not.toContain('ABCDWXYZ');
         });
 
         it('should call onProgress callback', async () => {
@@ -353,14 +370,36 @@ describe('Dynamics365Adapter', () => {
 
         it('should reuse saved delta links and keep annotation headers', async () => {
             mockedAxios.get = jest.fn().mockResolvedValue({
-                data: { value: [], '@odata.deltaLink': 'https://delta-next' },
+                data: { value: [], '@odata.deltaLink': 'https://org.crm4.dynamics.com/api/data/v9.2/contacts?$deltatoken=next' },
                 status: 200,
             });
 
-            await adapter.fetchDeltaRecords(buildConfig(), 'contact', 'https://saved-delta');
+            await adapter.fetchDeltaRecords(
+                buildConfig(),
+                'contact',
+                'https://org.crm4.dynamics.com/api/data/v9.2/contacts?$deltatoken=saved',
+            );
 
-            expect((mockedAxios.get as jest.Mock).mock.calls[0][0]).toBe('https://saved-delta');
+            expect((mockedAxios.get as jest.Mock).mock.calls[0][0]).toContain('$deltatoken=saved');
             expect((mockedAxios.get as jest.Mock).mock.calls[0][1].headers.Prefer).toBe('odata.include-annotations="*"');
+        });
+
+        it('rejects saved and returned continuation links from another origin', async () => {
+            await expect(adapter.fetchDeltaRecords(
+                buildConfig(),
+                'contact',
+                'https://evil.crm4.dynamics.com/api/data/v9.2/contacts?$deltatoken=stolen',
+            )).rejects.toThrow(/changed origin/);
+
+            mockedAxios.get = jest.fn().mockResolvedValue({
+                data: {
+                    value: [],
+                    '@odata.nextLink': 'https://evil.crm4.dynamics.com/api/data/v9.2/contacts?$skiptoken=stolen',
+                },
+                status: 200,
+            });
+            await expect(adapter.fetchDeltaRecords(buildConfig(), 'contact', null))
+                .rejects.toThrow(/changed origin/);
         });
     });
 
@@ -403,6 +442,56 @@ describe('Dynamics365Adapter', () => {
     // ── verifyConnection ──────────────────────────────────────────────────────
 
     describe('verifyConnection', () => {
+        it('keeps token acquisition observable without logging credential fragments', async () => {
+            const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+            try {
+                const result = await adapter.verifyConnection(buildConfig({ clientSecret: 'ABCDWXYZ' }));
+                const messages = JSON.stringify(log.mock.calls);
+
+                expect(result).toBe(true);
+                expect(messages).toContain('[TOKEN_ACQUISITION]');
+                expect(messages).not.toContain('ABCD');
+                expect(messages).not.toContain('WXYZ');
+            } finally {
+                log.mockRestore();
+            }
+        });
+
+        it('does not repeat a secret echoed in an OAuth error response', async () => {
+            const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+            try {
+                mockedAxios.post = jest.fn().mockRejectedValue({
+                    response: {
+                        status: 401,
+                        data: { error: 'invalid_client', error_description: 'Rejected ABCDWXYZ' },
+                    },
+                    message: 'Rejected ABCDWXYZ',
+                });
+
+                expect(await adapter.verifyConnection(buildConfig({ clientSecret: 'ABCDWXYZ' }))).toBe(false);
+                const messages = JSON.stringify(error.mock.calls);
+                expect(messages).toContain('HTTP 401');
+                expect(messages).toContain('invalid_client');
+                expect(messages).not.toContain('ABCDWXYZ');
+            } finally {
+                error.mockRestore();
+            }
+        });
+
+        it('does not trust the OAuth error code field as safe log text', async () => {
+            const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+            try {
+                mockedAxios.post = jest.fn().mockRejectedValue({
+                    response: { status: 401, data: { error: 'ABCDWXYZ' } },
+                });
+
+                expect(await adapter.verifyConnection(buildConfig({ clientSecret: 'ABCDWXYZ' }))).toBe(false);
+                expect(JSON.stringify(error.mock.calls)).not.toContain('ABCDWXYZ');
+            } finally {
+                error.mockRestore();
+            }
+        });
+
         it('should return true when token acquisition succeeds', async () => {
             const result = await adapter.verifyConnection(buildConfig());
             expect(result).toBe(true);

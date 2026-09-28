@@ -36,7 +36,10 @@ function buildPrismaMock() {
 
 function buildEmailMock() {
     return {
-        enqueueEmail: jest.fn().mockResolvedValue(undefined),
+        // Default: a real enqueue, matching EmailService.enqueueEmail's
+        // contract of resolving with the created EmailLog id. Tests that
+        // exercise the "skipped" (null) or "throws" paths override this.
+        enqueueEmail: jest.fn().mockResolvedValue('email-log-1'),
         cancelEmail: jest.fn().mockResolvedValue(undefined),
     };
 }
@@ -173,6 +176,54 @@ describe('AnnouncementsService — findAll', () => {
         expect(prisma.announcement.findMany).toHaveBeenCalledWith(expect.objectContaining({
             where: { deletedAt: null },
         }));
+    });
+
+    // GAP report GAP-08: `contentMjml` is a legacy name; most announcements
+    // actually hold rich-text HTML. Every list item should say explicitly
+    // which format it is instead of leaving callers to re-guess.
+    it('annotates each announcement with its detected contentFormat', async () => {
+        prisma.announcement.findMany.mockResolvedValue([
+            { id: 'ann-html', contentMjml: '<p>Merhaba!</p>' },
+            { id: 'ann-mjml', contentMjml: '<mjml><mj-body></mj-body></mjml>' },
+        ]);
+
+        const result = await service.findAll();
+
+        expect(result).toEqual([
+            expect.objectContaining({ id: 'ann-html', contentFormat: 'RICH_HTML' }),
+            expect.objectContaining({ id: 'ann-mjml', contentFormat: 'MJML' }),
+        ]);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// findOne
+// ---------------------------------------------------------------------------
+
+describe('AnnouncementsService — findOne', () => {
+    let prisma: any;
+    let service: AnnouncementsService;
+
+    beforeEach(async () => {
+        prisma = buildPrismaMock();
+        service = await buildService(prisma, buildEmailMock(), buildGatewayMock());
+    });
+
+    it('returns null unchanged when the announcement does not exist', async () => {
+        prisma.announcement.findUnique.mockResolvedValue(null);
+
+        await expect(service.findOne('missing')).resolves.toBeNull();
+    });
+
+    it('annotates the announcement with its detected contentFormat (GAP-08)', async () => {
+        prisma.announcement.findUnique.mockResolvedValue({
+            id: 'ann-1',
+            contentMjml: '<mj-section><mj-text>Hi</mj-text></mj-section>',
+        });
+
+        const result = await service.findOne('ann-1');
+
+        expect(result).toEqual(expect.objectContaining({ id: 'ann-1', contentFormat: 'MJML' }));
     });
 });
 
@@ -368,7 +419,7 @@ describe('AnnouncementsService — getMyAnnouncements', () => {
         );
     });
 
-    it('includes announcement title and contentMjml in the query', async () => {
+    it('includes announcement title and contentMjml via an explicit select', async () => {
         prisma.customerProfile.findUnique.mockResolvedValue({ id: customerId, userId });
         prisma.announcementLog.findMany.mockResolvedValue([]);
         prisma.announcementLog.count.mockResolvedValue(0);
@@ -377,8 +428,305 @@ describe('AnnouncementsService — getMyAnnouncements', () => {
 
         expect(prisma.announcementLog.findMany).toHaveBeenCalledWith(
             expect.objectContaining({
-                include: { announcement: { select: { title: true, contentMjml: true } } },
+                select: expect.objectContaining({
+                    announcement: { select: { title: true, contentMjml: true } },
+                }),
             }),
         );
+    });
+
+    // Codex independent review (2026-08-08): the query had no select
+    // allowlist, so Prisma returned every scalar column on AnnouncementLog —
+    // including emailLogId (an internal EmailLog UUID) and error (raw
+    // SMTP/provider failure text) — straight to the CUSTOMER-facing
+    // `GET /announcements/my` response.
+    describe('customer response field allowlist (Codex finding, MEDIUM)', () => {
+        it('does not request emailLogId or error from the database', async () => {
+            prisma.customerProfile.findUnique.mockResolvedValue({ id: customerId, userId });
+            prisma.announcementLog.findMany.mockResolvedValue([]);
+            prisma.announcementLog.count.mockResolvedValue(0);
+
+            await service.getMyAnnouncements(userId);
+
+            const call = prisma.announcementLog.findMany.mock.calls[0][0];
+            expect(call.select).not.toHaveProperty('emailLogId');
+            expect(call.select).not.toHaveProperty('error');
+            expect(call).not.toHaveProperty('include');
+        });
+
+        it('only selects the fields a customer legitimately needs to see', async () => {
+            prisma.customerProfile.findUnique.mockResolvedValue({ id: customerId, userId });
+            prisma.announcementLog.findMany.mockResolvedValue([]);
+            prisma.announcementLog.count.mockResolvedValue(0);
+
+            await service.getMyAnnouncements(userId);
+
+            const call = prisma.announcementLog.findMany.mock.calls[0][0];
+            expect(call.select).toEqual({
+                id: true,
+                status: true,
+                sentAt: true,
+                readAt: true,
+                createdAt: true,
+                announcement: { select: { title: true, contentMjml: true } },
+            });
+        });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// broadcast — customer email context parity (GAP report BUG-02)
+// ---------------------------------------------------------------------------
+
+describe('AnnouncementsService — broadcast customer context', () => {
+    let prisma: any;
+    let email: any;
+    let service: AnnouncementsService;
+
+    beforeEach(async () => {
+        prisma = buildPrismaMock();
+        email = buildEmailMock();
+        service = await buildService(prisma, email, buildGatewayMock());
+
+        prisma.announcement.findUnique.mockResolvedValue({
+            id: 'ann-1',
+            title: 'T',
+            subject: 'S',
+            contentMjml: '<mj-text>Hello</mj-text>',
+            targetCriteria: { industries: ['x'] },
+            type: 'BROADCAST',
+            status: 'DRAFT',
+            createdBy: 'u',
+            sentAt: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+        prisma.customerProfile.findMany.mockResolvedValue([{
+            id: 'cust-1',
+            userId: 'user-1',
+            firstName: 'Ada',
+            lastName: 'Lovelace',
+            companyName: 'Analytical Engines Ltd',
+            customerNo: 'CUST-001',
+            industry: 'x',
+            contractStatus: 'ACTIVE',
+            tags: [],
+            user: { id: 'user-1', email: 'ada@example.com' },
+        }]);
+        prisma.announcementLog.create.mockResolvedValue({ id: 'log-1', readAt: null });
+        prisma.announcementLog.update.mockResolvedValue({});
+        prisma.announcement.update.mockResolvedValue({});
+    });
+
+    it('sends the canonical announcement customer context, not the raw CustomerProfile row', async () => {
+        await service.broadcast('ann-1');
+
+        expect(email.enqueueEmail).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({
+                    customer: {
+                        firstName: 'Ada',
+                        lastName: 'Lovelace',
+                        fullName: 'Ada Lovelace',
+                        companyName: 'Analytical Engines Ltd',
+                        customerNo: 'CUST-001',
+                        email: 'ada@example.com',
+                        userEmail: 'ada@example.com',
+                    },
+                }),
+            }),
+        );
+    });
+
+    it('never leaks internal CustomerProfile fields (industry, contractStatus, tags, id) into the email context', async () => {
+        await service.broadcast('ann-1');
+
+        const call = email.enqueueEmail.mock.calls[0][0];
+        expect(call.data.customer).not.toHaveProperty('industry');
+        expect(call.data.customer).not.toHaveProperty('contractStatus');
+        expect(call.data.customer).not.toHaveProperty('tags');
+        expect(call.data.customer).not.toHaveProperty('id');
+        expect(call.data.customer).not.toHaveProperty('userId');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// broadcast — subject rendering and fail-closed content safety
+// (GAP report BUG-01 / GAP-06 / GAP-03 unknown-variable check)
+// ---------------------------------------------------------------------------
+
+describe('AnnouncementsService — broadcast subject rendering and content safety', () => {
+    let prisma: any;
+    let email: any;
+    let service: AnnouncementsService;
+
+    function mockAnnouncement(overrides: Partial<{ subject: string; contentMjml: string }>) {
+        prisma.announcement.findUnique.mockResolvedValue({
+            id: 'ann-1',
+            title: 'T',
+            subject: overrides.subject ?? 'Static subject',
+            contentMjml: overrides.contentMjml ?? '<mj-text>Static content</mj-text>',
+            targetCriteria: { industries: ['x'] },
+            type: 'BROADCAST',
+            status: 'DRAFT',
+            createdBy: 'u',
+            sentAt: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+    }
+
+    beforeEach(async () => {
+        prisma = buildPrismaMock();
+        email = buildEmailMock();
+        service = await buildService(prisma, email, buildGatewayMock());
+
+        prisma.customerProfile.findMany.mockResolvedValue([{
+            id: 'cust-1',
+            userId: 'user-1',
+            firstName: 'Ada',
+            lastName: 'Lovelace',
+            companyName: 'Analytical Engines Ltd',
+            customerNo: 'CUST-001',
+            industry: 'x',
+            contractStatus: 'ACTIVE',
+            tags: [],
+            user: { id: 'user-1', email: 'ada@example.com' },
+        }]);
+        prisma.announcementLog.create.mockResolvedValue({ id: 'log-1', readAt: null });
+        prisma.announcementLog.update.mockResolvedValue({});
+        prisma.announcement.update.mockResolvedValue({});
+    });
+
+    it('renders {{customer.*}} variables in the subject per recipient (BUG-01)', async () => {
+        mockAnnouncement({ subject: 'Merhaba {{customer.firstName}}, ürün güncellemesi' });
+
+        await service.broadcast('ann-1');
+
+        expect(email.enqueueEmail).toHaveBeenCalledWith(
+            expect.objectContaining({ subject: 'Merhaba Ada, ürün güncellemesi' }),
+        );
+    });
+
+    it('rejects broadcast when the content has a leftover [placeholder] and never enqueues or changes status (GAP-06)', async () => {
+        mockAnnouncement({ contentMjml: '<mj-text>Tahmini Yayın: [Tarih]</mj-text>' });
+
+        await expect(service.broadcast('ann-1')).rejects.toThrow();
+
+        expect(email.enqueueEmail).not.toHaveBeenCalled();
+        expect(prisma.announcement.update).not.toHaveBeenCalled();
+        expect(prisma.customerProfile.findMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects broadcast when the subject has a leftover [placeholder] (GAP-06)', async () => {
+        mockAnnouncement({ subject: 'Yakında: [Özellik Adı]' });
+
+        await expect(service.broadcast('ann-1')).rejects.toThrow();
+        expect(email.enqueueEmail).not.toHaveBeenCalled();
+    });
+
+    it('rejects broadcast when the content references an unknown customer variable (GAP-03)', async () => {
+        mockAnnouncement({ contentMjml: '<mj-text>Merhaba {{customer.fullname}}</mj-text>' });
+
+        await expect(service.broadcast('ann-1')).rejects.toThrow();
+        expect(email.enqueueEmail).not.toHaveBeenCalled();
+    });
+
+    it('allows a known customer variable and a static subject through unchanged', async () => {
+        mockAnnouncement({
+            subject: 'Sistem Bakım Duyurusu',
+            contentMjml: '<mj-text>Sayın {{customer.companyName}}</mj-text>',
+        });
+
+        await service.broadcast('ann-1');
+
+        expect(email.enqueueEmail).toHaveBeenCalledWith(
+            expect.objectContaining({ subject: 'Sistem Bakım Duyurusu' }),
+        );
+    });
+});
+
+// ---------------------------------------------------------------------------
+// broadcast — AnnouncementLog reflects real enqueue outcome (GAP report BUG-04)
+// ---------------------------------------------------------------------------
+
+describe('AnnouncementsService — broadcast AnnouncementLog status accuracy', () => {
+    let prisma: any;
+    let email: any;
+    let service: AnnouncementsService;
+
+    beforeEach(async () => {
+        prisma = buildPrismaMock();
+        email = buildEmailMock();
+        service = await buildService(prisma, email, buildGatewayMock());
+
+        prisma.announcement.findUnique.mockResolvedValue({
+            id: 'ann-1',
+            title: 'T',
+            subject: 'Static subject',
+            contentMjml: '<mj-text>Static content</mj-text>',
+            targetCriteria: { industries: ['x'] },
+            type: 'BROADCAST',
+            status: 'DRAFT',
+            createdBy: 'u',
+            sentAt: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+        prisma.customerProfile.findMany.mockResolvedValue([{
+            id: 'cust-1',
+            userId: 'user-1',
+            firstName: 'Ada',
+            lastName: 'Lovelace',
+            companyName: 'Analytical Engines Ltd',
+            customerNo: 'CUST-001',
+            user: { id: 'user-1', email: 'ada@example.com' },
+        }]);
+        prisma.announcementLog.create.mockResolvedValue({ id: 'log-1', readAt: null });
+        prisma.announcementLog.update.mockResolvedValue({});
+        prisma.announcement.update.mockResolvedValue({});
+    });
+
+    it('marks the log QUEUED (not SENT) and links emailLogId when enqueueEmail resolves with an id', async () => {
+        email.enqueueEmail.mockResolvedValue('real-email-log-id');
+
+        await service.broadcast('ann-1');
+
+        expect(prisma.announcementLog.update).toHaveBeenCalledWith({
+            where: { id: 'log-1' },
+            data: { status: 'QUEUED', emailLogId: 'real-email-log-id' },
+        });
+        // The old behavior (marking SENT the instant enqueue resolved,
+        // before any real delivery happened) must not reappear.
+        expect(prisma.announcementLog.update).not.toHaveBeenCalledWith(
+            expect.objectContaining({ data: expect.objectContaining({ status: 'SENT' }) }),
+        );
+    });
+
+    it('marks the log SKIPPED (not SENT) when enqueueEmail resolves with null (opted out / blocked)', async () => {
+        email.enqueueEmail.mockResolvedValue(null);
+
+        await service.broadcast('ann-1');
+
+        expect(prisma.announcementLog.update).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: { id: 'log-1' },
+                data: expect.objectContaining({ status: 'SKIPPED' }),
+            }),
+        );
+        expect(prisma.announcementLog.update).not.toHaveBeenCalledWith(
+            expect.objectContaining({ data: expect.objectContaining({ status: 'SENT' }) }),
+        );
+    });
+
+    it('still marks the log FAILED when enqueueEmail throws', async () => {
+        email.enqueueEmail.mockRejectedValue(new Error('Queue unavailable'));
+
+        await service.broadcast('ann-1');
+
+        expect(prisma.announcementLog.update).toHaveBeenCalledWith({
+            where: { id: 'log-1' },
+            data: { status: 'FAILED', error: 'Queue unavailable' },
+        });
     });
 });

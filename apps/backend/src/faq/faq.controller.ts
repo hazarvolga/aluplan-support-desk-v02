@@ -7,10 +7,25 @@ import { FaqService } from './faq.service';
 import { FaqStatus } from '@aluplan/database';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { RequirePermissions, Roles } from '../rbac/decorators/rbac.decorators';
+import { UpdateFaqDto } from './dto/update-faq.dto';
 
 const FAQ_STATUSES = new Set<string>(Object.values(FaqStatus));
+const FAQ_STAFF_ROLES = new Set([
+    'ADMIN', 'SUPER_ADMIN', 'SUPERUSER', 'SUPPORT_MANAGER',
+    'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'SENIOR_AGENT', 'AGENT', 'SUPPORT_AGENT', 'KB_EDITOR',
+]);
 
-function parsePositiveIntQuery(value: unknown, fallback: number, field: string): number {
+function isFaqStaffRole(role: unknown): boolean {
+    const value = typeof role === 'string'
+        ? role
+        : role && typeof role === 'object' && 'name' in role
+            ? (role as { name?: unknown }).name
+            : '';
+    const normalized = typeof value === 'string' ? value.trim().toUpperCase().replace(/-/g, '_') : '';
+    return FAQ_STAFF_ROLES.has(normalized);
+}
+
+function parsePositiveIntQuery(value: unknown, fallback: number, field: string, max?: number): number {
     if (value === undefined || value === null || value === '') return fallback;
 
     const normalized = Array.isArray(value) ? value[0] : value;
@@ -18,6 +33,9 @@ function parsePositiveIntQuery(value: unknown, fallback: number, field: string):
 
     if (!Number.isInteger(parsed) || parsed < 1) {
         throw new BadRequestException(`${field} must be a positive integer`);
+    }
+    if (max !== undefined && parsed > max) {
+        throw new BadRequestException(`${field} must be at most ${max}`);
     }
 
     return parsed;
@@ -46,13 +64,13 @@ export class FaqController {
     @ApiOperation({ summary: 'Get published FAQs (public widget endpoint)' })
     @ApiQuery({ name: 'language', required: false })
     getPublished(@Query('language') language = 'tr', @Request() req: any) {
-        const isStaff = req.user?.role?.toUpperCase() !== 'CUSTOMER';
+        const isStaff = isFaqStaffRole(req.user?.role);
         return this.faqService.getPublished(language, 50, isStaff);
     }
 
     // ─── ADMIN: CRUD + Review ─────────────────────────────────
     @Get()
-    @RequirePermissions('faq:read')
+    @RequirePermissions('faq:review')
     @ApiOperation({ summary: 'List all FAQs with pagination' })
     @ApiQuery({ name: 'status', required: false })
     @ApiQuery({ name: 'page', required: false, type: Number })
@@ -61,12 +79,12 @@ export class FaqController {
         return this.faqService.findAll({
             status: parseFaqStatusQuery(q.status),
             page: parsePositiveIntQuery(q.page, 1, 'page'),
-            limit: parsePositiveIntQuery(q.limit, 20, 'limit'),
+            limit: parsePositiveIntQuery(q.limit, 20, 'limit', 100),
         });
     }
 
     @Get(':id')
-    @RequirePermissions('faq:read')
+    @RequirePermissions('faq:review')
     findOne(@Param('id') id: string): Promise<any> {
         return this.faqService.findOne(id);
     }
@@ -74,19 +92,19 @@ export class FaqController {
     @Patch(':id')
     @RequirePermissions('faq:manage')
     @ApiOperation({ summary: 'Edit FAQ question/answer/tags' })
-    update(@Param('id') id: string, @Body() body: { question?: string; answer?: string; tags?: string[] }) {
+    update(@Param('id') id: string, @Body() body: UpdateFaqDto) {
         return this.faqService.updateFaq(id, body);
     }
 
     @Post(':id/approve')
-    @Roles('admin', 'support_manager', 'kb_editor')
+    @Roles('admin', 'support_manager', 'kb_editor', 'support_agent')
     @ApiOperation({ summary: 'Approve and publish a pending FAQ' })
     approve(@Param('id') id: string) {
         return this.faqService.approveFaq(id);
     }
 
     @Post(':id/dismiss')
-    @Roles('admin', 'support_manager', 'kb_editor')
+    @Roles('admin', 'support_manager', 'kb_editor', 'support_agent')
     @ApiOperation({ summary: 'Dismiss (reject) a pending FAQ' })
     dismiss(@Param('id') id: string) {
         return this.faqService.dismissFaq(id);

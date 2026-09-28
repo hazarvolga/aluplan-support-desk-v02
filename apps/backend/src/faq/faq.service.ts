@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { FaqStatus } from '@aluplan/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { OnEvent } from '@nestjs/event-emitter';
@@ -8,8 +8,7 @@ import { EmbeddingService } from '../ai/embedding.service';
 import { AiService } from '../ai/ai.service';
 import { EmbeddingVersionRegistry } from '../ai/embedding-version.registry';
 import { SettingsService } from '../settings/settings.service';
-
-const AUTO_PUBLISH_THRESHOLD = 0.85; // Sorular %85+ eşleşme → direkt yayınla
+import { RAG_CONFIG } from '../config/rag.config';
 
 export interface ExtractedPattern {
     question: string;
@@ -17,6 +16,7 @@ export interface ExtractedPattern {
     confidenceScore: number;
     sourceType: 'ticket' | 'interaction';
     sourceId: string;
+    sourceIds?: string[];
     tags: string[];
     language: string;
 }
@@ -24,6 +24,7 @@ export interface ExtractedPattern {
 @Injectable()
 export class FaqService {
     private readonly logger = new Logger(FaqService.name);
+    private readonly AUTO_PUBLISH_THRESHOLD = RAG_CONFIG.FAQ.AUTO_PUBLISH_THRESHOLD; // Questions above this confidence are published automatically.
 
     constructor(
         private readonly prisma: PrismaService,
@@ -135,13 +136,16 @@ export class FaqService {
         });
 
         // Group by similar queries to find frequent patterns
-        const queryGroups = new Map<string, { queries: string[]; ids: string[] }>();
+        const queryGroups = new Map<string, { queries: string[]; answers: string[]; ids: string[] }>();
 
         for (const interaction of interactions) {
+            const answer = interaction.responseGenerated?.trim();
+            if (!answer) continue;
             const normalized = interaction.userQuery.toLowerCase().trim().replace(/\s+/g, ' ');
             const key = normalized.slice(0, 50); // First 50 chars as group key
-            const group = queryGroups.get(key) ?? { queries: [], ids: [] };
+            const group = queryGroups.get(key) ?? { queries: [], answers: [], ids: [] };
             group.queries.push(interaction.userQuery);
+            group.answers.push(answer);
             group.ids.push(interaction.id);
             queryGroups.set(key, group);
         }
@@ -156,16 +160,30 @@ export class FaqService {
 
             patterns.push({
                 question: group.queries[0], // Most recent form
-                answer: '', // Admin will fill this in review
+                answer: group.answers[0],
                 confidenceScore,
                 sourceType: 'interaction',
                 sourceId: group.ids[0],
+                sourceIds: group.ids,
                 tags: [],
                 language: 'tr',
             });
         }
 
         return patterns;
+    }
+
+    private buildSourceRows(pattern: ExtractedPattern) {
+        const sourceIds = pattern.sourceIds?.length ? pattern.sourceIds : [pattern.sourceId];
+        return sourceIds.map((sourceId) => pattern.sourceType === 'ticket'
+            ? { sourceType: 'TICKET' as const, ticketId: sourceId }
+            : { sourceType: 'AI_INTERACTION' as const, interactionId: sourceId });
+    }
+
+    private async attachSources(faqEntryId: string, pattern: ExtractedPattern, db: any = this.prisma): Promise<void> {
+        const rows = this.buildSourceRows(pattern).map((source) => ({ faqEntryId, ...source }));
+        if (rows.length === 0) return;
+        await db.faqEntrySource.createMany({ data: rows, skipDuplicates: true });
     }
 
     // ─── PROCESS & UPSERT FAQ ENTRIES ───────────────────────
@@ -195,9 +213,12 @@ export class FaqService {
             });
 
             if (exactMatch) {
-                await this.prisma.faqEntry.update({
-                    where: { id: exactMatch.id },
-                    data: { frequency: { increment: 1 } },
+                await this.prisma.$transaction(async (tx) => {
+                    await tx.faqEntry.update({
+                        where: { id: exactMatch.id },
+                        data: { frequency: { increment: 1 } },
+                    });
+                    await this.attachSources(exactMatch.id, pattern, tx);
                 });
                 skipped++;
                 continue;
@@ -229,16 +250,21 @@ export class FaqService {
             }
 
             if (semanticDuplicateId) {
-                await this.prisma.faqEntry.update({
-                    where: { id: semanticDuplicateId },
-                    data: { frequency: { increment: 1 } },
+                await this.prisma.$transaction(async (tx) => {
+                    await tx.faqEntry.update({
+                        where: { id: semanticDuplicateId },
+                        data: { frequency: { increment: 1 } },
+                    });
+                    await this.attachSources(semanticDuplicateId, pattern, tx);
                 });
                 skipped++;
                 continue;
             }
 
             // 3. Create new FAQ entry with embedding
-            const status = pattern.confidenceScore >= AUTO_PUBLISH_THRESHOLD ? 'PUBLISHED' : 'PENDING_REVIEW';
+            const status = pattern.sourceType === 'interaction'
+                ? 'PENDING_REVIEW'
+                : pattern.confidenceScore >= this.AUTO_PUBLISH_THRESHOLD ? 'PUBLISHED' : 'PENDING_REVIEW';
 
             let questionEmbedding: number[] | null = null;
             try {
@@ -247,12 +273,19 @@ export class FaqService {
 
             if (questionEmbedding) {
                 const vectorStr = JSON.stringify(questionEmbedding);
-                await this.prisma.$executeRaw`
-                    INSERT INTO faq_entries (id, question, answer, status, is_internal, confidence_score, source_types, tags, language, published_at, question_embedding, embedding_version, embedding_dim)
-                    VALUES (gen_random_uuid(), ${pattern.question}, ${pattern.answer}, ${status}::"FaqStatus",
-                            true, ${pattern.confidenceScore}, ${pattern.tags}::text[], ${pattern.tags}::text[], ${pattern.language},
-                            ${status === 'PUBLISHED' ? new Date() : null}, ${vectorStr}::vector, ${config.version}, ${config.dimension})
-                `;
+                await this.prisma.$transaction(async (tx) => {
+                    const inserted = await tx.$queryRaw<Array<{ id: string }>>`
+                        INSERT INTO faq_entries (id, question, answer, status, is_internal, confidence_score, source_types, tags, language, published_at, question_embedding, embedding_version, embedding_dim)
+                        VALUES (gen_random_uuid(), ${pattern.question}, ${pattern.answer}, ${status}::"FaqStatus",
+                                true, ${pattern.confidenceScore}, ${[pattern.sourceType]}::text[], ${pattern.tags}::text[], ${pattern.language},
+                                ${status === 'PUBLISHED' ? new Date() : null}, ${vectorStr}::vector, ${config.version}, ${config.dimension})
+                        RETURNING id
+                    `;
+                    if (!inserted[0]?.id) {
+                        throw new InternalServerErrorException('FAQ_CREATE_FAILED');
+                    }
+                    await this.attachSources(inserted[0].id, pattern, tx);
+                });
             } else {
                 await this.prisma.faqEntry.create({
                     data: {
@@ -265,6 +298,7 @@ export class FaqService {
                         tags: pattern.tags,
                         language: pattern.language,
                         publishedAt: status === 'PUBLISHED' ? new Date() : null,
+                        sources: { create: this.buildSourceRows(pattern) },
                     },
                 });
             }
@@ -291,11 +325,26 @@ export class FaqService {
     // ─── CRUD ────────────────────────────────────────────────
     async findAll(params: { status?: FaqStatus; page?: number; limit?: number }): Promise<{ data: any[]; total: number; page: number; limit: number; pages: number }> {
         const { status, page = 1, limit = 20 } = params;
-        const statusFilter = status ? { status: status } : {};
+        const statusFilter = {
+            deletedAt: null,
+            ...(status ? { status } : {}),
+        };
 
         const [data, total] = await Promise.all([
             this.prisma.faqEntry.findMany({
                 where: statusFilter,
+                include: {
+                    sources: {
+                        where: { deletedAt: null },
+                        select: {
+                            id: true,
+                            sourceType: true,
+                            ticket: { select: { id: true, ticketNumber: true } },
+                            interaction: { select: { id: true, createdAt: true } },
+                        },
+                        orderBy: { createdAt: 'asc' },
+                    },
+                },
                 orderBy: [{ frequency: 'desc' }, { createdAt: 'desc' }],
                 skip: (page - 1) * limit,
                 take: limit,
@@ -307,12 +356,32 @@ export class FaqService {
     }
 
     async findOne(id: string): Promise<any> {
-        return this.prisma.faqEntry.findUnique({ where: { id } });
+        return this.prisma.faqEntry.findUnique({
+            where: { id, deletedAt: null },
+            include: {
+                sources: {
+                    where: { deletedAt: null },
+                    select: {
+                        id: true,
+                        sourceType: true,
+                        ticket: { select: { id: true, ticketNumber: true } },
+                        interaction: { select: { id: true, createdAt: true } },
+                    },
+                },
+            },
+        });
     }
 
     async approveFaq(id: string): Promise<any> {
+        const candidate = await this.prisma.faqEntry.findUnique({
+            where: { id, deletedAt: null },
+            select: { question: true, answer: true },
+        });
+        if (!candidate?.question?.trim()) throw new BadRequestException('FAQ_QUESTION_REQUIRED');
+        if (!candidate.answer?.trim()) throw new BadRequestException('FAQ_ANSWER_REQUIRED');
+
         const faq = await this.prisma.faqEntry.update({
-            where: { id },
+            where: { id, deletedAt: null },
             data: {
                 status: 'PUBLISHED',
                 publishedAt: new Date(),
@@ -324,11 +393,22 @@ export class FaqService {
     }
 
     async dismissFaq(id: string): Promise<any> {
-        return this.prisma.faqEntry.update({ where: { id }, data: { status: 'DISMISSED' } });
+        return this.prisma.faqEntry.update({ where: { id, deletedAt: null }, data: { status: 'DISMISSED' } });
     }
 
     async updateFaq(id: string, data: { question?: string; answer?: string; tags?: string[] }): Promise<any> {
-        const faq = await this.prisma.faqEntry.update({ where: { id }, data });
+        if (data.question !== undefined && !data.question.trim()) {
+            throw new BadRequestException('FAQ_QUESTION_REQUIRED');
+        }
+        if (data.answer !== undefined && !data.answer.trim()) {
+            throw new BadRequestException('FAQ_ANSWER_REQUIRED');
+        }
+        const updateData = {
+            ...(data.question !== undefined ? { question: data.question } : {}),
+            ...(data.answer !== undefined ? { answer: data.answer } : {}),
+            ...(data.tags !== undefined ? { tags: data.tags } : {}),
+        };
+        const faq = await this.prisma.faqEntry.update({ where: { id, deletedAt: null }, data: updateData });
         if (data.question !== undefined || data.answer !== undefined || data.tags !== undefined) {
             await this.refreshFaqQuestionEmbedding(faq);
         }
@@ -375,6 +455,7 @@ export class FaqService {
             where: {
                 status: 'PUBLISHED',
                 language,
+                deletedAt: null,
                 ...(!includeInternal && { isInternal: false })
             },
             orderBy: [{ frequency: 'desc' }, { publishedAt: 'desc' }],
@@ -395,6 +476,7 @@ export class FaqService {
         ticketCount: number;
         avgCsat?: number;
         consistencyRatio?: number;
+        ticketIds?: string[];
     }): Promise<void> {
         // Dynamic confidence: size (30%) + CSAT quality (40%) + cluster consistency (30%)
         const sizeScore = Math.min(data.ticketCount / 10, 1.0) * 0.3;
@@ -411,6 +493,9 @@ export class FaqService {
                 tags: data.tags,
                 frequency: data.ticketCount,
                 sourceTypes: ['ticket'],
+                sources: data.ticketIds?.length
+                    ? { create: data.ticketIds.map((ticketId) => ({ sourceType: 'TICKET', ticketId })) }
+                    : undefined,
             },
         });
     }
@@ -425,9 +510,12 @@ export class FaqService {
         });
 
         if (existing) {
-            await this.prisma.faqEntry.update({
-                where: { id: existing.id },
-                data: { frequency: { increment: 1 } }
+            await this.prisma.$transaction(async (tx) => {
+                await tx.faqEntry.update({
+                    where: { id: existing.id },
+                    data: { frequency: { increment: 1 } }
+                });
+                await this.attachSources(existing.id, pattern, tx);
             });
             this.logger.log(`FAQ already exists for question: ${pattern.question.substring(0, 50)}...`);
             return { created: false, faqId: existing.id };
@@ -443,7 +531,8 @@ export class FaqService {
                 confidenceScore: pattern.confidenceScore,
                 sourceTypes: [pattern.sourceType],
                 tags: pattern.tags,
-                language: pattern.language || defaultLanguage
+                language: pattern.language || defaultLanguage,
+                sources: { create: this.buildSourceRows(pattern) },
             }
         });
 

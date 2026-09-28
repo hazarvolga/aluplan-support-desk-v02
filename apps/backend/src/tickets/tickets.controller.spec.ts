@@ -98,6 +98,46 @@ describe('TicketsController', () => {
                 isSlaBreached: false,
             }));
         });
+
+        it('forwards review-center chat and unassigned queue filters', async () => {
+            const req = { user: { sub: 'admin1', role: 'ADMIN' } };
+            mockTicketsService.findAll.mockResolvedValue({ data: [], total: 0 });
+
+            await controller.findAll({
+                chatStatus: 'REQUESTED',
+                assignment: 'UNASSIGNED',
+                activeOnly: 'true',
+            }, req);
+
+            expect(mockTicketsService.findAll).toHaveBeenCalledWith(expect.objectContaining({
+                chatStatus: 'REQUESTED',
+                assignment: 'UNASSIGNED',
+                activeOnly: true,
+            }));
+        });
+
+        it('rejects an unsupported chat status before querying Prisma', () => {
+            const req = { user: { sub: 'admin1', role: 'ADMIN' } };
+            mockTicketsService.findAll.mockResolvedValue({ data: [], total: 0 });
+
+            expect(() => controller.findAll({ chatStatus: 'NOT_A_STATUS' }, req)).toThrow(
+                'chatStatus must be one of',
+            );
+
+            expect(mockTicketsService.findAll).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            { assignment: 'ALL' },
+            { assignment: ['UNASSIGNED', 'UNASSIGNED'] },
+            { activeOnly: 'false' },
+            { activeOnly: ['true', 'true'] },
+        ])('rejects invalid review-center queue filters before querying Prisma: %p', (query) => {
+            const req = { user: { sub: 'admin1', role: 'ADMIN' } };
+
+            expect(() => controller.findAll(query, req)).toThrow();
+            expect(mockTicketsService.findAll).not.toHaveBeenCalled();
+        });
     });
 
     describe('transition', () => {
@@ -111,7 +151,7 @@ describe('TicketsController', () => {
             const result = await controller.transition('tik1', TicketStatus.RESOLVED, req);
 
             // Assert
-            expect(mockTicketsService.transition).toHaveBeenCalledWith('tik1', TicketStatus.RESOLVED, 'user1');
+            expect(mockTicketsService.transition).toHaveBeenCalledWith('tik1', TicketStatus.RESOLVED, req.user);
             expect(mockNotificationsGateway.emitTicketUpdated).toHaveBeenCalledWith(expectedResult);
             expect(result).toEqual(expectedResult);
         });

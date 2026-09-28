@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
 
 /**
  * ANNOUNCEMENT SYSTEM E2E TESTS
@@ -22,7 +23,10 @@ async function apiPost(url: string, body: any, token?: string) {
         method: 'POST', headers, body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`POST ${url} failed (${res.status}): ${await res.text()}`);
-    return res.json();
+    const payload = await res.json();
+    return url === '/auth/login'
+        ? { ...payload, access_token: extractAccessTokenFromSetCookie(res.headers.get('set-cookie')) }
+        : payload;
 }
 
 async function apiGet(url: string, token: string) {
@@ -45,8 +49,8 @@ async function apiPatch(url: string, token: string, body: any = {}) {
 
 // ── Credentials ───────────────────────────────────────────────────────────
 
-const ADMIN = { email: 'admin@example.com', password: 'Vol1872017' };
-const CUSTOMER = { email: 'e2e-customer@aluplan.com', password: 'Vol1872017' };
+const ADMIN = { email: 'admin@example.com', password: 'E2E-Only-Not-A-Secret-2026!' };
+const CUSTOMER = { email: 'e2e-customer@aluplan.com', password: 'E2E-Only-Not-A-Secret-2026!' };
 
 // ── Shared setup: broadcast an announcement via API ───────────────────────
 

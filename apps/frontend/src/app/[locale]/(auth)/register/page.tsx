@@ -131,6 +131,19 @@ export default function RegisterPage() {
         }
     };
 
+    const handleResendVerification = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            await api.auth.resendVerification(form.email);
+            setResetSent(true);
+        } catch (err: any) {
+            setError(err.message || t('error_reset_failed'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleForgotPassword = async () => {
         setLoading(true);
         setError('');
@@ -303,7 +316,7 @@ export default function RegisterPage() {
                                     <Button
                                         type="button"
                                         className="w-full bg-blue-600 hover:bg-blue-500 text-white h-11"
-                                        onClick={handleForgotPassword}
+                                        onClick={handleResendVerification}
                                         disabled={loading}
                                     >
                                         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('inactive_btn')}

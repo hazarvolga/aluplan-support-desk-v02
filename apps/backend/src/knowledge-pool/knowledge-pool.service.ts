@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,6 +8,20 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { StorageService } from '../common/services/storage.service';
 import { classifyDatasetFile, DatasetFileClassification } from './dataset-classifier';
+import { canonicalizeKnowledgeSourceUrl, INVALID_KNOWLEDGE_SOURCE_URL } from './knowledge-source-url';
+
+const DUPLICATE_KNOWLEDGE_SOURCE_URL = 'KNOWLEDGE_SOURCE_URL_DUPLICATE';
+
+type ImportedUrlSourceOptions = {
+    language?: string;
+    lastHash?: string | null;
+    metadata?: Prisma.InputJsonObject;
+};
+
+type UrlSourceCreationResult = {
+    source: any;
+    created: boolean;
+};
 
 const parseJobDelay = (value: string | undefined, fallback: number): number => {
     const parsed = Number.parseInt(value ?? '', 10);
@@ -39,31 +53,109 @@ export class KnowledgePoolService {
     ) { }
 
     async createSource(dto: CreateKnowledgeSourceDto): Promise<any> {
-        if (dto.type === KnowledgeSourceType.URL && dto.url && this.isLearnNowCourseUrl(dto.url)) {
-            throw new BadRequestException('LEARNNOW_COURSE_URLS_REQUIRE_ENROLLMENT');
-        }
-
-        const source = await this.prisma.knowledgeSource.create({
-            data: {
-                name: dto.name,
-                type: dto.type,
-                url: dto.url,
-                status: KnowledgeSourceStatus.ACTIVE,
-                metadata: dto.type === KnowledgeSourceType.URL
-                    ? {
-                        userProvidedName: dto.name,
-                        sourceName: dto.name,
-                        sourceUrl: dto.url ?? null,
-                        ingestionMode: 'bulk-safe',
-                        useAiPreprocessing: false,
-                    }
-                    : undefined,
-            },
-        });
+        const source = dto.type === KnowledgeSourceType.URL
+            ? await this.createManualUrlSource(dto)
+            : await this.prisma.knowledgeSource.create({
+                data: {
+                    name: dto.name,
+                    type: dto.type,
+                    url: dto.url,
+                    status: KnowledgeSourceStatus.ACTIVE,
+                },
+            });
 
         // Trigger initial sync
         await this.triggerSync(source.id);
         return source;
+    }
+
+    private async createManualUrlSource(dto: CreateKnowledgeSourceDto): Promise<any> {
+        const result = await this.createUrlSourceRecord(dto);
+        if (!result.created) {
+            throw new ConflictException({
+                code: DUPLICATE_KNOWLEDGE_SOURCE_URL,
+                message: DUPLICATE_KNOWLEDGE_SOURCE_URL,
+            });
+        }
+        return result.source;
+    }
+
+    async createImportedUrlSource(
+        dto: CreateKnowledgeSourceDto,
+        options: ImportedUrlSourceOptions,
+    ): Promise<UrlSourceCreationResult> {
+        const result = await this.createUrlSourceRecord(dto, options);
+        if (result.created) {
+            await this.triggerSync(result.source.id);
+        }
+        return result;
+    }
+
+    private async createUrlSourceRecord(
+        dto: CreateKnowledgeSourceDto,
+        options: ImportedUrlSourceOptions = {},
+    ): Promise<UrlSourceCreationResult> {
+        if (!dto.url) {
+            throw new BadRequestException(INVALID_KNOWLEDGE_SOURCE_URL);
+        }
+
+        let canonicalUrl: string;
+        try {
+            canonicalUrl = canonicalizeKnowledgeSourceUrl(dto.url);
+        } catch {
+            throw new BadRequestException(INVALID_KNOWLEDGE_SOURCE_URL);
+        }
+
+        if (this.isLearnNowCourseUrl(canonicalUrl)) {
+            throw new BadRequestException('LEARNNOW_COURSE_URLS_REQUIRE_ENROLLMENT');
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            await tx.$queryRaw(Prisma.sql`
+                SELECT pg_advisory_xact_lock(hashtextextended(${canonicalUrl}, 0)) IS NULL AS locked
+            `);
+
+            // Legacy rows predate canonical storage. Compare their normalized forms under
+            // the same transaction lock so equivalent concurrent submissions cannot race.
+            const existingUrlSources = await tx.knowledgeSource.findMany({
+                where: {
+                    url: { not: null },
+                },
+                select: { id: true, url: true },
+            });
+            const duplicate = existingUrlSources.find((candidate) => {
+                if (!candidate.url) return false;
+                try {
+                    return canonicalizeKnowledgeSourceUrl(candidate.url) === canonicalUrl;
+                } catch {
+                    return false;
+                }
+            });
+
+            if (duplicate) {
+                return { source: duplicate, created: false };
+            }
+
+            const source = await tx.knowledgeSource.create({
+                data: {
+                    name: dto.name,
+                    type: KnowledgeSourceType.URL,
+                    url: canonicalUrl,
+                    status: KnowledgeSourceStatus.ACTIVE,
+                    language: options.language,
+                    lastHash: options.lastHash ?? undefined,
+                    metadata: {
+                        ...(options.metadata ?? {}),
+                        userProvidedName: dto.name,
+                        sourceName: dto.name,
+                        sourceUrl: canonicalUrl,
+                        ingestionMode: 'bulk-safe',
+                        useAiPreprocessing: false,
+                    },
+                },
+            });
+            return { source, created: true };
+        });
     }
 
     private isLearnNowCourseUrl(value: string): boolean {

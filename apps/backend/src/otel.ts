@@ -2,10 +2,9 @@ import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-
-
-import * as resources from '@opentelemetry/resources';
-const Resource = (resources as any).Resource;
+import { Logger } from '@nestjs/common';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+const logger = new Logger('OTel');
 
 // EXPLAIN: OTel must be initialized BEFORE any other imports to wrap dependencies.
 // Endpoint points to Grafana Tempo (OTLP HTTP) for distributed tracing.
@@ -14,7 +13,7 @@ const traceExporter = new OTLPTraceExporter({
 });
 
 const sdk = new NodeSDK({
-    resource: new Resource({
+    resource: resourceFromAttributes({
         [SemanticResourceAttributes.SERVICE_NAME]: 'aluplan-backend',
         [SemanticResourceAttributes.SERVICE_VERSION]: '1.0.0',
         [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
@@ -31,16 +30,16 @@ const sdk = new NodeSDK({
 // Start the SDK
 try {
     sdk.start();
-    console.log('[OTel] 🛰️ Tracing initialized');
+    logger.log('🛰️ Tracing initialized');
 } catch (error) {
-    console.error('[OTel] ❌ Error initializing tracing', error);
+    logger.error('❌ Error initializing tracing', error instanceof Error ? error.stack : String(error));
 }
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
     sdk.shutdown()
-        .then(() => console.log('[OTel] 🛡️ Tracing terminated'))
-        .catch((error) => console.error('[OTel] ❌ Error terminating tracing', error))
+        .then(() => logger.log('🛡️ Tracing terminated'))
+        .catch((error) => logger.error('❌ Error terminating tracing', error instanceof Error ? error.stack : String(error)))
         .finally(() => process.exit(0));
 });
 

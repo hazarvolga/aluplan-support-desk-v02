@@ -209,19 +209,22 @@ export class LearnNowCrawlerService {
             };
         }
 
-        const source = await this.prisma.knowledgeSource.create({
-            data: {
-                name: candidate.title,
-                type: KnowledgeSourceType.URL,
-                url: candidate.source_url,
-                status: KnowledgeSourceStatus.ACTIVE,
-                language: candidate.language ?? 'en',
-                lastHash: candidate.content_hash ?? undefined,
-                metadata: this.buildImportMetadata(candidate, 'knowledge_article'),
-            },
+        const creation = await this.knowledgePoolService.createImportedUrlSource({
+            name: candidate.title,
+            type: KnowledgeSourceType.URL,
+            url: candidate.source_url,
+        }, {
+            language: candidate.language ?? 'en',
+            lastHash: candidate.content_hash,
+            metadata: this.buildImportMetadata(candidate, 'knowledge_article'),
         });
 
-        await this.knowledgePoolService.triggerSync(source.id);
+        if (!creation.created) {
+            await this.markCandidate(candidate.id, 'SKIPPED_DUPLICATE', creation.source.id, 'Knowledge source URL already exists');
+            return { skipped: true, reason: 'DUPLICATE_URL', sourceId: creation.source.id };
+        }
+
+        const source = creation.source;
         await this.markCandidate(candidate.id, 'IMPORTED', source.id);
         return { imported: true, candidateId: candidate.id, sourceId: source.id };
     }

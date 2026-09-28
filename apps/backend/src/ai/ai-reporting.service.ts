@@ -21,7 +21,7 @@ export class AiReportingService {
      * Weekly AI Health Report
      * Every Monday at 9:00 AM
      */
-    @Cron('0 9 * * 1')
+    @Cron('0 9 * * 1', { waitForCompletion: true })
     async sendWeeklyHealthReport() {
         this.logger.log('📊 Starting weekly AI health report generation...');
 

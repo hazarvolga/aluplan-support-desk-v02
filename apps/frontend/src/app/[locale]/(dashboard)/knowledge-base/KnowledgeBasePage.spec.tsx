@@ -4,6 +4,7 @@ import KnowledgeBasePage from './page';
 import { useAuth } from '@/components/auth/role-guard';
 import { server } from '@/test/setup';
 import { http, HttpResponse } from 'msw';
+import { useSearchParams } from 'next/navigation';
 
 // Mock the Auth Hook
 vi.mock('@/components/auth/role-guard', () => ({
@@ -15,6 +16,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v
 describe('KnowledgeBasePage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams() as never);
     });
 
     it('renders loading state initially', () => {
@@ -70,5 +72,25 @@ describe('KnowledgeBasePage', () => {
         await waitFor(() => {
             expect(screen.getByText(/empty.no_records/i)).toBeDefined();
         });
+    });
+
+    it('reloads when the review status query changes on the same route', async () => {
+        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams('status=REVIEW') as never);
+        const requestedStatuses: Array<string | null> = [];
+        server.use(
+            http.get(`${API_BASE}/kb/articles`, ({ request }) => {
+                requestedStatuses.push(new URL(request.url).searchParams.get('status'));
+                return HttpResponse.json({ data: [], total: 0 });
+            }),
+        );
+
+        const view = render(<KnowledgeBasePage />);
+        await waitFor(() => expect(requestedStatuses).toContain('REVIEW'));
+
+        vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams() as never);
+        view.rerender(<KnowledgeBasePage />);
+
+        await waitFor(() => expect(requestedStatuses.at(-1)).toBe('PUBLISHED'));
     });
 });

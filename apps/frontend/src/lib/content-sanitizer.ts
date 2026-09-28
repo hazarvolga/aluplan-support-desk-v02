@@ -26,7 +26,8 @@ const ensureHooks = () => {
 
 const sanitize = (input: string | null | undefined): string => {
     if (!input) return '';
-    if (typeof window === 'undefined') return input;
+    // HTML is only safe to return after the browser sanitizer has processed it.
+    if (typeof window === 'undefined') return '';
 
     ensureHooks();
     return DOMPurify.sanitize(input, {
@@ -60,4 +61,3 @@ export const ContentSanitizer = {
     isEffectivelyEmpty,
     containsAllowedHtml,
 };
-

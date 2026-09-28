@@ -5,6 +5,7 @@ import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
+import { subscribeTicketRoom } from '@/lib/socket-room';
 import {
     Ticket, Clock, Shield, User as UserIcon, Send,
     Paperclip, Download, MoreVertical, CheckCircle2,
@@ -40,6 +41,7 @@ import { tr as trLocale, enUS as enLocale, de as deLocale } from 'date-fns/local
 import { toast } from 'sonner';
 import { MacroPicker } from '@/components/macros/macro-picker';
 import { AiVisualEvidence, type AiVisualEvidenceItem } from '@/components/ai/AiVisualEvidence';
+import { AiAnswerContent } from '@/components/ai/ai-answer-content';
 import { useTranslations, useLocale } from 'next-intl';
 import { ContentSanitizer } from '@/lib/content-sanitizer';
 import { markdownToHtml } from '@/lib/markdown-to-html';
@@ -76,19 +78,27 @@ const CHANNEL_COLORS: Record<string, string> = {
 };
 
 export default function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
+    return <TicketDetail key={id} id={id} />;
+}
+
+function TicketDetail({ id }: { id: string }) {
     const t = useTranslations('tickets.detail');
     const ts = useTranslations('tickets.status');
     const tp = useTranslations('tickets.priority');
     const tc = useTranslations('common');
     const locale = useLocale();
     const router = useRouter();
-    const { id } = use(params);
     const [ticket, setTicket] = useState<any>(null);
     const [user, setUser] = useState<any>(null);
     const [reply, setReply] = useState('');
     const [files, setFiles] = useState<File[]>([]);
     const [sending, setSending] = useState(false);
+    const [pendingAttachments, setPendingAttachments] = useState<{ messageId: string; files: File[] } | null>(null);
+    const replyOperationRef = useRef(false);
+    const activeRef = useRef(true);
     const [updating, setUpdating] = useState(false);
+    const reopenOperationRef = useRef(false);
     const [summary, setSummary] = useState<string | null>(null);
     const [summarizing, setSummarizing] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -107,6 +117,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     // Live chat states
     const [isTyping, setIsTyping] = useState(false);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    useEffect(() => {
+        activeRef.current = true;
+        return () => {
+            activeRef.current = false;
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        };
+    }, []);
     const [someoneTyping, setSomeoneTyping] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
@@ -191,8 +208,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         if (!id || !user) return;
 
         const socket = getSocket();
-        socket.connect();
-        socket.emit('ticket:join', id);
+        const leaveTicketRoom = subscribeTicketRoom(socket, id);
 
         const handleNewMessage = (data: any) => {
             if (data.ticketId === id && data.message.senderId !== user.id) {
@@ -237,6 +253,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     ...prev,
                     messages: prev.messages.map((m: any) => {
                         if (m.id === data.messageId) {
+                            if (m.attachments?.some((attachment: any) => attachment.id === data.attachment.id)) return m;
                             return {
                                 ...m,
                                 attachments: [...(m.attachments || []), data.attachment]
@@ -253,15 +270,15 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         socket.on('ticket:typing', handleTyping);
         socket.on('ticket:updated', handleTicketUpdated);
         socket.on('ticket:presence', handlePresence);
+        if (!socket.connected) socket.connect();
 
         return () => {
-            socket.emit('ticket:leave', id);
+            leaveTicketRoom();
             socket.off('ticket:new_message', handleNewMessage);
             socket.off('ticket:attachment_added', handleAttachmentAdded);
             socket.off('ticket:typing', handleTyping);
             socket.off('ticket:updated', handleTicketUpdated);
             socket.off('ticket:presence', handlePresence);
-            socket.disconnect();
         };
     }, [id, user]);
 
@@ -283,6 +300,9 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const userRoles = (user?.roles || []).map((r: string) => r.toLowerCase());
     const roleName = (typeof user?.role === 'string' ? user.role : user?.role?.name)?.toLowerCase();
     const isCustomer = userRoles.includes('customer') || userRoles.includes('viewer') || roleName === 'customer' || roleName === 'viewer';
+    const normalizedRole = roleName?.trim().toUpperCase().replace(/-/g, '_');
+    const isReopenStaff = ['ADMIN', 'SUPER_ADMIN', 'SUPERUSER', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'SENIOR_AGENT', 'AGENT', 'SUPPORT_AGENT', 'SUPPORT_MANAGER'].includes(normalizedRole || '');
+    const canReopen = Boolean(user?.id) && isReopenStaff && ['ticket:update', '*', 'admin'].some(permission => user?.permissions?.includes(permission));
     const isReplyEffectivelyEmpty = ContentSanitizer.isEffectivelyEmpty(reply);
     const isComposerDisabled = ['CLOSED', 'RESOLVED', 'PENDING_CUSTOMER_REVIEW'].includes(ticket?.status);
     const isLiveChatEligible = !isCustomer || Boolean(ticket?.creator?.customerProfile?.isVip);
@@ -325,15 +345,49 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         }
     };
 
+    const uploadReplyAttachments = async (messageId: string, uploadFiles: File[]) => {
+        for (let index = 0; index < uploadFiles.length; index++) {
+            if (!activeRef.current) return;
+            try {
+                const attachment = await api.attachments.upload(messageId, uploadFiles[index]) as { id: string };
+                if (!activeRef.current) return;
+                setTicket((prev: any) => ({ ...prev, messages: prev.messages.map((message: any) =>
+                    message.id === messageId && !message.attachments?.some((existing: any) => existing.id === attachment.id)
+                        ? { ...message, attachments: [...(message.attachments || []), attachment] } : message) }));
+            } catch {
+                if (!activeRef.current) return;
+                setPendingAttachments({ messageId, files: uploadFiles.slice(index) });
+                toast.error(t('attachment_partial_failure'));
+                return;
+            }
+        }
+        if (!activeRef.current) return;
+        setPendingAttachments(null);
+        await load();
+    };
+
+    const handleRetryAttachments = async () => {
+        if (replyOperationRef.current || !pendingAttachments || isComposerDisabled) return;
+        replyOperationRef.current = true;
+        setSending(true);
+        try {
+            await uploadReplyAttachments(pendingAttachments.messageId, pendingAttachments.files);
+        } finally {
+            replyOperationRef.current = false;
+            if (activeRef.current) setSending(false);
+        }
+    };
+
     const handleSendReply = async () => {
+        if (replyOperationRef.current || pendingAttachments || isComposerDisabled) return;
         const sanitizedReply = ContentSanitizer.sanitize(reply);
         if (ContentSanitizer.isEffectivelyEmpty(sanitizedReply) && files.length === 0) return;
 
         const messageText = sanitizedReply;
         const previousReply = reply;
         const previousDraftVisuals = draftVisuals;
-        setReply(''); // Clear immediately for UX
-        setDraftVisuals([]);
+        const uploadFiles = [...files];
+        replyOperationRef.current = true;
         setSending(true);
 
         // Optimistic UI: Add message locally first
@@ -363,32 +417,28 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 contentFormat: 'HTML',
             });
 
-            if (files.length > 0) {
-                for (const file of files) {
-                    await api.attachments.upload(message.id, file);
-                }
-            }
-
-            // Replace optimistic message with real one
+            if (!activeRef.current) return;
+            // Message persistence is independent of the following attachment uploads.
             setTicket((prev: any) => ({
                 ...prev,
                 messages: prev.messages.map((m: any) => m.id === tempId ? { ...message, sender: user } : m)
             }));
 
-            setFiles([]);
-            await load(); // Refresh state to ensure attachments appear correctly
-            // No toast for success in chat, it's expected
+            setReply((current) => current === previousReply ? '' : current);
+            setDraftVisuals((current) => current === previousDraftVisuals ? [] : current);
+            setFiles((current) => current.filter((file) => !uploadFiles.includes(file)));
+            await uploadReplyAttachments(message.id, uploadFiles);
         } catch (error: any) {
+            if (!activeRef.current) return;
             toast.error(t('send_error', { error: error.message }));
             // Remove optimistic message on failure
             setTicket((prev: any) => ({
                 ...prev,
                 messages: prev.messages.filter((m: any) => m.id !== tempId)
             }));
-            setReply(previousReply); // Restore input
-            setDraftVisuals(previousDraftVisuals);
         } finally {
-            setSending(false);
+            replyOperationRef.current = false;
+            if (activeRef.current) setSending(false);
         }
     };
 
@@ -427,6 +477,24 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             toast.error(t('draft_error', { error: err.message }));
         } finally {
             setDrafting(false);
+        }
+    };
+
+    const handleReopenTicket = async () => {
+        if (!canReopen || ticket?.status !== 'CLOSED' || reopenOperationRef.current) return;
+        reopenOperationRef.current = true;
+        setUpdating(true);
+        try {
+            const updated = await api.tickets.updateStatus(ticket.id, 'OPEN');
+            if (!activeRef.current) return;
+            setTicket((previous: any) => ({ ...previous, ...updated }));
+            toast.success(t('reopen_success'));
+            await load();
+        } catch {
+            if (activeRef.current) toast.error(t('status_update_error'));
+        } finally {
+            reopenOperationRef.current = false;
+            if (activeRef.current) setUpdating(false);
         }
     };
 
@@ -521,6 +589,17 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
+                                {canReopen && ticket.status === 'CLOSED' && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleReopenTicket}
+                                        disabled={updating}
+                                        className="h-7 border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
+                                    >
+                                        {updating ? t('reopening') : t('reopen_ticket')}
+                                    </Button>
+                                )}
                                 {!isCustomer && ticket.status !== 'CLOSED' && ticket.status !== 'RESOLVED' && ticket.status !== 'PENDING_CUSTOMER_REVIEW' && (
                                     <Button
                                         variant="outline"
@@ -813,8 +892,18 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     </CardContent>
 
                     <CardFooter className="p-3 border-t border-border/50 bg-background/50 backdrop-blur-sm flex flex-col gap-3 z-10">
-
-
+                        {pendingAttachments && (
+                            <div role="alert" className="w-full rounded-md border border-amber-500/40 p-3 text-sm space-y-2">
+                                <p>{t('pending_attachments_notice')}</p>
+                                <ul>{pendingAttachments.files.map((file, index) => <li key={index}>{file.name}</li>)}</ul>
+                                <div className="flex gap-2">
+                                    <Button onClick={handleRetryAttachments} disabled={sending || isComposerDisabled}>{t('retry_attachments')}</Button>
+                                    <Button variant="outline" disabled={sending} onClick={() => {
+                                        if (!replyOperationRef.current) setPendingAttachments(null);
+                                    }}>{t('discard_pending_attachments')}</Button>
+                                </div>
+                            </div>
+                        )}
                         {/* Selected Files Preview */}
                         {files.length > 0 && (
                             <div className="flex flex-wrap gap-2 w-full">
@@ -853,7 +942,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     disabled={isComposerDisabled}
                                     aria-label={t('message_placeholder')}
                                     onSubmit={() => {
-                                        if (!sending && (!isReplyEffectivelyEmpty || files.length > 0)) {
+                                        if (!sending && !pendingAttachments && (!isReplyEffectivelyEmpty || files.length > 0)) {
                                             handleSendReply();
                                         }
                                     }}
@@ -863,7 +952,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                             {!isComposerDisabled && (
                                 <Button
                                     onClick={handleSendReply}
-                                    disabled={sending || (isReplyEffectivelyEmpty && files.length === 0)}
+                                    disabled={sending || Boolean(pendingAttachments) || (isReplyEffectivelyEmpty && files.length === 0)}
                                     className="shrink-0 bg-primary hover:bg-primary/90 rounded-md h-auto min-h-20 w-14 border-border transition-all hover:scale-[1.02] active:scale-[0.98] self-stretch"
                                 >
                                     {sending ? <Loader2 className="h-5 w-5 animate-spin text-primary-foreground" /> : <Send className="h-6 w-6 text-primary-foreground" />}
@@ -1027,6 +1116,17 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                                     <p className="mt-1 text-[11px] leading-relaxed text-foreground/85 line-clamp-3">{aiTrace.interaction.userQuery}</p>
                                 </div>
                             )}
+
+                            <div className="pt-2 border-t border-purple-500/15">
+                                <label className="text-[8px] uppercase font-bold text-muted-foreground/70 tracking-[0.1em]">{t('ai_trace_response')}</label>
+                                {aiTrace.interaction?.responseGenerated?.trim() ? (
+                                    <div className="mt-2 max-h-80 overflow-y-auto rounded-md border border-purple-500/15 bg-black/10 p-3">
+                                        <AiAnswerContent content={aiTrace.interaction.responseGenerated} className="text-[11px] text-foreground/85" />
+                                    </div>
+                                ) : (
+                                    <p className="mt-1 text-[11px] text-muted-foreground">{t('ai_trace_no_response')}</p>
+                                )}
+                            </div>
 
                             <AiVisualEvidence
                                 visuals={aiTraceVisuals}

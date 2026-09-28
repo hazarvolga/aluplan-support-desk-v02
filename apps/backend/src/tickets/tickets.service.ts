@@ -3,6 +3,7 @@ import {
     NotFoundException,
     BadRequestException,
     ForbiddenException,
+    ConflictException,
     Logger,
     Inject,
     forwardRef,
@@ -21,6 +22,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AiQueryService } from '../ai/ai-query.service';
 import { MessageContentFormat } from './dto/add-message.dto';
 import { isRichTextEffectivelyEmpty, sanitizeRichTextHtml } from '../common/utils/rich-text-sanitizer';
+import { TicketAccessService } from '../common/services/ticket-access.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
     NEW: [TicketStatus.OPEN, TicketStatus.DRAFT, TicketStatus.PENDING_CUSTOMER_REVIEW],
@@ -29,7 +32,7 @@ const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
     PENDING_CUSTOMER: [TicketStatus.OPEN, TicketStatus.RESOLVED, TicketStatus.CLOSED, TicketStatus.PENDING_CUSTOMER_REVIEW],
     PENDING_CUSTOMER_REVIEW: [TicketStatus.RESOLVED, TicketStatus.OPEN], // Review to final resolved or back to open
     RESOLVED: [TicketStatus.CLOSED, TicketStatus.OPEN], // Reopen on customer reply
-    CLOSED: [],
+    CLOSED: [TicketStatus.OPEN], // Staff authorization is enforced before transition.
     DRAFT: [TicketStatus.OPEN, TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER, TicketStatus.CLOSED],
 };
 
@@ -45,6 +48,8 @@ export class TicketsService {
         @Inject(forwardRef(() => AiQueryService))
         private readonly aiQueryService: AiQueryService,
         private readonly redis: RedisService,
+        private readonly ticketAccess: TicketAccessService,
+        private readonly work: MaintenanceWorkService,
     ) { }
 
     // =============================================
@@ -63,6 +68,14 @@ export class TicketsService {
     // CREATE
     // =============================================
     async create(dto: CreateTicketDto, createdByUserId: string) {
+        const parent = this.work.currentLease();
+        const operation = () => this.createTracked(dto, createdByUserId);
+        return parent
+            ? this.work.runChild(parent, 'ticket.create', operation)
+            : this.work.runRoot('ticket.create', operation);
+    }
+
+    private async createTracked(dto: CreateTicketDto, createdByUserId: string) {
         if (dto.interactionId) {
             const existingTicket = await this.findTicketByInteractionId(dto.interactionId);
             if (existingTicket) {
@@ -70,6 +83,16 @@ export class TicketsService {
                 await this.markInteractionTicketCreated(dto.interactionId);
                 this.logger.log(`🎫 Reusing ticket ${existingTicket.ticketNumber} for AI interaction ${dto.interactionId}`);
                 return { ...existingTicket, alreadyCreated: true };
+            }
+        }
+
+        if (dto.productId) {
+            const activeProduct = await this.prisma.product.findFirst({
+                where: { id: dto.productId, isActive: true, deletedAt: null },
+                select: { id: true },
+            });
+            if (!activeProduct) {
+                throw new BadRequestException('Selected product is not active');
             }
         }
 
@@ -121,13 +144,21 @@ export class TicketsService {
         // Option A + C Logic: If the user provided a productId, do auto-tagging
         if (dto.productId) {
             // we run this async so that the frontend feels "zero friction" fast response
-            this.runAutoTaggingAsync(ticket.id, dto.productId, `${dto.subject}\n\n${dto.description || ''}`, dto.hotinfoContext);
+            this.startCreationBackground('ticket.auto-tag', () => this.runAutoTaggingAsync(ticket.id, dto.productId!, `${dto.subject}\n\n${dto.description || ''}`, dto.hotinfoContext));
         }
 
         // Emit event for Autonomous Resolution Engine
-        this.eventEmitter.emit('ticket.created', ticket);
+        this.startCreationBackground('ticket.created', () => this.eventEmitter.emitAsync('ticket.created', ticket));
 
         return ticket;
+    }
+
+    private startCreationBackground(label: 'ticket.auto-tag' | 'ticket.created', operation: () => Promise<unknown>): void {
+        const parent = this.work.currentLease();
+        if (!parent) throw new Error('Expected active ticket creation lease');
+        void this.work.runChild(parent, label, operation).catch(() => {
+            this.logger.warn(`Ticket background operation failed (${label})`);
+        });
     }
 
     private ticketListInclude() {
@@ -205,6 +236,9 @@ export class TicketsService {
         status?: TicketStatus;
         priority?: TicketPriority;
         assignedTo?: string;
+        assignment?: 'UNASSIGNED';
+        chatStatus?: ChatStatus;
+        activeOnly?: true;
         teamId?: string;
         userId?: string; // Filter by creator
         isSlaBreached?: boolean;
@@ -213,7 +247,7 @@ export class TicketsService {
         page?: number;
         limit?: number;
     }) {
-        const { status, priority, assignedTo, teamId, userId, isSlaBreached, search, includeStatusCounts = false, page = 1, limit = 20 } = params;
+        const { status, priority, assignedTo, assignment, chatStatus, activeOnly, teamId, userId, isSlaBreached, search, includeStatusCounts = false, page = 1, limit = 20 } = params;
         const normalizedSearch = search?.trim();
 
         // If teamId is provided, get all userIds in that team
@@ -228,7 +262,11 @@ export class TicketsService {
 
         const where: Prisma.TicketWhereInput = {
             ...(status && { status }),
+            ...(activeOnly && {
+                AND: [{ status: { notIn: [TicketStatus.RESOLVED, TicketStatus.CLOSED] } }],
+            }),
             ...(priority && { priority }),
+            ...(chatStatus && { chatStatus }),
             ...(userId && { userId }),
             ...(isSlaBreached !== undefined && { isSlaBreached }),
             ...(normalizedSearch && {
@@ -244,7 +282,9 @@ export class TicketsService {
         };
 
         // Handle assignedTo and teamId logic
-        if (assignedTo && teamId) {
+        if (assignment === 'UNASSIGNED') {
+            where.assignedTo = null;
+        } else if (assignedTo && teamId) {
             // If both are provided, the user must be assigned to the specific agent AND that agent must be in the team
             if (teamMemberIds.includes(assignedTo)) {
                 where.assignedTo = assignedTo;
@@ -325,6 +365,10 @@ export class TicketsService {
     // FIND ONE
     // =============================================
     async findOne(id: string, requester?: any) {
+        const requesterRole = typeof requester?.role === 'string'
+            ? requester.role.trim().toUpperCase().replace(/-/g, '_')
+            : requester?.role?.name?.trim().toUpperCase().replace(/-/g, '_');
+        const isCustomerView = requesterRole === 'CUSTOMER' || requesterRole === 'VIEWER';
         const ticket = await this.prisma.ticket.findFirst({
             where: { id, deletedAt: null },
             include: {
@@ -346,7 +390,7 @@ export class TicketsService {
                 },
                 assignee: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
                 messages: {
-                    where: (requester?.role?.toLowerCase() === 'customer' || requester?.role?.toLowerCase() === 'viewer') ? { isInternal: false } : {},
+                    where: isCustomerView ? { isInternal: false } : {},
                     include: {
                         sender: { select: { id: true, fullName: true, avatarUrl: true } },
                         attachments: true,
@@ -361,8 +405,7 @@ export class TicketsService {
         });
         if (!ticket) throw new NotFoundException(`Ticket not found`);
 
-        // ownership check for customers
-        if ((requester?.role?.toUpperCase() === 'CUSTOMER' || requester?.role?.toUpperCase() === 'VIEWER') && ticket.userId !== requester.id) {
+        if (requester && !(await this.ticketAccess.canAccessTicket(requester, id))) {
             throw new ForbiddenException('You do not have access to this ticket');
         }
 
@@ -439,6 +482,7 @@ export class TicketsService {
     // =============================================
     async update(id: string, dto: UpdateTicketDto, requester: any) {
         const ticket = await this.findOne(id, requester); // throws if not found or no access
+        this.assertTicketFieldUpdateAllowed(dto, requester);
 
         if (dto.chatStatus) {
             this.assertChatStatusUpdateAllowed(ticket, dto.chatStatus, requester);
@@ -458,10 +502,33 @@ export class TicketsService {
         return this.prisma.ticket.update({
             where: { id },
             data: {
-                ...dto,
+                ...this.buildTicketUpdateData(dto),
                 ...slaUpdate,
             },
         });
+    }
+
+    private buildTicketUpdateData(dto: UpdateTicketDto) {
+        const data: Partial<UpdateTicketDto> = {};
+        if (dto.subject !== undefined) data.subject = dto.subject;
+        if (dto.description !== undefined) data.description = dto.description;
+        if (dto.priority !== undefined) data.priority = dto.priority;
+        if (dto.chatStatus !== undefined) data.chatStatus = dto.chatStatus;
+        if (dto.assignedTo !== undefined) data.assignedTo = dto.assignedTo;
+        if (dto.tags !== undefined) data.tags = dto.tags;
+        return data;
+    }
+
+    private assertTicketFieldUpdateAllowed(dto: UpdateTicketDto, requester: any) {
+        if (!this.isCustomerRole(requester?.role)) return;
+
+        const restrictedFields = ['assignedTo', 'priority', 'teamId', 'departmentId'] as const;
+        const attemptedRestrictedField = restrictedFields.find(
+            (field) => Object.prototype.hasOwnProperty.call(dto, field) && (dto as Record<string, unknown>)[field] !== undefined,
+        );
+        if (attemptedRestrictedField) {
+            throw new ForbiddenException('TICKET_FIELD_AGENT_ONLY');
+        }
     }
 
     private assertChatStatusUpdateAllowed(
@@ -469,10 +536,7 @@ export class TicketsService {
         nextStatus: ChatStatus,
         requester: any,
     ) {
-        const role = String(requester?.role ?? '').toUpperCase();
-        const isCustomer = role === 'CUSTOMER' || role === 'VIEWER';
-
-        if (!isCustomer) return;
+        if (!this.isCustomerRole(requester?.role)) return;
 
         if (nextStatus !== ChatStatus.REQUESTED) {
             throw new ForbiddenException('LIVE_CHAT_AGENT_ONLY');
@@ -484,10 +548,23 @@ export class TicketsService {
         }
     }
 
+    private isCustomerRole(role: unknown): boolean {
+        const roleName = typeof role === 'string'
+            ? role
+            : role && typeof role === 'object' && 'name' in role
+                ? (role as { name?: unknown }).name
+                : undefined;
+        const normalized = typeof roleName === 'string' ? roleName.trim().toUpperCase().replace(/-/g, '_') : '';
+        return normalized === 'CUSTOMER' || normalized === 'VIEWER';
+    }
+
     async getAiTrace(id: string, requester: any) {
         const role = String(requester?.role ?? '').toUpperCase();
         if (role === 'CUSTOMER' || role === 'VIEWER') {
             throw new ForbiddenException('AI ticket trace is available to support staff only');
+        }
+        if (!(await this.ticketAccess.canAccessTicket(requester, id))) {
+            throw new ForbiddenException('You do not have access to this ticket');
         }
 
         const ticket = await this.prisma.ticket.findFirst({
@@ -741,7 +818,17 @@ export class TicketsService {
     // =============================================
     // STATE MACHINE — TRANSITION
     // =============================================
-    async transition(id: string, toStatus: TicketStatus, actorId: string) {
+    async transition(id: string, toStatus: TicketStatus, requester: { sub: string; role: string }) {
+        // The existing customer close button requests review, not arbitrary status control.
+        const customerReview = typeof requester?.role === 'string'
+            && requester.role.trim().toUpperCase() === 'CUSTOMER'
+            && toStatus === TicketStatus.PENDING_CUSTOMER_REVIEW;
+        const allowedAccess = customerReview
+            ? await this.ticketAccess.canAccessTicket(requester, id)
+            : await this.ticketAccess.canManageTicket(requester, id);
+        if (!allowedAccess) {
+            throw new ForbiddenException('Ticket status management is available to authorized support staff only');
+        }
         const ticket = await this.findOne(id);
         const allowed = ALLOWED_TRANSITIONS[ticket.status];
 
@@ -770,12 +857,37 @@ export class TicketsService {
             updateData.closedAt = new Date();
         }
 
-        const updated = await this.prisma.ticket.update({ where: { id }, data: updateData });
+        const reopening = ticket.status === TicketStatus.CLOSED && toStatus === TicketStatus.OPEN;
+        if (reopening) {
+            updateData.closedAt = null;
+            // Keep historical SLA/resolution fields unchanged. Persist actor and
+            // prior closure atomically with reopening, without replacing messages.
+            updateData.messages = { create: {
+                message: 'Ticket reopened by authorized support staff.',
+                isInternal: true,
+                sender: { connect: { id: requester.sub } },
+                metadata: {
+                    action: 'TICKET_REOPENED',
+                    previousClosedAt: ticket.closedAt?.toISOString() ?? null,
+                },
+            } };
+        }
+        const updated = await this.prisma.ticket.update({
+            where: reopening ? { id, status: TicketStatus.CLOSED, deletedAt: null, closedAt: ticket.closedAt } : { id },
+            data: updateData,
+        }).catch((error: unknown) => {
+            if (reopening && typeof error === 'object' && error !== null
+                && 'code' in error && error.code === 'P2025') {
+                throw new ConflictException('Ticket changed; refresh before reopening');
+            }
+            throw error;
+        });
 
         this.eventEmitter.emit('ticket.status_changed', {
             ticketId: updated.id,
             oldStatus: ticket.status,
-            newStatus: updated.status
+            newStatus: updated.status,
+            actorId: requester.sub,
         });
 
         if (updated.status === TicketStatus.RESOLVED) {
@@ -783,7 +895,7 @@ export class TicketsService {
         }
 
         this.logger.log(
-            `🔄 Ticket ${ticket.ticketNumber}: ${ticket.status} → ${toStatus} by ${actorId}`,
+            `🔄 Ticket ${ticket.ticketNumber}: ${ticket.status} → ${toStatus} by ${requester.sub}`,
         );
 
         return updated;
@@ -939,6 +1051,14 @@ export class TicketsService {
     // ADD MESSAGE
     // =============================================
     async addMessage(ticketId: string, dto: AddMessageDto, senderId: string, role: string) {
+        // Storage keys must originate from the authorized message-bound upload,
+        // never from caller-supplied metadata that could point at another ticket.
+        if (dto.attachments !== undefined) {
+            throw new BadRequestException('Attachments must be uploaded through the attachment endpoint');
+        }
+        if (dto.isInternal === true && this.isCustomerRole(role)) {
+            throw new ForbiddenException('Internal notes are available to support staff only');
+        }
         const ticket = await this.findOne(ticketId, { id: senderId, role }); // ownership check happens here
 
         if (ticket.status === TicketStatus.CLOSED) {
@@ -950,66 +1070,18 @@ export class TicketsService {
             ? sanitizeRichTextHtml(this.piiMaskingService.maskSensitiveData(sanitizeRichTextHtml(dto.message)))
             : this.piiMaskingService.maskSensitiveData(dto.message);
 
-        const hasAttachments = Boolean(dto.attachments?.length);
-        if (contentFormat === MessageContentFormat.HTML && isRichTextEffectivelyEmpty(messageBody) && !hasAttachments) {
+        if (contentFormat === MessageContentFormat.HTML && isRichTextEffectivelyEmpty(messageBody)) {
             throw new BadRequestException('message cannot be empty after sanitization');
         }
 
-        if (messageBody.trim().length === 0 && !hasAttachments) {
+        if (messageBody.trim().length === 0) {
             throw new BadRequestException('message cannot be empty');
-        }
-
-        const message = await this.prisma.ticketMessage.create({
-            data: {
-                ticketId,
-                senderId,
-                message: messageBody,
-                isInternal: dto.isInternal ?? false,
-                channel: dto.channel || 'WEB',
-            },
-            include: { sender: { select: { id: true, fullName: true, avatarUrl: true } } },
-        });
-
-        // Support UI-based attachments if provided in the DTO
-        // Support UI-based attachments using batch creation to prevent N+1 queries
-        if (dto.attachments && dto.attachments.length > 0) {
-            try {
-                const attachmentData = dto.attachments.map(attach => ({
-                    messageId: message.id,
-                    fileName: attach.fileName,
-                    fileSize: attach.fileSize,
-                    mimeType: attach.mimeType,
-                    url: attach.url,
-                }));
-                await this.prisma.attachment.createMany({
-                    data: attachmentData,
-                    skipDuplicates: true
-                });
-            } catch (err) {
-                this.logger.error(`[TicketsService] Failed to link batch attachments: ${err.message}`);
-            }
-        }
-
-        // If ticket was PENDING_CUSTOMER and a customer replied → reopen
-        if (ticket.status === TicketStatus.PENDING_CUSTOMER && ticket.userId === senderId) {
-            await this.prisma.ticket.update({
-                where: { id: ticketId },
-                data: { status: TicketStatus.OPEN },
-            });
-        }
-
-        // Mark first response if agent replied for the first time
-        if (ticket.userId !== senderId && !ticket.slaRespondedAt) {
-            await this.prisma.ticket.update({
-                where: { id: ticketId },
-                data: { slaRespondedAt: new Date() },
-            });
         }
 
         let recipientEmail = ticket.userId === senderId ? ticket.assignee?.email : (ticket.creator?.email || undefined);
         let userName = ticket.userId === senderId ? (ticket.assignee?.fullName || 'Temsilci') : (ticket.creator?.fullName || 'Müşteri');
 
-        // Unassigned fallback: If customer replied and no agent is assigned, notify department agents
+        // Resolve recipients before writes so a lookup failure cannot leave a committed reply.
         if (ticket.userId === senderId && !recipientEmail && ticket.departmentId) {
             const deptAgents = await this.prisma.user.findMany({
                 where: {
@@ -1023,6 +1095,38 @@ export class TicketsService {
                 userName = 'Destek Ekibi';
             }
         }
+
+        // Keep the reply and its required ticket updates atomic. No external effects in tx.
+        const message = await this.prisma.$transaction(async (tx) => {
+            const created = await tx.ticketMessage.create({
+                data: {
+                    ticketId,
+                    senderId,
+                    message: messageBody,
+                    isInternal: dto.isInternal ?? false,
+                    channel: dto.channel || 'WEB',
+                },
+                include: { sender: { select: { id: true, fullName: true, avatarUrl: true } } },
+            });
+
+            if (ticket.status === TicketStatus.PENDING_CUSTOMER && ticket.userId === senderId) {
+                // Another customer reply may already have opened it; never reopen CLOSED/deleted.
+                await tx.ticket.update({
+                    where: { id: ticketId, status: { in: [TicketStatus.PENDING_CUSTOMER, TicketStatus.OPEN] },
+                        userId: senderId, deletedAt: null },
+                    data: { status: TicketStatus.OPEN },
+                });
+            }
+
+            if (ticket.userId !== senderId && !ticket.slaRespondedAt) {
+                // A competing first reply may already have recorded the timestamp.
+                await tx.ticket.updateMany({
+                    where: { id: ticketId, slaRespondedAt: null, deletedAt: null },
+                    data: { slaRespondedAt: new Date() },
+                });
+            }
+            return created;
+        });
 
         this.eventEmitter.emit('ticket.message_added', {
             ticket,
@@ -1067,7 +1171,14 @@ export class TicketsService {
     // =============================================
     // TICKET MERGE / LINK
     // =============================================
-    async linkTicket(childId: string, parentId: string, actorId: string) {
+    async linkTicket(childId: string, parentId: string, requester: { sub: string; role: string }) {
+        const access = await Promise.all([
+            this.ticketAccess.canManageTicket(requester, childId),
+            this.ticketAccess.canManageTicket(requester, parentId),
+        ]);
+        if (!access.every(Boolean)) {
+            throw new ForbiddenException('Ticket merging is available to authorized support staff only');
+        }
         if (childId === parentId) throw new BadRequestException('Cannot link ticket to itself');
 
         const [child, parent] = await Promise.all([
@@ -1091,47 +1202,32 @@ export class TicketsService {
             data: [
                 {
                     ticketId: childId,
-                    senderId: actorId,
+                    senderId: requester.sub,
                     isInternal: true,
                     message: `⚠️ Bilet kapatıldı ve ana bilet #${parent.ticketNumber} ile birleştirildi.`
                 },
                 {
                     ticketId: parentId,
-                    senderId: actorId,
+                    senderId: requester.sub,
                     isInternal: true,
                     message: `🔗 Bilet #${child.ticketNumber} bu bilete alt bilet olarak birleştirildi.`
                 }
             ]
         });
 
-        this.logger.log(`🔗 Ticket ${child.ticketNumber} merged into ${parent.ticketNumber} by agent ${actorId}`);
+        this.logger.log(`🔗 Ticket ${child.ticketNumber} merged into ${parent.ticketNumber} by agent ${requester.sub}`);
         return updatedChild;
     }
 
     // =============================================
     // BULK UPDATE
     // =============================================
-    async bulkUpdate(dto: BulkUpdateTicketDto, requester: any) {
+    async bulkUpdate(dto: BulkUpdateTicketDto, requester: { sub: string; role: string }) {
         const { ticketIds, status, priority, assignedTo } = dto;
-        const actorId = requester.sub;
-
-        // Security check for non-staff roles
-        const requesterRole = (typeof requester.role === 'string' ? requester.role : requester.role?.name)?.toUpperCase();
-        const isStaff = ['ADMIN', 'SUPER-ADMIN', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'SENIOR_AGENT', 'AGENT'].includes(requesterRole);
-
-        if (!isStaff) {
-            // Verify ownership for all requested tickets
-            const count = await this.prisma.ticket.count({
-                where: {
-                    id: { in: ticketIds },
-                    userId: actorId,
-                    deletedAt: null
-                }
-            });
-            if (count !== ticketIds.length) {
-                throw new ForbiddenException('You do not have permission to update one or more of these tickets');
-            }
+        if (!(await this.ticketAccess.canManageTickets(requester, ticketIds))) {
+            throw new ForbiddenException('Bulk ticket management is available to authorized support staff only');
         }
+        const actorId = requester.sub;
 
         const updateData: Prisma.TicketUpdateInput = {};
         if (status) updateData.status = status;

@@ -187,7 +187,7 @@ export class RagObservabilityService {
     }
 
     /** Hourly cron: log metrics and detect knowledge gaps */
-    @Cron(CronExpression.EVERY_HOUR)
+    @Cron(CronExpression.EVERY_HOUR, { waitForCompletion: true })
     async hourlyMetricsCollection() {
         try {
             const metrics = await this.collectMetrics();

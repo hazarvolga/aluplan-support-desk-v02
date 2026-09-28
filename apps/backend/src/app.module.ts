@@ -29,7 +29,7 @@ import { ProductsModule } from './products/products.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { ReportsModule } from './reports/reports.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
-import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD, DiscoveryModule } from '@nestjs/core';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { RedisModule } from './redis/redis.module';
 
@@ -49,9 +49,17 @@ import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
 import { QueueDashboardModule } from './queue-dashboard/queue-dashboard.module';
 import { ProactiveChatModule } from './proactive-chat/proactive-chat.module';
 import { OpsDashboardModule } from './ops-dashboard/ops-dashboard.module';
+import { ReviewCenterModule } from './review-center/review-center.module';
+import { CronShutdownService } from './common/services/cron-shutdown.service';
+import { WorkerShutdownService } from './common/services/worker-shutdown.service';
 
 @Module({
     imports: [
+        // Discover shared Redis before Bull/features: Nest reverses global-module
+        // discovery order during final shutdown, so workers finish before Redis.
+        // Keep redis-shutdown-order.spec green when changing imports/Nest versions.
+        RedisModule,
+        DiscoveryModule,
         SentryModule.forRoot(),
         LoggerModule.forRootAsync({
             imports: [ConfigModule],
@@ -158,7 +166,6 @@ import { OpsDashboardModule } from './ops-dashboard/ops-dashboard.module';
         ReportsModule,
         NotificationsModule,
         WebhooksModule,
-        RedisModule,
         AutomationModule,
         TeamsModule,
         BrandingModule,
@@ -172,8 +179,11 @@ import { OpsDashboardModule } from './ops-dashboard/ops-dashboard.module';
         QueueDashboardModule,
         ProactiveChatModule,
         OpsDashboardModule,
+        ReviewCenterModule,
     ],
     providers: [
+        CronShutdownService,
+        WorkerShutdownService,
         {
             provide: APP_INTERCEPTOR,
             useClass: AuditLogInterceptor,

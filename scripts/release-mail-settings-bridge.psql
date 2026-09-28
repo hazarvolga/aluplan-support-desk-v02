@@ -1,0 +1,96 @@
+-- Offline cutover only. Run with every old backend instance stopped and with
+-- an approved mailserver TLS configuration. This script never reads out or
+-- updates SMTP/IMAP password values, and never starts the application.
+\set ON_ERROR_STOP on
+\set QUIET on
+
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '30s';
+
+DO $mail_bridge_database$
+BEGIN
+    IF current_database() <> 'aluplan_support' THEN
+        RAISE EXCEPTION 'MAIL_BRIDGE_WRONG_DATABASE';
+    END IF;
+END
+$mail_bridge_database$;
+
+LOCK TABLE public.settings IN SHARE ROW EXCLUSIVE MODE;
+
+DO $mail_bridge$
+DECLARE
+    present_count integer;
+    other_session_count integer;
+    imap_port text;
+    imap_tls text;
+BEGIN
+    -- This is a last-line guard, not a substitute for stopping all app writers.
+    SELECT count(*) INTO other_session_count
+    FROM pg_catalog.pg_stat_activity
+    WHERE datname = current_database() AND pid <> pg_backend_pid();
+    IF other_session_count <> 0 THEN
+        RAISE EXCEPTION 'MAIL_BRIDGE_OTHER_DATABASE_SESSIONS';
+    END IF;
+
+    SELECT count(*) INTO present_count FROM public.settings
+    WHERE key IN (
+        'email.imap.host', 'email.imap.port', 'email.imap.tls',
+        'email.imap.user', 'email.imap.pass',
+        'email.smtp.host', 'email.smtp.port', 'email.smtp.secure',
+        'email.smtp.user', 'email.smtp.pass'
+    );
+    IF present_count <> 10 THEN
+        RAISE EXCEPTION 'MAIL_BRIDGE_MISSING_SETTING';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM public.settings
+        WHERE key IN (
+            'email.imap.host', 'email.imap.port', 'email.imap.tls', 'email.imap.user',
+            'email.smtp.host', 'email.smtp.port', 'email.smtp.secure', 'email.smtp.user'
+        ) AND is_secret
+    ) THEN
+        RAISE EXCEPTION 'MAIL_BRIDGE_UNEXPECTED_SECRET_FLAG';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM public.settings
+        WHERE key IN ('email.imap.pass', 'email.smtp.pass')
+          AND (btrim(value) = '' OR value = '********')
+    ) THEN
+        RAISE EXCEPTION 'MAIL_BRIDGE_MISSING_PASSWORD';
+    END IF;
+
+    IF (SELECT value FROM public.settings WHERE key = 'email.imap.host') <> 'mail.allplan.net.tr'
+       OR (SELECT value FROM public.settings WHERE key = 'email.smtp.host') <> 'mail.allplan.net.tr'
+       OR (SELECT value FROM public.settings WHERE key = 'email.imap.user') <> 'destek@allplan.net.tr'
+       OR (SELECT value FROM public.settings WHERE key = 'email.smtp.user') <> 'destek@allplan.net.tr'
+       OR (SELECT value FROM public.settings WHERE key = 'email.smtp.port') <> '587'
+       OR (SELECT value FROM public.settings WHERE key = 'email.smtp.secure') <> 'false' THEN
+        RAISE EXCEPTION 'MAIL_BRIDGE_UNEXPECTED_MAIL_CONFIG';
+    END IF;
+
+    SELECT value INTO imap_port FROM public.settings WHERE key = 'email.imap.port';
+    SELECT value INTO imap_tls FROM public.settings WHERE key = 'email.imap.tls';
+    IF NOT ((imap_port = '143' AND imap_tls = 'false')
+         OR (imap_port = '993' AND imap_tls = 'true')) THEN
+        RAISE EXCEPTION 'MAIL_BRIDGE_UNEXPECTED_IMAP_STATE';
+    END IF;
+
+    IF imap_port = '143' THEN
+        UPDATE public.settings SET value = '993', updated_at = clock_timestamp()
+        WHERE key = 'email.imap.port';
+        UPDATE public.settings SET value = 'true', updated_at = clock_timestamp()
+        WHERE key = 'email.imap.tls';
+    END IF;
+
+    IF (SELECT value FROM public.settings WHERE key = 'email.imap.port') <> '993'
+       OR (SELECT value FROM public.settings WHERE key = 'email.imap.tls') <> 'true' THEN
+        RAISE EXCEPTION 'MAIL_BRIDGE_READBACK_FAILED';
+    END IF;
+END
+$mail_bridge$;
+
+COMMIT;
+\echo MAIL_SETTINGS_BRIDGE_VERIFIED

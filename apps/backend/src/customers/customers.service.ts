@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { Prisma } from '@aluplan/database';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -16,6 +16,24 @@ import { UpdateCustomerProfileDto } from './dto/update-customer-profile.dto';
 import { CrmEmailValidatorService } from '../crm/crm-email-validator.service';
 import { isInternalPlaceholderEmail } from '../email/email-recipient-guard.util';
 import { normalizeEmailAddress } from '../common/utils/email-normalization.util';
+import * as crypto from 'crypto';
+
+const EMAIL_VERIFICATION_AUDIENCE = 'aluplan:email-verification';
+const AUTH_ACTION_ISSUER = 'aluplan-support';
+
+type RegistrationAccount = Prisma.UserGetPayload<{ include: { role: true } }>;
+
+function isInactiveCustomerAccount(user: RegistrationAccount): user is RegistrationAccount & {
+    roleId: string;
+    role: NonNullable<RegistrationAccount['role']>;
+} {
+    return user.status === 'INACTIVE'
+        && user.deletedAt === null
+        && typeof user.roleId === 'string'
+        && user.role?.name.trim().toUpperCase() === 'CUSTOMER'
+        && Number.isSafeInteger(user.sessionVersion)
+        && user.sessionVersion >= 0;
+}
 
 @Injectable()
 export class CustomersService {
@@ -115,31 +133,36 @@ export class CustomersService {
         // 1. Check if email already exists
         const existingEmail = await this.prisma.user.findFirst({
             where: { email: { equals: email, mode: 'insensitive' } },
+            include: { role: true },
         });
 
         if (existingEmail && !existingEmail.deletedAt && existingEmail.status === 'ACTIVE') {
             throw new ConflictException('Bu e-posta adresi sistemde zaten kayıtlı.');
         }
+        if (existingEmail?.status === 'SUSPENDED') {
+            throw new ConflictException('Askıya alınmış hesap yeniden kaydedilemez. Lütfen destek ekibiyle iletişime geçin.');
+        }
+        if (existingEmail && !isInactiveCustomerAccount(existingEmail)) {
+            throw new ConflictException('Bu hesap bu kayıt akışında güncellenemez. Lütfen destek ekibiyle iletişime geçin.');
+        }
 
-        // 2. CRM validation — only for non-admin users
-        if (!this.crmEmailValidator.isAdminBypass(email)) {
-            const crmResult = await this.crmEmailValidator.validateEmailInCrm(email);
-            if (!crmResult.isValid) {
-                // CRM_ERROR = sistem hatası → fail-open (kayıt devam eder)
-                // NOT_FOUND = email CRM'de yok → reddedilir
-                if (crmResult.errorCode === 'NOT_FOUND') {
-                    throw new BadRequestException(
-                        crmResult.errorMessage || 'Bu e-posta adresi CRM sisteminde kayıtlı değil.'
-                    );
-                }
-                // CRM_ERROR veya NETWORK_ERROR → log et ama devam et
-                await this.errorLogger.logError({
-                    action: 'crm_validation_fail_open',
-                    message: `CRM validation failed with ${crmResult.errorCode}, allowing registration to proceed`,
-                    error: new Error(crmResult.errorMessage || crmResult.errorCode || 'CRM_ERROR'),
-                    metadata: { email, errorCode: crmResult.errorCode },
-                });
+        const verificationJti = crypto.randomUUID();
+        const verificationJtiHash = crypto
+            .createHash('sha256')
+            .update(verificationJti)
+            .digest('hex');
+
+        // Public customer onboarding always requires CRM membership, including staff-looking emails.
+        // Existing staff authentication is a separate flow; a submitted email is not staff authority.
+        const unavailableMessage = 'CRM kaydı şu anda doğrulanamıyor. Lütfen daha sonra tekrar deneyin.';
+        const crmResult = await this.crmEmailValidator.validateEmailInCrm(email).catch(() => {
+            throw new ServiceUnavailableException(unavailableMessage);
+        });
+        if (crmResult?.isValid !== true) {
+            if (crmResult?.errorCode === 'NOT_FOUND') {
+                throw new BadRequestException('Bu e-posta adresi CRM sisteminde kayıtlı değil.');
             }
+            throw new ServiceUnavailableException(unavailableMessage);
         }
 
         const isAllplan = dto.usedProducts?.some(p => p.toLowerCase().includes('allplan')) || dto.isAllplanUser;
@@ -168,6 +191,9 @@ export class CustomersService {
         const customerRole = await this.prisma.role.findUnique({
             where: { name: 'CUSTOMER' }
         });
+        if (!customerRole && !existingEmail) {
+            throw new ServiceUnavailableException('Müşteri kaydı şu anda tamamlanamıyor. Lütfen daha sonra tekrar deneyin.');
+        }
 
         // 4. Create User + CustomerProfile in a single transaction
         const resultUser = await this.prisma.$transaction(async (prisma) => {
@@ -182,44 +208,64 @@ export class CustomersService {
             // Check if user exists (for reactivation)
             const existingUser = await prisma.user.findFirst({
                 where: { email: { equals: email, mode: 'insensitive' } },
-                include: { customerProfile: true }
+                include: { customerProfile: true, role: true }
             });
 
             if (existingUser) {
-                return prisma.user.update({
-                    where: { id: existingUser.id },
+                if (!isInactiveCustomerAccount(existingUser)) {
+                    throw new ConflictException('Hesap durumu değişti. Lütfen sayfayı yenileyip tekrar deneyin.');
+                }
+                const claimed = await prisma.user.updateMany({
+                    where: {
+                        id: existingUser.id, email: existingUser.email,
+                        status: 'INACTIVE', deletedAt: null,
+                        roleId: existingUser.roleId,
+                        role: { is: { name: existingUser.role.name } },
+                        sessionVersion: existingUser.sessionVersion,
+                        passwordHash: existingUser.passwordHash,
+                    },
                     data: {
                         fullName,
                         passwordHash,
-                        status: 'INACTIVE',
-                        deletedAt: null,
-                        roleId: customerRole?.id,
-                        customerProfile: {
-                            upsert: {
-                                update: {
-                                    firstName: dto.firstName,
-                                    lastName: dto.lastName,
-                                    customerNo: finalCustomerNo as string,
-                                    companyName: dto.company,
-                                    phoneNumber: dto.phone,
-                                    crmVerified: !!dto.customerNo,
-                                    hotinfoData: hotinfoData,
-                                    deletedAt: null,
-                                },
-                                create: {
-                                    firstName: dto.firstName,
-                                    lastName: dto.lastName,
-                                    customerNo: finalCustomerNo as string,
-                                    companyName: dto.company,
-                                    phoneNumber: dto.phone,
-                                    crmVerified: !!dto.customerNo,
-                                    hotinfoData: hotinfoData,
-                                }
-                            }
-                        }
+                        refreshTokenHash: null,
+                        passwordResetJtiHash: null,
+                        passwordResetSentAt: null,
+                        sessionVersion: { increment: 1 },
+                        emailVerificationJtiHash: verificationJtiHash,
+                        emailVerificationSentAt: new Date(),
                     },
-                    include: { customerProfile: true }
                 });
+                if (claimed.count !== 1) {
+                    throw new ConflictException('Hesap durumu değişti. Lütfen sayfayı yenileyip tekrar deneyin.');
+                }
+
+                await prisma.customerProfile.upsert({
+                    where: { userId: existingUser.id },
+                    update: {
+                        firstName: dto.firstName, lastName: dto.lastName,
+                        customerNo: finalCustomerNo as string, companyName: dto.company,
+                        phoneNumber: dto.phone,
+                        hotinfoData,
+                    },
+                    create: {
+                        userId: existingUser.id, firstName: dto.firstName, lastName: dto.lastName,
+                        customerNo: finalCustomerNo as string, companyName: dto.company,
+                        phoneNumber: dto.phone, hotinfoData,
+                    },
+                });
+                const refreshedUser = await prisma.user.findUnique({
+                    where: { id: existingUser.id },
+                    include: { customerProfile: true },
+                });
+                if (!refreshedUser) {
+                    throw new ConflictException('Hesap güncelleme sonrasında bulunamadı.');
+                }
+                return refreshedUser;
+            }
+
+            // A disappearing preflight account must not create a roleless replacement.
+            if (!customerRole) {
+                throw new ServiceUnavailableException('Müşteri kaydı şu anda tamamlanamıyor. Lütfen daha sonra tekrar deneyin.');
             }
 
             // Create new User with nested CustomerProfile
@@ -229,7 +275,9 @@ export class CustomersService {
                     fullName,
                     passwordHash,
                     status: 'INACTIVE',
-                    roleId: customerRole?.id,
+                    emailVerificationJtiHash: verificationJtiHash,
+                    emailVerificationSentAt: new Date(),
+                    roleId: customerRole.id,
                     customerProfile: {
                         create: {
                             firstName: dto.firstName,
@@ -237,7 +285,6 @@ export class CustomersService {
                             customerNo: finalCustomerNo as string,
                             companyName: dto.company,
                             phoneNumber: dto.phone,
-                            crmVerified: !!dto.customerNo,
                             hotinfoData: hotinfoData,
                         },
                     },
@@ -251,14 +298,26 @@ export class CustomersService {
         // 5. Send welcome email with login details and verification link
         try {
             const verifyToken = this.jwtService.sign(
-                { sub: resultUser.id, email: resultUser.email, type: 'email-verification' }
+                {
+                    sub: resultUser.id,
+                    email: resultUser.email,
+                    purpose: 'email_verify',
+                    jti: verificationJti,
+                },
+                {
+                    secret: this.config.get('AUTH_ACTION_JWT_SECRET'),
+                    audience: EMAIL_VERIFICATION_AUDIENCE,
+                    issuer: AUTH_ACTION_ISSUER,
+                    algorithm: 'HS256',
+                    expiresIn: '30m',
+                },
             );
 
             const frontendUrl = (await this.prisma.setting.findUnique({ where: { key: 'general.frontend_url' } }))?.value
                 || this.config.get('FRONTEND_URL')
                 || 'http://localhost:3000';
 
-            const verifyUrl = `${frontendUrl}/verify-email?token=${verifyToken}`;
+            const verifyUrl = `${frontendUrl}/verify-email#token=${verifyToken}`;
 
             await this.emailService.enqueueEmail({
                 template: 'welcome-customer',
@@ -268,7 +327,6 @@ export class CustomersService {
                 data: {
                     customerName: `${dto.firstName} ${dto.lastName}`,
                     email,
-                    password: dto.password,
                     loginUrl: `${this.config.get('FRONTEND_URL', 'http://localhost:3000')}/login`,
                     verifyUrl: verifyUrl,
                 }
@@ -282,9 +340,13 @@ export class CustomersService {
             });
         }
 
-        // Strip password before returning
-        const { passwordHash: _, ...result } = resultUser;
-        return result;
+        // Public registration must never expose credentials, challenges or CRM payloads.
+        return {
+            id: resultUser.id,
+            email: resultUser.email,
+            fullName: resultUser.fullName,
+            status: resultUser.status,
+        };
     }
 
     async getAllCustomers(page = 1, limit = 100, search?: string) {

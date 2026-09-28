@@ -67,8 +67,16 @@ export class EmailService implements OnModuleInit {
 
     /**
      * Entry-point for enqueueing emails securely. Creates Log tracking entries dynamically.
+     *
+     * Resolves with the created EmailLog id, or `null` when the send was
+     * skipped before a log was ever created (reserved recipient, user
+     * opted out / globally unsubscribed). Callers that keep their own
+     * delivery-status record (e.g. AnnouncementsService) need this id to
+     * link to the real outcome, and need `null` to tell "genuinely queued"
+     * apart from "silently skipped" instead of assuming any resolved call
+     * means the email was sent.
      */
-    async enqueueEmail(payload: EmailPayload): Promise<void> {
+    async enqueueEmail(payload: EmailPayload): Promise<string | null> {
         try {
             const blockedRecipient = process.env.NODE_ENV === 'production'
                 ? getReservedEmailRecipient(payload.to)
@@ -85,7 +93,7 @@ export class EmailService implements OnModuleInit {
                         error: `Reserved/test recipient blocked before enqueue: ${blockedRecipient}`,
                     }
                 });
-                return;
+                return null;
             }
 
             // 1. Map template to Email Type (Category)
@@ -112,7 +120,7 @@ export class EmailService implements OnModuleInit {
                 // If global or category preference is explicitly disabled, skip. Default is enabled if missing.
                 if (globalPref?.enabled === false || typePref?.enabled === false) {
                     this.logger.warn(`🚫 Skipping email: ${payload.template} (${emailType}) to ${payload.to} - User Opted Out`);
-                    return;
+                    return null;
                 }
 
                 payloadForQueue = {
@@ -149,6 +157,7 @@ export class EmailService implements OnModuleInit {
             );
 
             this.logger.log(`✅ Enqueued Email -> ${payloadForQueue.template} to ${payloadForQueue.to} (Log: ${draftLog.id}, Job: ${job.id}, Priority: ${payloadForQueue.priority || 3})`);
+            return draftLog.id;
         } catch (error) {
             this.logger.error(`❌ Failed to enqueue email: ${payload.template} to ${payload.to}`, error.stack);
             await this.errorLogger.logError({
@@ -175,7 +184,7 @@ export class EmailService implements OnModuleInit {
             'email-verification', 'security-alert', 'two-factor-auth'
         ];
 
-        if (template === 'raw' || template === 'broadcast') return 'ANNOUNCEMENTS';
+        if (template === 'raw' || template === 'broadcast' || template === 'master-announcement') return 'ANNOUNCEMENTS';
         if (tickets.includes(template)) return 'TICKETS';
         if (system.includes(template)) return 'SYSTEM';
 

@@ -1,5 +1,5 @@
 import {
-    Controller, Get, Post, Patch, Param, Body,
+    BadRequestException, Controller, Get, Post, Patch, Param, Body,
     Request, Query, UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
@@ -11,9 +11,47 @@ import { AddMessageDto } from './dto/add-message.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { RequirePermissions, Roles } from '../rbac/decorators/rbac.decorators';
-import { TicketStatus, TicketPriority } from '@aluplan/database';
+import { ChatStatus, TicketStatus, TicketPriority } from '@aluplan/database';
 import { Delete } from '@nestjs/common';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
+
+const CHAT_STATUSES = new Set<string>(Object.values(ChatStatus));
+
+function parseSingleQueryValue(value: unknown, name: string): string | undefined {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (Array.isArray(value)) {
+        throw new BadRequestException(`${name} must be provided once`);
+    }
+    return String(value);
+}
+
+function parseChatStatus(value: unknown): ChatStatus | undefined {
+    const rawValue = parseSingleQueryValue(value, 'chatStatus');
+    if (rawValue === undefined) return undefined;
+    const normalized = rawValue.trim().toUpperCase();
+    if (!CHAT_STATUSES.has(normalized)) {
+        throw new BadRequestException(`chatStatus must be one of: ${[...CHAT_STATUSES].join(', ')}`);
+    }
+    return normalized as ChatStatus;
+}
+
+function parseAssignment(value: unknown): 'UNASSIGNED' | undefined {
+    const rawValue = parseSingleQueryValue(value, 'assignment');
+    if (rawValue === undefined) return undefined;
+    if (rawValue !== 'UNASSIGNED') {
+        throw new BadRequestException('assignment must be UNASSIGNED');
+    }
+    return 'UNASSIGNED';
+}
+
+function parseActiveOnly(value: unknown): true | undefined {
+    const rawValue = parseSingleQueryValue(value, 'activeOnly');
+    if (rawValue === undefined) return undefined;
+    if (rawValue !== 'true') {
+        throw new BadRequestException('activeOnly must be true');
+    }
+    return true;
+}
 
 @ApiTags('Tickets')
 @ApiBearerAuth()
@@ -45,6 +83,9 @@ export class TicketsController {
     @ApiQuery({ name: 'status', required: false, enum: TicketStatus })
     @ApiQuery({ name: 'priority', required: false, enum: TicketPriority })
     @ApiQuery({ name: 'assignedTo', required: false })
+    @ApiQuery({ name: 'assignment', required: false, enum: ['UNASSIGNED'] })
+    @ApiQuery({ name: 'chatStatus', required: false, enum: ChatStatus })
+    @ApiQuery({ name: 'activeOnly', required: false, enum: ['true'] })
     @ApiQuery({ name: 'teamId', required: false })
     @ApiQuery({ name: 'isSlaBreached', required: false, type: Boolean })
     @ApiQuery({ name: 'search', required: false })
@@ -61,6 +102,9 @@ export class TicketsController {
             status: query.status,
             priority: query.priority,
             assignedTo: query.assignedTo,
+            assignment: parseAssignment(query.assignment),
+            chatStatus: parseChatStatus(query.chatStatus),
+            activeOnly: parseActiveOnly(query.activeOnly),
             teamId: query.teamId,
             userId,
             isSlaBreached,
@@ -153,7 +197,7 @@ export class TicketsController {
         @Param('status') status: TicketStatus,
         @Request() req: any,
     ) {
-        const updated = await this.ticketsService.transition(id, status, req.user.sub);
+        const updated = await this.ticketsService.transition(id, status, req.user);
         this.notificationsGateway.emitTicketUpdated(updated);
         return updated;
     }
@@ -195,7 +239,7 @@ export class TicketsController {
         @Param('parentId') parentId: string,
         @Request() req: any,
     ) {
-        const updated = await this.ticketsService.linkTicket(childId, parentId, req.user.sub);
+        const updated = await this.ticketsService.linkTicket(childId, parentId, req.user);
         this.notificationsGateway.emitTicketUpdated(updated);
         return updated;
     }
@@ -206,7 +250,7 @@ export class TicketsController {
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Close a resolved ticket' })
     async close(@Param('id') id: string, @Request() req: any) {
-        return this.ticketsService.transition(id, TicketStatus.CLOSED, req.user.sub);
+        return this.ticketsService.transition(id, TicketStatus.CLOSED, req.user);
     }
 
     // ─── CSAT FEEDBACK ──────────────────────────

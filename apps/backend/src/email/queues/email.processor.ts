@@ -134,24 +134,39 @@ export class EmailProcessor extends WorkerHost {
     } catch (error: any) {
       this.logger.error(`Failed to dispatch email job: ${job.id}`, error.stack);
 
-      if (logRef) {
-        await this.prisma.emailLog.update({
-          where: { id: logRef },
-          data: {
-            status: 'FAILED',
-            error: error.message
-          }
-        });
+      // BullMQ's `attemptsMade` counts attempts completed BEFORE this one
+      // (0 on the first try), so `attemptsMade + 1 >= attempts` is true only
+      // once every retry has been exhausted. Marking EmailLog=FAILED on an
+      // intermediate attempt would be wrong: BullMQ retries automatically
+      // and a later attempt can still succeed. AnnouncementLogReconciliationService
+      // (and anything else watching EmailLog.status) only treats FAILED as
+      // terminal, so writing it early can permanently mislabel a send that
+      // actually went through moments later.
+      const totalAttempts = job.opts?.attempts ?? 1;
+      const isFinalAttempt = job.attemptsMade + 1 >= totalAttempts;
+
+      if (isFinalAttempt) {
+        if (logRef) {
+          await this.prisma.emailLog.update({
+            where: { id: logRef },
+            data: {
+              status: 'FAILED',
+              error: error.message
+            }
+          });
+        } else {
+          await this.prisma.emailLog.create({
+            data: {
+              recipientEmail: Array.isArray(to) ? to.join(', ') : to,
+              subject: subject || 'No Subject',
+              templateName: template,
+              status: 'FAILED',
+              error: error.message
+            }
+          });
+        }
       } else {
-        await this.prisma.emailLog.create({
-          data: {
-            recipientEmail: Array.isArray(to) ? to.join(', ') : to,
-            subject: subject || 'No Subject',
-            templateName: template,
-            status: 'FAILED',
-            error: error.message
-          }
-        });
+        this.logger.warn(`Attempt ${job.attemptsMade + 1}/${totalAttempts} failed for job ${job.id}, BullMQ will retry: ${error.message}`);
       }
 
       // Pick up BullMQ retries mechanism

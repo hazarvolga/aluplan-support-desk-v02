@@ -2,8 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,20 +12,31 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
 function VerifyEmailContent() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
     const t = useTranslations('auth.verify_email');
-    const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+    const [status, setStatus] = useState<'loading' | 'ready' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState(t('default_loading'));
-    const token = searchParams.get('token');
+    const [token, setToken] = useState<string | null>(null);
+    const fragmentRead = useRef(false);
 
     useEffect(() => {
-        if (!token) {
+        if (fragmentRead.current) return;
+        fragmentRead.current = true;
+        const hashToken = new URLSearchParams(window.location.hash.slice(1)).get('token');
+        window.history.replaceState(null, '', window.location.pathname);
+        if (!hashToken) {
             setStatus('error');
             setMessage(t('default_error_invalid'));
             return;
         }
+        setToken(hashToken);
+        setStatus('ready');
+        setMessage(t('ready_desc'));
+    }, [t]);
 
+    const handleVerify = async () => {
+        if (!token) return;
+        setStatus('loading');
+        setMessage(t('default_loading'));
         api.auth.verifyEmail(token)
             .then((res) => {
                 setStatus('success');
@@ -36,7 +46,7 @@ function VerifyEmailContent() {
                 setStatus('error');
                 setMessage(err.message || t('default_error_failed'));
             });
-    }, [token, t]);
+    };
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-[#0a0a0a] relative overflow-hidden">
@@ -67,6 +77,19 @@ function VerifyEmailContent() {
                                 </div>
                                 <h2 className="text-2xl font-bold text-white tracking-tight">{t('loading_title')}</h2>
                                 <p className="text-muted-foreground font-medium">{message}</p>
+                            </motion.div>
+                        )}
+
+                        {status === 'ready' && (
+                            <motion.div key="ready" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                                <div className="h-20 w-20 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-blue-500/20">
+                                    <Mail className="h-10 w-10 text-blue-500" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-white tracking-tight">{t('ready_title')}</h2>
+                                <p className="text-muted-foreground font-medium">{message}</p>
+                                <Button onClick={handleVerify} className="w-full h-12 bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase tracking-widest text-xs rounded-xl">
+                                    {t('confirm_btn')}
+                                </Button>
                             </motion.div>
                         )}
 

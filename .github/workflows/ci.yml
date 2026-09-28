@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  NODE_VERSION: 20
+  NODE_VERSION: '22.23.3'
   PNPM_VERSION: 9
 
 jobs:
@@ -29,6 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -49,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: pgvector/pgvector:pg16
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -63,7 +65,6 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aluplan_ci
-      SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aluplan_shadow
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v3
@@ -74,30 +75,29 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
       - run: pnpm install
+      - name: Dependency Regression Contracts (blocking)
+        timeout-minutes: 5
+        run: pnpm test:security:dependencies
       - name: Prisma Generate
-        run: npx prisma generate
-      - name: Create Prisma shadow database
-        run: |
-          node - <<'NODE'
-          const { Client } = require('pg');
-
-          async function main() {
-            const client = new Client({ connectionString: process.env.DATABASE_URL });
-            await client.connect();
-            const exists = await client.query("SELECT 1 FROM pg_database WHERE datname = 'aluplan_shadow'");
-            if (exists.rowCount === 0) {
-              await client.query('CREATE DATABASE aluplan_shadow');
-            }
-            await client.end();
-          }
-
-          main().catch((error) => {
-            console.error(error);
-            process.exit(1);
-          });
-          NODE
-      - name: Prisma Migration Check (blocking)
-        run: cd packages/database && pnpm exec prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --script --exit-code
+        run: pnpm --filter @aluplan/database db:generate
+      - name: Operational Safety Contracts (blocking)
+        run: pnpm test:ops-safety
+      - name: RBAC Source Contract (blocking)
+        run: pnpm rbac:verify-contract
+      - name: Frontend API Route Contract (blocking)
+        run: pnpm api:verify-frontend-contract
+      - name: Prisma Migration File Integrity (blocking)
+        run: pnpm db:verify:migration-files
+      - name: Prisma Fresh Migration Deploy (blocking)
+        run: pnpm exec prisma migrate deploy --config packages/database/prisma.config.js
+      - name: Prisma Migration Status (blocking)
+        run: pnpm exec prisma migrate status --config packages/database/prisma.config.js
+      - name: Prisma Migration Integrity (blocking)
+        run: pnpm db:verify:migrations
+      - name: RBAC Database Contract (blocking)
+        run: pnpm rbac:verify-database
+      - name: Prisma Schema Parity (blocking)
+        run: pnpm db:verify:schema-parity
       - name: Build Backend
         run: cd apps/backend && pnpm run build
       - name: Build Frontend
@@ -127,8 +127,10 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install
       - name: Prisma Generate
-        run: npx prisma generate
+        run: pnpm --filter @aluplan/database db:generate
       - name: Run Backend Tests
+        env:
+          NODE_OPTIONS: '--experimental-vm-modules --no-warnings'
         run: cd apps/backend && pnpm test -- --coverage
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -150,9 +152,12 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
+        run: pnpm --filter @aluplan/frontend exec playwright install --with-deps
       - name: Run E2E Tests
-        run: cd apps/frontend && npx playwright test
+        run: pnpm --filter @aluplan/frontend test:e2e
+        env:
+          CI: true
+          NEXT_INTERNAL_API_URL: http://localhost:4000/api/v1
       - name: Upload E2E Results
         if: always()
         uses: actions/upload-artifact@v4
@@ -167,7 +172,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Backend Container
-        run: docker build -t aluplan-backend -f apps/backend/Dockerfile .
+        run: docker build --build-arg VCS_REF="${GITHUB_SHA}" -t aluplan-backend -f apps/backend/Dockerfile .
       - name: Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
         with:

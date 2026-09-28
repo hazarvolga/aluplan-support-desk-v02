@@ -25,7 +25,6 @@ export function useAiHealthSocket() {
         errorCount: 0,
         lastEventAt: null,
     });
-    const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const mountedRef = useRef(true);
 
     const addEvent = useCallback((event: AiHealthEvent) => {
@@ -43,8 +42,6 @@ export function useAiHealthSocket() {
 
     useEffect(() => {
         mountedRef.current = true;
-        let reconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
         const socket = getSocket();
 
         const connect = () => {
@@ -55,21 +52,11 @@ export function useAiHealthSocket() {
         const handleConnect = () => {
             if (!mountedRef.current) return;
             setConnectionState('connected');
-            reconnectAttempts = 0;
         };
 
-        const handleDisconnect = (reason: string) => {
+        const handleDisconnect = () => {
             if (!mountedRef.current) return;
             setConnectionState('disconnected');
-            if (reason === 'io server disconnect') {
-                socket.connect();
-                return;
-            }
-
-            reconnectAttempts++;
-            if (reconnectAttempts <= maxReconnectAttempts) {
-                reconnectTimeoutRef.current = setTimeout(connect, Math.min(1000 * reconnectAttempts, 10000));
-            }
         };
 
         const handleConnectError = () => {
@@ -109,7 +96,6 @@ export function useAiHealthSocket() {
 
         return () => {
             mountedRef.current = false;
-            if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
             socket.off('connect', handleConnect);
             socket.off('disconnect', handleDisconnect);
             socket.off('connect_error', handleConnectError);
@@ -117,9 +103,6 @@ export function useAiHealthSocket() {
             socket.off('ai_health:error', handleError);
             socket.off('ai_health:timeout', handleTimeout);
             socket.off('ai_health:info', handleInfo);
-            if (!socket.connected) {
-                socket.disconnect();
-            }
         };
     }, [addEvent]);
 

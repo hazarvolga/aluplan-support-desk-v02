@@ -3,13 +3,16 @@ import * as crypto from 'crypto';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import * as fs from 'fs';
+import { createCliLogger } from './common/utils/cli-logger';
+
+const cliLogger = createCliLogger('DeployPrep');
 
 // Load .env explicitly
 const envPath = path.resolve(__dirname, '../.env');
 if (fs.existsSync(envPath)) {
     dotenv.config({ path: envPath });
 } else {
-    console.error('❌ .env not found at root!');
+    cliLogger.error('❌ .env not found at root!');
     process.exit(1);
 }
 
@@ -20,7 +23,7 @@ const ALGORITHM = 'aes-256-gcm';
 const HEX_KEY = process.env.ENCRYPTION_KEY;
 
 if (!HEX_KEY || HEX_KEY.length !== 64) {
-    console.error('❌ Invalid or missing ENCRYPTION_KEY in .env (must be 32 bytes hex length 64)');
+    cliLogger.error('❌ Invalid or missing ENCRYPTION_KEY in .env (must be 32 bytes hex length 64)');
     process.exit(1);
 }
 
@@ -36,7 +39,7 @@ function encrypt(text: string): string {
 }
 
 async function main() {
-    console.log('🚀 Starting Pre-Flight Production Configuration Seed...');
+    cliLogger.log('🚀 Starting Pre-Flight Production Configuration Seed...');
 
     // Users & Assignee logic (We get the admin ID to assign updates to)
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
@@ -47,7 +50,7 @@ async function main() {
     const adminId = admin ? admin.id : null;
 
     if (!adminId) {
-        console.warn(`⚠️ Admin user ${adminEmail} not found, updatedBy fields will be null.`);
+        cliLogger.warn(`⚠️ Admin user ${adminEmail} not found, updatedBy fields will be null.`);
     }
 
     // 1. Settings Data
@@ -74,7 +77,7 @@ async function main() {
         { key: 'storage.r2.bucket', value: process.env.R2_BUCKET || 'aluplan-docs', isSecret: false }, // Default fallback
     ];
 
-    console.log('🔄 Upserting Configurations...');
+    cliLogger.log('🔄 Upserting Configurations...');
     for (const setting of settings) {
         const finalValue = setting.isSecret ? encrypt(setting.value) : setting.value;
 
@@ -93,11 +96,11 @@ async function main() {
                 updatedBy: adminId,
             }
         });
-        console.log(` ✅ Set: ${setting.key}`);
+        cliLogger.log(` ✅ Set: ${setting.key}`);
     }
 
     // 2. Dynamics 365 CRM Config
-    console.log('\n🔄 Configuring Dynamics 365 CRM...');
+    cliLogger.log('\n🔄 Configuring Dynamics 365 CRM...');
 
     // CRM keys can be stored either in Settings or in CrmConnection model
     // Both mapped to ensure coverage based on earlier DB architecture
@@ -128,18 +131,18 @@ async function main() {
             create: { key: 'crm.dynamics.api_key', value: encrypt(process.env.DYNAMICS365_API_KEY || ''), isSecret: true }
         });
 
-        console.log(' ✅ Dynamics 365 Connected and Secured.');
+        cliLogger.log(' ✅ Dynamics 365 Connected and Secured.');
     } catch (e: any) {
-        console.warn(` ⚠️ Could not map Dynamics 365 to CrmConnection table: ${e.message}`);
+        cliLogger.warn(` ⚠️ Could not map Dynamics 365 to CrmConnection table: ${e.message}`);
     }
 
-    console.log('\n🎉 Successfully Seated All Credentials into the Local Database!');
-    console.log('You can now export this database and import it into your remote server safely.');
+    cliLogger.log('\n🎉 Successfully Seated All Credentials into the Local Database!');
+    cliLogger.log('You can now export this database and import it into your remote server safely.');
 }
 
 main()
     .catch(e => {
-        console.error(e);
+        cliLogger.error(e);
         process.exit(1);
     })
     .finally(async () => {

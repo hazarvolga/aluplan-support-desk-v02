@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import * as fs from 'fs';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from './audit.service';
 import { TicketStatus } from '@aluplan/database';
@@ -41,7 +40,7 @@ export class AutomationService {
         });
 
         if (ticket?.creator?.email) {
-            this.emailService.sendTicketStatusChanged({
+            await this.emailService.sendTicketStatusChanged({
                 customerEmail: ticket.creator.email,
                 customerName: ticket.creator.fullName || 'Değerli Müşterimiz',
                 ticketNumber: ticket.ticketNumber,
@@ -54,7 +53,7 @@ export class AutomationService {
             // If RESOLVED or PENDING_CUSTOMER_REVIEW, send closed/survey email
             if (payload.newStatus === TicketStatus.RESOLVED || payload.newStatus === TicketStatus.PENDING_CUSTOMER_REVIEW) {
                 if (payload.newStatus === TicketStatus.RESOLVED) {
-                    this.emailService.sendTicketResolved({
+                    await this.emailService.sendTicketResolved({
                         customerEmail: ticket.creator.email,
                         customerName: ticket.creator.fullName || 'Değerli Müşterimiz',
                         ticketNumber: ticket.ticketNumber,
@@ -66,28 +65,30 @@ export class AutomationService {
                         resolution: payload.resolution || 'Bilet çözümlendi',
                         ticketUrl: `${frontendUrl}/tickets/${ticket.id}`,
                         surveyUrl: `${frontendUrl}/tickets/${ticket.id}/feedback`
-                    });
+                    }).catch(() => this.logger.error('Failed to enqueue ticket resolution email'));
                 }
 
-                this.emailService.sendCsatSurvey({
+                await this.emailService.sendCsatSurvey({
                     customerEmail: ticket.creator.email,
                     customerName: ticket.creator.fullName,
                     ticketNumber: ticket.ticketNumber,
                     ticketId: ticket.id,
                     surveyUrl: `${frontendUrl}/tickets/${ticket.id}/feedback`
-                });
+                }).catch(() => this.logger.error('Failed to enqueue customer survey email'));
             }
         }
 
         // Rule Evaluation logic will go here
-        this.evaluateRules(payload.ticketId, 'STATUS_CHANGE', payload);
+        await this.evaluateRules(payload.ticketId, 'STATUS_CHANGE', payload);
     }
 
     @OnEvent('ticket.message_added')
     async handleMessageAdded(payload: { ticket: any; message: any; recipientEmail?: string; userName?: string }) {
         this.logger.log(`🤖 Automation: Processing message notification for ${payload.ticket.ticketNumber} [Channel: ${payload.message.channel}]`);
 
-        if (payload.recipientEmail) {
+        // Only explicitly public messages may leave the ticket through email.
+        // Missing or malformed visibility must not expose a staff-only note.
+        if (payload.message.isInternal === false && payload.recipientEmail) {
             const isWeb = payload.message.channel === 'WEB';
             const jobId = `email-ntf-msg-${payload.message.id}`; // Define jobId here
             const options = isWeb ? {
@@ -101,7 +102,7 @@ export class AutomationService {
 
             const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
-            this.emailService.sendNewMessage({
+            await this.emailService.sendNewMessage({
                 recipientEmail: payload.recipientEmail,
                 userName: payload.userName || 'Kullanıcı',
                 ticketId: payload.ticket.ticketNumber, // Fixed: template expects ticketNumber here
@@ -128,7 +129,7 @@ export class AutomationService {
 
         // Send confirmation email to customer
         if (ticket.creator?.email) {
-            this.emailService.sendTicketCreated({
+            await this.emailService.sendTicketCreated({
                 customerEmail: ticket.creator.email,
                 customerName: ticket.creator.fullName || 'Değerli Müşterimiz',
                 ticketNumber: ticket.ticketNumber,
@@ -141,9 +142,8 @@ export class AutomationService {
                 ticketType: ticket.ticketType || '-',
                 createdAt: new Date(ticket.createdAt).toLocaleString(),
                 ticketUrl: `${frontendUrl}/tickets/${ticket.id}`
-            }).catch(err => {
-                this.logger.error(`Failed to send creation email for ${ticket.ticketNumber}: ${err.message}`);
-                fs.writeFileSync('/tmp/mail_error.txt', err.stack || err.message);
+            }).catch(() => {
+                this.logger.error('Failed to enqueue ticket creation email');
             });
         }
 
@@ -160,7 +160,7 @@ export class AutomationService {
             const staffEmails = staff.map(s => s.email).filter(Boolean).join(',');
 
             if (staffEmails) {
-                this.emailService.sendNewTicketToStaff(staffEmails, {
+                await this.emailService.sendNewTicketToStaff(staffEmails, {
                     ticketId: ticket.id,
                     ticketNumber: ticket.ticketNumber,
                     ticketSubject: ticket.subject,
@@ -178,7 +178,7 @@ export class AutomationService {
             this.logger.error(`Failed to fetch staff for notification: ${error.message}`);
         }
 
-        this.evaluateRules(ticket.id, 'TICKET_CREATED', ticket);
+        await this.evaluateRules(ticket.id, 'TICKET_CREATED', ticket);
     }
 
     @OnEvent('user.created')
@@ -188,7 +188,7 @@ export class AutomationService {
         // Send confirmation email to customer
         if (user?.email) {
             const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
-            this.emailService.sendWelcomeCustomer({
+            await this.emailService.sendWelcomeCustomer({
                 email: user.email,
                 customerName: user.fullName || 'Değerli Müşterimiz',
                 verifyUrl: `${frontendUrl}/login`,
@@ -204,7 +204,7 @@ export class AutomationService {
         this.logger.log(`🚨 Automation: Security alert triggered for ${payload.email} at IP ${payload.ipValue}`);
 
         const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
-        this.emailService.sendSecurityAlert({
+        await this.emailService.sendSecurityAlert({
             recipientEmail: payload.email,
             fullName: payload.fullName || 'Değerli Müşterimiz',
             locationInfo: payload.location,
@@ -218,7 +218,7 @@ export class AutomationService {
 
     @OnEvent('auth.2fa_requested')
     async handle2faRequested(payload: { email: string; fullName?: string; code: string }) {
-        this.emailService.sendTwoFactorAuth({
+        await this.emailService.sendTwoFactorAuth({
             recipientEmail: payload.email,
             fullName: payload.fullName || 'Kullanıcı',
             token: payload.code
@@ -233,7 +233,7 @@ export class AutomationService {
 
         const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
-        this.emailService.sendSlaBreachWarning({
+        await this.emailService.sendSlaBreachWarning({
             recipientEmail: payload.agentEmail,
             agentName: payload.agentName || 'Temsilci',
             ticketId: payload.ticketId,

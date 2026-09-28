@@ -117,6 +117,27 @@ describe('api.ts', () => {
         await expect(api.get('/error')).rejects.toThrow('Server crashed');
     });
 
+    it('does not log an expected knowledge URL duplicate conflict as a console error', async () => {
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        try {
+            (global.fetch as any).mockResolvedValueOnce({
+                ok: false,
+                status: 409,
+                statusText: 'Conflict',
+                json: async () => ({
+                    code: 'KNOWLEDGE_SOURCE_URL_DUPLICATE',
+                    message: 'KNOWLEDGE_SOURCE_URL_DUPLICATE',
+                }),
+            });
+
+            await expect(api.pool.addUrl('Duplicate', 'https://example.com/docs'))
+                .rejects.toThrow('KNOWLEDGE_SOURCE_URL_DUPLICATE');
+            expect(consoleError).not.toHaveBeenCalled();
+        } finally {
+            consoleError.mockRestore();
+        }
+    });
+
     it('classifies network failures as backend unavailable', async () => {
         (global.fetch as any).mockRejectedValueOnce(new TypeError('Failed to fetch'));
 

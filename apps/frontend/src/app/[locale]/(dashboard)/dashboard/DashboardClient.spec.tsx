@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import DashboardClient from './DashboardClient';
 import { useAuth } from '@/components/auth/role-guard';
@@ -22,7 +23,7 @@ describe('DashboardClient', () => {
         (useAuth as any).mockReturnValue({ user: null });
         render(<DashboardClient />);
         // The component renders an Activity icon while loading
-        expect(document.querySelector('.animate-pulse')).toBeDefined();
+        expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
     });
 
     it('renders customer dashboard for customer role', async () => {
@@ -60,6 +61,22 @@ describe('DashboardClient', () => {
         expect(screen.getByText(/live_cost/i)).toBeDefined();
         expect(screen.getAllByText(/SUP-00001/i).length).toBeGreaterThan(0);
         expect(opsSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('finishes loading when React Strict Mode replays mount effects', async () => {
+        (useAuth as any).mockReturnValue({
+            user: { fullName: 'Admin User', roles: ['admin'] }
+        });
+
+        render(
+            <StrictMode>
+                <DashboardClient />
+            </StrictMode>
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText(/system_active/i)).toBeInTheDocument();
+        });
     });
 
     it('handles API errors gracefully', async () => {

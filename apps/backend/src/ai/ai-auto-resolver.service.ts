@@ -25,7 +25,7 @@ export class AiAutoResolverService {
         return value.toString().toLowerCase() === 'true';
     }
 
-    @OnEvent('ticket.created', { async: true })
+    @OnEvent('ticket.created', { async: true, promisify: true })
     async handleTicketCreated(ticket: Ticket) {
         // Skip if already has interaction or if it's not a NEW ticket
         if (ticket.interactionId || ticket.status !== TicketStatus.NEW) {

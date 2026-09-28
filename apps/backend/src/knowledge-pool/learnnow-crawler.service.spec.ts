@@ -19,6 +19,7 @@ const makeService = () => {
     };
     const pool = {
         triggerSync: jest.fn(),
+        createImportedUrlSource: jest.fn(),
     };
     const crawl = {
         fetch: jest.fn(),
@@ -498,23 +499,59 @@ describe('LearnNowCrawlerService', () => {
             metadata: { source: 'allplan_learnnow' },
         }]);
         prisma.knowledgeSource.findFirst.mockResolvedValue(null);
-        prisma.knowledgeSource.create.mockResolvedValue({ id: 'source-1' });
+        pool.createImportedUrlSource.mockResolvedValue({ source: { id: 'source-1' }, created: true });
 
         const result = await service.importCandidate('7c0ee310-32d5-47d0-bf19-286b8839b4db');
 
-        expect(prisma.knowledgeSource.create).toHaveBeenCalledWith({
-            data: expect.objectContaining({
+        expect(pool.createImportedUrlSource).toHaveBeenCalledWith(
+            expect.objectContaining({
                 type: 'URL',
                 url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=101&source=howto',
+            }),
+            expect.objectContaining({
                 metadata: expect.objectContaining({
                     source: 'allplan_learnnow',
                     sourceType: 'knowledge_article',
                     ingestionMode: 'bulk-safe',
                 }),
             }),
-        });
-        expect(pool.triggerSync).toHaveBeenCalledWith('source-1');
+        );
+        expect(pool.triggerSync).not.toHaveBeenCalled();
         expect(result).toEqual({ imported: true, candidateId: '7c0ee310-32d5-47d0-bf19-286b8839b4db', sourceId: 'source-1' });
+    });
+
+    it('marks an article candidate duplicate when the shared URL writer loses a race', async () => {
+        const { service, prisma, pool } = makeService();
+        prisma.$queryRawUnsafe.mockResolvedValueOnce([{
+            id: '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            source: 'allplan_learnnow',
+            source_url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=101&source=howto',
+            title: 'License Server Access Rights',
+            format: 'KNOWLEDGE_ARTICLE',
+            status: 'PENDING_REVIEW',
+            language: 'en',
+            category_slug: 'license-server-codemeter',
+            content_hash: null,
+            crawl_filter: 'knowledge_article',
+            rejection_reason: null,
+            metadata: {},
+        }]);
+        prisma.knowledgeSource.findFirst.mockResolvedValue(null);
+        pool.createImportedUrlSource.mockResolvedValue({
+            source: { id: 'winning-source' },
+            created: false,
+        });
+
+        const result = await service.importCandidate('7c0ee310-32d5-47d0-bf19-286b8839b4db');
+
+        expect(result).toEqual({ skipped: true, reason: 'DUPLICATE_URL', sourceId: 'winning-source' });
+        expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(
+            expect.stringContaining('UPDATE crawl_candidates'),
+            '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            'SKIPPED_DUPLICATE',
+            'winning-source',
+            'Knowledge source URL already exists',
+        );
     });
 
     it('skips duplicate article imports by URL', async () => {

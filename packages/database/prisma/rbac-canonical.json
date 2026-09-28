@@ -1,0 +1,213 @@
+{
+  "version": 1,
+  "roles": [
+    "ADMIN",
+    "AGENT",
+    "CUSTOMER",
+    "DEPARTMENT_MANAGER",
+    "KB_EDITOR",
+    "MANAGER",
+    "SENIOR_AGENT",
+    "SUPER_ADMIN",
+    "SUPERUSER",
+    "SUPPORT_AGENT",
+    "SUPPORT_MANAGER",
+    "TEAM_LEAD"
+  ],
+  "permissions": [
+    {
+      "name": "*",
+      "group": "ADMIN",
+      "description": "Unrestricted system access"
+    },
+    {
+      "name": "admin:settings",
+      "group": "ADMIN",
+      "description": "Manage administrative policies such as SLA settings"
+    },
+    {
+      "name": "ai-interactions:read",
+      "group": "KNOWLEDGE",
+      "description": "View customer AI interaction history"
+    },
+    {
+      "name": "faq:manage",
+      "group": "KNOWLEDGE",
+      "description": "Edit, approve, or dismiss FAQ candidates"
+    },
+    {
+      "name": "faq:read",
+      "group": "KNOWLEDGE",
+      "description": "Read published FAQ content"
+    },
+    {
+      "name": "faq:review",
+      "group": "KNOWLEDGE",
+      "description": "Review internal FAQ candidates and provenance"
+    },
+    {
+      "name": "kb:approve",
+      "group": "KNOWLEDGE",
+      "description": "Approve or reject knowledge articles"
+    },
+    {
+      "name": "kb:create",
+      "group": "KNOWLEDGE",
+      "description": "Create knowledge articles"
+    },
+    {
+      "name": "kb:delete",
+      "group": "KNOWLEDGE",
+      "description": "Archive or delete knowledge articles"
+    },
+    {
+      "name": "kb:read",
+      "group": "KNOWLEDGE",
+      "description": "Read knowledge articles"
+    },
+    {
+      "name": "kb:submit_review",
+      "group": "KNOWLEDGE",
+      "description": "Submit knowledge articles for review"
+    },
+    {
+      "name": "kb:update",
+      "group": "KNOWLEDGE",
+      "description": "Update knowledge articles"
+    },
+    {
+      "name": "reports:read",
+      "group": "REPORTS",
+      "description": "View operational reports and analytics"
+    },
+    {
+      "name": "settings:read",
+      "group": "ADMIN",
+      "description": "Read system settings"
+    },
+    {
+      "name": "settings:write",
+      "group": "ADMIN",
+      "description": "Update system settings"
+    },
+    {
+      "name": "ticket:assign",
+      "group": "TICKETS",
+      "description": "Assign tickets to support staff"
+    },
+    {
+      "name": "ticket:close",
+      "group": "TICKETS",
+      "description": "Close resolved tickets"
+    },
+    {
+      "name": "ticket:create",
+      "group": "TICKETS",
+      "description": "Create tickets"
+    },
+    {
+      "name": "ticket:escalate",
+      "group": "TICKETS",
+      "description": "Escalate tickets"
+    },
+    {
+      "name": "ticket:read",
+      "group": "TICKETS",
+      "description": "Read tickets"
+    },
+    {
+      "name": "ticket:update",
+      "group": "TICKETS",
+      "description": "Update ticket details and status"
+    },
+    {
+      "name": "users:manage",
+      "group": "ADMIN",
+      "description": "Manage users and roles"
+    }
+  ],
+  "rolePermissions": {
+    "CUSTOMER": [
+      "kb:read",
+      "ticket:create",
+      "ticket:read",
+      "ticket:update"
+    ],
+    "SUPPORT_AGENT": [
+      "ai-interactions:read",
+      "faq:manage",
+      "faq:read",
+      "faq:review",
+      "kb:approve",
+      "kb:create",
+      "kb:read",
+      "kb:submit_review",
+      "kb:update",
+      "reports:read",
+      "ticket:assign",
+      "ticket:close",
+      "ticket:create",
+      "ticket:escalate",
+      "ticket:read",
+      "ticket:update"
+    ]
+  },
+  "roleBoundaries": {
+    "CUSTOMER": {
+      "required": [
+        "kb:read",
+        "ticket:create",
+        "ticket:read",
+        "ticket:update"
+      ],
+      "forbidden": [
+        "*",
+        "admin:settings",
+        "ai-interactions:read",
+        "faq:manage",
+        "faq:read",
+        "faq:review",
+        "kb:approve",
+        "kb:create",
+        "kb:delete",
+        "kb:submit_review",
+        "kb:update",
+        "reports:read",
+        "settings:read",
+        "settings:write",
+        "ticket:assign",
+        "ticket:close",
+        "ticket:escalate",
+        "users:manage"
+      ]
+    },
+    "SUPPORT_AGENT": {
+      "required": [
+        "ai-interactions:read",
+        "faq:manage",
+        "faq:read",
+        "faq:review",
+        "kb:approve",
+        "kb:create",
+        "kb:read",
+        "kb:submit_review",
+        "kb:update",
+        "reports:read",
+        "ticket:assign",
+        "ticket:close",
+        "ticket:create",
+        "ticket:escalate",
+        "ticket:read",
+        "ticket:update"
+      ],
+      "forbidden": [
+        "*",
+        "admin:settings",
+        "kb:delete",
+        "settings:read",
+        "settings:write",
+        "users:manage"
+      ]
+    }
+  }
+}

@@ -71,6 +71,39 @@ describe('GeminiService', () => {
         );
     });
 
+    it('logs and skips malformed Gemini stream chunks without aborting the stream', async () => {
+        settings.getValue
+            .mockResolvedValueOnce('test-api-key')
+            .mockResolvedValueOnce('gemini-2.5-flash');
+        (config.get as jest.Mock).mockReturnValue(undefined);
+
+        const chunks = [
+            new TextEncoder().encode('data: {not-json}\n'),
+            new TextEncoder().encode('data: {"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}\n'),
+        ];
+
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            body: {
+                getReader: () => ({
+                    read: jest.fn()
+                        .mockResolvedValueOnce({ done: false, value: chunks[0] })
+                        .mockResolvedValueOnce({ done: false, value: chunks[1] })
+                        .mockResolvedValueOnce({ done: true, value: undefined }),
+                }),
+            },
+        }) as any;
+        const warnSpy = jest.spyOn((service as any).logger, 'warn').mockImplementation();
+
+        const output: string[] = [];
+        for await (const token of service.streamGenerate('Merhaba')) {
+            output.push(token);
+        }
+
+        expect(output).toEqual(['ok']);
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('unparsable SSE chunk'));
+    });
+
     it('marks gemini-embedding-2 as the recommended embed model', async () => {
         settings.getValue.mockResolvedValue('test-api-key');
         global.fetch = jest.fn().mockResolvedValue({

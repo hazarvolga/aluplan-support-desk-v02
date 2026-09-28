@@ -6,14 +6,14 @@ import React from 'react';
 
 // ── Next.js Mocks ──────────────────────────────────────────────────────
 vi.mock('next/navigation', () => ({
-    useRouter: () => ({
+    useRouter: vi.fn(() => ({
         push: vi.fn(),
         replace: vi.fn(),
         prefetch: vi.fn(),
         back: vi.fn(),
-    }),
-    usePathname: () => '/',
-    useSearchParams: () => new URLSearchParams(),
+    })),
+    usePathname: vi.fn(() => '/'),
+    useSearchParams: vi.fn(() => new URLSearchParams()),
     useParams: () => ({ locale: 'tr' }),
     redirect: vi.fn(),
     permanentRedirect: vi.fn(),
@@ -54,6 +54,7 @@ vi.mock('framer-motion', async (importOriginal) => {
 
 // ── i18n Routing Mock ──────────────────────────────────────────────────
 vi.mock('@/i18n/routing', () => ({
+    routing: { locales: ['tr', 'en', 'de'] },
     Link: ({ children, href, ...props }: any) => React.createElement('a', { href, ...props }, children),
     redirect: vi.fn(),
     usePathname: () => '/',

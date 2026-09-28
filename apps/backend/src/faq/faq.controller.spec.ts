@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { FaqController } from './faq.controller';
+import { PERMISSIONS_KEY, ROLES_KEY } from '../rbac/decorators/rbac.decorators';
 
 describe('FaqController', () => {
     const faqService = {
@@ -15,8 +16,17 @@ describe('FaqController', () => {
     });
 
     describe('findAll', () => {
+        it('requires the dedicated FAQ review permission', () => {
+            expect(Reflect.getMetadata(PERMISSIONS_KEY, controller.findAll)).toEqual(['faq:review']);
+        });
+
         it('validates nonnumeric pagination before querying Prisma', () => {
             expect(() => controller.findAll({ page: 'abc', limit: '20' })).toThrow(BadRequestException);
+            expect(faqService.findAll).not.toHaveBeenCalled();
+        });
+
+        it('rejects pagination limits above 100', () => {
+            expect(() => controller.findAll({ limit: '101' })).toThrow(BadRequestException);
             expect(faqService.findAll).not.toHaveBeenCalled();
         });
 
@@ -35,6 +45,33 @@ describe('FaqController', () => {
                 page: 2,
                 limit: 10,
             });
+        });
+    });
+
+    describe('getPublished', () => {
+        it('does not expose internal FAQs to anonymous or customer requests', async () => {
+            faqService.getPublished.mockResolvedValue([]);
+
+            await controller.getPublished('tr', { user: undefined });
+            await controller.getPublished('tr', { user: { role: 'CUSTOMER' } });
+
+            expect(faqService.getPublished).toHaveBeenNthCalledWith(1, 'tr', 50, false);
+            expect(faqService.getPublished).toHaveBeenNthCalledWith(2, 'tr', 50, false);
+        });
+
+        it('allows explicit staff roles to include internal FAQs', async () => {
+            faqService.getPublished.mockResolvedValue([]);
+
+            await controller.getPublished('tr', { user: { role: { name: 'support-agent' } } });
+
+            expect(faqService.getPublished).toHaveBeenCalledWith('tr', 50, true);
+        });
+    });
+
+    describe('candidate decisions', () => {
+        it('allows SUPPORT_AGENT to approve and dismiss the work shown in the review center', () => {
+            expect(Reflect.getMetadata(ROLES_KEY, controller.approve)).toContain('support_agent');
+            expect(Reflect.getMetadata(ROLES_KEY, controller.dismiss)).toContain('support_agent');
         });
     });
 });

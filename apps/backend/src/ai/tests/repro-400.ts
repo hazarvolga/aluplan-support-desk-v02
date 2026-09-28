@@ -1,4 +1,7 @@
 import * as http from 'http';
+import { createCliLogger } from '../../common/utils/cli-logger';
+
+const cliLogger = createCliLogger('Repro400');
 
 async function repro() {
     const payloads = [
@@ -7,7 +10,7 @@ async function repro() {
 
     for (const payload of payloads) {
         const body = JSON.stringify(payload);
-        console.log(`📡 Sending payload: ${body}`);
+        cliLogger.log(`📡 Sending payload: ${body}`);
 
         const options = {
             hostname: 'localhost',
@@ -21,18 +24,18 @@ async function repro() {
         };
 
         const req = http.request(options, (res) => {
-            console.log(`HTTP ${res.statusCode} ${res.statusMessage}`);
+            cliLogger.log(`HTTP ${res.statusCode} ${res.statusMessage}`);
             let data = '';
             res.on('data', (chunk) => {
                 data += chunk;
             });
             res.on('end', () => {
-                console.log(`Response: ${data}\n`);
+                cliLogger.log(`Response: ${data}\n`);
             });
         });
 
         req.on('error', (e) => {
-            console.error(`❌ Request failed: ${e.message}`);
+            cliLogger.error(`❌ Request failed: ${e.message}`);
         });
 
         req.write(body);

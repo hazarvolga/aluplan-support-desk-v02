@@ -1,0 +1,8 @@
+# One owned file-provider resource. Keep this valid service definition in place
+# when maintenance routing is inactive; do not withdraw by deleting the file.
+http:
+  services:
+    allplan-release-maintenance:
+      loadBalancer:
+        servers:
+          - url: http://allplan-release-maintenance-20260928:8080

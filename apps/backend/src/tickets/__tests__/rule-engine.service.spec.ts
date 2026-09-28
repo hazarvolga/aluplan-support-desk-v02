@@ -23,7 +23,7 @@ describe('RuleEngineService', () => {
         };
 
         eventEmitter = {
-            emit: jest.fn(),
+            emitAsync: jest.fn().mockResolvedValue([]),
         };
 
         audit = {
@@ -166,10 +166,9 @@ describe('RuleEngineService', () => {
             const message = { message: 'turkish text', id: 'msg-1' } as any;
             await service.handleMessageAdded({ ticket, message });
 
-            // Service uses (context as any).messageId which is undefined in current impl
-            expect(eventEmitter.emit).toHaveBeenCalledWith('ai.translate_message', {
+            expect(eventEmitter.emitAsync).toHaveBeenCalledWith('ai.translate_message', {
                 ticketId: 't1',
-                messageId: undefined,
+                messageId: 'msg-1',
                 targetLanguage: 'tr',
             });
         });

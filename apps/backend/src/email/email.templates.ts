@@ -206,6 +206,7 @@ export class TemplateService {
       const resolvedMjml = Handlebars.compile(mjmlContent, { noEscape: true })(renderContext);
 
       const { html, errors } = mjml2html(resolvedMjml, {
+        minify: false, // Keep the vulnerable optional html-minifier path disabled.
         beautify: false,
         validationLevel: 'soft',
         filePath: mjmlPath || path.join(this.mjmlBaseDir, 'layouts', 'base.mjml')

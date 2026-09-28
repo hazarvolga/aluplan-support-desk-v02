@@ -1,5 +1,5 @@
-import { IsString, IsBoolean, IsOptional, IsEnum, IsArray, MaxLength } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsBoolean, IsOptional, IsEnum, Equals, MaxLength } from 'class-validator';
+import { ApiHideProperty, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CommunicationChannel } from '@aluplan/database';
 
 export enum MessageContentFormat {
@@ -28,25 +28,9 @@ export class AddMessageDto {
     @IsOptional()
     channel?: CommunicationChannel;
 
-    @ApiPropertyOptional({
-        description: 'Metadata for attachments already uploaded to storage',
-        type: 'array',
-        items: {
-            type: 'object',
-            properties: {
-                url: { type: 'string' },
-                fileName: { type: 'string' },
-                fileSize: { type: 'number' },
-                mimeType: { type: 'string' },
-            }
-        }
-    })
-    @IsArray()
-    @IsOptional()
-    attachments?: Array<{
-        url: string;
-        fileName: string;
-        fileSize: number;
-        mimeType: string;
-    }>;
+    // Retain only to explicitly reject legacy input instead of silently stripping it.
+    // Files must use the authorized /attachments/upload/:messageId endpoint.
+    @ApiHideProperty()
+    @Equals(undefined, { message: 'Attachments must be uploaded through the attachment endpoint' })
+    attachments?: unknown;
 }

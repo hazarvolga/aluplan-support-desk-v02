@@ -5,6 +5,7 @@ import axios from 'axios';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { CrmRecordSyncService } from '../services/crm-record-sync.service';
+import { assertSameDynamicsOrigin, normalizeDynamicsInstanceUrl } from '../dynamics-url';
 
 @Injectable()
 export class Dynamics365Adapter implements ICrmAdapter {
@@ -190,7 +191,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
     async fetchAccounts(config: any): Promise<any[]> {
         const token = await this.getAccessToken(config);
-        const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
+        const instanceUrl = normalizeDynamicsInstanceUrl(config.instanceUrl);
         // No $select: custom mapped fields vary by tenant and some Dynamics
         // environments reject missing optional fields.
         return this.fetchPagedRecords(`${instanceUrl}/api/data/v9.2/accounts`, token, 'Accounts');
@@ -198,7 +199,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
     async fetchContacts(config: any): Promise<any[]> {
         const token = await this.getAccessToken(config);
-        const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
+        const instanceUrl = normalizeDynamicsInstanceUrl(config.instanceUrl);
         const url = `${instanceUrl}/api/data/v9.2/contacts?$expand=parentcustomerid_account($select=accountid,name,industrycode,accountnumber)`;
         return this.fetchPagedRecords(url, token, 'Contacts');
     }
@@ -222,7 +223,7 @@ export class Dynamics365Adapter implements ICrmAdapter {
                 throw new Error(`Authentication with Microsoft failed: ${tokenErr.message}`);
             }
 
-            const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
+            const instanceUrl = normalizeDynamicsInstanceUrl(config.instanceUrl);
 
             // 1. Fetch Metadata (Labels) with individual logging
             this.logger.log(`${connIdStr} Fetching account metadata...`);
@@ -308,11 +309,13 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
     async fetchDeltaRecords(config: any, entityType: 'account' | 'contact', deltaLink?: string | null): Promise<{ records: any[]; deltaLink: string | null }> {
         const token = await this.getAccessToken(config);
-        const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
+        const instanceUrl = normalizeDynamicsInstanceUrl(config.instanceUrl);
         const entitySet = entityType === 'account' ? 'accounts' : 'contacts';
         // Keep delta queries schema-flexible like full import. Some Dynamics tenants
         // reject $select when optional/custom fields are absent or differently cased.
-        let nextUrl: string | null = deltaLink || `${instanceUrl}/api/data/v9.2/${entitySet}`;
+        let nextUrl: string | null = deltaLink
+            ? assertSameDynamicsOrigin(deltaLink, instanceUrl)
+            : `${instanceUrl}/api/data/v9.2/${entitySet}`;
         let latestDeltaLink: string | null = null;
         const records: any[] = [];
 
@@ -328,11 +331,16 @@ export class Dynamics365Adapter implements ICrmAdapter {
             const response: { data: any } = await axios.get(nextUrl, {
                 headers,
                 timeout: 30000,
+                maxRedirects: 0,
             });
 
             records.push(...(response.data.value ?? []));
-            nextUrl = response.data['@odata.nextLink'] ?? null;
-            latestDeltaLink = response.data['@odata.deltaLink'] ?? latestDeltaLink;
+            nextUrl = response.data['@odata.nextLink']
+                ? assertSameDynamicsOrigin(response.data['@odata.nextLink'], instanceUrl)
+                : null;
+            latestDeltaLink = response.data['@odata.deltaLink']
+                ? assertSameDynamicsOrigin(response.data['@odata.deltaLink'], instanceUrl)
+                : latestDeltaLink;
         }
 
         return { records, deltaLink: latestDeltaLink };
@@ -354,6 +362,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     Accept: 'application/json',
                     Prefer: 'odata.include-annotations="*"',
                 },
+                timeout: 30000,
+                maxRedirects: 0,
             });
             return response.data.value;
         } catch (error) {
@@ -376,6 +386,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
                     Accept: 'application/json',
                     Prefer: 'odata.include-annotations="*"',
                 },
+                timeout: 30000,
+                maxRedirects: 0,
             });
             return response.data.value?.[0] || null;
         } catch (error) {
@@ -440,6 +452,8 @@ export class Dynamics365Adapter implements ICrmAdapter {
 
     private async fetchPagedRecords(baseUrl: string, token: string, label: string): Promise<any[]> {
         this.logger.debug(`Fetching ${label.toLowerCase()} from: ${baseUrl}`);
+        const trustedOrigin = new URL(baseUrl).origin;
+        normalizeDynamicsInstanceUrl(trustedOrigin);
 
         const headers = {
             Authorization: `Bearer ${token}`,
@@ -455,10 +469,13 @@ export class Dynamics365Adapter implements ICrmAdapter {
             const response: { status: number; data: any } = await axios.get(nextUrl, {
                 headers,
                 timeout: 30000,
+                maxRedirects: 0,
             });
             this.logger.debug(`${label} page status: ${response.status}, count: ${response.data.value?.length}`);
             records.push(...(response.data.value ?? []));
-            nextUrl = response.data['@odata.nextLink'] ?? null;
+            nextUrl = response.data['@odata.nextLink']
+                ? assertSameDynamicsOrigin(response.data['@odata.nextLink'], trustedOrigin)
+                : null;
         }
 
         return records;
@@ -477,17 +494,13 @@ export class Dynamics365Adapter implements ICrmAdapter {
     private async getAccessToken(config: any): Promise<string> {
         const { tenantId, clientId, clientSecret, instanceUrl: rawInstanceUrl } = config;
 
-        // Debug Phase: Secure Parameter Verification
-        const mask = (str: string) => (str ? (str.length < 8 ? '****' : `${str.substring(0, 4)}...${str.substring(str.length - 4)}`) : 'NULL');
-        this.logger.log(
-            `[TOKEN_ACQUISITION] Params: Tenant=${mask(tenantId)} (${tenantId?.length}), ClientID=${mask(clientId)} (${clientId?.length}), Secret=${mask(clientSecret)} (${clientSecret?.length}), Instance=${rawInstanceUrl}`,
-        );
+        this.logger.log('[TOKEN_ACQUISITION] Requesting Dynamics token');
 
         if (!tenantId || !clientId || !clientSecret || !rawInstanceUrl) {
             throw new Error(`Missing required Dynamics 365 credentials: T:${!!tenantId}, C:${!!clientId}, S:${!!clientSecret}, U:${!!rawInstanceUrl}`);
         }
 
-        const instanceUrl = rawInstanceUrl.replace(/\/+$/, '');
+        const instanceUrl = normalizeDynamicsInstanceUrl(rawInstanceUrl);
         const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
 
         const params = new URLSearchParams();
@@ -499,12 +512,25 @@ export class Dynamics365Adapter implements ICrmAdapter {
         try {
             const response = await axios.post(tokenUrl, params, {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                timeout: 30000,
+                maxRedirects: 0,
             });
             return response.data.access_token;
         } catch (error) {
-            const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-            this.logger.error(`[TOKEN_ACQUISITION_FAILED] URL: ${tokenUrl}, Error: ${errorDetails}`);
-            throw error;
+            const status = Number(error?.response?.status);
+            const rawCode = error?.response?.data?.error;
+            const safeCodes = new Set([
+                'invalid_client', 'invalid_grant', 'invalid_request', 'invalid_scope',
+                'unauthorized_client', 'unsupported_grant_type', 'temporarily_unavailable',
+                'server_error', 'interaction_required',
+            ]);
+            const code = typeof rawCode === 'string' && safeCodes.has(rawCode) ? rawCode : 'unknown';
+            const statusLabel = Number.isInteger(status) && status >= 400 && status <= 599
+                ? `HTTP ${status}`
+                : 'network error';
+            const diagnostic = `${statusLabel}; code=${code}`;
+            this.logger.error(`[TOKEN_ACQUISITION_FAILED] ${diagnostic}`);
+            throw new Error(`Dynamics 365 token request failed (${diagnostic})`);
         }
     }
 }

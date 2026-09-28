@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { CrmProvider } from '@aluplan/database';
+import { CrmProvider, SyncStatus } from '@aluplan/database';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CryptoService } from '../../utils/crypto.service';
 import { Dynamics365Adapter } from '../adapters/dynamics365.adapter';
@@ -17,6 +17,8 @@ interface DeltaResult {
     errorCount: number;
     changeCount: number;
 }
+
+const DEFAULT_CHANGE_TRACKING_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class CrmDeltaSyncService implements OnApplicationBootstrap {
@@ -126,11 +128,72 @@ export class CrmDeltaSyncService implements OnApplicationBootstrap {
                 },
             });
 
-            const { records, deltaLink } = await this.dynamics365.fetchDeltaRecords(
-                connection,
-                entityType,
-                state?.deltaLink ?? null,
-            );
+            let fetched;
+            let reinitialized = false;
+            try {
+                fetched = await this.dynamics365.fetchDeltaRecords(
+                    connection,
+                    entityType,
+                    state?.deltaLink ?? null,
+                );
+            } catch (error) {
+                const lastDeltaAt = state?.lastSuccessfulSyncAt;
+                const staleCursor = Boolean(
+                    state?.deltaLink && lastDeltaAt
+                    && startedAt.getTime() - lastDeltaAt.getTime() > DEFAULT_CHANGE_TRACKING_RETENTION_MS,
+                );
+                if (error?.response?.status !== 400 || !staleCursor || !lastDeltaAt) throw error;
+
+                const latestImport = await this.prisma.crmSyncLog.findFirst({
+                    where: { connectionId: connection.id },
+                    orderBy: { startedAt: 'desc' },
+                    select: { status: true, errorCount: true, completedAt: true },
+                });
+                if (latestImport?.status !== SyncStatus.SUCCESS
+                    || latestImport.errorCount !== 0
+                    || !latestImport.completedAt
+                    || latestImport.completedAt <= lastDeltaAt) throw error;
+
+                this.logger.warn(`CRM ${entityType} delta cursor is stale; rebuilding after a clean full import`);
+                fetched = await this.dynamics365.fetchDeltaRecords(connection, entityType, null);
+                if (!fetched.deltaLink) {
+                    throw new Error(`CRM ${entityType} delta reinitialization returned no continuation link`);
+                }
+                reinitialized = true;
+            }
+            const { records, deltaLink } = fetched;
+            if (reinitialized && records.length === 0) {
+                throw new Error(`CRM ${entityType} delta reinitialization returned an empty recovery snapshot`);
+            }
+
+            if (reinitialized) {
+                const activeIds = records
+                    .filter((record) => !this.dynamics365.isDeletedDeltaRecord(record) && record.statecode !== 1)
+                    .map((record) => this.recordSync.resolveExternalIdFromDynamics(record, connection, entityType));
+                if (activeIds.some((id) => !id)) {
+                    throw new Error(`CRM ${entityType} delta reinitialization has missing CRM record IDs`);
+                }
+                if (activeIds.length === 0) {
+                    throw new Error(`CRM ${entityType} delta reinitialization returned no active record IDs`);
+                }
+                const verifiedRecords = entityType === 'account'
+                    ? await this.prisma.crmAccount.findMany({
+                        where: { externalAccountId: { not: null }, crmVerified: true, deletedAt: null },
+                        select: { externalAccountId: true },
+                    })
+                    : await this.prisma.customerProfile.findMany({
+                        where: { externalContactId: { not: null }, crmVerified: true, deletedAt: null },
+                        select: { externalContactId: true },
+                    });
+                const snapshotIds = new Set(activeIds);
+                const missingCount = verifiedRecords.filter((record) => {
+                    const id = 'externalAccountId' in record ? record.externalAccountId : record.externalContactId;
+                    return id && !snapshotIds.has(id);
+                }).length;
+                if (missingCount > 0) {
+                    throw new Error(`CRM ${entityType} delta recovery snapshot is missing previously verified CRM records (${missingCount})`);
+                }
+            }
 
             for (const record of records) {
                 try {
@@ -156,6 +219,10 @@ export class CrmDeltaSyncService implements OnApplicationBootstrap {
                     errorCount++;
                     this.logger.error(`CRM delta ${entityType} record failed: ${error.message}`, error.stack);
                 }
+            }
+
+            if (errorCount > 0) {
+                throw new Error(`CRM ${entityType} delta record processing failed (${errorCount} records)`);
             }
 
             await this.prisma.crmDeltaSyncState.upsert({

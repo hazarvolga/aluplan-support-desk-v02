@@ -9,11 +9,16 @@ import { DocumentParserService } from './services/document-parser.service';
 import { TicketOwnerGuard } from './guards/ticket-owner.guard';
 import { TeamScopeGuard } from './guards/team-scope.guard';
 import { AlertingService } from './services/alerting.service';
+import { TicketAccessService } from './services/ticket-access.service';
+import { MaintenanceWorkService } from './services/maintenance-work.service';
+import { MaintenanceAdmissionMiddleware } from './middleware/maintenance-admission.middleware';
 
 @Global()
 @Module({
     imports: [PrismaModule],
     providers: [
+        MaintenanceAdmissionMiddleware,
+        MaintenanceWorkService,
         ErrorLoggerService,
         StorageService,
         PiiMaskingService,
@@ -22,9 +27,12 @@ import { AlertingService } from './services/alerting.service';
         TicketOwnerGuard,
         TeamScopeGuard,
         AlertingService,
+        TicketAccessService,
     ],
     controllers: [StorageController],
     exports: [
+        MaintenanceAdmissionMiddleware,
+        MaintenanceWorkService,
         ErrorLoggerService,
         StorageService,
         PiiMaskingService,
@@ -33,6 +41,7 @@ import { AlertingService } from './services/alerting.service';
         TicketOwnerGuard,
         TeamScopeGuard,
         AlertingService,
+        TicketAccessService,
     ],
 })
 export class CommonModule { }

@@ -11,50 +11,55 @@ datasource db {
 }
 
 model User {
-  id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email                   String                    @unique @db.VarChar(255)
-  fullName                String                    @db.VarChar(255)
-  passwordHash            String
-  refreshTokenHash        String?                   @map("refresh_token_hash")
-  avatarUrl               String?
-  status                  UserStatus                @default(ACTIVE)
-  deletedAt               DateTime?                 @map("deleted_at")
-  createdAt               DateTime                  @default(now()) @map("created_at")
-  updatedAt               DateTime                  @updatedAt @map("updated_at")
-  roleId                  String?                   @map("role_id") @db.Uuid
-  agentStatus             AgentStatus               @default(DND) @map("agent_status")
-  title                   String?                   @db.VarChar(100)
-  bio                     String?
-  timezone                String                    @default("UTC") @db.VarChar(50)
-  language                String                    @default("tr") @db.VarChar(10)
-  maxActiveTickets        Int                       @default(5) @map("max_active_tickets")
-  agentSkills             AgentSkill[]
-  aiInteractions          AiInteraction[]
-  announcementTemplates   AnnouncementTemplate[]    @relation("TemplateAuthor")
-  announcements           Announcement[]
-  articleFeedbacks        ArticleFeedback[]
-  auditLogs               AuditLog[]
-  availability            AvailabilityOverride[]
-  customerProfile         CustomerProfile?
-  emailPreferences        EmailPreference[]
-  feedbacks               InteractionFeedback[]
-  articleVersions         KnowledgeArticleVersion[]
-  articlesApproved        KnowledgeArticle[]        @relation("ArticleApprovedBy")
-  articlesCreated         KnowledgeArticle[]        @relation("ArticleCreatedBy")
-  macrosCreated           Macro[]
-  notifications           Notification[]
-  settings                Setting[]
-  shifts                  Shift[]
-  teamMembers             TeamMember[]
-  ticketEscalations       TicketEscalation[]
-  ticketMessages          TicketMessage[]
-  ticketsAssigned         Ticket[]                  @relation("TicketAssignedTo")
-  ticketsCreated          Ticket[]                  @relation("TicketCreatedBy")
-  trainingReviews         TrainingQueue[]
-  role                    Role?                     @relation(fields: [roleId], references: [id])
-  proactiveChatAsAgent    ProactiveChatSession[]    @relation("ProactiveChatAgent")
-  proactiveChatAsCustomer ProactiveChatSession[]    @relation("ProactiveChatCustomer")
-  proactiveChatMessages   ProactiveChatMessage[]    @relation("ProactiveChatMessageSender")
+  id                       String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                    String                    @unique @db.VarChar(255)
+  fullName                 String                    @db.VarChar(255)
+  passwordHash             String
+  refreshTokenHash         String?                   @map("refresh_token_hash")
+  emailVerificationJtiHash String?                   @map("email_verification_jti_hash") @db.VarChar(64)
+  emailVerificationSentAt  DateTime?                 @map("email_verification_sent_at")
+  passwordResetJtiHash     String?                   @map("password_reset_jti_hash") @db.VarChar(64)
+  passwordResetSentAt      DateTime?                 @map("password_reset_sent_at")
+  sessionVersion           Int                       @default(0) @map("session_version")
+  avatarUrl                String?
+  status                   UserStatus                @default(ACTIVE)
+  deletedAt                DateTime?                 @map("deleted_at")
+  createdAt                DateTime                  @default(now()) @map("created_at")
+  updatedAt                DateTime                  @updatedAt @map("updated_at")
+  roleId                   String?                   @map("role_id") @db.Uuid
+  agentStatus              AgentStatus               @default(DND) @map("agent_status")
+  title                    String?                   @db.VarChar(100)
+  bio                      String?
+  timezone                 String                    @default("UTC") @db.VarChar(50)
+  language                 String                    @default("tr") @db.VarChar(10)
+  maxActiveTickets         Int                       @default(5) @map("max_active_tickets")
+  agentSkills              AgentSkill[]
+  aiInteractions           AiInteraction[]
+  announcementTemplates    AnnouncementTemplate[]    @relation("TemplateAuthor")
+  announcements            Announcement[]
+  articleFeedbacks         ArticleFeedback[]
+  auditLogs                AuditLog[]
+  availability             AvailabilityOverride[]
+  customerProfile          CustomerProfile?
+  emailPreferences         EmailPreference[]
+  feedbacks                InteractionFeedback[]
+  articleVersions          KnowledgeArticleVersion[]
+  articlesApproved         KnowledgeArticle[]        @relation("ArticleApprovedBy")
+  articlesCreated          KnowledgeArticle[]        @relation("ArticleCreatedBy")
+  macrosCreated            Macro[]
+  notifications            Notification[]
+  settings                 Setting[]
+  shifts                   Shift[]
+  teamMembers              TeamMember[]
+  ticketEscalations        TicketEscalation[]
+  ticketMessages           TicketMessage[]
+  ticketsAssigned          Ticket[]                  @relation("TicketAssignedTo")
+  ticketsCreated           Ticket[]                  @relation("TicketCreatedBy")
+  trainingReviews          TrainingQueue[]
+  role                     Role?                     @relation(fields: [roleId], references: [id])
+  proactiveChatAsAgent     ProactiveChatSession[]    @relation("ProactiveChatAgent")
+  proactiveChatAsCustomer  ProactiveChatSession[]    @relation("ProactiveChatCustomer")
+  proactiveChatMessages    ProactiveChatMessage[]    @relation("ProactiveChatMessageSender")
 
   @@map("users")
 }
@@ -62,7 +67,7 @@ model User {
 model Department {
   id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String      @db.VarChar(100)
-  slug        String      @db.VarChar(100)
+  slug        String      @unique(map: "departments_slug_key") @db.VarChar(100)
   description String?
   color       String?     @db.VarChar(7)
   icon        String?     @db.VarChar(50)
@@ -83,7 +88,7 @@ model Team {
   id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   departmentId          String             @map("department_id") @db.Uuid
   name                  String             @db.VarChar(100)
-  slug                  String             @db.VarChar(100)
+  slug                  String             @unique(map: "teams_slug_key") @db.VarChar(100)
   description           String?
   isArchived            Boolean            @default(false) @map("is_archived")
   autoAssignmentEnabled Boolean            @default(false) @map("auto_assignment_enabled")
@@ -279,6 +284,7 @@ model CrmAccount {
   updatedAt          DateTime          @updatedAt @map("updated_at")
   deletedAt          DateTime?         @map("deleted_at")
   account_number     String?           @db.VarChar(255)
+  legacyCustomerNo   String?           @map("customer_no") @db.VarChar(50)
   customers          CustomerProfile[]
 
   @@map("crm_accounts")
@@ -286,7 +292,7 @@ model CrmAccount {
 
 model CrmConnection {
   id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider      CrmProvider
+  provider      CrmProvider         @unique(map: "crm_connections_provider_key")
   tenantId      String?             @map("tenant_id") @db.VarChar(255)
   clientId      String?             @map("client_id") @db.VarChar(255)
   clientSecret  String?             @map("client_secret")
@@ -330,7 +336,7 @@ model CrmDeltaSyncState {
   lastSuccessfulSyncAt DateTime?     @map("last_successful_sync_at")
   lastError            String?       @map("last_error")
   createdAt            DateTime      @default(now()) @map("created_at")
-  updatedAt            DateTime      @updatedAt @map("updated_at")
+  updatedAt            DateTime      @default(now()) @updatedAt @map("updated_at")
   connection           CrmConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
   @@unique([connectionId, entityType], map: "crm_delta_sync_states_connection_entity_key")
@@ -403,7 +409,7 @@ model KnowledgeArticle {
   id             String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   categoryId     String?                   @map("category_id") @db.Uuid
   title          String
-  slug           String                    @db.VarChar(255)
+  slug           String                    @unique(map: "knowledge_articles_slug_key") @db.VarChar(255)
   status         ArticleStatus             @default(DRAFT)
   approved       Boolean                   @default(false)
   approvedBy     String?                   @map("approved_by") @db.Uuid
@@ -488,7 +494,7 @@ model KnowledgeEmbedding {
   articleVersion       KnowledgeArticleVersion @relation(fields: [articleVersionId], references: [id], onDelete: Cascade)
 
   @@index([articleId], map: "idx_ke_article")
-  @@index([embedding], map: "knowledge_embeddings_vector_hnsw_idx")
+  @@index([embeddingVersion, embeddingDim], map: "idx_ke_embedding_version_dim")
   @@map("knowledge_embeddings")
 }
 
@@ -524,6 +530,7 @@ model AiInteraction {
   ticket            Ticket?
   trainingQueue     TrainingQueue[]
   shiftDetections   AiShiftDetection[]
+  faqSources        FaqEntrySource[]
 
   @@index([sessionId], map: "idx_ai_session")
   @@index([matchedArticleId], map: "idx_ai_article")
@@ -563,6 +570,7 @@ model AiResponseCache {
   @@index([queryHash], map: "idx_cache_hash")
   @@index([tenantId], map: "idx_cache_tenant")
   @@index([expiresAt], map: "idx_cache_expires")
+  @@index([embeddingVersion, embeddingDim], map: "idx_ai_response_cache_embedding_version_dim")
   @@map("ai_response_cache")
 }
 
@@ -643,6 +651,7 @@ model Ticket {
   linkedTickets       Ticket[]             @relation("TicketHierarchy")
   product             Product?             @relation(fields: [productId], references: [id])
   creator             User?                @relation("TicketCreatedBy", fields: [userId], references: [id])
+  faqSources          FaqEntrySource[]
 
   @@index([status], map: "idx_tickets_status")
   @@index([assignedTo], map: "idx_tickets_assigned")
@@ -726,9 +735,32 @@ model FaqEntry {
   createdAt         DateTime               @default(now()) @map("created_at")
   updatedAt         DateTime               @updatedAt @map("updated_at")
   deletedAt         DateTime?              @map("deleted_at")
+  sources           FaqEntrySource[]
 
   @@index([status], map: "idx_faq_status")
+  @@index([deletedAt], map: "idx_faq_entries_deleted_at")
   @@map("faq_entries")
+}
+
+model FaqEntrySource {
+  id            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  faqEntryId    String             @map("faq_entry_id") @db.Uuid
+  sourceType    FaqEntrySourceType @map("source_type")
+  ticketId      String?            @map("ticket_id") @db.Uuid
+  interactionId String?            @map("interaction_id") @db.Uuid
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  deletedAt     DateTime?          @map("deleted_at")
+  faqEntry      FaqEntry           @relation(fields: [faqEntryId], references: [id], onDelete: Cascade)
+  ticket        Ticket?            @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  interaction   AiInteraction?     @relation(fields: [interactionId], references: [id], onDelete: Cascade)
+
+  @@unique([faqEntryId, ticketId], map: "uq_faq_entry_sources_ticket")
+  @@unique([faqEntryId, interactionId], map: "uq_faq_entry_sources_interaction")
+  @@index([ticketId], map: "idx_faq_entry_sources_ticket")
+  @@index([interactionId], map: "idx_faq_entry_sources_interaction")
+  @@index([deletedAt], map: "idx_faq_entry_sources_deleted_at")
+  @@map("faq_entry_sources")
 }
 
 model AuditLog {
@@ -778,6 +810,7 @@ model Macro {
   deletedAt DateTime? @map("deleted_at")
   creator   User?     @relation(fields: [createdBy], references: [id])
 
+  @@index([deletedAt], map: "idx_macros_deleted_at")
   @@map("macros")
 }
 
@@ -850,7 +883,7 @@ model CrawlCandidate {
   importedAt       DateTime?            @map("imported_at")
   crawledAt        DateTime             @default(now()) @map("crawled_at")
   createdAt        DateTime             @default(now()) @map("created_at")
-  updatedAt        DateTime             @updatedAt @map("updated_at")
+  updatedAt        DateTime             @default(now()) @updatedAt @map("updated_at")
 
   @@index([source, status], map: "idx_crawl_candidates_source_status")
   @@index([format], map: "idx_crawl_candidates_format")
@@ -873,20 +906,23 @@ model KnowledgeSourceSyncLog {
 }
 
 model KnowledgePoolEmbedding {
-  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sourceId         String                @map("source_id") @db.Uuid
+  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId         String                   @map("source_id") @db.Uuid
   embedding        Unsupported("vector")
   content          String
   metadata         Json?
-  embeddingVersion String                @default("v1") @map("embedding_version") @db.VarChar(10)
-  embeddingDim     Int                   @default(1536) @map("embedding_dim")
-  migratedAt       DateTime?             @map("migrated_at")
-  createdAt        DateTime              @default(now()) @map("created_at")
-  parentId         String?               @map("parent_id") @db.Uuid
-  source           KnowledgeSource       @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  embeddingVersion String                   @default("v1") @map("embedding_version") @db.VarChar(10)
+  embeddingDim     Int                      @default(1536) @map("embedding_dim")
+  migratedAt       DateTime?                @map("migrated_at")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  parentId         String?                  @map("parent_id") @db.Uuid
+  source           KnowledgeSource          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  parent           KnowledgePoolEmbedding?  @relation("KnowledgePoolEmbeddingHierarchy", fields: [parentId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  children         KnowledgePoolEmbedding[] @relation("KnowledgePoolEmbeddingHierarchy")
 
   @@index([sourceId], map: "idx_kpe_source")
-  @@index([embedding], map: "knowledge_pool_embeddings_vector_hnsw_idx")
+  @@index([embeddingVersion, embeddingDim], map: "idx_kpe_embedding_version_dim")
+  @@index([parentId], map: "idx_kpe_parent")
   @@map("knowledge_pool_embeddings")
 }
 
@@ -930,6 +966,7 @@ model TicketEmbedding {
   ticket           Ticket                @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId], map: "idx_ticket_embeddings_ticket")
+  @@index([embeddingVersion, embeddingDim], map: "idx_ticket_embeddings_version_dim")
   @@map("ticket_embeddings")
 }
 
@@ -1040,7 +1077,7 @@ model AnnouncementLog {
   customerId     String          @map("customer_id") @db.Uuid
   status         String          @default("PENDING") @db.VarChar(50)
   sentAt         DateTime?       @map("sent_at")
-  readAt         DateTime?       @map("read_at")
+  readAt         DateTime?       @map("read_at") @db.Timestamptz(6)
   error          String?
   emailLogId     String?         @unique @map("email_log_id") @db.Uuid
   createdAt      DateTime        @default(now()) @map("created_at")
@@ -1070,6 +1107,7 @@ enum AgentStatus {
   ONLINE
   AWAY
   DND
+  OFFLINE
 }
 
 enum AssignmentStrategy {
@@ -1134,6 +1172,11 @@ enum FaqStatus {
   PENDING_REVIEW
   PUBLISHED
   DISMISSED
+}
+
+enum FaqEntrySourceType {
+  TICKET
+  AI_INTERACTION
 }
 
 enum TrainingQueueStatus {
@@ -1228,6 +1271,15 @@ enum AnnouncementType {
   LIFECYCLE
 }
 
+// Compatibility enum retained because it exists in the historical fresh-install chain.
+// Runtime announcement delivery uses the current channel fields, not this legacy type.
+enum AnnouncementChannel {
+  EMAIL
+  WHATSAPP
+  IN_APP
+  SMS
+}
+
 enum ProactiveChatStatus {
   PENDING
   ACTIVE
@@ -1283,7 +1335,7 @@ model ProactiveChatMessage {
 model EvalDataset {
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   query            String
-  relevantChunkIds String[] @map("relevant_chunk_ids")
+  relevantChunkIds String[] @default([]) @map("relevant_chunk_ids")
   tenantId         String   @map("tenant_id")
   createdBy        String   @map("created_by")
   notes            String?
@@ -1309,13 +1361,14 @@ model AiHealthEvent {
   eventType    AiHealthEventType @map("event_type")
   provider     String            @db.VarChar(50)
   model        String?           @db.VarChar(100)
-  task         String?
+  task         String?           @db.VarChar(255)
   errorMessage String?           @map("error_message")
   latencyMs    Int?              @map("latency_ms")
   metadata     Json?
-  createdAt    DateTime          @default(now()) @map("created_at")
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([createdAt(sort: Desc)], map: "idx_ai_health_events_created")
+  @@index([createdAt(sort: Desc), eventType], map: "idx_ai_health_events_created_type")
   @@index([eventType], map: "idx_ai_health_events_type")
   @@index([provider], map: "idx_ai_health_events_provider")
   @@map("ai_health_events")

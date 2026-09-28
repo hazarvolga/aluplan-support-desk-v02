@@ -4,6 +4,9 @@ import { EmailService } from '../email/email.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { CreateAnnouncementDto, UpdateAnnouncementDto, TargetCriteriaDto } from './dto/announcement.dto';
 import { Prisma, AnnouncementLog } from '@aluplan/database';
+import { buildAnnouncementEmailContext } from './announcement-email-context';
+import { assertAnnouncementContentIsSafeToSend, renderAnnouncementSubject } from './announcement-content-safety';
+import { detectAnnouncementContentFormat } from './announcement-content-format';
 
 @Injectable()
 export class AnnouncementsService {
@@ -30,7 +33,7 @@ export class AnnouncementsService {
     }
 
     async findAll() {
-        return this.prisma.announcement.findMany({
+        const announcements = await this.prisma.announcement.findMany({
             where: { deletedAt: null },
             include: {
                 author: {
@@ -49,10 +52,11 @@ export class AnnouncementsService {
                 createdAt: 'desc',
             },
         });
+        return announcements.map((announcement) => this.withContentFormat(announcement));
     }
 
     async findOne(id: string) {
-        return this.prisma.announcement.findUnique({
+        const announcement = await this.prisma.announcement.findUnique({
             where: { id },
             include: {
                 author: true,
@@ -64,6 +68,23 @@ export class AnnouncementsService {
                 },
             },
         });
+        return announcement ? this.withContentFormat(announcement) : announcement;
+    }
+
+    /**
+     * GAP-08: `contentMjml` is a legacy-named column that today almost
+     * always holds rich-text HTML, not MJML. Rather than have every
+     * consumer re-guess the format from the raw string, read paths expose
+     * the already-detected value explicitly. No schema change — this is
+     * computed at read time, not stored.
+     */
+    private withContentFormat<T extends { contentMjml: string }>(
+        announcement: T,
+    ): T & { contentFormat: ReturnType<typeof detectAnnouncementContentFormat> } {
+        return {
+            ...announcement,
+            contentFormat: detectAnnouncementContentFormat(announcement.contentMjml || ''),
+        };
     }
 
     async update(id: string, dto: UpdateAnnouncementDto) {
@@ -116,6 +137,11 @@ export class AnnouncementsService {
         if (announcement.status === 'SENT' || announcement.status === 'SENDING') {
             throw new Error('Announcement already sent or sending');
         }
+
+        // Fail closed on unresolved [placeholder] text or unsupported {{...}}
+        // variables before touching any state — nothing is sent, nothing is
+        // marked SENDING, if the content isn't safe to personalize.
+        assertAnnouncementContentIsSafeToSend(announcement.subject, announcement.contentMjml || '');
 
         // Update status to SENDING
         await this.prisma.announcement.update({
@@ -178,26 +204,33 @@ export class AnnouncementsService {
                 }
 
                 // Enqueue Email via existing EmailService
-                // Use master-announcement template for new HTML content, 'raw' for old raw MJML content
+                // Use master-announcement template for rich-text HTML content, 'raw' for MJML content
                 const content = announcement.contentMjml || '';
-                const isMjml = content.trim().toLowerCase().startsWith('<mjml>') || content.trim().toLowerCase().startsWith('<mj-');
+                const isMjml = detectAnnouncementContentFormat(content) === 'MJML';
+                const customerContext = buildAnnouncementEmailContext(target);
 
                 await this.emailService.enqueueEmail({
                     template: isMjml ? 'raw' : 'master-announcement',
                     to: target.user.email,
-                    subject: announcement.subject,
+                    subject: renderAnnouncementSubject(announcement.subject, customerContext),
                     data: {
                         mjml: isMjml ? content : undefined,
                         contentHtml: isMjml ? undefined : content,
-                        customer: target,
+                        customer: customerContext,
                     },
-                }).then(async () => {
-                    // In a perfect world, we'd link the emailLogId here, 
-                    // but enqueueEmail is async and EmailProcessor updates the status.
-                    // We'll update the annLog status to SENT for now
+                }).then(async (emailLogId) => {
+                    // enqueueEmail() only confirms the job reached the queue,
+                    // not that it was delivered — EmailProcessor decides the
+                    // real SENT/FAILED outcome later. AnnouncementLogReconciliationService
+                    // reads that outcome via emailLogId and updates this row.
+                    // A null id means the send was skipped before a queue job
+                    // ever existed (opted out / blocked recipient) — that is
+                    // not a delivery failure, so it gets its own status.
                     await this.prisma.announcementLog.update({
                         where: { id: annLog.id },
-                        data: { status: 'SENT', sentAt: new Date() }
+                        data: emailLogId
+                            ? { status: 'QUEUED', emailLogId }
+                            : { status: 'SKIPPED', error: 'Recipient opted out or is a blocked/reserved address' },
                     });
                 }).catch(async (err) => {
                     await this.prisma.announcementLog.update({
@@ -268,7 +301,18 @@ export class AnnouncementsService {
                     orderBy: { sentAt: 'desc' },
                     skip: (page - 1) * limit,
                     take: limit,
-                    include: { announcement: { select: { title: true, contentMjml: true } } },
+                    // Explicit allowlist: emailLogId (internal EmailLog UUID)
+                    // and error (raw SMTP/provider failure text) are
+                    // operational details, not something a customer's own
+                    // "my announcements" response should ever expose.
+                    select: {
+                        id: true,
+                        status: true,
+                        sentAt: true,
+                        readAt: true,
+                        createdAt: true,
+                        announcement: { select: { title: true, contentMjml: true } },
+                    },
                 }),
                 this.prisma.announcementLog.count({ where: { customerId: customer.id } }),
             ]);

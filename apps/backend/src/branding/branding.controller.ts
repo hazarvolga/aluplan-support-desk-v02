@@ -21,6 +21,7 @@ import { Response } from 'express';
 import { Public } from '../auth/decorators/public.decorator';
 import { ConfigService } from '@nestjs/config';
 import { normalizeEmailLogoUrl } from '../common/utils/public-url.util';
+import { openLocalStorageFile, publicLogoKey } from '../common/utils/storage-path.util';
 
 @Controller('branding')
 export class BrandingController {
@@ -33,8 +34,10 @@ export class BrandingController {
     @Get('assets/*path')
     async getAsset(@Param('path') assetPath: string | string[], @Res() res: Response) {
         try {
-            const key = Array.isArray(assetPath) ? assetPath.join('/') : assetPath;
-            const buffer = await this.storageService.getFile(key);
+            const key = publicLogoKey(assetPath);
+            const buffer = this.storageService.isS3()
+                ? await this.storageService.getFile(key)
+                : await this.readLocalLogo(key);
             if (!buffer) return res.status(404).send('Asset not found');
 
             // Stream branding assets through our stable public endpoint so email
@@ -50,6 +53,8 @@ export class BrandingController {
             };
             res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
             res.setHeader('Cache-Control', 'public, max-age=3600');
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
 
             return res.send(buffer);
         } catch (_error) {
@@ -57,10 +62,22 @@ export class BrandingController {
         }
     }
 
+    private async readLocalLogo(key: string): Promise<Buffer> {
+        const { file } = await openLocalStorageFile(this.configService.get<string>('storage.localPath') || './uploads', key);
+        try {
+            return await file.readFile();
+        } finally {
+            await file.close();
+        }
+    }
+
     @Post('upload-logo')
     @UseGuards(JwtAuthGuard, RbacGuard)
     @Roles('ADMIN', 'SUPERUSER')
-    @UseInterceptors(FileInterceptor('file')) // Uses MemoryStorage by default
+    @UseInterceptors(FileInterceptor('file', {
+        // Busboy emits partsLimit at the ceiling; allow one terminating boundary.
+        limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 0, parts: 2 },
+    })) // Uses MemoryStorage by default
     async uploadLogo(
         @UploadedFile(
             new ParseFilePipe({

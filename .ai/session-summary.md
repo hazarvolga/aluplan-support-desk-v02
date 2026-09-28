@@ -1,5 +1,1063 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-28 — Read-only mail/Coolify preflight and coordinated TLS decision
+
+With the owner's scoped read-only approval, verified live backend/frontend/mail/proxy identities, Coolify application status/auto-deploy metadata, mail TLS effective values, source Compose/.env hashes, three persistent volume mounts, 0-item point-in-time Postfix queue, and protected public certificate metadata. Login/API health returned 200. Mail remains plaintext-capable (Postfix `none`, Dovecot `no`); the certificate is not mounted. The owner accepts a short mail interruption but explicitly approved **only preparation of the TLS maintenance plan**, with another approval required before applying it. Updated the release change sheet and mail transition plan for one coordinated mail/application window: old-writer fence, fresh protected checkpoint, same-image DMS recreate, strict TLS/app-client acceptance, forward recovery. No live settings/containers/data/queues/routes changed, no push/deploy, and unrelated frontend WIP preserved. Production NO-GO.
+
+## 2026-09-28 — Exact backend image rebuilt locally after CRM security fix
+
+From clean detached commit `2a822b6874f4fbab86034247114afb079c7f0d0d`, built Linux/amd64 backend image `sha256:7bf067f9f9e7eff1c8aad681bd6ca965ee65b85daf1a0e77214f243ad4fdafe1`. Network-disabled static smoke and 57 migration-file integrity checks passed. The 674,726,912-byte private Docker archive has SHA-256 `b187ad7dfb5fa4758eab51e22f26577a86d1089f8d4e165520b2d7711dc1396e`. Fresh September 28 Trivy 0.72.0 scan: 0 Critical / 3 High (two OpenTelemetry, one unpatched html-minifier). Exact evidence is in `.private-data/release-evidence/a13-images/image-2a822b6874f4fbab86034247114afb079c7f0d0d/`. This image remains local; no VPS transfer, app start, route, mail, DB, push or deploy occurred. The earlier passive VPS image is superseded. CI, mail TLS, old-writer fence, final quiesced checkpoint and remote image parity remain open. Production NO-GO.
+
+## 2026-09-28 — Local CRM credential leak and generic backend E2E repair
+
+Local-only release-gate work: Dynamics OAuth token acquisition no longer logs credential fragments or raw provider response text; a fixed error-code allowlist and tests closed a second `error`-field leak caught in independent review. Focused adapter tests passed 24/24, selected CRM suites 73/73, and backend TypeScript no-emit passed. Backend generic E2E CI now uses PG17/migrations and per-job synthetic secrets while explicitly excluding the separately guarded customer-security rehearsal. The generic Jest suite fails closed before AppModule import unless its URL/opt-in matches the disposable local database; guard tests passed 7/7. The auth fixture creates the current required CUSTOMER role. A disposable local PG17 accepted all 57 migrations and guarded generic backend E2E passed 72/72; the labelled, volume-free container was removed. A second exact-target 55434 PG17/marker rehearsal passed customer HTTP/RBAC/ownership tests 8/8 after aligning its test fixture with current code; that disposable container was also removed. `pnpm audit --prod --audit-level high` still reports 7 High. The separate security rehearsal has no CI launcher; frontend lint/browser E2E and mail TLS remain open. Existing staged backend image predates the security fix and is invalid as an exact release candidate. No live access, Git push or deploy; user-owned `apps/frontend/next-env.d.ts` untouched. Production NO-GO. Details: `.ai/issues/2026-09-27-release-window-change-sheet.md`.
+
+## 2026-09-28 — Local CI fixture and signed-webhook stabilization
+
+Only local candidate work. The stale CRM webhook integration test was updated from legacy `x-api-key` to HMAC, with a RED exact-raw-JSON request proving that noncanonical whitespace was rejected. A scoped JSON parser now preserves raw bytes under the existing 10 MB limit for the four signed webhook routes; focused CRM/parser/guard tests passed 34/34, backend typecheck and production build passed. Independent code review reported no blocker. The stale ticket/SLA integration fixture now provides current dependencies and uses the real `MaintenanceWorkService`; focused tests passed 8/8 and typecheck passed. This fixture still mocks Prisma and does not prove database persistence. Tests and product code are in separate local commits `fdb56a15`, `53646460`; SLA test commit is `e225318b`. GitHub draft PR #26 remains red on other jobs, and these commits have not been pushed. No live access, push, deploy, migration or customer-data write; user frontend `next-env.d.ts` WIP preserved. Production remains NO-GO.
+
+## 2026-09-28 — Encrypted recapture remount verified
+
+After the operator confirmed storing the new password, the recapture sparsebundle was checked as AES-256/encrypted, its 144,801,989-byte PG17 archive matched SHA-256 `dde6ab3520dd36e1c3bef8cc1c862661c256d62fc554eea9080104b92b78dae4`, and the image was cleanly detached. macOS DiskImageMounter was opened; the operator reported successful unlock. The same exact sparsebundle remounted at `/Volumes/Aluplan-Release-20260927`, and the archive size/hash again matched the protected checksum and READY metadata. No password was entered in chat or a shell command. This verifies local access and bytes, not a final quiesced production checkpoint. No live system, Git remote, or deployment was changed; production remains NO-GO.
+
+## 2026-09-28 — Protected recapture and exact-image local rehearsal
+
+The operator created and mounted a fresh password-protected AES-256 APFS image. A live PG17 custom dump was transferred via short-lived root-only VPS staging after two interrupted direct SSH streams; remote and encrypted local archive matched at 144,801,989 bytes and SHA-256 `dde6ab3520dd36e1c3bef8cc1c862661c256d62fc554eea9080104b92b78dae4`. The exact `86ef3b2c` Linux/amd64 backend image read the catalog and the existing A.1.3 local drill fully restored, migrated and fingerprint-compared the archive; the second migration pass was a no-op. Disposable Docker resources, VPS cleartext staging and invalid local partial streams were removed. The complete encrypted archive remains mounted; its new password has not yet been confirmed stored or tested by remount. The mail-settings bridge isolated test passed again. No live route, app, mail, DB schema, queue or customer record changed. Evidence: `.ai/issues/2026-09-28-production-recapture-checkpoint.md`; docs-only commit `82ca36d9` is local. PR #26 is draft/red and production remains NO-GO until final quiesced recovery, mail TLS, old-writer fencing and explicit maintenance acceptance.
+
+## 2026-09-27 — Owner-approved preliminary encrypted DB/mail backup and R2 delta verification
+
+Created a new AES-256 APFS sparsebundle with a passphrase entered only in hidden macOS dialogs; did not reuse the potentially disclosed older `v2` passphrase. Streamed a fresh live PG17 custom dump directly over SSH into the encrypted image (144,789,152 bytes, SHA-256 `2bd41642419f42cc12df140af960910a0c6b501d012a8d9a7b4a9eab617d7ead`) and fully restored it in a network-isolated disposable PG17/pgvector container: 62 public tables, 182 tickets, 578 messages, 114 attachments, 1289 users. Three live mail volumes streamed into an archive in the same image; isolated extraction and byte comparison passed for 239 regular files (3,931,882 bytes), while live sockets were ignored. Existing private locked R2 backup matched source 477/477 objects and 62,902,414,629 bytes with no delta; 109 active attachment objects/43,106,531 bytes matched by SHA-256, five historical failed-upload markers persisted. Live post-check counts and zero mail queue remained stable at 18:42 UTC. The encrypted image was detached; local disposable containers removed; Docker Desktop restarted locally after its VM held the mount open, with no running local container to interrupt. No VPS service/config/DB/queue/mail/route change, push or deploy. The mail archive is hot, the full R2 bucket was not body-hashed, and live writes continue; this is not the final cutover checkpoint. Details: `.ai/issues/2026-09-27-release-window-change-sheet.md` and private `PRELIMINARY.json`. Production remains NO-GO; user frontend WIP preserved.
+
+## 2026-09-27 — Minimal maintenance responder candidate and image scan
+
+Compared four public Linux/amd64 responder images with Trivy 0.72.0 and the same 2026-09-27 DB: Node Alpine 0 Critical/8 High, Caddy Alpine 0/17, nginx-unprivileged stable Alpine 0/1, nginx-unprivileged stable Alpine slim digest `sha256:307ca0bd...` 0/0. This is a time-bound finding count, not absolute security. Added `scripts/release-maintenance/nginx.conf` separately as local config commit `e30f005c`. The exact file ran under UID/GID 101 with read-only root, bounded `/tmp` tmpfs, no capabilities/new privileges, 64 MiB/64 PID limits, no host ports/socket/credentials, and used ~7.2 MiB; direct GET/POST and `nginx -t` passed. In a second isolated Traefik 3.6.7 four-router rehearsal, both target hosts over HTTP and verified synthetic HTTPS gave 200 → 503 with `Retry-After: 300`/no redirect → 200; unrelated host stayed 404. Code and security reviewers found no Critical/High config issue; lower-priority logging/retention and live-provider coexistence remain. Exact test containers/networks/certs and generated 1.3 GiB public-image scan cache removed. No production access/change, push, deploy or customer data; user frontend WIP preserved. Production remains NO-GO.
+
+## 2026-09-27 — Four-router HTTP/HTTPS maintenance-fence rehearsal
+
+An internal-only Traefik 3.6.7 file-provider fixture with synthetic trusted TLS and a digest-pinned Linux/amd64 Node responder exercised both `allplan.net.tr` and `api.allplan.net.tr` over HTTP and verified HTTPS. All four routes returned 200 → 503 (`Retry-After: 300`, no redirect) → 200 on same-file activation/withdrawal; unrelated HTTP/HTTPS host routing stayed 404. The 503 container was non-root, read-only, capability-dropped, no-new-privileges, bounded to 64 MiB/64 PIDs, with no published port, Docker socket, mount, secret or customer data. Exact local containers/network and synthetic certificate/key were removed. This does not prove live ACME, Docker+file provider coexistence, image security acceptance, in-flight drain or production state. The release change sheet was updated; no live access, push, deploy or product change; user frontend WIP preserved. Production remains NO-GO.
+
+## 2026-09-27 — Single-file ingress toggle and consolidated cutover card
+
+An owned local Traefik 3.6.7 file-provider rehearsal tested one valid service-only YAML, added target-host routers in the same file, then returned it to service-only. A first inactive `http: {}` was rejected and not counted. The accepted same-process response sequence was 200 → 503 with `Retry-After:300` → 200 for `allplan.net.tr` and `api.allplan.net.tr`; unrelated host stayed404 and no redirect was emitted. Three exact-label disposable containers, network and temporary files were removed with absence checks. New `.ai/issues/2026-09-27-release-window-change-sheet.md` captures frozen artifacts, live route ownership, ingress/old-writer/DB-R2-mail/TLS gates, abort semantics and approval boundaries in one place. No production access/change, push, deploy or product edit; user frontend WIP preserved. This is not public TLS/four-router/production-responder acceptance, and release remains NO-GO.
+
+## 2026-09-27 — Owner-approved read-only live ingress and artifact identity
+
+Scoped SSH inspection read only selected Docker/Traefik metadata: healthy shared proxy Traefik3.6.7 with file-directory watch, live frontend exact host routers priority9000 and port3000, old backend API routers without explicit priority and port4000, and stopped one-host historical maintenance routers priority10000. Target-host file rule was not found in the bounded dynamic directory listing; generic catchall and mail-certificate files were not modified. All target containers share the maintenance network, but a network relationship alone is not an approved production 503/withdrawal method. Local Linux/amd64 candidate image labels still identify backend87372fe4 and frontendc602031d; `git ls-remote` confirms GitHub main remains d9b21b9d. No customer body/secret, live file/config/state mutation, restart, push or deploy. Release remains NO-GO until a reviewed two-host ingress procedure, all-writer drain/source reconciliation, mail TLS and fresh recoverable checkpoint pass under separate maintenance/deploy authority. User frontend WIP untouched.
+
+## 2026-09-27 — Same-process ingress fence withdrawal rehearsal
+
+Used an owned, isolated internal Docker network with pinned Traefik 3.6.7 and two synthetic Node services; no published ports, Docker socket, secrets or customer data. Initial exact-host probes returned 200 for `allplan.net.tr` and `api.allplan.net.tr`, 404 for unrelated `aluplan.net.tr`. Adding a priority-10000 maintenance file hot-reloaded both target hosts to 503 with `Retry-After:300`, no redirect; unrelated remained 404. Deleting that file alone left both targets at 503 for a bounded 10-second probe despite its absence on host and in container. Modifying a comment in the remaining base file triggered provider reload and restored both target hosts to 200; unrelated remained 404. This is a macOS bind-mount/file-watch observation, not a proven production rollback procedure. All owned containers, network and temporary files were removed; label-filtered cleanup passed. No production access/change, product code edit, push or deploy. Release remains NO-GO pending exact live route/reload ownership, old-writer drain, mail TLS and final recovery checkpoints. User frontend WIP preserved.
+
+## 2026-09-27 — Isolated two-host Traefik 503 proof
+
+After read-only Coolify frontend investigation, official `traefik:v3.6.7` was pulled locally and run with two synthetic Node servers on a disposable internal Docker network. No ports, Docker socket, secrets or production/customer data were mounted. A temporary exact-host file-provider fixture had maintenance routers at priority10000 above modelled normal frontend/API routers. Ephemeral client assertions passed: both `allplan.net.tr` and `api.allplan.net.tr` returned503/`maintenance`/`Retry-After:300` without redirect; unrelated `aluplan.net.tr` returned404. Three owned containers, network and temp config were removed; label-filtered absence checked. This is only local route-priority proof, not production ingress/old-writer cutover/TLS or deploy acceptance. No live change, push, deploy or product-code edit; user frontend WIP preserved. The Aluplan reliability skill kept the test bounded and did not promote it to production readiness.
+
+## 2026-09-27 — Frontend Coolify record and active runtime reconciled read-only
+
+Owner supplied the GitHub repository URL and asked to finish the red `Exited` frontend investigation using Computer. Firefox/Coolify UI shows frontend UUID `h8k4ko84wkksgws4socsowgg` configured from `hazarvolga/aluplan-support-desk-v02` `main`/`HEAD`, but Logs says resource not running and Deployments contains 0 records. The browser's Coolify host terminal ran only bounded Docker ps/inspect format reads: no other frontend container appeared in a name-filtered list, while `allplan-frontend-ee4d70a7` is running/healthy at OCI revision `ee4d70a7` with no Coolify application label. The reason the managed container exited or is no longer visible is unknown; current uptime comes from the separate frontend. Local release candidate HEAD is `cdc440c9`, unlike local `main` and the last-fetched `origin/main` ref at `d9b21b9d`; a blind Coolify Deploy could build the wrong code and conflict on the host router. No production configuration/state change, Start/Stop/Deploy, customer-data access, push or repo code change. Existing user frontend WIP preserved. Release remains NO-GO pending the recorded ingress/writer/mail/TLS/final-recovery gates and explicit publication/deploy authority.
+
+## 2026-09-27 — Read-only live Coolify stop/redeploy and ingress routing inspection
+
+Owner accepted only read-only verification of Coolify recreation and traffic-cut paths. Verified old backend remains shell-PID1/Node-child, Docker `unless-stopped` and Coolify application id7 with auto-deploy enabled/custom name `backend-api`; deployment queue had only 8 finished/2 failed records. Installed Coolify v4.0.0-beta.462 source shows Stop UI dispatches `docker stop -t30` then `docker rm -f` plus optional cleanup (default true). The custom-name deployment branch similarly stops the old container before starting the candidate; it is not a safe drain guarantee. Current Traefik Docker-label routes separate manually managed frontend `allplan.net.tr` from Coolify API `api.allplan.net.tr`. Stopped historical maintenance container is only for main host and returns 302 to `aluplan.net.tr`; generic 503 catchall is lower priority and not an ingress fence. Both public login/API health returned 200 after inspection. No production state change, customer body/secret readout, push or deploy. Next local gate is an isolated, narrow two-host nonredirecting ingress-fence rehearsal; live use and old-writer cutover require separate authorization. User frontend WIP untouched; production NO-GO.
+
+## 2026-09-27 — Local legacy shell PID1 stop/restart mechanism rehearsal
+
+After the scoped live read-only inventory, general continuation was kept local-only. Four owned synthetic node:22-alpine Docker containers (network none, read-only root, no volumes/ports, dropped capabilities, bounded memory/PIDs) modelled shell PID1 with Node child; the historical production image was not present or run. Blind docker stop with 2-second grace ended exit137 without the Node SIGTERM handler in foreground/background variants. Direct child SIGTERM fired the handler but `unless-stopped` produced RestartCount1. Disabling Docker restart policy first, then child SIGTERM, fired the handler and exited0 without restart. All owned containers were removed. These mechanism tests do not prove live Coolify desired-state behavior, old application drain, mail/job write quiescence or deployment readiness. Next gate remains separately approved maintenance with both restart paths fenced, admission/drain, source reconciliation, protected checkpoint and TLS acceptance. No production access/change, product edit, push or deploy; user `apps/frontend/next-env.d.ts` WIP untouched.
+
+## 2026-09-27 — Scoped live old-writer/queue/mail metadata inspection
+
+The user accepted the prior narrow read-only inventory step and stated that 500 failed `knowledge-sync` jobs likely came from invalid crawl URLs; root cause was not verified. SSH inspected only the running old backend identity/process tree/compiled retry registration, fixed Redis queue counts, PostgreSQL session count, Postfix queue count, IMAP mailbox metadata and mail volume targets. One known old backend `sha256:302229b2...` has shell PID1 `deploy.sh` launching Node without `exec`; Docker stop-to-Node signal/drain is not proven. Old registered retry service excludes `knowledge-sync` but covers AI/email/CRM/document. At 16:09 UTC knowledge-sync was 500 failed/0 runnable; CRM 1 and SLA 3 delayed/repeat. Postfix queue 0; support INBOX 181 messages, 0 UNSEEN. Public login and correct API health returned 200. No job/body/secret readout, live write/restart/config/migration/push/deploy. Knowledge-sync may be deferred with failed evidence retained and no bulk retry; old-writer stop/fence, moving queue delta, fresh recovery and live TLS remain GO blockers. User frontend `next-env.d.ts` WIP untouched.
+
+## 2026-09-27 — First-cutover old-writer boundary audited locally
+
+Read-only candidate source inventory found nine auto-start BullMQ consumers, CRM/SLA repeat producers, minute IMAP poll, other cron/WebSocket/webhook/event writers and possible DB/R2 boot effects. `WORKER_MODE` skips only Bull Board. Frozen `87372fe4` product source stayed unchanged after later test/docs commits, but its process-local shutdown cannot certify the older live image. Existing A.1.4-B Redis adapter/contract tests passed 15/15; its 90-key counts and 100-ID-per-key fingerprints are baseline evidence, not job payload/replay or all-writer reconciliation. Last approved live inventory's 500 failed knowledge jobs remain a dated observation; no replay performed. Existing mail transition plan now states the minimum first-cutover NO-GO checks and separate scope needed for read-only live old-artifact/queue/mail inventory. No live access, writes, push, deploy or product edits. User frontend `next-env.d.ts` WIP untouched.
+
+## 2026-09-27 — Synthetic DMS three-volume recreate proof
+
+Local-only opt-in harness now mounts three owner-labelled Docker volumes at `/var/mail`, `/var/mail-state` and `/tmp/docker-mailserver`. The exact pinned DMS and frozen backend image passed the combined synthetic mail-service/library/certificate run, then DMS stop/remove/recreate retained two delivered INBOX messages' raw hashes, binary attachment bytes, UID/UIDVALIDITY and `\\Seen` parity. A deliberate post-volume-create failure returned nonzero with truthful retained-resource names; exact label checks preceded cleanup. Volume enumeration in `finally` covers create-timeout/inspect ambiguity without deleting foreign resources. No live access/change, DB/R2 operation, push or deploy; no real customer data. Pending SMTP spool, MX/port25, live TLS/config and old-writer fencing remain open; production NO-GO. User frontend `next-env.d.ts` WIP untouched.
+
+## 2026-09-27 — Frozen-image compiled mail-service rehearsal
+
+Local-only harness commit `32c2c7b5` loads the frozen Linux/amd64 image's compiled `SmtpProvider` and `EmailInboundService` without AppModule/default startup. Against pinned synthetic DMS on an internal Docker network it passed provider health/send, trusted SMTP587 STARTTLS/IMAP993 TLS, MIME attachment byte parity, one intake ticket, duplicate re-poll without a second ticket/upload, and injected ticket-write failure leaving source UNSEEN with a durable-shape hold in an in-memory Prisma double. The existing library-level and certificate-renewal probes still passed. Independent code/security review had no blocker; findings about provider send coverage, IMAP close and receipt scope were fixed before the final passing run. Four focused candidate shutdown/worker suites passed 16/16. Owned Docker containers/network were absent after cleanup. This does not prove real PostgreSQL/R2 writes, port25, persisted mail-volume recreation, full AppModule, live TLS or legacy first-cutover fencing. No live access/change, push or deploy; user frontend WIP remains untouched. Production NO-GO.
+
+## 2026-09-27 — Frozen-image synthetic TLS mail-library proof
+
+Local-only opt-in renewal harness now includes a pinned exact Linux/amd64 backend image probe (`b7b3a974`). Its packaged Node mail libraries authenticated to pinned DMS v15.1.0 via trusted SMTP587 STARTTLS and IMAP993 TLS, sent one synthetic message and four-byte binary attachment, retrieved the matching source without marking it read, and compared attachment bytes. Existing certificate renewal/rejection checks also passed. Re-run after independent code/security review and cleanup fixes passed; malformed opt-in failed closed. Owned containers/network were removed. No customer credentials, real mailbox, DB, Coolify setting, live connection, push or deploy. This proves library/runtime wire compatibility only—not compiled Nest mail workflow, duplicate/hold logic, port25 intake, persistent mail-volume recreation or live TLS. Production remains NO-GO; `apps/frontend/next-env.d.ts` user WIP untouched.
+
+## 2026-09-27 — Exact current-image migration on encrypted September 27 clone
+
+Only local work. The owner mounted the encrypted `aluplan-production-v2.sparsebundle` through macOS password UI; no password entered into chat or a shell command. The original 144758018-byte dump was verified before/after at SHA-256 `213523ac7a760d1b89606509e8b286ba9d1fa108826cb483a432bab72c48a8bc`. An owned PG17/pgvector container used a separate bind-mounted data directory **inside that encrypted image**, `--network none`, read-only root, no published ports and synthetic credentials. `pg_restore --single-transaction --exit-on-error` passed. The exact pinned Linux/amd64 backend image `sha256:e7962dbe5cda314ce8aa4143a72ab7275344b00adcb7194128737c3cf38b3e2c` ran only `migrate-once.sh`, never the application: nine migrations advanced the ledger 54→63; a second run reported no pending migrations. The existing redacted fingerprint tool captured before/after; the reviewed A13 comparison rules for protected business/RAG/object references/sequences/schema/RBAC passed, and post-first/post-second fingerprints were byte-identical. Counts remained 182 tickets / 578 messages / 114 attachment records / 1289 users. Private `receipt.json` and mode-0600 evidence are under the encrypted image's `exact-87372fe4-nr3vGrAg` directory. All owned Docker containers stopped/auto-removed; no live connection or customer-data egress.
+
+Cleanup note: the newly created disposable `pgdata` clone remains **inside the encrypted image**, because the attempted narrow removal was rejected by the command safety layer; the original dump and receipts were not removed. The image had about 259 MiB free at last check, so do not add further large test files before deliberate cleanup/resize. This pass does not prove customer workflows, mail TLS/MX acceptance, queue/IMAP writer cutover, R2 delta or a fresh checkpoint after the snapshot. Production remains NO-GO; no live access, restart, config save, migration, push or deploy. The user `apps/frontend/next-env.d.ts` edit remains untouched.
+
+## 2026-09-27 — Offline mail setting bridge and boot-writer boundary
+
+Only local work. An operator-only psql script and opt-in Docker/PG17 regression were added as separate tests/tool commits `99dfa6bd`/`76e766cd`. RED first failed because the script was absent; final isolated test passed after implementation and after both commits. It verifies exact old/target mail settings, applies only IMAP port143→993 and TLS false→true transactionally, preserves SMTP/password/unrelated rows, and aborts on wrong DB, mixed/missing/masked/stale configuration or another active DB session. An exact random owner label guards synthetic container cleanup. Independent code/security reviewers found no remaining code-level blocker. The script is not packaged into the application image and was not run against live or copied production data.
+
+Read-only current-source audit found nine auto-start BullMQ processors, ten cron callbacks, minute IMAP polling and four repeat registrations. `WORKER_MODE` is only Bull Board display control; there is no global pre-boot writer hold. The earlier blind failed-job replay remains disabled at `87372fe4`; focused queue/shutdown tests passed 15/15. A candidate boot connected to real DB/Redis can apply migrations and background writes despite closed HTTP admission. Exact PG container identity, all-old-instance stop/reconnect fence, live TLS readiness, final queue/mail/DB/R2 checkpoints, exact-image isolated migration/mail acceptance and separate production approvals remain open. No live access, restart, settings save, migration, push or deploy; user frontend `next-env.d.ts` WIP untouched.
+
+## 2026-09-27 — Mail TLS release gate refreshed locally
+
+After the approved read-only queue/mail inventory, no further production access/change was made. Current candidate source matches frozen backend commit `4157dbee` for email/settings; newly generated disposable loopback certs drove 23/23 focused SMTP/IMAP/wire tests under local macOS/Node 24, then were removed. This proves local client fail-closed behavior, not exact-image or live delivery. The live transport remains IMAP143 without TLS and effective Dovecot/Postfix TLS disabled; current candidate cannot be deployed without coordinated mail migration. Existing issue plan now records the minimum same-image, same-volume maintenance boundary, fresh protected recovery, writer pause/short outage possibility, TLS-first synthetic acceptance and data-preserving forward recovery. No product/schema/env edit, live write, restart, push or deploy. Unrelated `apps/frontend/next-env.d.ts` WIP retained; production remains NO-GO.
+
+## 2026-09-27 — Combined local browser gate passed
+
+Private local-only runner paired source-pinned 4157dbee backend image with frozen c602031d frontend image on a fresh disposable sanitized clone. The browser adapter and auth fixture were hash-pinned to prior accepted/committed sources; independent code/security review found no local-execution blocker. Real Chromium auth acceptance passed with zero unexpected/proxy requests: login, cookies, refresh, CSRF, reset/replay, old-session and password revocation, new login. Fixture verification passed and no synthetic mail was sent. `combined-browser-0b57b342b6e2` private evidence has result PASS/`productionGo:false`; owned resources cleaned and exact-label absence independently confirmed. This is not full UI, live data, actual mail, historical bytes, all-writer drain or public-TLS proof. No product code edits, live access, push or deploy; unrelated `apps/frontend/next-env.d.ts` WIP remains untouched. Next gate needs separately scoped production approval. The Aluplan skill kept the exercise to an existing compatibility probe rather than expanding features.
+
+## 2026-09-27 — Local 4157dbee forward re-entry pass
+
+Rebuilt exact Linux/amd64 backend candidate after two small, test-first local fixes: Nest PID1 shutdown exit (`a0d3c265`/`f7ff49eb`) and preservation of existing announcement templates during startup (`d86ec9dc`/`4157dbee`). Targeted tests/typecheck and ops-safety suite passed before build; independent reviews found no blocker to bounded local rehearsal. The prior f7ff49e image stopped cleanly but changed existing template rows, so it is not the accepted candidate. Current image ID `sha256:45a47db7dfb713e01ebc26b8f96b0cccb6ff2dfba025a9fdcea48bddd4e303b6` and source archive SHA `ec7cf665c8026ba78f7fea294c1ba3ee5779e577fdcdaa524c9677c050a9391d` were checked.
+
+Fresh disposable local sanitized clone run `latest-reentry-100933a1ef5b` passed two 56-check probes, graceful stop exit 0, same DB/attachment volume re-entry with unchanged full fingerprint/migration ledger and two first-round attachment byte hashes, then further synthetic writes. Result remains `productionGo:false`; historical attachment bytes, all-writer drain and fresh production-window backup are unproved. Cleanup receipt and independent exact-label Docker audit found no leftover resources. No live access/change, push or deploy. Existing `apps/frontend/next-env.d.ts` WIP preserved. The private runner/evidence are not Git-tracked and may contain sensitive diagnostics.
+
+The `aluplan-support-intelligence` skill kept this a narrow release-blocker repair rather than a broader architecture change. Latest exact-image offline Trivy 0.72 scan passed with the same pinned DB and identical 20 advisory tuples as c602031d: 0C/3H/14M/3L; no new advisory, no blanket waiver for the three Highs. See current-focus for image/archive/report hashes and scanner limitations. Next mandatory path: separately authorized production-window evidence for real data/storage/recovery, not immediate deployment.
+
+## Frozen frontend browser gate — 2026-09-27
+
+Local-only final-c602031d frontend/backend Chromium authentication rehearsal passed twice on separate fresh disposable sanitized clones (`.private-data/release-evidence/final-browser-{0f30642921bc,c5f2eb54636c}`), including login, secure cookies, refresh, reset and old-session/password revocation. Fixture verification and owned-resource cleanup passed in both; no live operation. CSRF denial returned backend403 without CORS, so browser fetch was opaque; harness checks both layers. An earlier attempt passed auth steps but had one unclassified unexpected event; the two subsequent runs had zero. Docker VM gateway reachability remains unproven; external TCP/DNS blocked. Still NO-GO for production until historical bytes, drain/forward recovery and approved production-window gates. See current-focus for exact image/evidence limits.
+
+## Closed-reopen and reset API acceptance — 2026-09-27
+
+Exact c602031d artifact passed74 customer/staff plus12 reset HTTP checks in disposable run final-customer-3affbdb17688, normal boot/sanitized Sept17 clone/empty Redis/blocked external egress. Both staff roles explicitly reopen CLOSED tickets, preserve messages/attachment records/history and hide attributed internal note; reset revokes prior working tokens, rejects expiry/replay/old password and accepts new login, with durable fixture verification. First run failed a test's CSRF-before-JWT assumption, not a demonstrated product defect; test corrected to valid CSRF-only anonymous request, expected401 unchanged.32/32 pure tests and helper-only100% line/branch coverage; independent reviews approved. Local test/tool commits58fbb928,b18fe6fe,98a15bd2,5cbde6bd. Both runs cleaned owned resources; retry exit0 and absence independently verified. No product/live/push/deploy change; next-env WIP retained. Not browser/forgot-password issuance/mail-delivery/historical-file proof; next is isolated frontend/browser gate, details in current-focus.
+
+## Final-image customer/staff API acceptance — 2026-09-27
+
+Exact c602031d backend passed real56-check extended customer probe after normal isolated startup against a fresh disposable Sept17-derived sanitized clone and empty Redis. Credential-zero/preboot parity/canonical RBAC and preboot/runtime external/host egress denial passed. Customer isolation, replies, role/CSRF boundaries, internal notes, status/bulk/merge and synthetic attachment bytes checked; not password reset, explicit CLOSED→OPEN, browser flows or historical attachment bytes. Pure guards17/17; independent helper code/security review approved. Private final-customer-e9237306fff9 receipts record PASS plus clean cleanup; exit0 and independent exact-label absence verified. Synthetic data existed only in removed clone; original dump retained. No live/provider integration/push/deploy, product source unchanged, next-env WIP preserved. Next mandatory workflow and release gates detailed in current-focus; productionGo:false.
+
+## Final-image data restore gate — 2026-09-27
+
+Exact c602031d backend A13 restore/migration proof passed on isolated existing Sept17-derived sanitized input. New source/archive/smoke/image-bound private receipt created without relabeling old evidence; bounded independent bridge review approved. Extra exact-image static migration/runtime checks passed.77/77 sanitizer/A13 safety tests passed; real two-pass migration preserved protected fingerprints and180tickets/563messages/114attachmentrecords/1285users, second pass no-op. Run final-c602031d-20260927 has parity/complete/cleanup receipts; exact labelled Docker resources removed, original dump retained. No app boot/live/push/deploy; next is fresh blocked-egress working-clone application acceptance, not a claim of fresh-live/attachment-byte/forward-recovery proof. Details and boundaries in current-focus; next-env WIP unchanged.
+
+## Exact production-configured frontend artifact — 2026-09-27
+
+Pinned c602031d matches backend source. Local curated225file source build with verified public API passed separate typecheck/Nextbuild; image3b6579da7b0e298fe0de0bac5f4da9fb5796cb13c43dbe289fc9189445873d2c. Independent helper/source/asset reviews found no actionable blocker; missing source og-image deferred. Three network-none nonroot permissions/vendor/HTTP smoke programs passed; exact public URL present in7static chunks, all owned containers removed. Same fresh advisory DB scan0C0H0M1L (esbuild), no suppression; first temporary-cache copy failed, direct readonly DB mount retry passed. Full hashes/provenance/limits in current-focus. No product/live/DB/push/deploy changes, unrelated next-env WIP preserved. Next mandatory gate is combined isolated application/data acceptance, not another optional upgrade batch.
+
+## Approved read-only Coolify configuration check — 2026-09-27
+
+Owner explicitly approved only frontend API URL/backend port observation. Firefox Coolify UI showed frontend resource h8k4ko84wkksgws4socsowgg configured with NEXT_PUBLIC_API_URL=https://api.allplan.net.tr/api/v1 and NEXT_INTERNAL_API_URL=http://backend-api:4000/api/v1, both available at buildtime/runtime. Backend dc4csokww8ss0cs0sc8c8gco domain https://api.allplan.net.tr, PORT4000 and Ports Exposes4000; UI explicitly reported their match. No settings saved, restart/deploy/DB operation or secret credential reveal.
+
+Important provenance limit: frontend resource status was Exited, backend Running (unknown). These are saved control-plane settings, not proof of the active frontend container, runtime listener or proxy routing. Old internal3001 note must not drive the new build; actual serving-container/network alias verification remains a separately scoped production gate. Local frontend preparation now uses the same c602031d committed source as the backend and the verified public URL, excluding dirty next-env and private data.
+
+## Exact backend artifact after shutdown fix — 2026-09-27
+
+Frozen c602031d local amd64 build exit0; immutable image aa150a9c660cba09c4db6476b21f7da552ee59c2addd9c89acb82ab492691471. Network-none inert native-module/permissions/client/offline-schema smoke passed and owned cleanup verified. Same fresh advisory DB scan now0C3H14M3L (previous0C3H30M7L); same three scoped High findings remain, no blanket waiver. Seventeen pure rehearsal guards passed, not real-data application proof. Helpers only changed revision; independent helper review unavailable due agent limit. Full identities/evidence/limits in current-focus. No product changes/live/DB/push/deploy. Frontend production artifact and isolated application acceptance next.
+
+## Tracked-work runtime shutdown fix — 2026-09-27
+
+a177411f tests /9a060806 product: existing worker coordinator WIP now joins workers, closes shared admission, then waits for actual tracked idle before final dependency hooks. RED real HTTP runtime mode plus two Nest cases; GREEN12suites83tests, both typechecks, scoped coordinator branch coverage87.5%. Independent bounded review approved; secret scans clean. Existing no-hook counterexample retained, no all-writer/real-persistence claim. No schema/env/endpoint/migration or live operations. Frontend next-env remains unrelated WIP. Current-focus records limits and next grouped artifact/isolated acceptance milestone.
+
+## Shutdown evidence refreshed — 2026-09-27
+
+11 focused suites79/79 passed with external network denied/loopback allowed. The combined fixture deliberately proves disconnected tracked work can write after dependency closure; passing tests do NOT close that gap. Independent source review confirms no runtime admission-close/idle-join caller. Worker WIP alone is insufficient and remains untouched/unaccepted. Current-focus records smallest next runtime-sequencing fix and the distinct legacy first-cutover requirement. No application boot, actual DB/Redis/provider access, source changes, push or deploy.
+
+## Minimum-release scope frozen — 2026-09-27
+
+Owner explicitly prioritizes mandatory security/data/working-flow gates and defers optional work. Current-focus now supersedes old dependency queues: conditional qs stringify/Nest SSE deferrals based on independent read-only consumer review, constrained existing OTel/minifier mitigations, and post-release cosmetic/new-feature work. No blanket vulnerability waiver. Three grouped gates remain: final immutable artifacts; isolated data/workflow/drain/forward-recovery rehearsal; separately approved production release window. Next priority is the existing writer-drain proof gap, not another broad dependency sweep. No code/tests/images/live/data operations this checkpoint; unrelated WIP preserved. Prior test/scan results remain historical and artifact-specific.
+
+## File-type upload parser patch — 2026-09-27
+
+Local9e92bb35 tests/CI and00beed9d scoped Nest file-type21.3.2 patch. RealNest validator7tests RED5pass2fail (version+childASFtimeout) ->GREEN7; corrected patchedresult expectation to strictundefined after source inspection. Child hardtimeout avoids parent eventloop hang. Aggregate33files256/256, independent9/9, uploadlimits/durability30/30 andbothTSC passed. No ZIPbomb or E2Eclaim, no newimagecount. Sentrybindings/XLSXintegrity/WIP preserved; no live/data/push/deploy. Currentfocus records reachability and next request-parser/Nestcore disposition.
+
+## Rich-text SSR guard — 2026-09-27
+
+Localaace599e tests /30daf45b fix: sanitizer failsclosed withoutDOM, renderer null SSR/initialhydration then sanitized client content via stable useSyncExternalStore. AI wrapper hydration covered. RED5fail/11pass ->GREEN19; scopedbranchcoverage83.33%, dependency249/249, bothTSC passed. Independent review and offline actual-component Chromium fixture passed; not fullappE2E. Browser exposed preexisting plain special-character double escaping, recorded separately. No schema/dependency/DB/live/push/deploy changes, WIP intact, image counts not refreshed. Next bounded batch upload/file-type security.
+
+## DOMPurify source update — 2026-09-27
+
+Localfc98fc74 regression/CI and df22e760 scoped DOMPurify3.4.13 override. Six tests RED5pass1versionfail ->GREEN; aggregate32files249/249, existing frontend7/7, both typechecks and offline Chromium actual-sanitizer rendered fixture passed. Independent reviews GO; Sentry/XLSX integrity preserved. No exploit reproduction or updated-image-scan claim. Latent SSR raw-input fallback recorded as next bounded repair; current ticket SSR exposure not established due loading/useEffect flow. No app-source/schema/data/live/push/deploy changes; WIP intact. Full evidence limits in current-focus.
+
+## Fresh DB scan and focused risk triage — 2026-09-27
+
+Same11d77fbb backend artifact re-scanned offline using separately refreshed2026-09-27 Trivy DB: still0C3H30M7L. Download and scan exited0, owned containers removed; hashes/paths in current-focus. Independent review reran7 isolated tests and supports patched OTel exporter chain/explicitly disabled MJML minifier path, not blanket waiver. Source review identifies active frontend DOMPurify and backend FileTypeValidator consumers among remaining Mediums; next scope is reachability-led compatible fixes, not count-driven wholesale upgrades. No product edits, live access, DB writes, restart, push or deploy; existing WIP intact.
+
+## Grouped backend artifact verification — 2026-09-27
+
+Frozen11d77fbb backend Linux/amd64 image built and network-none non-root/native-module/Prisma offline schema smoke passed under Mac emulation; schema output hash unchanged, no database or normal application startup. Comparative offline Trivy with same pinned scanner/DB: prior0C30H71M10L -> **0C3H30M7L**. First256MiB temporary-space attempt failed; bounded2GiB tmp/4GiB memory retry passed and owned container cleanup verified. Remaining High: two OTel parent-package entries and retained html-minifier; no automatic waiver or suppression. Full identity/hash/evidence paths and limitations in current-focus. Fresh advisory DB and operational/data-preservation acceptance still outstanding. No live/DB/migration/push/deploy; existing WIP excluded and intact.
+
+## Deepmerge checkpoint — 2026-09-27
+
+Local63ea4b5b tests /b2536990 scopedPrismaconfigdeepmerge8.0.2 update. CJS/ESM configshape andboundedcirculargraph regressions pass; actualconfigloader/CLI notrun. Final5tests+CI7/7 independently, aggregate31files243/243 andboth typechecks passed. Sentrybindings/XLSXintegrity/frozeninstall preserved, unrelatedWIP intact. No newimage/live/data/migration/push/deploy. Next: groupedimmutableimagebuild/rescan toreplace old2b90e02dscan evidence; no productionGO inferred.
+
+## Email minifier boundary — 2026-09-27
+
+Localfd3b1a22 test/wiring /d7c289f1 explicitminify:false. Three realrenderpaths tested, no minifiercalls; existing default alreadydisabled, so notclaimingnewexploitclosure. Focused3/3 independently, aggregate30files238/238, mailmock23/23 and both typechecks passed. No packageversionchanges, realmail/data/live/image/scan/push/deploy. WIP preserved. Currentfocus records boundeddeepmerge8.0.2 candidate and proofneeded before nextupgrade; minifierpackageadvisory notwaived.
+
+## Prometheus checkpoint — 2026-09-27
+
+Localaef9e0d8 tests /8870d4c0 scoped exporter0.217. Actual parentmetrics2.6/newreader2.7.1 compatibility proved with synthetic collection/serialization/flush/shutdown and malformedURL400; no listener or SDK activation. Focused9/9 independently, aggregate29files237/237 and both typechecks passed. Sentry peer bindings/XLSX integrity preserved, frozenignoreinstall passed, WIP untouched. Parent SDK/auto versionadvisory flags may remain; no blanketclearance or newimageclaim. No live/data/migration/push/deploy. Currentfocus records evidence limits and next deepmerge/html-minifier dispositions before grouped image verification.
+
+## Jaeger checkpoint — 2026-09-27
+
+Local6cf13952 tests /3f5a12ba scoped Jaeger2.9 update. Pure malformed trace/baggage regression and valid Unicode roundtrip passed; prevented incidental frontend Sentry Core peer drift with restored lock binding+test. Final4tests, focused6/6 independently, aggregate28files234/234 and both typechecks passed. Frozenignore-scripts install, XLSX integrity and unrelated WIP preserved. No SDK activation, app/schema/startup change, image/rescan/live/data/push/deploy. Current-focus records next Prometheus cross-version reader proof and coherent-upgrade caveat; no production GO inferred.
+
+## Hono / Node adapter checkpoint — 2026-09-27
+
+Localf113918f tests /97ebfb56 fixes @prisma/dev's Hono4.13.9 and node-server1.19.17, majors retained. Five tests RED3pass2fail ->GREEN5; focused7/7, aggregate26files225/225 and both typechecks passed. In-memory protected static path regression plus CORS compatibility and owned loopback adapter smoke only. No filesystem serving/Prisma/dev/Studio/env/DB/live execution or image/rescan/push/deploy. External override is NOT bundled Studio clearance. Independent reviews GO; WIP/XLSX preserved. Current-focus retains limits and next mysql2 batch.
+
+## Effect source checkpoint — 2026-09-27
+
+Localc4795992 tests /a9a6d297 scoped @prisma/config7.4.2 Effect3.20.0 fix; Prisma and secondary dependencies unchanged. Five tests RED3pass2fail ->GREEN5, including synthetic two-fiber ALS isolation; aggregate25files220/220, focused7/7 incl CI and both typechecks passed. Independent code/security GO; no demonstrated live RPC/session exposure claim. Frozenignore-scripts install/XLSXintegrity preserved. No actual Prisma/config/.env load, migration, app boot, image/rescan/live/DB/push/deploy. Current-focus records sources/evidence limits and next tool/telemetry groups; WIP intact.
+
+## Lodash source checkpoint — 2026-09-27
+
+Committed3864c0c1 tests /99d9e3aa scoped Lodash4.18.1 update. Rejected deprecated4.18.0 before install;4.18.1 fixes modular packaging (template/fromPairs), covered by fixtures. RED42:17pass25fail ->GREEN42; focused44 incl CI; aggregate24files215/215; both typechecks and mocked mail23/23 passed. Three-agent planning/code/security review, no remaining scoped blocker. No app/schema/env change, image/rescan, real mail/DB/live access or push/deploy. Current-focus records sources, integrity, evidence limits and nextEffect batch. Existing WIP preserved; production GO remains separate.
+
+## YAML v4 source checkpoint — 2026-09-27
+
+Scoped js-yaml4.1.1->4.3.2 across Swagger/cosmiconfig/eslintrc, v3 preserved. Fifteen bounded consumer-resolved tests RED6pass9fail -> GREEN15; focused17 incl CI and recurring23-file aggregate173/173; both typechecks passed. Independent reviews GO for this source scope. Frozen ignore-scripts install and XLSX checksum preserved. No application/schema/env/startup changes, live/data access, new image/scan or publication/deploy. Current-focus records source, compatibility caveat and limits. Next: Lodash batch; no production GO inferred.
+
+## Remaining advisory consumer disposition — 2026-09-27
+
+Documentation-only checkpoint after three-agent source review plus primary advisories. Current-focus matrix separates runtime utility/config consumers, opt-in telemetry, Prisma dev/Studio and disabled-by-default html-minifier paths. No blanket waivers; major deepmerge/OTel changes not applied. Notable limits: Prisma dev hostname omitted (not proven loopback); Studio may embed a separate copy; live OTel preloads/settings unknown; mysql advisory patchedNone conflicts with3.22 release's default-plugin disable. Nextbounded batch js-yaml4 then Lodash4 compatibility; Effect/OTel/Prisma-tool decisions follow. Aggregate158/158 rerun passed networkrestricted; no application/dependency/version changes, image scan, live/data/SDK/CLI/migration/push/deploy. Last image0C30H unchanged, WIP preserved.
+
+## Multipart/cookie source checkpoint — 2026-09-27
+
+Same-major form-data2.5.6/4.0.6 and js-cookie3.0.8 patches, expectedhasownedge only; preserveXLSXintegrity/frozeninstall.17newtests RED7pass10fail ->GREEN17; with2CIcontracts19/19. Explicit22-file recurring aggregate158/158 and both tsc pre/post pass. Independent code/security GO. Type/test-tool and MJML dependency paths do not demonstrate public exploitability; fixtures are puremultipart buffers/fakecookie sink, not realuploads/auth. No schema/app/credentials/live/push/deploy changes or newimage; last0C30Hartifact unchanged. Current-focus contains sources/reachability/remaining gates; WIP preserved.
+
+## Dependency regression CI wiring — 2026-09-27
+
+Added explicit root test:security:dependencies (19existingfiles+newsourcecontract), serial file execution; existing CI build job gets unconditional5minute step afterinstall beforePrisma. RED2->GREEN2; actual pnpmcommand141/141 loopback-onlysandbox passed, YAML parse/structure and independent code review passed. No packageversion/lock/app/schema/deployconfiguration changes. Existing CI localPGservice preserved; tests themselves DB-independent. HostNode24 versus CI22 remains a hosted-validation limitation. No remoteCI/push/build/rescan/live/data changes; WIP preserved. Current-focus records exact scope and next gates.
+
+## Defu configuration dependency checkpoint — 2026-09-27
+
+Scoped defu6.1.4->6.1.5 override patches GHSA-737v-mqg7-c878; only three c12/giget/rc9 edges changed, Prisma/schema/boot untouched. XLSX integrity preserved after lock regeneration; frozen ignore-scripts install passed. Nine new consumer-resolved pure-library tests RED3pass6expectedfail ->GREEN9; combined51/51 network-denied, backendtsc pre/post and frontendtsc post pass. Independent code/security reviews GO for source only. Prisma substitutes deepmerge for c12 config merging but defu metadata path remains; no public exploit path established. No real config loader/CLI/env/app/DB/live execution. No new image/scan; last0C30H remains artifact-specific. WIP preserved; CI wiring, remaining risk groups and release operational/data gates stay open. Sources/integrity/details in current-focus.
+
+## Scoped glob-family patches — 2026-09-27
+
+Four same-major overrides patch brace2/5, minimatch9 and picomatch2 while retaining other majors; lock/XLSX integrity reviewed and frozenignore-scripts install passed.14new tests RED9pass5versionfail ->GREEN14; combined25, mail23 pre/post, frontend4, both tsc pre/post pass. Actual consumer paths include MJML tooling/SentryFastify/Jest, not proof of public reachability. No newimage; last0C30H unchanged, ten corresponding HIGH occurrences not arithmetically subtracted. Code/security source reviews GO. New regression CI wiring remains pre-release task. No live/mail/DB/migration/push/deploy; WIP retained. Sources and scope in current-focus.
+
+## Scoped inbound semver checkpoint — 2026-09-27
+
+utf7-only override semver5.3->5.7.2 for CVE-2022-25883; no other mail/library settings changed. Actual call uses runtime Node version, not proven untrusted Range. Four consumer tests RED3pass1versionfail ->GREEN4, mail/OTel/XLSX14/14; three mocked inbound suites30/30 pre/post; backendtsc pass. pnpm-generated unrelated editorconfig edge change/XLSX checksum loss restored before successful frozen ignore-scripts install. Upstream links/integrity/limitations in current-focus. No newimage/scan/live/mailbox/DB/migration/push/deploy; WIP retained, last image0C30H unchanged.
+
+## OTel Resource factory compatibility — 2026-09-27
+
+Replaced undefined resources.Resource constructor/any workaround with existing typed resourceFromAttributes, preserving settings and startup nonactivation. New isolatedVM regression3RED constructor failures ->3GREEN; plus10boot tests13/13, backendtsc passes before/after. Real resources/conventions but mocked SDK/exporter/process; no telemetry started or lifecycle behavior certified. No dependency/version changes or newimage: prior2b90e02d0C30H still applies. Current-focus records limitations/next gates. No live/provider/DB/migration/push/deploy, unrelatedWIP retained.
+
+## Combined backend artifact checkpoint — 2026-09-27
+
+Exact2b90e02d Linux/amd64 build passed;415files/57migration checksums, index5f369d7d/config36f111fa. Updated isolated smoke confirms locked workspace Prisma7.4.2 command/permissions, absent global copy, generated client, identical62table offline SQL, PG17/native/permission checks; no appboot/DB/provider. Same pinned Trivy DB:0C30H71M10L, previously0C43H119M15L. Removed HIGH:5Undici+1routing+7globalduplicate occurrences; none added. Duplicate removal is not remaining-advisory remediation.21source/boot/runtime +29consumer tests pass. Evidence/hashes/caveats in current-focus. No frontend rebuild or production GO; remaining30HIGH, authenticated/drain/recovery/operational gates still open. No live/push/deploy; unrelated WIP untouched.
+
+## Frozen workspace Prisma command candidate — 2026-09-27
+
+Dockerfile now links prisma command directly to frozen workspace Prisma7.4.2 JS instead of installing a second unlocked global dependency tree. Version/client/lock/schema/migrations/startup command unchanged. New4tests RED3pass1fail ->GREEN; combined boot/runtime21/21 network-denied. OLD cb8ecfd6 image comparison: global/workspace offline schema SQL identical62tables/58815bytes after disabling randomized dotenv advice; initial log-only mismatch recorded. Non-root direct-JS symlink version probe passes; all owned probe containers removed. No new image or scan yet, no claim seven findings fixed. Next combined image build must update smoke's obsolete global-path assertion and prove CLI/client/generation/permissions before rescan. Details/hash in current-focus; no live/data/provider/migration/push/deploy, WIP retained.
+
+## Dependency runtime boundary review — 2026-09-27
+
+Read-only telemetry/Prisma split: seven HIGH occurrences belong to the separately npm-global installed Prisma CLI, outside root pnpm overrides/lock. CLI is required by migrate-once and normal deploy entrypoint; do not remove or blindly major-upgrade it. Next candidate is compatibility-proven use of the already-retained locked workspace CLI at unchanged7.4.2, then narrow fixes; not implemented or accepted, and deduplication alone is not remediation. Network-denied boot contracts10/10. Independent inspection confirms latent otel.ts Resource export mismatch; no source preload found, live env unknown, Sentry remains in AppModule. Source contradicts stale skill preload claims. No app/config/dependency changes, build, live/data/provider operations, migration, push or deploy. WIP retained; last image0C43H unchanged. Details and test conditions in current-focus.
+
+## Routing dependency checkpoint — 2026-09-26
+
+dd8ed7d7/c30d80a4 add six routing compatibility tests and scoped path-to-regexp8.3->8.4.2 across four actual Nest/Express consumer edges;6.3 unchanged, XLSX pin retained. RED5pass1versionfail ->6/6; combined dependency29/29, mocked auth/tickets/RBAC42/42 pre/post, backendtsc pre/post pass, XLSX7/7, local200. Independent reviews and secret scans pass. Synthetic routing tests do not certify actual authorization or live exploitability. No new image/scan: last0C43H remains. Telemetry initialization/Resource-export mismatch recorded for separate coordinated review, not changed or activated. No live/data/provider/migration/restart/push/deploy; WIP preserved. Sources, scope and next grouped risk/rebuild gates in current-focus.
+
+## Undici narrow dependency checkpoint — 2026-09-26
+
+Updated only scoped npm Undici7.22->7.30 and Cheerio/JSDOM lock edges; retained XLSX checksum after pnpm regeneration. No application/global-fetch/Node-base/schema change. Actual consumer9tests RED8pass1versionfail ->9/9; combined Axios/gRPC23/23, mocked crawlers33/33 and frontend Vitest4/4 pre/post, both TypeScript checks pre/post pass. Reviewed JSDOM private-handler fixture now uses/restores owned dispatcher without enabling scripts/subresources. Source test checkpoint a707c0d6, independent code/security review GO and gitleaks clean. No new image/scan: last exact backend remains0C43H, not reduced by assumed fixes. Upstream sources, limitations and next grouped risk/rebuild step in current-focus. No live/data/provider/migration/restart/push/deploy; unrelated WIP preserved.
+
+## Node 22 backend/frontend artifact checkpoint — 2026-09-26
+
+Exact committed cb8ecfd6 Linux/amd64 builds passed; backend index822f96cc/config507698ee, frontend indexd9f59577/configaddd83ec. Network-none runtime/native/permissions proofs passed: Prisma CLI/client/offline schema generation, PG17 tools, database bcrypt6 and Sentry ABI127; frontend HTTP and four image formats, Sharp closure and serializer hash. Source contracts26/26 and local dev200. Frontend is loopback-API preview, amd64 tests are ARM-host emulation, not native VPS or authenticated workflow acceptance.
+
+Same-DB pinned offline scan: backend0C/43H/119M/15L (previous45H; exactly two gRPC findings removed), frontend0C/0H/0M/1L unchanged. No suppressions; 43H still require disposition. Initial backend Docker create exceeded10s; late-created never-started owned container was explicitly removed. Reviewed helper now60s create/180s watchdog and honest uncertain-cleanup reporting; retry and cleanup passed. No product changes or live/DB/provider/migration/restart/push/deploy. All exact hashes, evidence paths, caveats and remaining gates in current-focus. Unrelated WIP preserved. Next narrow npm Undici consumer/risk decision, not deployment.
+
+## Node22 base and CI source alignment — 2026-09-26
+
+ec682d49/5a9796d0 pin allfourDockerFROMlines to verified22.23.3Alpine3.23digest; sevenCIversionliterals acrossfiveworkflows aligned withoutjob/permission changes. Engineinspection supportsminimal20->22; Node24alsoallowed butnotrequired. Read-onlynetwork-nonebaseprobe verifiesNode22.23.3/Undici6.28.1/OpenSSL3.5.8/ABI127/Alpine3.23.6/nonroot; singlemountedSentryABI127binaryloads withoutprofiling/SDKinit.26source+bootcontractsPASSafterexpectedREDs, local/tr200, noapprestart. No completeNode22appbuild/scan/hostedCIyet; previoussecuritycounts belongOLDNode20images. Nextbuildboth exactcommittedimages andverifyruntime/native/permissions/scans. Node22supportends2027-04-30, revisit2027Q1(noautomationset); rootdeveloperenginepolicy stillpendingreconciliation. No live/DB/provider/migration/push/deploy,WIPpreserved. Fullpins/sources/caveatsincurrent-focus.
+
+## gRPC source patch and runtime-support gate — 2026-09-26
+
+Scopedgrpc-js1.14.3->1.14.4 for two maintainer advisories, no service code change. ActualGoogleconsumer5testsRED4pass1versionfail->GREEN5/5; Axios+gRPC14/14, XML/XLSX19/19, backendtsc0pre/post, local/tr200. RetainedXLSXhash afterpnpmregenerationdrop; frozenignore-scriptsrepeatpassed. ExistingotherWIPpreserved. No newimage/scan: last0C45H119M15L remains. Mostimportant nextgate: bothDockerfilesNode20.20.2 officiallyEOL, exactimagebundledUndici6.24.1/OpenSSL3.0.19; select/testsupportedLTS beforemoreleafpatchbatches. Separate npmUndici7.22 usesCheerio/JSDOM and newerupstreamfixes beyondscannerDB; do notconflatewithbuiltinfetch. Details/sources/caveatsincurrent-focus. No live/DB/provider/migration/restart/push/deploy.
+
+## Combined backend image and same-DB scan — 2026-09-26
+
+Exact committed91295fad Linux/amd64 build passed; curated415files/57checkedmigrations. Image index4f0648cb/config6af5953d. Pinned offlineTrivy sameDB now **0C/45H/119M/15L**, previous0/58/137/16; no suppression, not productionGO. Actual isolated read-only/network-none Node probe confirms Axios1.20.0,XLSX0.20.3 and reviewedXLSXentryhash as UID1000/x64; no appentrypoint/DB boot. Repeatedhosttests19XML/XLSX+9Axios passed, local/tr200, ownedcontainersremoved. Evidence/fullhashes/currentlimits in current-focus. Next scoped remainingHIGH decisions, with drain/authenticatedclone/recovery/host gates still open. No live/provider/data/migration/restart/push/deploy; unrelatedWIP preserved.
+
+## SheetJS official distribution and integrity proof — 2026-09-26
+
+3c610d86/91295fad preserve Excel support while changing backendxlsx0.18.5 to officialCDN0.20.3. Explicit measuredSHA512 added after pnpmgeneratedURL-onlylock; correctfrozeninstallpass, freshisolatedwronghashinstallfailsERR_PNPM_TARBALL_INTEGRITY. RegressionguardsURL+hash. Apachelicense/provenance/entryhashreviewed;bundlingisnotcodeelimination. Actualparser7/7 including independentOOXML,BIFF8,Turkish,cachedformula,truncation,malformedZIP; combinedXML19/19,Axios9/9,backendtsc0,reviewsGO,gitleakspass. No productservice edits, live/DB/provider/migration/restart/push/deploy. Exactbackendimage/rescanpending;0C58H remainslastverified. Next combinedAxios+XLSXimageproof; residualresourcebounds andotherreleasegatesnotclosed. Fullhashes/sources/limitsincurrent-focus,WIPpreserved.
+
+## Axios security dependency and real HTTP contracts — 2026-09-26
+
+fc754e7a/51b480a9 add9 loopback actual-Axios tests and scoped1.20.0 upgrade. Rejected1.16.0 due newer maintainer advisory; sources/closure/shared-hasown caveat in current-focus. OriginalRED7pass/1versionfail; final9/9 (positive redirect case added postinstall), mockedservices53/53pre+post under deniednetwork, backendtsc0pre+post, XML12/12. Explicit existing local langfuse-core NODE_PATH required for shared Jest setup; default setup stillfails, no source workaround. Independent security/code reviewGO, stagedgitleaks passed. No exact newimage/scan; backend0C58H remains last verified count. Next XLSX decision then combined exact-image verification, not arithmetic advisory subtraction. No live/DB/mail/CRM/migration/restart/push/deploy, localpage200,WIPpreserved.
+
+## Narrow release-risk reconciliation — 2026-09-26
+
+Maintainer esbuild advisory verified: remaining LOW requires Windows development serving; exact frontend image re-inspected Linux/amd64 with standalone Node entrypoint. No scanner suppression or unnecessary upgrade; target-specific non-blocker, revisit on platform/serve/advisory change. Saved backend e992c231 report still58HIGH occurrences/44unique IDs (7globalPrisma,51workspace), not a fresh scan. Actual local Axios1.13.5/XLSX0.18.5 and production-code consumers verified; XLSX output truncation occurs after parsing. Next narrow dependency work: Axios compatibility/security tests and targeted remediation, with separate XLSX source/update/containment decision. Backend, drain ordering, isolated authenticated/data-preserving acceptance and operational live gates remain; no whole-project GO. No product edits/tests/new image or scan, no live/data/provider/restart/push/deploy. WIP preserved. Details and upstream source in current-focus.
+
+## Exact frontend image: critical/high/medium cleared in bounded scan — 2026-09-26
+
+Built committed d66bf7d6 as Linux/amd64 preview, with separate TypeScript gate passing. Index4d2d0c80/config2365a67d; source/archive/report hashes and private evidence paths in current-focus. Network-none permission, named-vendor hash/negative behavior and HTTP/native-image smoke all passed with exit-code checks. Initial diagnostic Sentry-metadata lookup failed due standalone tracing; revised bounded regular-file inventory verified the one packaged Terser serializer, not all embedded code. Independent helper review approved. Focused host tests34/34. Same-DB offline Trivy now **0C/0H/0M/1L**, previous0/1/1/1; only esbuild0.27.3 LOW remains, not yet risk-accepted. No ignores. Preview loopback API is not production configuration; full authenticated workflows/backend/recovery/host CPU gates remain. Next classify the LOW and reconcile existing release blockers, avoiding scope expansion. Owned smoke/scanner containers removed, localdev/tr200. No production access, DB/mail/CRM mutation, migration, push/deploy or restart; unrelated WIP preserved.
+
+## Terser source fix and vendor provenance — 2026-09-26
+
+85983543/d66bf7d6 update onlyTerserplugin5.5.0withinmajor5; obsoleteexternalserializer6/randombytesremoved. Independentpublishedartifact/tag/upstreamASTproof confirmsbundledserializer7.0.5, SHA25627a2480018708bf3b3e6f71798bc50fde9d12fce8fb35350c4d7ae81a7283a91; scannerabsencealoneinsufficient. Realwebpackserial/worker/function/RegExp/sourcemap testsplusvendornegativebehavior4/4,combinedoffline34/34,tsc0,reviewsGO,gitleakspass. VMtrustedfixtureonly, testtimeoutnothardworkertermination. **Exactimagebuild+vendorhash+rescanpending**, previouscount0C/1H/1M/1L remainscurrentverifiedresult. Details/sourcesincurrent-focus. Dev/tr200,nolive/data/migration/push/deploy/restart,WIPpreserved.
+
+## Combined CSS/browser exact-image checkpoint — 2026-09-26
+
+fe347318/4c4c5540 add real-consumer Browserslist tests and4.28.7patch with required4data dependencies. Defaulttargetschangeconfirmed, notfullvisualcompatproof. Combinedoffline30/30,frontendtsc0,independentreviewsGO,gitleakspass. Exactamd64build includes priorPostCSS/nanoidfix: index5bfd291f/config91237da6. Network-none permission/HTTP/nativeimageformatchecks passed. SameDBTrivy **0Critical/1High/1Medium/1Low**, previously0/8/4/1; browser/CSS/nanoid findings absent. Remainingserialize-javascript6.0.2 requires narrowTerser-majorcompatibilitydecision, notblindglobaloverride; esbuildLOW remains. Fullhashes/evidence/source/limitsincurrent-focus. PreviewloopbackAPI notproductionartifact, customeracceptance/backend/VPSCPUgatesopen. Containersremoved,dev/tr200,no production/DB/mail/CRM/migration/push/deploy/restart,WIPpreserved.
+
+## PostCSS/nanoid local source checkpoint — 2026-09-26
+
+Commits40d4714d/d9dff4a4 add6 actualNext CSS regression tests and singlePostCSS8.5.28override, naturally resolvingnanoid3.3.19. No redundantnanoidoverride; no unrelatedpackageversionchanges. RED3fail3pass -> GREEN6/6; finaltestsusefrontendcwd/realTailwindconfig. Parent/symlinksource-map protections and allowedmapcompatibility, CSSplugins/Turkishtext, boundednegativeNanoid verified; not comprehensiveallCVEcoverage. Combinedoffline27/27, frontendtscnoerrors, independentreviewsGO,gitleakspass. ExistinglocalpageHTTP200 andIABlandingcontentpresent; dependencyreloadnotproven. **Newimagebuild/rescanpending**: lastverifiedfrontendcountstays0C/8H/4M/1L. Planboundedbrowserslistpatchnextthenonecombinedimageproof. No live/DB/mail/CRM/migration/push/deploy/restart; WIPuntouched. Detailsandprimarysourcesincurrent-focus.
+
+## Fast-uri security patch and immutable image proof — 2026-09-26
+
+Local4d313522/6e278405 patch only fast-uri3.1.0->3.1.8 with two AJV edges. Upstream3.1.7/3.1.8 additional fixes verified beyond scanner3.1.6 floor. Actual Sentry/webpack/schema-utils/AJV tests RED2fail3pass -> GREEN5/5; combined network-denied21/21 and full frontendtsc0. Code/security reviews and staged gitleaks passed. Exact amd64 image2f239162/config2f3159e2 built; rootless permissions and offline standalone HTTP/image-format proofs passed. SameDB exact-image Trivy **0Critical/8High/4Medium/1Low**, down from0/15/4/1, fast-uri findings absent. Hashes/source URLs/evidence paths in current-focus. Preview API only, no customer auth/DB acceptance or production readiness claim. Remaining8HIGH require consumer-aware decisions; PostCSS/nanoid narrow patch next candidate, not blindly upgrading or treating build-time presence as demonstrated runtime exploit. VPS CPU and separate backend acceptance gates remain. Owned containers removed; dev/tr200. No live access, DB/mail/CRM changes, migration, push/deploy or restart. Unrelated WIP preserved.
+
+## Sharp native update verified locally — 2026-09-26
+
+Scoped Sharp0.35.4/native1.3.3 update committed e919131a/f1ea3332. ActualNext synthetictests7/7, combined16/16, frontendtsc0, cleanamd64build c929ccc9/configd1b733f2. Linuxinitialheifmetadataassertfailed: diagnosed omitted diagnosticversions.json, corrected to actualnestednativepackage/addon/binary provenance without alteringapp/loaderrestrictions. Finalpermissions andHTTPsmoke plusPNG/JPEG/WebP/AVIF nativeNext transforms pass. Runtimeheifversionnotdirectlymeasured; upstreamnative1.3.3metadata lists1.23.2. SameDBTrivy **0Critical/15High/4Medium/1Low** vs0/17/4/1. CPUx86-64-v2 compatibilityonVPS stillunverified; no productionGO. Evidence/sourceURLs/fullhashes in current-focus. Containerscleaned, localdevHTTP200; no live/DB/push/deploy, WIPuntouched.
+
+## Frontend OS security floor verified — 2026-09-26
+
+Narrow libcrypto3/libssl3 minimum3.5.8-r0 runner patch; resolvedexact3.5.8-r0 plusCAbundle20260909-r0. Source testsRED8/1 GREEN9/9; commits070b4e14/57022899, independent review. Cleanamd64previewbuild5fd6e658/config1519a059 passedTypeScript/build andnetwork-nonepermissions/TLScontext/curl/HTTP/imageoptimizer smoke. NodeOpenSSL3.0.19 separatefromOS3.5.8. SameDBTrivy **0Critical/17High/4Medium/1Low**, formerly0/21/18/33; OSsectionzerofindings. Remainingapp17HIGH requiresreview, sharpfirst; noproductionGO. Evidence/hashes/limits in current-focus. Ownedcontainersremoved, localdevHTTP200; no live/DB/push/deploy, unrelatedWIPpreserved.
+
+## Frontend runtime cleanup and exact proof — 2026-09-26
+
+Removed only11global package-manager paths in frontendrunner, builder/CMD/appdeps/schema untouched. New testRED7/1 thenGREEN8/8; independent code/security approval. Localcommits c004db18,23b403a4. Exactamd64previewimage f0aab427/configd63b4d0d built; sameDBofflineTrivy **0Critical/21High/18Medium/33Low** vs1/40/24/36. Globalnpmcritical+19HIGH gone; NOT productionGO. InertUID1001/cache/immutability/allmanagerabsence checks passed; separate network-none standaloneHTTP /tr,/tr/login,PNG,imageoptimizer passed withredirectrejection. No customerAPI/authbrowser/data acceptance. Ownedcontainerscleaned, localdevHTTP200; no production/DB/push/deploy. Full hashes/evidence and nextOS/apptriage in current-focus.
+
+## Clean frontend preview image evidence — 2026-09-26
+
+Built committed3dcb743d curated225-file source as amd64 image94038bef/config06185609, with loopback API (preview-only). Explicit TypeScript gate and Next build passed. Network-none inert permission smoke passed UID1001,221 immutable path checks and real cache writes; no normal app boot/HTTP test. Global npm/corepack/yarn remain. Offline Trivy same advisoryDB reported1Critical/40High/24Medium/36Low; critical tar finding belongs to global npm, not proven externally reachable. Frontend release remains NO-GO pending minimal runtime tooling cleanup, app/OS risk triage and exact rescan/route validation. Full hashes/evidence in current-focus. Owned smoke/scanner removed; dev frontendHTTP200; unrelated WIP preserved, no production/DB/push/deploy actions.
+
+## Frontend image identity/ownership patch — 2026-09-26
+
+Independent review caught multiline revision validation bypass before commit. Shell regression RED6/1 then GREEN7/7 after adding exact-length validation; actual image build and runtime permission checks remain pending.
+
+Pinned frontend Node base/runner to known backend digest, required validated VCS_REF/OCI revision, made public/standalone/static root-owned and limited nextjs ownership to actual frontend .next/cache. Docker build callers now must provide sourceSHA; none changed in production. Tests4pass3fail ->7pass. Only source contracts verified, no full frontend image/runtime assertion or vulnerability-count change. Frontend localHTTP200 retained; unrelated worker/next-env WIP preserved. Next curated clean image build and runtime cache/permissions verification; no live/DB/push/deploy.
+
+## XML-updated backend image built and scanned — 2026-09-26
+
+Exact e992c231 committed source produced amd64 image4cd531281f3b/config2dae23995094. Build successful, same-DB offline Trivy report **0Critical/58High/137Medium/16Low**, versus previous unified0/69/143/17. XML-family findings absent; difference11HIGH/6MEDIUM/1LOW occurrences, not a claim of all risks closed. Report/image/archive identities and hashes in current-focus. No normal application start/new runtime smoke, customer DB or live connection. Frontend source preflight identified unpinned base, missing revision identity and writable runtime code plus font/Sentry/API build considerations; frontend image not built. Scanner cleanup verified; worker WIP untouched; no push/deploy.
+
+## Frontend Docker build-order correction — 2026-09-26
+
+Added explicit shared-schemas compilation and frontend typecheck before Next build, pinned pnpm9.15.4 and removed non-frozen fallback. Four new Docker source-contract tests failed before change and pass after; actual offline shared-schema build and frontend tsc pass. No UI/runtime/schema/env changes. Full Docker build/security scan not performed in this step; no production access, DB mutation, push or deployment. Unrelated WIP preserved.
+
+## Frontend local typecheck prerequisite — 2026-09-26
+
+Resolved TS2307 without product-code changes: built existing packages/shared-schemas (missing ignored dist), then frontend raw tsc --noEmit --incremental false exited0, both network denied. Workspace symlink/package entrypoints correct; root Turbo already orders upstream builds. No alias workaround. Frontend HTTP200 retained. This does not prove frontend Docker build: its direct filtered build lacks explicit shared-schema prerequisite and existing ignoreBuildErrors/non-frozen fallback require release review. No new scan, live access, DB mutation or publication. Existing worker WIP preserved.
+
+## XML dependency correction — 2026-09-26
+
+Frontend default tsc failed TS2307 @aluplan/shared-schemas resolution (src/lib/schemas.ts:28); no full frontend typecheck success claimed. Separate release gate, unchanged in this dependency-only patch.
+
+Narrow pnpm9.15.4 override/lock update: fast-xml-parser5.7.3, fast-xml-builder1.1.7, xmldom0.8.15. New actual-chain synthetic tests caught AWS storage XML breakage at5.7.0; upstream5.7.3 restored compatibility without SDK changes or test weakening. XML12/12, combined dependency44/44, existing parser14/14, backend tsc pass; network denied during tests. Independent security review GO for source commits only. Details/sources/limits in current-focus matching section. No new image scan or advisory-count reduction claimed; no application DB, live access, push or deployment. Unrelated worker and generated frontend WIP preserved.
+
+## Unified image build, inert smoke and advisory comparison — 2026-09-26
+
+Completed exact committed-source5f9c5b14 Linux/amd64 backend build and network-none inert smoke, without application boot or customer DB. Image41c2c7f9eea5/configfe01befeddaf. Trivy report matches config; frozen-DB comparison is unified0Critical/69High/143Medium/17Low versus historical hotfix4/149/194/26. Findings are occurrences, not exploitability conclusions. Full identities, evidence path/hash and limits recorded in current-focus's matching section.
+
+Temporary smoke creation exceeded helper deadline and completed after an early cleanup check. Corrected the observation, inspected and ran only the exact owned inert container, verified exit0, removed it, and confirmed no owned smoke/scan containers remain. Helper is not safe to reuse unchanged for cleanup guarantees. No application code changed in this verification phase; existing worker WIP and generated next-env remain untouched. Frontend HTTP200 is not full-stack acceptance. No production access/mutation, fresh DB capture, restore, publication or deployment. Remaining advisory triage and isolated real-data acceptance gates stay open.
+
+## Consolidation runtime follow-up — 2026-09-26
+
+Second review blocked initial package-manager removal because schema-parity still invoked pnpm after migrations. Corrected direct Prisma invocation; all diff flags/limits/failure checks preserved. Added actual-script injected subprocess recorder (no DB/network/process execution): RED2/1 -> GREEN3/3; combined7/7, existing2read-only/parity contracts pass. No actual image/migration claim. This was caught before committing or deploying broken startup.
+
+Verified no absent file among50canonical dirty product/test files versus committedcandidate:34identical,16laterRCdifferences. Preserved originals. RAG boot gate transfer is unnecessary:822aafdd already moved maintenance out of boot;6tests pass. Generated missing candidatePrisma client offline from its own schema; full backend tsc passes. Defaultshutdown test setup failed on langfuse-core; same-checkout explicitNODE_PATH gave55/55 in6suites, not a defaulttestconfigfix.
+
+Independent review found workerWIP earlyshutdown HTTP admission/wait boundary unresolved; not committed or accepted. Added4source-contract tests first(2expectedfails), then narrow Docker global package-manager cleanup(4pass), retaining globalPrisma for currentmigration workflow. No wholeDockerfile/hotfix/RAG merge, no dependency/schema/CMD change. Exactimagebuild/scan/runtimeacceptance pending. Localpreview remains frontendonly; freshDBcapture still pending. No live actions or publication this follow-up.
+
+## Consolidation checkpoint — 2026-09-26
+
+Owner selected one integrated release source after old hotfix preview omitted committed homepage improvements. THIS releasecandidate is now active; historical routing notes below are superseded. Main/login route files match, but landing-hub differs: candidate/canonical share ff8ff8a7 with BIMFlex card, revised hero/footer and removed placeholder stats/FAQ/social proof. Existing reopen and AI label already present. Preserve richer candidate auth/mail/durability rather than wholesale hotfix merge.
+
+Three local restore refs created at pre-integration committed tips. Dirty worker files and canonical frontend edits remain untouched. Added only copied provenance-verified dependency behavior test; independent review GO for test-only commit.32dependency and28frontend targeted tests pass (React mock prop warnings remain). Preview switched to candidate frontend; no backend/data usability claim. Dev-generated next-env.d.ts excluded from commits. No push/deploy/live writes. Fresh dump remains pending; previous safe SSH preflight only. Runtime cleanup needs startup compatibility work, not blind cherry-pick. Full consolidation and team routing are NOT complete.
+
+## Scoped live ticket/auth method comparison — 2026-09-26
+
+Owner separately approved reading ticket/authorization code. Strict-host SSH metadata confirmed backend302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644/start2026-09-02T19:03:59.250425823Z/restart0. Attempted fixed src/tickets/tickets.service.ts absent; then docker cp exact distJS paths to tar stdout only, bounded local buffers2MB/timeouts25s. No files extracted to disk, remote shell/application code executed inside container, DB/provider/env/secret/customerdata access or production mutations. Only local transpiler/parser executed against code strings, not imported application.
+
+Observed selectedfile hashes: tickets.service.js45714bytes SHA2cbe2ba67faec727da61acd03c5cf3cc5f987009f99addbbe30122ea3a3ded2b; tickets.controller.js17807 SHA f9cbe654ef515806620def62f7ef89a72fcd647af9f9afda325d75fa1e4d996f; jwt.strategy.js2964 SHA60fea009cc972b4f0167726257cf9d2261d79bfe614d9e187c0d8e87d8066c10; rbac.guard.js3120 SHA93b1ebfbab3417f32955ed540e7a1eb16e013d9704ad61264846dcb143863161. TypeScript5.9.3 transpileModule historicald9 source using historical compiler options; parsed unique methods, compared ordered lexicaltokens skipping trivia. All4match: service.transition, controller.transition, strategy.validate, guard.canActivate. Service full transpilation hash differs (46305bytes/SHA54598326ade5ab64acdedf5a8be6dcd91df735fba6879f2d0dc03fe664023d16); cause unresolved. Method correspondence does not attest class decorators/import resolution/wholefile/image/source equivalence or runtime safety.
+
+Confirmed working transition has actorId:string and no staff check in method, controller passes sub, historical JWT/RBAC method behavior corresponds. Narrow source-specific backport can now be designed locally; no blind modern cherry-pick, whole-framework migration or deploymentGO. No customer ticket change, restart, image load/run or publication. Existing startup hazards require separate reviewed boot/build acceptance before any production rollout.
+
+## Small frontend backport isolated from stabilization — 2026-09-26
+
+Created ../aluplan-ticket-hotfix-20260926 branch hotfix/ticket-reopen-label-20260926 at exact frontend OCIee4d70a71a75d2f52cfc55ee05f4af34414c2b30. Reused regression as5ac248b9:3RED before label then3GREEN; locale integrity and independent review pass. Only three message entries and regression file differ; pinnedDockerfile/lock unchanged. Reopen implementation remains only on candidate, not this branch. No build/browser claim on historical frontend, no production access or publication.
+
+Read-only independent archive-tool inventory confirms verify_image_archive.py/diagnose_image_layout.py prove outer config/layer content but do not resolve selected file bytes inside layers. Existing receipt binds startup hashes only, not ticket/controller/JWT code. Kept backend source correspondence unproven. Avoid general archive parser expansion; narrowly scoped deployed-file read or selected-file inert inspection is the remaining evidence choice. Do not run old application/startup or silently include broad stabilization changes to bypass it.
+
+## Current live artifact identity refreshed — 2026-09-26
+
+Separately authorized read-only SSH to167.86.84.107 with strict known-host checking and bounded connect timeout confirmed hostnamevmi3049865. Scoped docker ps/inspect only: backend-api9ea92d99bfbd image302229b2403d3a3e5fcb34b2af3003e6f0d6ba5e7610ad2e89e41eb375bd4644, tagd9b21b9d7b5c4c259acbe9a5828fdd04ba077ce2, started2026-09-02T19:03:59.250425823Z,restart0; imageamd64 created2026-06-30, OCI revision absent, RepoDigests empty. Frontend5c0b67496777/allplan-frontend-ee4d70a7 healthy image dbd2a193d62a499e2adcea3d90f0f4617e1d9588d3b52a9b525c0e7fbf08094e, OCIee4d70a71a75d2f52cfc55ee05f4af34414c2b30, started2026-09-04T17:19:21.914826475Z,restart0,amd64. Initial image-label formatting failed on nilLabels; conditional formatting retry succeeded. No operational change.
+
+Git inspection confirms frontend OCI revision contains ANN_TASLAK. Historical backend tag source transition takes actorId:string and controller passes req.user.sub, unlike the candidate guarded requester contract. Image identity matches earlier receipt but does not prove whole-image source equivalence. No logs/secrets/env/customer records read, no exec inside container, no DB/restart/deploy. Next only scoped local backport/provenance verification using existing inert evidence; legacy startup risks and full backend-source mapping remain open. No production-ready claim or general deployment approval.
+
+## AI label and standalone-hotfix compatibility — 2026-09-26
+
+Label-only checkpoint05cb3f25, regression96a9bb78: three translation values changed, existing ai_draft_btn key/click behavior retained. Three label tests RED then GREEN; i18n parity clean; independent review and actual-page synthetic Chromium assertion confirm AI Yanıtı accessible name, without clicking AI, page errors or external requests. Probe remains unstyled/not full Next or DB proof. Staged secret scans clean; unrelated worker edits preserved.
+
+Independent offline source comparison: historical d9b21b9d transition/controller actorId-string contract has no candidate ticket-level access gate; TicketAccessService and MaintenanceWorkService absent, frontend activeRef absent. Candidate reopening commits cannot safely be blindly cherry-picked. Historical image record is not proof of current live identity or complete source provenance. Need separately scoped read-only deployed identity/source verification before selecting minimal compatible hotfix base, then real isolated DB/build acceptance and explicit publish/deploy approvals. No live access or mutations this turn; SUP-00190 not reopened by us. Scope remains two changes, not general stabilization deployment.
+
+## Closed-ticket reopening local fix — 2026-09-26
+
+Follow-up local checkpoint: f8a92e2d (tests), f77c4429 (product); staged secret scans clean, independent final security review approved closedAt predicate. Backend73tests and full typecheck rerun after final predicate: PASS/0diagnostics. Frontend agent verified full TypeScript program with ephemeral shared-schemas source alias:0diagnostics; repository dependency resolution itself unchanged. Actual page plus real UI components rendered in Chromium with synthetic API/socket/AI fixtures: denied request retains CLOSED/retry, success retains identity/description and opens ticket, CUSTOMER control hidden. No page errors or off-origin requests. Scratch probe /tmp/aluplan-reopen-ui-QxslDG/probe.cjs and screenshot reopened.png are untracked ephemeral evidence; no global CSS, full Next middleware/API or actual DB proof. Browser/server cleaned up. No live access in follow-up, push or deploy. Previous uncommitted/untested-browser statements below describe the earlier checkpoint, superseded by this paragraph. Next standalone-hotfix baseline compatibility and real DB/final build checks; never deploy the entire stabilization candidate just to deliver this button.
+
+Owner authorized reopening live SUP-00190. Read-only Firefox inspection found no detail reopen action. The list offers bulk IN_PROGRESS, but its closure/audit semantics were not verified; it was not invoked. Live ticket was not changed, no customer message sent, no deploy or direct DB write performed.
+
+Local candidate now allows CLOSED -> OPEN for existing authorized staff through the existing permission-guarded endpoint. Conditional update checks CLOSED, nondeleted and observed closedAt; nested internal history records actor and previous closure atomically with clearing closedAt. Existing ticket identity, messages, assignment and resolution/SLA dates are not replaced. Existing overdue-SLA escalation remains applicable; this is not a fresh SLA cycle. UI adds localized staff/permission-gated reopen with synchronous duplicate-click guard, pending/error state and acknowledged-response retention if refresh fails. No migration/env change.
+
+Backend RED/ GREEN exercised; 3 focused suites73tests pass. Frontend agent reports19reopen+11reply tests pass and complete TR/EN/DE strings. Backend typecheck diagnostics0 before final closedAt predicate addition. Frontend full typecheck remains blocked by unresolved @aluplan/shared-schemas in src/lib/schemas.ts28. Independent backend/frontend code and security reviews found no authorization blocker; closedAt optimistic condition addresses review finding. Tests use mocks, not actual database concurrency proof. Actual rendered local browser verification remains undone. Local changes are uncommitted; unrelated worker-shutdown edits remain separate. This does not establish production readiness or resolve the live ticket. Next: isolated local UI/integration verification, scoped hotfix release decision; do not bundle unfinished stabilization work or infer deployment approval from ticket-specific permission.
+
+## Worker pause boundary characterized — 2026-09-26
+
+Resumed local stabilization after the separately scoped CRM credential incident. No production access in this work. Added three bounded tests exercising installed BullMQ pause with synthetic completion/transport and real shared tracker: late accepted-job admission, all-worker parallel pause initiation, and pause(true) then pause(false) not joining active work. The first run failed because test/setup.ts globally mocks Worker; explicit typed jest.requireActual fixes that harness issue, not a product defect. Corrected five suites51tests pass; backend plus explicit newtest TypeScript diagnostics0 using schema-matched borrowed declarations. Independent code/security review approved corrected version. No product code changed.
+
+Read-only installed-source review: BullRegistrar only registers; WorkerHost.worker is public; BullExplorer worker list and whenCurrentJobsFinished are private. Next choose parallel non-forced public close for one-way shutdown, discover/deduplicate registered WorkerHosts, and prove late active-job work plus detached failure persistence before shared admission/dependencies close. No global hook activation, Redis/lock/persistence proof, all-writer acceptance, push or deploy implied.
+
+## Combined HTTP/cron rehearsal isolates disconnected-work gap — 2026-09-24
+
+New maintenance-combined.spec.ts uses real loopback HTTP, Nest lifecycle and Cron plus actual admission/tracker/cron-drain services, synthetic held controller and dependency hook. Three modes: connected request naturally delays dependency final-shutdown; intentionally disconnected request allows final hook while tracked work remains1; explicit TEST-ONLY drain-before-close prevents that ordering. New ingress returns503 without a second accepted call in all modes. Observed real cron-drain completion avoids mistaking its polling delay for HTTP transport waiting; HTTP/phase waits are bounded.
+
+Important correction: initial assumption that normal open HTTP could outlive final dependency hooks was too broad. Installed Nest closes in order destroy -> beforeShutdown -> dispose HTTP -> applicationShutdown; first attempted assertion timed out, leading to the corrected three-mode proof. Remaining risk is disconnected/detached work, not all connected HTTP.8focused suites67tests pass; backend/newtest diagnostics0. Test-only change, not a product coordinator or fullApp/realDB/Bull acquisition proof. Existing worker tests retain their separate scope.
+
+Next bounded implementation: supported worker acquisition-stop/completion ordering, preserving active-job descendants before closing shared admission, then join tracked disconnected work before dependency teardown. Do not attach waitForIdle to an arbitrary hook or treat sharedzero as allwriters. Previously untracked operations still need coverage. No live/push/deploy; release gates stayOPEN.
+
+
+## Finite cron callbacks joined during destroy phase — 2026-09-24
+
+Installed @nestjs/schedule5.0.1/cron stop returns void; awaiting stop alone is not a completion proof. Root AppModule now provides CronShutdownService: snapshot jobs, stop all future ticks synchronously, reject unjoinable configuration, poll public isCallbackRunning until all returned callback promises settle. No elapsed-time success cutoff. Nine Cron declarations now opt waitForCompletion:true; existing socket revalidation already did. Normal behavior change: overlapping ticks are skipped, not queued.10source declarations guarded; no addCronJob/onComplete registrations found in source.
+
+Real Nest/Schedule/Cron fixture holds two callbacks through success/failure, verifies no dependency final-shutdown while either runs, completion of a simulated enqueue before dependency closure, and skipped overlapping tick. Unsupported callback configuration stops all jobs then rejects. Initial RED was missing newservice, not an executed assertion failure.13focused suites145tests pass (inbound, reconciliation, notifications, AI budget/clustering and existing queue/CRM/Redis lifecycle); backend/newtest diagnostics0 and independent review approved. No schema/env/live/push/deploy change.
+
+Limits: this hook can run after earlier feature destroy hooks, so it is not an immediate ingress fence. Producer queue connections remain available until final shutdown; work enqueued after the CRM worker stops can wait for restart. Callback completion does not cover detached descendants/onComplete, future dynamic jobs or noncron timers. Multiple runtime instances are possible despite10source declarations; snapshot handles registered instances. A stuck callback blocks graceful shutdown; external force-kill deadlines remain operational risk. Next combined HTTP admission/accepted-request and worker acquisition ordering rehearsal; no universal shutdown-ready decision yet.
+
+
+## CRM terminal failure persistence joined before shutdown — 2026-09-24
+
+CrmProcessor preserves the failed-event conditions/retry logic; onFailed now synchronously registers a processor-local promise before invoking the original persistence body. onModuleDestroy awaits non-forced worker.close(), then allSettled of remaining failure writes. Database/Redis application-shutdown hooks run later in the tested topology; later BullExplorer close is idempotent. Unregistered-worker/close errors propagate rather than falsely allowing shutdown. No shared admission root can reject accepted CRM failure writes; shared tracker zero still excludes this local set.
+
+Two real-Nest/Bull-discovery lifecycle cases failed before implementation (DB disconnected while write held), then passed. Enhanced fixture emits two late failure events during close: first DB write fails, second stays held through success/failure. Close-error and unregistered-worker tests also pass.7focused suites58tests; backend plus3CRMtest files diagnostics0; independent code/security review approved. Worker/DBdrivers are synthetic, Prisma hook and Nest/Bull discovery real: not fullApp, actual Redis/job durability, stalled-job transport or SIGTERM proof. No schema/env/live/push/deploy changes. Next combined remaining producer/acquisition/HTTP/cron/WS admission ordering; do not infer universal readiness from this CRM-local join.
+
+
+## Writer inventory reconciled; CRM failure gap characterized — 2026-09-24
+
+Updated the existing Gate1 table rather than creating another plan: HTTP admission/audit and ticket fan-out evidence had outgrown its old rows. Static source has10Cron and9Processor declarations, not a runtime registration claim. RAG trainingQueue.create is awaited; an initial commentary misreading was corrected and no RAG fix is needed for that statement.
+
+Actual CrmProcessor.onFailed through Node EventEmitter exposes terminal crmSyncLog.update still pending while emit returns and unrelated shared accounting reads0. Four new characterization cases plus existing processor/tracker tests:49pass. They intentionally demonstrate an OPEN risk, not a completed fix. No product changes. Do not move the write into process using attemptsMade+1 alone: stalled/discard/unrecoverable/retry behavior may differ. Next bounded implementation must preserve failed-event conditions and join its real promise after workers stop but before Prisma disconnect; prove lifecycle ordering before activation. Remaining HTTP/cron/WS admission and exact artifact/operational gates remain open. No live/push/deploy.
+
+
+## Exception audit writes tracked through disconnect — 2026-09-24
+
+GlobalExceptionFilter now reserves root/active-parent child work around the actual ErrorLoggerService promise before its first await; main injects the existing shared tracker. Original HTTP status/message/code/redaction and wait-before-reply semantics remain. Logging/admission rejection cannot replace the original response; filter catch uses a fixed log message. Destroyed/ended responses are not replied to after persistence settles. No new env/schema/control endpoint/shutdown hook.
+
+Five new unit cases:4RED/1pass beforeproduct, then allgreen. Added a real loopback Nest/controller/filter/ErrorLoggerService test with held mockedPrisma write: client destroyed, server close observed, count remains1 until release, then0/no reply. Phase waits bounded and cleanup covers bind failure after review. Seven focused suites79tests pass; backend and all4changedtest files typecheck0 with schema-matched declarations. This is mocked persistence, not actual PostgreSQL/wholeApp or guaranteed audit delivery.
+
+Standalone logging after admission closes is refused; active parent descendants remain allowed. Previously admitted HTTP requests without leases and unrelated ErrorLoggerService callers remain outside proof. Existing ErrorLoggerService internal DB-failure stack logging is not sanitized by the fixed filter catch. Next: reconcile remaining admitted-request/guard and scheduler/Bull/socket writer coverage against the frozen Gate1 inventory before any closure hook; no universal drain claim. No live access/push/deploy; operational/artifact gates unchanged.
+
+
+## HTTP admission-only boundary added locally — 2026-09-24
+
+MaintenanceAdmissionMiddleware uses a synchronous internal tracker check and is registered after helmet, before compression/body parsers and Nest guards. Closed admission returns fixed non-cacheable503 directly, avoiding exception-filter DB writes; open next() and downstream exceptions remain unchanged. It does not wrap next in a promise or infer completion from response close. CommonModule exports the middleware and the same tracker. No route/env/shutdown hook can close admission yet.
+
+11newtests plus audit9 and tracker40 pass (60total), including a real Nest/Express HTTP fixture proving closed requests do not reach a writing global guard or exception filter. Initial TDD failure was missing implementation (no assertions executed), then green. Backend plus explicit newtest typecheck0; independent code/security review approved. No fullApp/SSEtransport/disconnect proof claimed; no schema/live/push/deploy changes.
+
+Operational limits: all HTTP paths/methods, including health and OPTIONS, return503 when closed. Probe/CORS policy must be reviewed before activation. Previously admitted HTTP work is not automatically leased or fully counted. Gate1 remainsOPEN. Installed Nest invokes custom exception filters without awaiting their returned promise: next bounded step is tracking GlobalExceptionFilter error-log persistence before its first await, with held-write/failure/disconnect tests. Do not disconnect shared databases based on this ingress check. Remaining frozen writer/artifact/operational gates unchanged.
+
+
+## Administrative audit payload safety and write accounting — 2026-09-24
+
+Local interceptor no longer copies request bodies to audit newValue: generic settings values, bulk settings and storage credentials made key-name redaction insufficient. Query strings are excluded from action/entity mapping; errors use a fixed message. Actor/action/entity/IP/user-agent metadata remains, with no body-derived ID fallback. Historical production audit contents were NOT inspected; potential past credential persistence is unverified and requires separately authorized assessment, not automatic deletion or rotation.
+
+Audit persistence now reserves shared root/child work before scheduling and catches rejection without delaying or collapsing HTTP Observable emissions. Non-HTTP contexts bypass unchanged.8RED then9GREEN regression cases; together with primitive40,49tests pass. Backend plus explicit new test typecheck0 using schema-matched borrowed declarations; independent code/security review approved. No schema/env/live/push/deploy changes.
+
+Boundary: admitted audit settlement is tracked, not guaranteed success. Standalone audit after closure is rejected even if the underlying mutation completed. Therefore general HTTP admission remains OPEN; do not activate shutdown readiness based on this slice. Next bounded step is HTTP request admission/lifetime integration preserving SSE and accounting for guards, cancellation and detached descendants, then remaining frozen writer inventory. Existing three release gates remain unchanged.
+
+
+## Socket read/email-cancel mutation fenced locally — 2026-09-24
+
+Read-only remaining-writer scan prioritized existing socket message_read because it can remove queued customer email. Added3tests beforeproduct: closednoIO and heldcancel success/failure allRED; wrapperrunRoot+privateoriginalbody makesGREEN. Only admission503 translates to WsException MAINTENANCE via callback-started flag; downstream503 preserved. Existing customer/staff/session/access cases untouched and passing.4suites104tests; explicit backend+fullgatewaytest typecheck0/schema-matched declarations, diffsecretsclean and independent review approved. No new publiccontrol/shutdownhook/env/schema/live/push/deploy. Remaining HTTP async audit and gateway presence/cron plus Bull coordination still open; service-handler proof not sockettransport.
+
+## Fresh current-source PostgreSQL replay proof — 2026-09-24
+
+Revalidated existing harness at c6c2b715 using local pinnedPG17 image, fresh networknone512MiB/tmpfs256MiB container, currentPrismaDDL58813bytes and Docker-exec loopback15432 relay. FirstDDL attempt failed beforecontainercreation (missing mandatory engine datasource); added fixedsyntheticloopback datasource and exit/stderr reporting in local scratchrunner, then passed. SIGTERM held-upload ordering and freshchild replay preserved allIDs/counts/exactattachmenthash. Cleanup sixsynthetictables0, labeledcontainersnone,15432listenernone. Additional5offline suites29tests pass; independent runner safety review clear. No product/schema/customerdata/live/push/deploy change. Removed only disposable synthetic data/container; not customerbackup. Existing fullApp/allwriter/hostegress/realIMAP/Linuxartifact limits remain. Evidence and SHA provenance in TLS plan.
+
+## Five-consumer ticket fan-out acceptance — 2026-09-24
+
+Added ticket-fanout-completion.spec.ts: actual creation service plus all5known event consumers under real Nest discovery, mocked external IO. Parameterized10cases hold each distinct rule/assignment/draft/customer-mail/notification boundary and settle success/failure; fake timers cover actual1500ms assignment wait. Assert branch entry, rules audit, DRAFT update, staff email and assignment payload so catches/earlyreturns cannot hide missing paths. Creation returns before timer advancement. Shared counter stays1whileheld and0aftersettlement; cleanup also asserts drained and closes module in finally.18offline suites308tests passed; backend/newtest typecheck0, secrets clean, independent review approved logic. No product/runtime/production changes. This is finite consumer integration, not entire AppModule or real persistence/delivery. Next fresh synthetic PostgreSQL rehearsal for current source, not live restart.
+
+## Ticket root and detached children integrated — 2026-09-24
+
+Added shared mandatory tracker to TicketsService; create wraps private body root/currentchild, detached autotag and emitAsync reserve children and catch fixed-label failures. Four actual scheduled ticket.created decorators add promisify:true, Automation already awaitable. RuleEngine awaits nested translation emitAsync; actual translation decorator promisifies. Response remains independent of background work; later rule actions now wait translation. New tests cover actualcreate+syntheticconsumer4cases, knownactualmetadata6cases, actualRuleEngine+synthetictranslation2cases.17offline suites298tests pass, HTTP12pass via existing loopback-only runner after offline EPERM; no remote network. Backend+3newtests diagnostics0, PG fixture updated/syntaxchecked but persistence rehearsal not rerun. Source inspection/independent review used; no live/push/deploy. Next full actual consumer acceptance, not maintenance-ready assertion.
+
+## Fallback listener reserves before scheduling — 2026-09-24
+
+Chose smaller listener-side fix instead of touching all AiService publishers. NotificationsGateway.handleAiFallback uses default synchronous event registration, reserves root/child immediately, returns tracked promise; explicit setImmediate retains deferred persistence. Original body moved private; injected shared tracker, updated isolated fixture.5new cases initiallyRED, thenGREEN; strengthened test to actual AiHealthEventService so caught health-write failure still attempts notification as before. Combined12suites205pass/1existing skip; backend/newtest typecheck0 with matching borrowed schema declarations; secrets/diff clean and independent review approved. No production/socket/provider IO or shutdown activation. Next actual ticket-created chain; no claim complete fallback provider lifetime or delivery.
+
+## Three detached query children accounted for — 2026-09-24
+
+Architect caught direct worker queryInternal entry; wrapped both public query/queryInternal and retained existing private bodies. Injected existing shared tracker, reserved3background callbacks before invocation and caught failures with fixed-label warning. Actual-service tests cover closed admission before IO plus trace/cache/training held success/failure without delaying response:8RED then8GREEN. Combined10suites154passed/1existing skipped. Explicit changed-file typecheck exposed3old implicit-any callbacks; minimal test-only annotations clear them, backend+spec diagnostics0. Secret scan/diff clean and independent code/security review approved scope. No production access or runtime control hooks. Worker retries after future closure need coordinated acquisition pause; queued job data never carries leases. Next AI-fallback persistent notifications, not full release acceptance yet.
+
+## Timed-out answer work remains counted — 2026-09-24
+
+Converted2false-zero characterization cases to acceptance; both failed before product patch. Mandatory shared MaintenanceWorkService injected into SupportAnswerOrchestrator; entire generate wrapped plus separate actual generation child before Promise.race. CommonModule registers/exports singleton, no duplicate AiModule registration. Closed root now Nest503. Added4admission/rejection cases; updated existing DI/constructor fixtures, including previously missed nested ai/tests fixture caught by broad run. Final10suites146pass/1existing skip; backend/twoacceptancefile typecheck0 with matching borrowed schema declarations. No live/push/deploy/schema/env changes. Scope excludes provider internals, fallback-event writes and remaining query descendants; no full shutdown/HTTP-fence claim. Next close these concrete descendants before ticket-created integration.
+
+## Ticket fan-out audit prevents premature tracker activation — 2026-09-24
+
+Independent architecture audit found deferred Nest listener wrapper mismatch and nested AI escapes. Added ticket-event-completion.spec.ts (3 synthetic real-Nest cases) and support-answer-timeout-completion.spec.ts (2 actual-orchestrator/mock-provider cases). Verified response timeout is not cancellation, including late reformat after outer tracker zero. Focused6suites69tests pass offline; schema cmp matches borrowed declarations and backend/both-new-test typecheck0. Independent review found no blocking test issue. Product remains unchanged and tracker remains unregistered; no live/customer data/provider access, push or deploy. Next narrow lifetime accounting at actual AI operation boundaries before complete ticket-created integration; do not make customers await AI or mislabel characterization as maintenance acceptance.
+
+## Inert maintenance work tracker foundation — 2026-09-24
+
+Planner bounded contract; added unregistered process-local MaintenanceWorkService and40tests. RED missing module, then two malformed-label failures exposed RegExp coercion; explicit string validation fixed them. Final40/40 with100%file coverage; typecheck0, independent code/security approval. Uses AsyncLocalStorage plus per-instance active identity membership, not context presence as authority. No integrations/endpoints/hooks/env/deps/schema/live changes. Formatting follows existing4space/singlequote style. Primitive intentionally cannot mark app ready: untracked work, task success, real persistence and other processes remain outside evidence. Next complete representative ticket-created ingress→descendant chain without blocking normal responses on AI.
+
+## Finite maintenance acceptance checklist — 2026-09-24
+
+Source-inspected writer/admission families and consolidated existing TLS plan into3gates with pass/stop conditions and deferred scope. Verified WebSocket read can cancel email, assignment delay precedes DB write, direct auto-tagging is detached, reconciliation cron writes DB. No claim exhaustive live inventory. Separate candidate-local proof from legacy first-cutover risk, fresh approved backups, exact artifact and ADR022 forward recovery. No product edits/new tests/production access. Next review bounded shared local completion accounting and ingress fencing; no public maintenance API/new platform by default.
+
+## SLA worker-to-listener completion fixed — 2026-09-24
+
+Added actual Nest EventEmitterModule discovery with real SlaProcessor/SlaCronService/AutomationService, mockIO only;4held-attempt cases initially RED. Two warning emissions now awaited; attempt comments clarified, existing unit mocks migrated. Response/resolution success/rejection cases green; existing caught rejection still marks attempted and completes.15suites134tests pass offline, typecheck0 with schema-matched declarations, secrets/diff clean, independent review scoped clear. Test-only bounded start wait guarantees fixture release on missing dispatch. No real enqueue, delivery, shutdown, production access or schema change proved/performed. Next remaining-writer/admission acceptance scope, not new infrastructure.
+
+## Joined automation mail child operations — 2026-09-24
+
+Read-only architecture audit identified double detachment (producer emit plus unawaited listener children). Added13direct-handler tests:10held-success cases initially RED,3failure continuation cases. Joined existing10mail calls, caught resolution/CSAT rejections, awaited placeholder rules. Review caught newly propagated /tmp write failure risk; removed raw diagnostic file write while retaining sanitized app error log, staff continuation verified. Independent final code/security review clear.13suites116tests green offline, secret scan clean; no live access, schema/env/dependency or emit API changes. No full lifecycle proof; enqueue operations now awaited sequentially, so a hung earlier enqueue can delay subsequent attempts. Next scoped SLA producer completion test, not universal coordinator.
+
+## Minimal worker-before-Redis teardown fix — 2026-09-24
+
+Converted Redis characterization into desired acceptance:3RED failures with product untouched. Root RedisModule first discovery plus final-phase Redis cleanup/awaited QUIT passes held-worker late-read and QUIT resolve/reject tests. No new orchestration framework, dependency, schema or env. Combined10suites88tests green offline; no-emit backend/new-test typecheck0 with schema-identical borrowed declarations; secret scans/diff checks clean. GitNexus unavailable and Graphify report absent, so direct source/framework impact inspection used. Separate reviewed commits retain test/product/docs boundaries; no push/deploy/production access. Detached work remains outside this scoped fix.
+
+## Background shutdown ordering characterization — 2026-09-24
+
+Test-only queue-shutdown-order.spec.ts uses actual global PrismaModule/proxy and installed Bull discovery under candidate-relative module order; held synthetic worker closes before DB disconnect. Added redis-shutdown-order.spec.ts proving current cleanup initiates Redis QUIT before held worker drain, and test-instance final-phase move alone does not fix it. Independent architecture/review; reviewer wording tightened to QUIT initiation, not physical closure. Focused10suites87tests green offline; no product/live/DB/provider changes. Candidate shared Redis is used by AI/knowledge workers; detached event writers remain outside direct IMAP/worker proof. Next explicit bounded worker-before-Redis cleanup ordering plus awaited quit, not broad lifecycle redesign.
+
+## PostgreSQL and attachment signal persistence acceptance — 2026-09-24
+
+Added opt-in mail-shutdown-postgres-rehearsal.cjs using current inbound/claim/tickets/storage source with real PostgreSQL17 and synthetic IMAP/MIME. Held upload after ticket/message commit; actual SIGTERM fences intake and waits; release persists attachment/claim before synthetic ACK and final DB disconnect. Fresh child replay preserves IDs/counts/hash; full owned storage listing excludes orphan files. Independent code/security review found no critical/high blocker; optional manifest suggestion incorporated and executed. Focused8suites84tests passed. No product/schema/live changes. Isolated tmpfs DB owned rows verified zero after cleanup; exact containers, relay and temporary fixtures removed. Final artifact/runtime/all-writer/real transport gates remain; do not equate graceful re-entry with crash recovery or old-version rollback.
+
+## Actual signal and proxy lifecycle acceptance — 2026-09-24
+
+Test-only harness real SIGTERM/current inbound/real Nest with synthetic IO passed2phases under deny-default network sandbox. Child env/source-import isolation and owned cleanup reviewed; negative opt-in/deps tests fail closed. Initial SWC config alias failure and later IPC-error cleanup corrected, final independent code/security approval. Real PrismaService proxy/mocked-driver lifecycle test added;8suites84tests green. No DB/customer/provider/live/product changes. Synthetic receipts explicitly persistenceProof:false; real PG/attachment re-entry remains next gate, not claimed completed.
+
+## Scoped IMAP shutdown implementation — 2026-09-24
+
+Converted characterization to desired safety tests,3RED before patch. Added IMAP stop fence/tracked poll/destroy wait; moved Prisma disconnect to final shutdown phase.7suites83tests GREEN offline; backend+newtest typecheck0 using verified schema-identical generated declarations. Independent architect/code-security review clear for direct chain; GitNexus unavailable. No live access, schema/env/dependency/queue changes, push/deploy. Cleanup invocation is not socket-close proof; detached events/allworkers and real signal/persistence remain gates. Next isolated lifecycle acceptance, not new infrastructure.
+
+## Local shutdown/startup characterization — 2026-09-24
+
+Audited candidate deploy.sh/migrate-once and installed Nest lifecycle; sh-n passes only, scripts not run. New test-only email-inbound-shutdown.spec.ts reproduces missing poll/cleanup wait in real minimal Nest close with mockIO and explicitly synthetic Prisma hook.2characterizations+7IMAP TLS regressions pass offline; no repair or full-topology/signal proof claimed. Independent review led to bounded close observation/final await. No live connection, customer data, product edits, push or deploy. Next ordered lifecycle correction with dependency shutdown order acceptance; historical unsafe re-entry remains prohibited.
+
+## Coolify source UI read-only confirmation — 2026-09-23
+
+Used existing Firefox session to inspect exact mail service Source Compose and Deployable Compose. Confirmed logical/prefixed volume mapping and selected ports/env/image agreement, not byte equality. Closed editor without text entry or save; no restart/deploy/secrets. Recorded persistence boundary and full-source-vs-overlay distinction in TLS plan. Next local safe startup/re-entry/drain planning; no repeated Compose audit needed absent drift. Existing HTTP panel transport noted without changing access.
+
+## Current generated mail Compose compatibility — 2026-09-23
+
+Read-only on-host docker compose config comparison at16:46:51Z proves exact candidate delta against current generated disk Compose/.env, secret values never output. Runtime data mount identities and published ports match; mail start/restarts unchanged. No config installed or DB/queue/service mutation. Added reviewed coordinated maintenance proposal to existing TLS plan. Coolify saved editor definition, exact stop/drain/re-entry and renewal owner/procedure still gates; server TLS alone does not fix permissive live clients. No application-code changes, push or deploy.
+
+## Approved DB/Redis metadata inspection — 2026-09-23
+
+Seven allowlisted nonsecret mail settings read via parameterized SELECT in READ ONLY transaction then ROLLBACK; SQL suppresses secret-classified values. Confirms SMTP587 securefalse/IMAP143 tlsfalse at mail.allplan.net.tr. Direct read-only Redis count commands show no pending/active/failed jobs,964retained completed at16:44:45Z. No payload/jobID/password/mailbox read, no app bootstrap or writes/restart/deploy. Point-in-time counts do not prove quiescence or actual mail delivery. Existing TLS plan updated; next exact coordinated maintenance proposal and current Coolify comparison, not immediate activation.
+
+## Read-only live mail-client compatibility audit — 2026-09-23
+
+Compared selected live compiled SMTP/IMAP/settings/queue code to local candidate. Live accepts invalid certs and optional plaintext; effective mailserver TLS remains disabled. backend-api one node snapshot/start/restarts unchanged; not all-client proof. Queue module3s default overridden by actual enqueue2s in both versions, independently cross-checked and initial commentary corrected. No settings values/DB/Redis payloads/mailbox content read, no production mutation, app edits or deploy. Next nonsecret settings/aggregate queue and Coolify merge scope, then coordinated maintenance proposal. Existing TLS runbook updated; no absolute uptime/data-loss guarantee.
+
+## Local mail maintenance candidate, no activation — 2026-09-23
+
+Committed1365aa2a config-only overlay: existing pinned image/3TLS env/dedicated read-only bind with missing-source creation disabled. Structural and actual Docker Compose rendered-JSON comparison passed against private Sep23 backup without exposing values; existing ports/three data volumes/other fields retained. Gitleaks/diff checks passed. Independent local image review found restart alone cannot be assumed to reverse disabled-TLS rewrites: require fresh same-image container and effective-config checks during separately approved maintenance. Current deployed clients/cache/queue/drain remain unverified gates. No live access, application-code change, service start, DB/mailbox operation, push or deploy this turn.
+
+## Approved private certificate preparation — 2026-09-23
+
+Owner explicitly authorized shared ACME read/one-domain export. Fresh root700 /data/aluplan-mail-tls-bru9sghg contains mail-only chain/key/public receipt600. On-host cryptographic/hostname/trust/byte checks passed, matching public443leaf; source unchanged and no service identity changes. Independent review conditions applied (root-owner guard/python-I). No secrets transferred offhost or displayed. Existing site statuses unchanged; no mount/TLS activation/restart/settings/DB/automation/deploy. Runbook records path/fingerprint and next separate maintenance gate.
+
+## Approved certificate-only production change completed — 2026-09-23
+
+StageA1 one exact-host dynamic YAML published atomically/exclusively; existing Traefik issued trusted mail.allplan.net.tr cert (Let's Encrypt YR1, expiry2026-12-22).HTTPS418verified, existing root/API/oldsite statuses unchanged, existing config checksum/start/restarts unchanged. Initial preflight stopped safely on non-YAML Caddyfile count; corrected no unrelated writes. No key/ACME body read/export, mail TLS activation, DB, restart, application deployment or push. Full scope and artifact paths in TLS plan; next key handoff and mail maintenance remain separately gated.
+
+## Exact certificate-only route proposal — 2026-09-23
+
+Scoped live configuration read found actual Traefik3.6.7, watched file directory/ownership, no exact mail rule among22Docker rules, only low-priority file catch-all. Mac DNS/HTTP metadata checks completed, not actual CA proof. Existing TLS plan contains exact new-file YAML using verified noop@internal418 and StageA1 approval boundary plus before/after/rollback checks. Independent plan review completed. No key/ACME contents, mail data, settings writes, restart, issuance, push or deploy.
+
+## Synthetic DMS renewal proof — 2026-09-23
+
+Added200-line opt-in local-only harness99b506fe. Final9checks pass: initial SMTP/IMAP leaf,5bad pairs rejected,unchanged no-op,new leaf on both protocols,unchanged container identity/watcher running. Real TLS handshakes; no mail content/auth. Test-only controlled watcher stop/copy/start, not production crash/concurrency proof. Independent review found/fixed endpoint/cleanup issues, final review approved. Node syntax/Gitleaks pass; negative Docker override rejected; labelled fixtures removed. TLS plan records emulator/tooling limits and next certificate-only metadata/diff gate. No production access/product changes/push/deploy.
+
+## Reviewed narrow certificate change sheet — 2026-09-23
+
+Prepared staged issuance/one-domain export and later mail maintenance proposal in existing TLS plan. Primary Traefikv3.6/DMS guidance checked; independent security review completed. Shared ACME read privilege, pair-publication race, Coolify route ownership and drain/alert gates remain explicit. No live reads/writes, CA issuance, key access, product code or new test run this turn. Next synthetic local renewal rehearsal; separate approvals before each production stage.
+
+## Public certificate metadata inspection — 2026-09-23
+
+Scoped live read-only SSH verified localhost mail cert, default Traefik HTTPS cert for mail hostname, current DNS and existing proxy HTTP-01 resolver. Only public cert metadata and selected runtime arguments/file stats; ACME contents/private keys untouched. Normal443 validation failed; separate diagnostic leaf inspection sent no HTTP/auth. No live changes; mail/proxy restart counts unchanged. TLS plan records evidence and proposed narrow issuance/renewal scope; production NO-GO remains.
+
+## Narrow mail-secret fix — 2026-09-23
+
+Regression-first8RED then final35settings/64combined GREEN. SettingsService enforces exact mail-password classification despite false and masks legacy values without read-time DB conversion. Existing internal reads and masked saves preserved. Independent combined review approved; additional legacy-mask cases added. Older typecheck harness failed missing generated declarations; identical-schema sibling mapping rerun0diagnostics including spec. Whole-file coverage below80% explicitly recorded, diff Gitleaks clean. Tests7bd17b46/product1157cc28; no live/frontend/schema/env/publication actions. Next return to TLS metadata gate, not new architecture.
+
+## Local mail renewal/client audit — 2026-09-23
+
+Inspected exact pinned public DMS image scripts without daemon/network/mounts; existing manual-cert change watcher/reload confirmed at source level only. Independent explorer audited local app cache/pause paths and found concrete missing IMAP password secret classification in frontend/backend. No live credential/plaintext inference. Next minimal regression-first correction recorded in TLS plan; new live cert metadata scope requested, not performed. No code/tests/live mutation; temporary inspection containers removed.
+
+## Owner-approved Mac mail backup — 2026-09-23
+
+Fresh private VPS staging/archive plus SCP to owner-selected unencrypted Mac destination completed. Transfer checksum and inert237regular-file byte readback passed; final persistent source drift0 and container unchanged. Initial31nonregular skip notices were investigated before completion, not ignored as data drift. Archive1symlink retained but not materialized; original metadata/runtime/atomic consistency not proven. No live restart/config/DB/mail send/deploy. No backups removed; Mac archive and private readback retained outside Git. TLS plan records paths/hash/times/limitations. Independent script security review and5synthetic verifier cases passed; application code/tests unchanged.
+
+## Approved live mail metadata audit — 2026-09-23
+
+Completed scoped configuration/volume/retention/backup metadata inspection on verified vmi3049865. Persistent volumes and selected autoexpunge0 confirmed; disk19%; mail container start/restarts unchanged. Sep19 on-host archive exists0600/1618614bytes; no current archive-content/checksum validation or newer/off-host backup proof. Narrow schedule scan cannot establish all retention or backup behavior. TLS remains disabled globally. No mail bodies/attachments, mailbox login, customer DB, test send, live writes/restart/deploy/push. Full evidence/limits/next approval boundary recorded in TLS plan; no code or tests changed.
+
+## Synthetic retained-source repair rehearsal — 2026-09-23
+
+Completed narrow known-message missing-attachment test: retained synthetic MIME, actual parsing and PostgreSQL, injected upload failure, hash/fingerprint/identity checks, targeted LOCAL attachment repair, serial no-duplicate repeat and tamper refusal. Domain10/10 and changedfileTS0; independent review approved; test29182054. Original claim/error remains unchanged. No production-ready repair tool or provider retention evidence. Existing partial-attachment ACK policy explicitly recorded in TLS plan; source custody must include Seen/completed cases. Synthetic fixture removed; no live/customer/product/publication changes.
+
+## Recipient ordering correction — 2026-09-23
+
+Completed user-approved concrete fix: unchanged recipient lookup moved ahead of reply writes after auth/validation; notification dispatch remains aftercommit. Tests first caught old ordering, final203focused+9realPG passed; changedfileTS0 and independent review clear. Specific partial-write window closed, other recovery gates remain. Tests d3756d51/product e1ff2f0b, docs in TLS plan. No live/customer access, push or deploy; only owned synthetic fixtures discarded.
+
+## Recovery consolidation checkpoint — 2026-09-23
+
+Added/reviewed postcommit recipient-query fault characterization; real persistence suite9/9 and changedfileTS0. No product change: committed reply/missing attachment/held claim remains explicit. Existing TLS plan consolidated manual reconciliation evidence gates; operator list is not recovery proof. No new queue/outbox/replay. Next scoped recipient-query ordering fix, then bounded source/reconciliation acceptance. Owned synthetic fixture removed; no live or customer access/publication.
+
+## Atomic reply write checkpoint — 2026-09-23
+
+Implemented transaction around reply insert and required reopen/first-SLA writes, preserving pre-read authorization/sanitization and postcommit recipients/events. Real PG2RED then8GREEN; overlapping valid replies preserved after independent review correction. Existing75ticket+125intake tests green, changed-fileTS0 after test-mock typing correction. No schema/env/live changes. Synthetic fixture cleaned. Testsaf6e17bd/product3acd9cb7. Remaining before/aftercommit ambiguity and operational recovery gates explicitly open in TLS plan; not production acceptance.
+
+## Held intake correlation correction — 2026-09-23
+
+Implemented minimal known-ID/evidence retention in existing hold CAS for both IMAP and webhook. No TicketsService, schema, lifecycle or auto-replay change. Six assertions failed first; final125focused tests and4actualPG tests passed. New PG constraint-injection proves retained ticket correlation after rejected initial message. Corrected direct-event test interpretation against actual Nest wrapper; unknown-before-return/message recovery still open. Independent code/security reviewed; test/product commits1ae587eb/db3c7529. Temporary synthetic fixture cleaned; no live/customer access or publication. Next scoped message/status atomicity proof; production NO-GO unchanged.
+
+## Actual domain persistence checkpoint — 2026-09-23
+
+Added local-only opt-in PostgreSQL domain test3/3 with actual ticket/access/PII/local-storage services. Normal attachment bytes and no duplicate replay proved; injected synchronous post-commit listener failures leave incomplete domain state and manual-held claims with missing linkage. Not production failure incidence or completed recovery proof. Reviewed test, existing71regressions green; no product/live changes. TLS transition plan records exact fixture, limitations and next bounded release-blocking correction.
+
+## Real storage integrity and domain-write preparation — 2026-09-23
+
+Discovered/reproduced timestamp-only upload-key collision using actual synthetic disk writes. Added UUID new-key identity with byte-bounded filenames; existing objects untouched. Real disk byte retrieval/long UTF-8 name tests and S3 key-command test added. Sixsuites71tests passed; independent code/security review approved. Product scope deliberately small. Source-only TicketsService inspection identified separate post-insert failure windows; actual combined ticket/message/attachment DB proof remains OPEN, not conflated with these passing storage tests. No production access or publication.
+
+## PostgreSQL claim concurrency proof — 2026-09-23
+
+Added real PrismaPg/PG17 isolated claim integration tests, final4/4 plus existing46/46. Schema-matched inbound log table only, no fake delegates. Observed real lock contention and owner fencing; completed conflicting payload retains ticket/attachment-failure metadata. Graceful client replacement leaves pending claim held. Independent review found and corrected test failure-path draining; no product edits. TLS plan records image/schema identity and proof boundaries. Real ticket/message/storage transactions, DB restart/crash durability and full application release gates remain unproven. No production/publication changes.
+
+## Candidate client integration with isolated DMS — 2026-09-23
+
+Added opt-in3test integration suite using actual app SMTP/IMAP/MIME/intake/claim code against pinned amd64 mailserver; persistence services are synthetic doubles. Clean final run3/3, existing focused46/46, new-file TS0. Proved byte-preserving parser-to-storage boundary, duplicate re-poll fencing and failed-write UNSEEN retention/hold. Internal network/no final published ports; bounded raw-TLS loopback relay used. No product or live changes. TLS plan contains limitations; real PostgreSQL/actual storage/exact-release-image gates remain open.
+
+## Local Dovecot diagnosis and mail round-trip — 2026-09-23
+
+Identified controlled Rosetta address-space failure at Dovecot's256MiB default, corroborated by native arm64 comparison. Local-only1GiB virtual-address override resolved amd64 daemon startup while retaining768MiB container RAM and isolation. Actual SMTP/IMAP authentication and synthetic message/binary-attachment round-trip passed, UNSEEN preserved; cross-container plaintext IMAP rejected. No application ticket/DB integration, native-amd64 execution or production acceptance claimed. See TLS transition plan for exact observations and temporary setup differences. No product/live/publication changes; independent reviewer unavailable(thread limit).
+
+## Local mail TLS rehearsal — 2026-09-23
+
+Existing synthetic wire tests passed10/10 under loopback-only sandbox. Downloaded immutable official v15.1.0 amd64 image and matched manifest config digest to earlier live ID. Fresh isolated test container demonstrated SMTP STARTTLS/verified TLS1.3 and plaintext AUTH530 rejection, but Dovecot subprocess failures (signal5) prevented authenticated SMTP/IMAP success. Emulation root cause unproven; no mail round-trip acceptance. Detailed setup, limits and next gate recorded in `.ai/issues/2026-09-23-mail-tls-transition-plan.md`. No product changes, production access or publication. Dedicated reviewer unavailable due thread limit.
+
+## Mail TLS planning checkpoint — 2026-09-23
+
+Owner accepted staged planning plus bounded read-only metadata investigation. New plan: .ai/issues/2026-09-23-mail-tls-transition-plan.md. Current mail image v15.1.0 identified by immutable digest; configured public certificate is self-signed localhost, not mail.allplan.net.tr. SMTP submission override also explicitly disables TLS security. Live clients disable certificate validation. Backend broad API route labels show gzip only; webhook usage remains UNKNOWN, and bounded proxy configuration checks found no access-log setup. No absence-of-traffic claim.
+
+Next smallest implementation is isolated synthetic transport rehearsal, not live TLS checkbox changes or combined application rollout. Plan requires verified backups, renewal ownership, client inventory, independent mail-writer pause, coordinated settings refresh and approved maintenance; never restore old customer/mail data or automatically revert to plaintext. No production writes/restart/deploy/push, protocol probe or customer content access. Dedicated review unavailable; production NO-GO remains.
+
+## Live mail read-only findings — 2026-09-23
+
+Explicitly approved configuration-only inspection completed viaSSH; no settings/restart/deploy/testmail or customercontentread. Source-consolidation topsection records exactscope/limits. LiveIMAP143/tlsfalse confirmed; Dovecotssl=no/disable_plaintext_auth=no; maildataonpersistentvolume andselectedautoexpunge0. Persistence isnotbackup/recoveryproof. Ports publishedallinterfaces, externalreachabilitynotprobed. Livewebhookcontroller lacks expectedrouteguard/signaturefile andglobalguard inspectedisthrottler; upstreamaccess/callersunknown, no exploitprobe. Thereforewebhookunusednotproven.
+
+CurrentlocaldirectTLScandidate would beincompatiblewithoutapprovedmailtransportwork; productionNO-GO. Nextplan TLS/certificatecompatibility and identifyactualwebhookroute/callers withseparatelyscopedmetadata-only evidence; do notflipTLSblindly,disableingressorbuildanarchivewithoutneed. Secretsnotprinted/decrypted. Existing175testproofunchanged; no newtests/sourcechanges. Independentsecurityagentunavailable(threadlimit).
+
+## Webhook false-success mitigation — 2026-09-23
+
+Local controller now acknowledges only explicit completed; held/unknown outcomes throw fixed503 INBOUND_EMAIL_REVIEW_REQUIRED. No automatic replay, provider request, payload archive, schema, configuration or shared intake change. Successful completion retains200/success; signature guard remains required. This supersedes only the unconditional-success portion of the previous HIGH finding. Source-retention/manual-recovery remains HIGH and production NO-GO:503 cannot establish provider retry/retention or reconstruct absent bodies/attachments.
+
+Proof: controller RED5pass/5fail -> GREEN10/10, including unknown outcomes, pending promise, rejected service and actual GlobalExceptionFilter with a fake HTTP adapter/audit service. No socket/realHTTP integration claimed. Controller-only coverage100% all metrics, not project coverage. Combined17suites175tests PASS including signature/filter/mail regression controls; backend294rootfiles0noemit diagnostics. Cleared environment, network-denied macOS Node24.18.0, actual RC dependencies with previously disclosed schema-matched sibling DB declarations. Gitleaks changed-diff no leaks; diffcheck clean. No fullapp/DB/customer/mailbox/provider access or targetimage rebuild. Dedicated code-reviewer start hit thread limit; supplementary planner review does not close final independent acceptance.
+
+Local evidence cannot identify the real inbound webhook provider or prove it is enabled. Generic HMAC x-webhook-signature and Mailgun/Resend comments are not provider evidence. The separate Resend route concerns outgoing delivery events, not incoming content custody. Do not disable webhook or assume IMAP-only operation.
+
+Next gate (requires separately scoped read-only production-configuration approval): identify actual active inbound routes/forwarding, provider/service and version, original MIME/body/attachment retention, stable retrieval identity, retry window and operator recovery path; never reveal secrets/customer content. No test send, replay, connection-test button, flag mutation or config save. If retained-source retrieval is verified, prefer that existing path. If webhook is demonstrably unused, separately approve keeping it disabled with a regression guard. Otherwise design a bounded protected durable source store before claim/domain effects; no body in error markers, expiring Redis cache or ephemeral container disk. Include attachment bytes, size limits, encryption/key custody, access/audit, retention and failure-before-ACK tests. Do not introduce that architecture merely because provider evidence is missing.
+
+## Local shared inbound claim patch — 2026-09-23
+
+**WIP / HIGH blocker found in final security review:** webhook controller returns HTTP200 even when service returns held; log metadata/fingerprint is not recoverable original content. A pre-write failure or concurrent pending delivery can therefore be acknowledged with no locally recoverable payload. Provider retention/retrieval is unverified. Do not call this durable webhook intake acceptance or source-preserving delivery. Non-2xx alone is insufficient: next batch must prove provider-specific retained-source retrieval or a bounded protected durable-source design plus explicit controller outcome tests. IMAP source retention does not establish webhook recovery. Security-review agent subsequently started successfully and identified this blocker; dedicated code-review agent remained unavailable. No patch approval or release acceptance is claimed.
+
+Owner accepted conservative hold/manual-review behavior. Implemented shared unique-create claim before IMAP/webhook ticket effects, compare-and-set completion, fingerprint identity conflict holds, success-only IMAP acknowledgement, per-message isolation and finally cleanup. Ambiguous/interrupted/legacy deliveries never automatically replay. Partial-attachment completion remains a duplicate fence with retained failure evidence. Missing identity, invalid text and parse failures are held; IMAP holds include safe INBOX UID/UIDVALIDITY locators. No schema/migration or dependency change in this batch.
+
+Read-only GET /email/admin/inbound/review requires JWT plus settings:read, uses no-store and bounded pagination, excludes raw errors/claim owner/fingerprint. This is an API, not a new frontend review screen; there is no retry/delete/clear action. Settings permission is the existing authorization boundary, not a newly invented role. Manual reconciliation must inspect the mailbox, ticket and attachments before any separately approved action. Webhook HTTP success proves neither recoverable intake nor ticket creation. Unconditional success and absent payload persistence predate this patch; newly held missing-identity/legacy/pending/conflict paths expand that recovery gap.
+
+Local proof: combined14suites/158tests PASS; actual dependency controls13/13 PASS; backend no-emit294roots/0diagnostics. New helper19tests coverage90.12% statements/85.29% branches/100% functions/97.05% lines, NOT whole-project coverage. Initial behavioral RED9/11 and later malformed-input/UIDVALIDITY RED2/15 verified before fixes. All synthetic, cleared environment and network-denied macOS Node24.18.0; existing schema-matched sibling DB declarations used, no real database/bootstrap/mailbox. Architect independently reviewed parent integration; parent reviewed helper/endpoint. Dedicated final code-reviewer could not start due agent-thread limit: final independent code/security acceptance remains OPEN. GitNexus/report unavailable, direct callpath review used.
+
+Remaining release blockers for this patch: disposable PostgreSQL concurrency/failure proof, exact Node20/Linux image acceptance, operator review workflow, verified ingress sender authentication/resource limits and current TLS compatibility. All writers must be quiesced and upgraded together: legacy writers do not honor new markers. No mixed-version rollout or blind replay of held rows. Existing image76432 does not contain mail patches. Existing broader vulnerability/bytes/forward-recovery/host/fresh-backup gates remain. No production access, provider/DB action, push or deploy; production NO-GO. Local checkpoint is work-in-progress evidence, not release approval.
+
+## 2026-09-23 — Inbound failure characterization; application change deliberately paused
+
+Continued local-only after66e0c9f5. Aluplan skill preserved current mail/ticket contracts; no graph tool/report available, so direct caller/table/consumer review used. Independent planner and security agents agree a one-line markSeen:false change is unsafe: a ticket/message may already be committed when TicketsService later throws; both IMAP and webhook share the unique-log/upsert path without exclusive claim. Current source has no admin read surface for inboundEmailLog, so manual hold needs a visible operational review path, not only an error marker.
+
+Added only email-inbound-reliability.characterization.spec.ts:9/9 cases reproduce current behavior, explicitly NOT safety acceptance. Synthetic counters show two ticket writes / two reply writes on repeated post-commit-failure delivery and two concurrent cross-channel writes despite one stateful unique log. One parser error aborts the remaining batch and search/parse errors omit connection.end. Existing processed/partial-attachment fences prevent replay; isProcessing resets after errors. Real ingress methods with mock parser/IMAP/DB/TicketsService/storage, no actual DB transaction or provider proof. Replace gap assertions with desired safety regressions when approved fix lands.
+
+Agent isolated1suite/9pass; parent combined10suites/114pass includes105existing regressions plus9characterizations, none skipped. Parent actual dependency harness13/13 passes. env-i/macOS network-denied, Node24.18.0; existing combined-suite resolver uses schema-matched sibling generatedDBpackage and RCsharedschemas as disclosed previously. No app bootstrap or customer data. Newtest Gitleaks no leaks and diffcheck clean. No production counts, new image/scan/typecheck/coverage or delivery claims.
+
+Proposed bounded no-schema-first design is recorded in source-consolidation; implementation awaits owner decision that ambiguous/interrupted/legacy messages are held visibly for support-administrator reconciliation rather than blindly replayed. Shared claim adoption must cover both routes; attachment failures keep existing duplicate fence. Header identity/UIDVALIDITY and From spoofing trust remain separate checks. No product/dependency/schema/config change; no live access/push/deploy. Global NO-GO remains.
+
+## 2026-09-23 — Scoped mail dependency patch, local compatibility gates passed
+
+Test bcc84323 / patch f73a6902 pin mailparser3.9.28 and nodemailer10.0.10 coherently; no major override or unrelated lock update. New actual-dependency harness initially6pass/2expectedfail on direct6.10.1/nested7.0.13, unchanged original controls8/8 after update; five new compatibility controls make13/13. Original tiny2193byte/128address accumulator probe counted8256copies in each old path versus0patched;2second child deadline/256MiB V8heap/64KiB output/emptyenv. Not general MIME DoS proof.
+
+Turkish MIME/text/HTML, HTML-only fallback, exact synthetic attachment bytes, threading, grouped/quoted addresses, CRLF controls, dynamic mailparser import and construct-only SMTP/Gmail options pass. Existing mockedmail105/105 and real loopbackSMTP/IMAP TLS10/10 pass; WebSocket15/15 unchanged. TLS tests use ephemeral synthetic CA only, localhost-only network sandbox; valid encryptedAUTH and invalidcert/noSTARTTLS rejection checked. Initial sandbox address literal was rejected before tests; corrected supported localhost selector passed. Owned temporary keys/certificates removed; system trust unchanged.
+
+ActualRC backend noemit initially2TS2503 from new bundled type declarations; named type-only imports in provider and existing spec fix both. Reviewer verified byte-identical emittedJS, bundledtypesresolution and293roots/0diagnostics. Retained old@types is not forced as module resolution. Schema-matched sibling generatedDB declarations and RCsharedschema source used; no generation/DB connection. All local checks Node24.18.0, not target20.20.2 artifact proof. Independent review approved bounded diff; source/testGitleaks clean. Existing skill preserved mail/queue/TLS contracts and separated acknowledgment work; GitNexus unavailable, direct caller/consumer review used.
+
+No live/provider/mailbox/DB/push/deploy action or full image rebuild/rescan. Existing76432/source2e9c7ebf remains pre-mail-patch. Next mocked failure/ack-order/idempotence tests and minimal inbound reliability fix, then appropriate final-artifact gates. Parser-size/resource policy, historical IMAPTLS mismatch, remaining advisory/crawler/bytes/forward-recovery/host/backups still open. Production NO-GO. See source-consolidation for scope and upstream references.
+
+## 2026-09-23 — Mail reachability/compatibility triage, no mail code changes
+
+Following artifactcheckpointf8b3a9f5/tagrestore/websocket-image-20260923, read-only explorer traced both actual Nodemailer resolutions and independent security reviewer assessed next scope. Inbound simpleParser uses nested7.0.13 addressparser before eligibility; no explicit app raw-size/attachment-count cap. Direct6.10.1 SMTP/Gmail accepts onlyfrom/to/subject/html/text, so arbitraryraw/file-fetch and SMTP-only nested findings require separate reachability classification, not blanket exploit claims. markSeen:true fetch occurs before parsing/processing; processMail catches failures, risking missed UNSEEN retry. Physical deletion or current live loss is NOT demonstrated. Historical143/tlsfalse versus localdirectTLS remains a releasecompatibility gate, not permission to weakenTLS.
+
+Primary maintainer advisory confirms addressparser quadratic DoS below9.1.0; current upstreammailparser3.9.28 pins10.0.10 (Node>=20), and Nodemailer10 introduces TypeScript/dualmodule layout changes. No target blindly selected/installed. Existing focused9suites/105tests passed, pending0: SMTP/IMAPsecurity, inboundservice/eligibility/attachments/bounce, two emailservice suites andprocessor. ActualRCdependencies, env-i/Node24/macOSnetworkdenied, schema-matched borrowedDBclient and RCshared-schema alias as previous checks. Expected mock errors do not indicate real connections. WireTLS suite was deliberately not included; no realSMTP/IMAP or new parser/advisory/ack-order regression run yet. Next bounded test-first characterization before separate dependency/reliability patches; no production/dependency/app edits.
+
+## 2026-09-23 — Exact WebSocket-patched artifact and same-DB scan verified
+
+Built clean source2e9c7ebf3aafdbeb9b0a80e834a965466be0bf94 into Linux/amd64 image76432eedde218de943045dc46320801ca7b6816e6a62d8fcb6f2ce14b8cb0d50. Existing build tool12/12tests and static smoke passed57migrationfiles/backup-tool versions/startup syntax. Registry/APK access and build lifecycle scripts occurred; not an offline build. No app bootstrap or customer DB used; generated Prisma client stays inside image. No tracked product/dependency changes this phase.
+
+Networknone/nonroot/read-only actual-image WebSocket tests: old6ae3=7pass/8expectedfail, new76432=15pass/0fail. Same unchanged test; no skipped/cancelled. Static compiled CSRF inspector stillpasses2safe warnings, legacyabsence, root-owned unwritable/app; mainhash unchanged7c29425a. Parent and independent reviewer verified new OCIindex→manifest→config/source/receipt/report identities and unchanged frozenDBhash. Raw report createdSeptember22 19:36:56UTC (this closing record September23local).
+
+Same scanner0.72.0 and advisoryDB:336→330findingoccurrences,2C128H183M23L→2C123H182M23L. Removed6 expected engine/parser/ws findings, added0, no unrelated finding changed. Application69High; globalPrisma7High/npm19High+1Critical/pnpm28High+1Critical remain. No whole security/browser/data-preservation claim; production NO-GO. Original baseline evidence untouched, newprivateevidencevuln-ws-20260922-amWugP retained0700/reports0600. Owned smoke/test/scannercontainers absent; no customnetworks/volumes. No live, DB, provider, push or deploy action. Next maildependency compatibility/advisory triage, keeping mailbox untouched; existing other release gates remain.
+
+## 2026-09-22 — Bounded WebSocket remediation and local checkpoints
+
+Test commit `0ded9b6d`; package/lock commit `2b402a84`. engine.io6.6.5→6.6.10, socket.io-parser4.2.5→4.2.7, ws8.18.3→8.21.1. Security review caught that the initially proposed6.6.7/8.21.0 versions still missed protocol-mismatch and empty-fragment fixes. Intermediate RED12pass/3fail became final15/15PASS with unchanged rejection/valid-input controls and tighter finite-cap assertions. Independent code reviewer confirmed installed patched branches and both blocker closures; not a full security rescan. Security follow-up hit thread limit, so no second full security signoff claimed.
+
+Gateway baseline and final46/46PASS. Final run used actual RC dependencies, network-denied macOS sandbox and mocked services; only generated database package borrowed from schema-matched September17 sibling. Backend293/frontend273 root-file no-emit typechecks passed0diagnostics with actual RC dependencies, borrowed matching DB declarations and RC shared-schema source alias. Node24.18.0 local proof, not Linux/amd64 Node20 image proof. Initial gateway setup-resolution errors were corrected via explicit pnpm modulePaths without weakening assertions. Exact pnpm9.15.4 lock generation/frozen install used ignore-scripts and public registry with cleared environment. No app boot, real DB/mail/provider connection or client generation. Staged-diff Gitleaks checks found0 leaks; no blanket secret/security certification.
+
+No app source/schema/migrations/Dockerfile changes. ws7.5.10 dev-tool dependency remains separately tracked; not all workspace advisories cleared. Existing6ae3 exact image and scan are pre-patch. Next rebuild pinned candidate and compare/rescan artifact; mail/parser, tooling/crawler and existing data/host gates remain. No production access, push, deploy or restart. Production NO-GO. Full details in source-consolidation; local checkpoints are not remote backups.
+
+## 2026-09-22 — Same-database image security comparison; no product edits
+
+Pinned existing Trivy0.72.0 imagecffe3f51, separate DB-only download from officialGHCR (no app archive mount), then nonroot/read-only/capdrop/nnp network-none scanning of Docker-saved candidate6ae3 and previous LOCALb112 archives. No Docker socket, credentials, app bootstrap or DB access. All severities/unfixed retained; ignorefile/dev/null, no ignores or VEX supplied. DB updated07:24UTC/downloaded18:51UTC; scan19:02UTC,11.63hours old and beforeNextUpdate. Exit0 means tool completion, not clean security. Scanner signature was not independently verified; pinned identity only.
+
+Both exact images yielded identical336findings:2Critical/128High/183Medium/23Low;90uniqueHigh/Critical advisoryIDs. CriticalCVE-2026-59873(tar6.2.1) occurs in npm and pnpm. Application-tree74High, globalPrisma7High, npm19High+1Critical, pnpm28High+1Critical. Alpine264packages0findings; node-pkg1460records336findings. No new dependency finding caused by last log fix; no comparable claim against old historical71High scan or current live. Initial identity equality assertion correctly failed because Docker ID is OCIindex and Trivy ID is config; then full hashed index→amd64manifest→config chain/revision/legacy-layer-list/DiffIDs verified for both, without bypassing identity gates.
+
+Initial source triage prioritizes runtime WebSocket transport (engine.io/socket.io-parser/ws), mailparser/nodemailer and XLSX/other parser exposure, plus retained package-manager vulnerabilities. Privileged crawler URLs still run Axios/unsandboxedChromium without a wiredSsrfGuard; no exploitation attempted. pnpm/Prisma cannot be blindly removed because startup/schema verification invoke them; AWSCLI supports approved backups. Suggested next small patch group6.6.7/4.2.7/8.21.0 needs red/green tests and independent review, not automatic overrides/major upgrades.
+
+Private evidence/aggregate `.private-data/release-evidence/vuln-6ae3-20260922-GNSnSY/`; raw reports/archives/DB retained under private directory. Three named scanner containers removed with fresh exact-label absence; no networks/volumes created. Parent asserted report counts/hash chains and no product/lockfile changes. Explorer source mapping finished; further security-review agents hit usage limit, so no independent security signoff. No new full test-suite/coverage claim. Production NO-GO; no production/push/deploy actions. Full reachability decisions and existing mailTLS/bytes/forward-recovery/host/fresh-backup gates remain.
+
+## 2026-09-22 — Exact patched backend artifact and repeated auth gate passed
+
+Built clean source6a0be372fa190cff72fdf8bbfed8db6f33a055cc with existing A13 tooling: Linux/amd64 image6ae3a63850864c28e2dedaafa5056c453dc94fc73b3afd85092302c22b5dbe0c. Context11.55MB; registry/APK downloads occurred, so not an offline build. Dockerfile/lock unchanged but OS packages updated; old vulnerability counts do not apply. Static smoke verified57 migrations, executable/syntax-valid startup scripts and backup tools. Parent checked image receipt hashes/revision/architecture and local image identity.
+
+Private reviewed static inspector715907b8 verified exactly two fixed CSRF warnings in compiled main and absence of old interpolation without app bootstrap; nonroot/networknone/read-only/capdrop container, /app not writable. Four synthetic inspector controls passed. Compiled main hash7c29425aa1f89edef7c19ad05caf2e9d76bd767261efc8b2b1aa99a50021ffef. Existing build-tool tests12/12 and combined focused auth/privacy/tooling tests44/44 passed; no global coverage claim. No tracked product/tooling change this turn.
+
+Preserved baseline private runnerb6b86f72; new runnerd5dcde20 changes only candidate image/SHA plus two comments. New disposable sanitized historical clone run cde676d3cece: preboot migration/protected parity/structured credential clearing passed, all12 browser checks true, unexpected0/proxyErrors0, durable fixturePASS. Counts180/563/114 unchanged, users1285→1286 synthetic only. Reference checksum unchanged. Cleanup verified by receipt and fresh exact-label inventories; sampled egress blocked. Independent reviewer confirmed safe receipts; parent independently asserted values and resource absence. Browser remains devfrontend53f55fae with disclosed redirect/certificate exceptions, not productionfrontend/TLS/dashboard/automatic refresh acceptance. No whole postboot row/attachment-byte preservation claim.
+
+Next exact-image vulnerability gate; installed Trivy0.72.0 found but no cache freshness check or scan performed. Mail transport, historical bytes, new-write/byte forward recovery and approved host/credential/fresh-backup gates remain. Production NO-GO. No production access, push, deploy, provider operation or live DB change. Images/private receipts retained; owned temporary resources removed.
+
+## 2026-09-22 — Real auth browser aggregate and durable fixture gate passed
+
+Transport diagnosis stayed data-free. Baseline four-login repetitions: one PASS, one FAIL with a single ECONNRESET during closing-context on a socket with6 requests/6 finished responses/0 active, lastClass blocked-dev-diagnostics, requestComplete true and requestAborted false. Candidate changes only intentional403 denial headers to Connection:close; two matched four-login repetitions passed with unexpected0/proxyErrors0. No generic error suppression or upstream/cookie changes. Commit1b625c45; RED15/16→GREEN16/16, combined44/44, independent code/security approval. Scanner: probe0, tests retain exactly2 previously reviewed fixed noncredential JWT strings. No product code modified.
+
+One real-backend clone run46931334e73b then completed all12 browser assertions and final durable fixture verification. Aggregate pass=true, unexpected0/proxyErrors0; counts blockedAuthenticatedPages4/HMR6/devDiagnostics1/normalizedDevRedirects1. Durable reset consumed/sessionVersion incremented once/new password matches/old rejected/CUSTOMER authority preserved/no queued or sent synthetic mail. Pre/post snapshot counts180/563/114 unchanged; users1285→1286 reflects the added fixture, not production. Protected preboot fingerprints and structured-credential clearing passed; no complete postboot historical-row or attachment-byte parity claim.
+
+Backend remains3403ae61/b112; browser53f55fae contains probe6ab3e798. Source CSRF warning fix0dc5aac0 is NOT in this tested backend. New browser image is a cached-base, COPY-only build with no package install. Original September17 reference checksum unchanged. Sampled externalTCP/DNS/host-canary checks passed in preboot/backend/browser. Raw backend logs not retained. All exact owned resources removed and fresh label inventories empty; private receipts and images retained. Data-free containerd97e2afa also removed. No live connection, push, deploy or production mutation.
+
+Next: final immutable patched-backend build and artifact-specific rehearsal using existing tools; then remaining mail/bytes/forward-recovery/vulnerability/approved-host/fresh-backup gates. Dashboard rendering, automatic frontend refresh, actual CRM/mail delivery, public TLS and exact production frontend were not certified here. Production NO-GO. Details in source-consolidation; condensed handoff refreshed.
+
+## 2026-09-22 — Data-free post-login classification repaired, transport error retained
+
+Checkpoint50cfa072 changes only auth-browser test tooling. Synthetic successful CUSTOMER login reproduced exact unprefixed /my-tickets GET with bounded RSC and exact POST Next dev diagnostics failing proxy route assertion. Both remain denied: unprefixed authenticated routes now have the same blocked category as localized routes; actual proxy403-denies known blocked classes before body/upstream, after host/auth-header checks. Unexpected variants still fail. New test invokes actual server handler without a listening socket and proves zero upstream calls, positive blocked counters, and seven malformed/unknown/body failures. RED13pass2fail→GREEN15/15; combined focused43/43. Independent named code/security review approved; no product change.
+
+Two post-fix four-login data-free repeats: rejected paths0, proxy-handler assertions0, unexpected0; both overall FAIL on proxyErrors1. Last repeat identifies server clientError ECONNRESET, not an upstream failure. Context-close causality not yet proven; no suppression, no full-clone retry, no full-browser pass. Owned network-none/read-only/nonroot/native-sandbox diagnostic container04baa489… label20260922-b removed after exact ownership check; label inventory empty. No DB/Redis/provider/live traffic or new image build. Original artifacts unchanged. Probe Gitleaks clean; test scan retains exactly the two previously reviewed fixed noncredential JWT strings at9/10. No blanket scanner-clean or whole-project coverage claim.
+
+Next: bounded data-free socket/lifecycle correlation, then aggregate + durable fixture acceptance. Frozen backend3403/b112 still lacks source CSRF log fix0dc5aac0; existing exact-image script can rebuild but dependency networking is not guaranteed absent. Detailed current gate and evidence in source-consolidation. Production NO-GO; no push/deploy.
+
+## 2026-09-22 — Scoped CSRF log defect fixed; dev redirect cause reproduced
+
+Actual inline middleware regression RED3fail/1pass→GREEN4/4; product commit0dc5aac0 changes only two warnings to fixed reasons, preserving CSRF decisions/cookies/responses. Test commit886ab2eb uses TS AST extraction without bootstrap/DB/network. Independent code/security approval, clean test/product Gitleaks, whole-backend borrowed-resolver TypeScript0diagnostics. No new env/schema/dependency. Frozen3403ae61/b112 image does not include the fix; final candidate needs rebuilding.
+
+Data-free networknone/nonroot/native-sandbox/read-only browser diagnosed reset200→Next dev307 to wrong httpslocalhost53301 authority. Host-header-only experiment also failed. Installed Next source explains fixed listen-address middleware URL. Narrow test-proxy adapter3d7a61a9 normalizes only exact frontendGET/HEAD/login307/308 redirect to isolated origin; status/body/cookies and guards unchanged, counter explicit. Same rendered data-free UI then reached/tr/login, normalized1/unexpected0/proxyErrors0.13/13 adapter/helpertests,41/41 combinedhelpers. Known two syntheticJWT scanner findings remain documented; not real secrets. No production-routing proof or frontend product change. Exact owned diagnostic container removed; no customer records used. All work local; no push/deploy/live access.
+
+Actual clone bf0cb00ff119: all12 functional auth/reset assertions true, including oldsession revocation/replay/oldpassword rejection/newlogin. Final aggregate FAIL at unexpected4 (two GET same-origin other-path RSC categories, two unclassified), proxyErrors0/normalizedDevRedirects1. No pass or durable final-state claim: fixtureverification/postcounts not reached. Frozenbackend3403/b112 and updated browserc43b870b used; newlogfix absent from runtime. Migration/preboot parity/credential-zero and sampled egress gates passed. Cleanup clean; exact owned containers/networks/volumes absent. Stop clone-based guessing; next data-free remaining-request diagnosis, then aggregate/durable acceptance and final patched-artifact build. All release gates remain, NO-GO.
+
+## 2026-09-22 — Real backend/browser integration advanced, full gate still open
+
+Only local test tooling and disposable clone runs. New guarded synthetic reset fixture committed d8ad410c. Reused exact frozen backend3403ae61/imageb1126e5c, normal startup/migration, sanitized September17 snapshot, fresh Redis and random run-local secrets. New internal Docker network has no published ports; browser remains nonroot/native-sandbox/read-only, proxy preserves real Set-Cookie attributes, and sampled internet/DNS/host-canary traffic is denied. No live connection, push, deploy, existing-service restart or original-data mutation.
+
+Three attempts retained distinct outcomes: e81e831ad949 stopped at an IPv4-only canary assertion before browser acceptance; a data-free diagnostic proved both IPv4/IPv6 blocked, and the guard now checks every resolved address. 4f72ed8201c2 failed expired-reset with3 unexpected requests and no passed browser checks. Exact installed Next source justified an exact13-digit static-asset timestamp query allowance; old three requests were not conclusively classified. e87e6bc3ed75 then passed six browser checks (expiry, login, cookies, /me, refresh, CSRF control), reached actual reset200, but failed login redirect with one unknown same-origin RSC path. All owned resources cleaned, latest absence independently rechecked. No full-pass claim.
+
+34/34 targeted helper tests passed before the final diagnostics refinement; no whole-application coverage claim. Named code/security reviews covered isolation and test scope. Gitleaks found two fixed JWT-shaped test constants, independently classified as noncredentials (literal nine-byte signature, no signing secret); no blanket scanner-clean claim. Real synthetic signed tokens remained private in memory/container scope. Existing main.ts CSRF rejection logging includes token values: real local source finding, not evidence of live exploitation. Raw application logs were not retained; narrow product fix remains required. Full details and remaining gates in source-consolidation.
+
+Final diagnostic refinement added only finite path categories and first-failure preservation, no new allowed request. RED10/12→GREEN12/12; parent combined36/36, syntax/diff checks and independent review passed. Probe/tooling committed96262774. Final full run b312d31c0bc4 on image486ed180… repeated the same six successes then unknown same-origin other-path RSC redirect failure; no complete browser pass/final fixture verification. Cleanup clean and exact container/network/volume label inventories empty. Stop full-clone reruns for routing diagnosis; next use a data-free frontend reproduction. Local restore point follows; no publication or production readiness claim.
+
+## 2026-09-22 — Actual isolated browser RED/GREEN; one-page reset feedback fix
+
+Local continuation only. Pinned native Linux/arm64 Playwright1.58.2 image acquired; actual Playwright browser preflight passed as UID1000 with native sandbox, network none, all capabilities dropped, no-new-privileges and read-only root. Reviewed seccomp derivative adds only chroot syscall allowance; this is a disclosed narrow syscall-surface expansion, not privileged/no-sandbox execution. Source/dependencies staged without secrets; online install was manifest-only, scripts disabled; app-source build/runtime offline.
+
+Initial UI5/9 had22 localhost-normalization fixture requests plus5 blocked dev diagnostics. Canonical localhost frontend and exact blocked diagnostic classification corrected the harness, not product routing. Clean RED7/9 then isolated the two genuine reset error-visibility failures (unexpected0). Product commit98c21bed changes only the reset page's unmounted Sonner calls to the mounted Radix API. Same9 assertions GREEN9/9; blockedHMR9/devDiagnostics3, unexpected0. Full frontend tsc --noEmit --incremental false exit0 in the same container; seven harness tests pass. Independent code/security reviews and changed-diff Gitleaks passed. Tooling commit2cc00aab; documentation/checkpoint follows.
+
+Valid-reset proof covers fragment scrub, exact payload/onePOST and redirect, not success-toast visibility. API is synthetic; real backend/cookie/TLS/migratedDB and reset401 acceptance remain open. Node24/nativearm64 dev artifact is not productionamd64 frontend proof. Backend runtime/image unchanged, frontend has one reviewed page fix. All nine owned disposable containers removed; no existing containers/volumes/images removed. Private staging/cache retained. No production, DB/Redis/provider, push/deploy/restart/migration. Next: smallest actual-backend browser acceptance contract using the existing sanitized clone and enforced provider isolation; remaining mail/bytes/forward-recovery/host release gates unchanged, NO-GO.
+
+## 2026-09-22 — Browser harness prepared; native sandbox blocks UI execution
+
+Added only scripts/frontend-auth-browser-probe.cjs and its two passing helper tests. Independent code review tightened exact login payload/error assertions and correctly scoped the reset400 case as validation feedback, not expired-token401. Security review approved fixed loopback origins, fresh contexts, blocked service workers/workers/WebSockets/downloads, aggregate-only output and bounded execution. Browser remains native-sandbox-enabled; no user browser profile was reused.
+
+Fresh trusted Git source84c3bfe7 served three auth routes with HTTP200 in a scratch-only Next sandbox. Google font access stayed blocked and dev fallback fonts were used. TCP canaries allowed owned53301/53302 and denied an actively listening53303 with EPERM. Browser network-only profile initially prevented Unix bind; independently reviewed Unix-bind-only exception did not broaden outbound grants. Browser then launched but failed native child sandbox initialization; all nine scenarios failed at setup, before any page assertion. This is an environment blocker, NOT nine product failures and NOT browser acceptance. No security control was disabled to force a pass.
+
+No product code, DB, migration, image execution, provider, production, push or deploy action. Static Sonner/Radix reset-feedback mismatch remains suspected only. Owned frontend stopped and browser/profile processes checked absent; private scratch retained. Next bounded route is one disposable Linux browser/frontend container with `--network none`, preserving native sandbox and synthetic-only inputs; no compatible browser image is currently installed. Separate pinned acquisition/build and minimal Linux dependency/executable-path adaptation must precede runtime preflight. Details and evidence limitations are in source-consolidation.
+
+## 2026-09-22 — Owner accepted forward recovery; auth acceptance resumed
+
+Owner replied "ok" to the explicit recommendation and extended-maintenance tradeoff. Recorded ADR-022 and aligned AGENTS: no separately hardened older fallback is required for this stabilization release, but restored backups and data-preserving forward recovery still need proof. No deployment, live access, interruption or historical-image execution was authorized.
+
+Read-only acceptance audit found a composition gap: CRM claim/reset service tests and signed-token HTTP guard tests existed separately, but no actual AuthController/AuthService HTTP journey tied password reset to rejection of previously issued access/refresh cookies. Existing7suites/146tests passed freshly with actual RC source and borrowed dependencies/generated client from the existing September17 local environment under Node24.18.0, env-i; no full AppModule, real DB/Redis, browser, CRM/mail provider or image was started.
+
+Added only auth-reset-revocation.http.spec.ts:4/4 composed synthetic HTTP tests pass. Parent independently reran all8authsuites/150tests successfully (8.999s). Positive refresh before reset, Redis marker write failure, exact oldaccess401/oldrefresh403/resetreplay401/oldpassword401, renewed login/refresh and unchanged CUSTOMER grants are checked. An in-memory sessionVersion reversal makes oldaccess work again, proving the negative assertion responds to the intended boundary. CRM member/nonmember/unavailable lookup matrix asserts no session issuance/user mutation. Runtime source unchanged; no production RED claimed because this adds evidence for existing behavior, not a product fix. Test evidence is not browser/realDB/provider/full-main middleware or crypto-performance acceptance. Source-consolidation records limits and next isolated-browser gate.
+
+Independent code/security reviews approved the final test. Reviewer explicitly included the spec and backend sources in a borrowed-resolver TypeScript check:0 diagnostics/noImplicitAny:true. Matching lockfile is not installed-runtime equivalence. Separate local checkpoints preserve test/policy/docs scope; no remote publication.
+## 2026-09-22 — Compared actual fallback options; policy proposal only
+
+Source diff18929781..3403ae61 and independent reviews reject prior localb802 fallback: its unchanged strict migration ledger check rejects the later CUSTOMER migration, while direct-node bypass loses ticket-management safeguards against CUSTOMER4 grants. JWT/RAG hardening is unchanged between these two local candidates; do not confuse them with historicald9. No app/image/DB/live action or source edits. LocalNode24.18.0 helper/source contracts14/14 passed after absent configuredNode20path; no full-app/runtime proof claimed.
+
+Recorded practical proposal in source-consolidation: stop legacy archive engineering; choose owner-approved forward recovery with potentially extended maintenance and preserved writes/bytes, or separately scope a hardened older-functionality fallback. No policy adopted automatically, no rollback gate waived, no execution/deploy approval inferred. Required mail/writer quiescence, persistent-byte recovery, remaining release gates and backup/reconciliation boundaries documented. Await the owner's explicit strategy choice before expanding implementation.
+
+## 2026-09-22 — Inert startup metadata and rollback security boundary
+
+Unchanged verifier27/27 tests pass. Independently reviewed config-only age/gzip stream,180s bound/pipefail, completed all modern+aux checks and exited0. Image302229 declares expected wrapper/deploy.sh/workdir and unspecifiedUser; no Healthcheck key, no nonemptyOnBuild, Env present. Only booleans printed. Ciphertext/verifier hashes and0700/0600 permissions unchanged. No layer-file inspection, extraction/load/execution, production/DB/Redis/provider access or product edits.
+
+Read-only historicald9 versus frozen3403ae61 JWT strategy reveals missing legacy DB-backed status/sessionVersion/current-role checks and legacy URL-query token acceptance. This extends rollback acceptance beyond ticket counts to security non-regression; not a fresh live exploit finding or archived compiled-code attestation. No safe rollback startup designated. Source-consolidation records a bounded selected-file inspection contract and separate execution approval gate. General extractor/legacy-ID reconstruction/re-download rejected as unnecessary. Existing release blockers remain; no push/deploy.
+
+Independent source review also confirms historical RAG onModuleInit performs column/index DDL and dataset/settings writes; candidate moves that maintenance behind an explicit operation. Therefore direct Node bypass is not sufficient. Deeper image-file inspection is conditional on a concrete fallback decision, not a reason to build a general parser or rehabilitate known-unsafe startup. Three-document scope review approved; no application changes.
+
+## 2026-09-22 — Scoped modern-image integrity gate closed locally
+
+Added versioned stdin-only Python verifier and synthetic tests; no product code changes. Contract verifies exact config hash, ordered uncompressed layers/diffIDs, Docker/OCI descriptor sizes/digests/order, strict tar/gzip/JSON framing, and bounded V1 auxiliary classification. Legacy IDs are not regenerated: these records are non-authoritative for the pinned manifest-present modern loader. Tags, parent image links, descriptor URLs/unknown fields and unexplained members are rejected. Runtime/legacy-loader safety stays explicitly false.
+
+TDD plus independent review caught/fixed boolean-number projection, exponent overflow and non-UTF8 JSON acceptance. First real stream then exposed two legitimate exporter representations:23 epoch timestamps with local offsets, and13 typed-zero terminal config fields omitted in the core's6-key JSON. Added strict zero-instant and exact13-default tests before fixes; no core values changed/missing. Final27/27 tests,97.53% statement coverage; independent reviewer reports213 additional offset/type assertions.
+
+Actual final stream exited0 at14:58:05UTC;302229b2… image,24 layers,24 auxiliary records,53 regular members accepted under modern-only scope. Ciphertext SHA unchanged; renamed to image.modern-content-verified.tar.gz.age inside existing private0700 directory; new0600 receipt and superseded old receipt retain limits. Original September19 partial and scratch tools preserved. No production connection, DB access, Docker load/run, extraction, restart, deploy or push. Next inert startup/rollback contract; execution remains separately gated. Production NO-GO is unchanged.
+
+## 2026-09-22 — Private live-image copy acquired; full acceptance still gated
+
+Owner resumed the paused exact-image copy. A fresh0700 private directory/key0600, strict SSH, immutable302229b2… image ID, remote3600s bounded save/gzip and local age/pipefail completed exit0 at14:19:02UTC. Ciphertext867,825,356 bytes; SHA256 `fb05985352e1ccf87c36bd0ff933ea3d37067d7d65900ef565c7349725f81517`. Old September19 incomplete copy preserved. Postflight14:21:08UTC: same backend image/start2026-09-02T19:03:59.250425823Z/restart0/running. No deploy/restart, DB/Redis access, extraction/load/execution, configuration change or publication.
+
+Initial strict verifier rejected25 extra blobs after config and24 ordered layer hashes/gzip completion passed. A separately tested/reviewed bounded offline structural diagnostic completed exit0: all content addresses valid; OCI layout/index/single manifest bind the same expected config and24 uncompressed layers. Zero gzip member blobs; remaining24 captured JSON objects have legacy-compatible key counts (24id/23parent/24created+container_config+os; one config+architecture).18/18 combined tests pass; independent code/security reviews approved diagnostics only. Actual legacy-ID relationships/full allowlist acceptance remain unproved. Do not call this safe rollback, clean host or release approval. Artifact retains `.partial.age` plus an explicit acquired-verification-pending receipt; no duplicate acquisition needed. Next bounded local exporter-format acceptance, then separately reviewed startup/rollback path. Detailed evidence in source-consolidation.
+
+## Final owner pause — resume in the morning
+
+Owner subsequently said "ok sabah devam ederiz". This supersedes nighttime timing, not the incomplete-copy status. No automated retry or further live action is scheduled; wait for continuation.
+
+## 2026-09-19 — Approved image acquisition paused at owner request
+
+Preflight reverified exact live302229b2… image2,470,925,994 bytes/amd64, unchanged container, server159GiB free and local1.2TiB available. Existing age1.3.1 + fresh private identity; verified-host SSH streamed immutable docker image save through nice gzip1 and local age encryption, no explicit server archive file, remote900s timeout/pipefail. Copy was slow (about96MB uncompressed/38MB compressed in6min); sampled backend1.45%CPU/396.3MiB, no restart. Owner chose stop/night after the duration tradeoff was explained.
+
+Matched export-client PID675037 exact argv before SIGTERM; compressor675038 was absent afterward; pipeline exited1. Backend same image/start2026-09-02T19:03:59.250425823Z/restart0/running. Partial ciphertext63,061,860 bytes retained mode0600 inside0700 directory, explicit INCOMPLETE receipt. No load/extraction/execution, DB change, deploy, restart or automatic retry. Next nighttime timing/new full stream; partial is not a valid backup and cannot be appended/resumed as-is. Offline parser in sibling scratch passed7tests and independent review after TDD fixes to reject PAX/unbounded extensions and nonzero tar tail; never run against the incomplete image. See source-consolidation.
+
+## 2026-09-19 — Approved live image/startup observation, no mutation
+
+Following explicit owner approval for image identity/startup inspection only, root used existing maintenance SSH identity with BatchMode/IdentitiesOnly/StrictHostKeyChecking and host-key updates disabled. Host vmi3049865; backend-api image302229b2403d… still matches September17 observation. Image amd64/root-default, no revision/RepoDigests; container writable rootfs, nonprivileged, no mounts. Entry point docker-entrypoint.sh and command ./deploy.sh; command independently matched by SHA. All four deploy/recovery-file hashes exactly match historical d9 source, so identified normal-startup recovery/role mutation hazard is now tied to observed container files. Full code/image provenance remains unproven.
+
+Selected metadata observation18:00:46–18:02:05UTC. Start2026-09-02T19:03:59.250425823Z/restart0/running unchanged. No app scripts imported/executed, DB/Redis/customer/env reads, raw logs, restart, migration, backup, image export, push or deploy. SHA utilities and wrapper structure reads only inside container. Local independent reviewer confirmed: risk on ordinary restart is supported; occurrence of conditional data changes or active compromise is not. Next exact-image private acquisition needs separate approval, followed by explicit safe-startup/offline rollback review, not normal legacy boot or silent bypass. Current authority consumed; production NO-GO.
+
+## 2026-09-19 — Staff/admin, customer review and synthetic attachment acceptance
+
+Extended only the local probe with explicit opt-in, exact request statuses, manual same-origin storage redirect handling, multipart bytes, persisted authorization effects and aggregate-only diagnostics. TDD2 new failures/7 prior passes then14/14 combined passes. Independent reviewers confirmed contracts and found two proof gaps before execution: ADMIN needed a real mutation; bulk OPEN after ADMIN OPEN would be a no-op. Added ADMIN NEW→OPEN, bulk OPEN→IN_PROGRESS and exact internal merge-note sender/distribution assertions. No runtime product changes.
+
+Same immutable3403ae61 image passed56/56 in run `customer-d7254ddf9d6f`, with migration/preboot parity and credential-zero checks. Counts180/563/114/1285→182/568/116/1289 reflect synthetic fixtures only; no complete postboot historical-row parity claim. Exact synthetic PNG bytes passed on disk and authenticated HTTP; owner/staff success and cross-customer/anonymous/internal-note denials passed. Four emulated logins12.369/12.320/11.885/11.930s; no native performance claim. All owned resources removed, absence rechecked; private receipts retained. No production access/push/deploy.
+
+Read-only rollback preflight found observed September17 image302229b2… absent locally; prior localb802af… is not a proven live rollback target. Tag-matchingd9 source startup performs schema/ledger and user/role repair, but actual image provenance/entrypoint remain unverified. Next gate is a reviewed, designated immutable rollback artifact/startup path and preserved new writes/bytes; production acquisition requires separate approval. Full details in source-consolidation. Production remains NO-GO.
+
+## 2026-09-19 — Exact customer release image and real HTTP proof
+
+Built frozen3403ae61 Linux/amd64 imageb1126e5cc5c60adff63fb843c40fe89da4450ba40ed8ef75e5c738b42f7239bf; static smoke and separate nonroot permissions passed. A13 runcustomer-20260919-3403ae61 preserved sanitized Sept17 protected data/counts180/563/114/1285, validated CUSTOMER4/schema and second migration no-op. New normal full-app clone/freshRedis customer probe passed22actualHTTP checks with two synthetic customers/tickets/replies and ownership/internal-note/CSRF denials. Preboot credential assertion0 and protected parity; postprobe182/565/114/1287. Owned containers/network/volumes removed and absence verified; original artifacts/references untouched.
+
+First run81e8cd35f934 timed out before any successful HTTP check under5s; cleanup passed. Measured same-image bcrypt12 hash5743ms/compare5677ms on amd64 emulation. Added test-only bounded request timeout with RED3newfail/4existingpass then12/12combinedGREEN; independent review approves. Successful runcdba19db896d used20s, logins12231/12274ms; exact probe source hash recorded separately from runtime image. No password/work-factor/guard/production changes. Scratch runner cleanup issues caught and fixed before execution. Evidence/remaining gates in source-consolidation; no push/deploy/live access. Runtime source remains3403ae61 despite later tool/doc commits; no image rebuild needed for those alone.
+
+## 2026-09-19 — Local CUSTOMER compatibility and management authorization
+
+Implemented canonical CUSTOMER4 and atomic/additive/idempotent migration preserving role metadata/users; A13 compares only those reviewed additions. Closed transition/link ownership gaps and reviewer-discovered bulk bypass before writes while preserving the actual customer own-ticket review/close-button request. Public FAQ requires no customer FAQ grant. Focused7suites/123tests and full backend + changed/new test typecheck0 pass. Real disposable PostgreSQL17 synthetic proof7/7 validates successful preservation/no-op and failure rollback; no copied customer data used. The owned temporary container/tmpfs was removed and absence verified. Source security review approves local scope; production NO-GO.
+
+Test-harness note: JSON HTTP requests initially failed because the borrowed-dependency Jest resolver selected the wrong transitive pnpm package. Fixed scratch resolution to prefer each importer's actual dependency, removed diagnostics and explicit parser workaround; unchanged Nest default parsing passes. No product parser/dependency changes. Details and evidence limits in source-consolidation report. Next exact rebuilt image and sanitized-clone full-app acceptance; no live connection, provider traffic, push or deploy.
+
+## 2026-09-19 — Read-only customer authorization comparison
+
+Compared exact historical d9 tag source, current4626f627 authority change, preserved A13 baseline/postmigration RBAC fingerprints, seed/catalog/checkers and customer routes. Legacy empty-mapping CUSTOMER fallback5 versus candidate0 confirmed by offline pure-function execution. Prior probe was prerequisite-only, not failed login/HTTP proof. ADMIN baseline14 includes wildcard; migrated16/support16 must not be called live counts. Identified canonical CUSTOMER coverage gap and source-level transition/link ownership risks behind ticket:update; no exploit or fix performed. Next narrow compatibility/security tests and reviewed additive grants, not seed/reset or blanket fallback. Full evidence in source-consolidation report; production untouched.
+
+## Sanitized full-app boot passed; customer acceptance blocked — 2026-09-19
+
+Exact accepted18929781 backend image booted normally on NEW sanitized Sept17 clone plus fresh Redis; health HTTP200 with DB/Redis/BullMQ/storage/memory up. Preboot structured credential assertion0 and62protected fingerprints matched. No published ports, host binds or real provider credentials; internal Docker network/restricted DNS. Disposable mutable clone only; cron may change local copied records, so postboot business parity is NOT claimed.
+
+Customer probe stopped before fixtures/HTTP: copied CUSTOMER role has0 permissions (ADMIN16, SUPPORT_AGENT16;23permission definitions). Current RbacGuard requires route permissions and JWT authority comes from DB. This is a release compatibility blocker requiring narrow role-policy review, not proof current live service is broken. No roles/permissions were granted to force a pass. No customer login, ticket, reply or isolation acceptance is claimed.
+
+Probe guard tests4/4 pass, including actual stdin execution rejection. Initial stdin invocation silently did not execute and is explicitly excluded from evidence; corrected entrypoint and safe aggregate failure counters verified actual execution (0HTTP checks, AssertionError at role prerequisite). Independent static review covered code/security and persisted-reply proof. Probe uses manual cookie replay, not browser-cookie proof. Raw backend logs were not exposed. New owned app/Redis/PG containers and network were removed; label inventories empty. Original raw/sanitized artifacts and reference resources preserved. No production access, push or deploy. Next inspect minimal CUSTOMER permissions and current-versus-candidate authorization before any RBAC migration; preserve deny boundaries and avoid broad grants.
+
+## 2026-09-19 — Sanitized snapshot and migration compatibility
+
+Pure SQLplan helper+5tests added (100% measuredhelpercoverage); independent code/security review approves local-tool scope. New networknonePG clone verified62tables617columns/schemahash; negativeinventory test rolledback with fullfingerprints unchanged; valid sanitation unsafe0 and62protected tableparity. Newprivate0600dump/0700root, sourceSept17, notanonymized. Exactimage18929781 unchanged A13 restored sanitizeddump and passed bothmigrationpasses/no-op,180/563/114/1285 retained. Resourcescleaned; references/production unchanged. Noapp/Redis/provider starts here. Next syntheticcustomer API tests on newmutable sanitizedclone, no rolegrant bypass, separateCRM/cookie/attachment/rollback proof. Source-consolidation report contains paths/hashes/limits.
+
+## 2026-09-19 — Synthetic normal startup and clean Redis checkpoint
+
+Exact18929781 image reached /api/v1/health ok through normal entrypoint on newemptyPG17+freshRedis8.8.2; DB/Redis/BullMQ/storage/memory up. No customer data, ports, host mounts or provider keys. Internalnetwork/DNS sampled egress probes blocked; synthetic resources removed/rechecked. Owner accepted freshRedis rather than livequeue copy. Two read-only preflights identified strict bootenv requirements and cron mutation risks in copied data. No runtime source changes. Next new sanitized mutable clone + explicit local cron-delta accounting, then actual customer API/browser/attachment/new-write rollback tests. Production stillNO-GO; no live/push/deploy.
+
+## 2026-09-19 — Real isolated restore/migration acceptance
+
+A13 runrestore-20260919-18929781 exit0 using exact accepted image and verified Sept17 capture. New private input matches original raw/encrypted checksums; source receipts/references unchanged. Snapshot counts180/563/114/1285 preserved; protected fingerprints and reviewed schema/RBAC deltas pass; second migration no-op. Owned PG/network/volume cleaned and absence rechecked. Synthetic bind-permission concern disproved on this Docker Desktop, no code change. Private plaintext input/evidence retained under0700/0600. No app/providers/live/push/deploy. Full app/attachment/new-write rollback and mail/host gates remain open; details in source-consolidation report.
+
+## 2026-09-19 — Corrected amd64 image accepted for static/permission gate
+
+Source18929781 produced immutable imageb802af9e6d9a6819d9721d1705dbe3555d9c20c1ce03a6b22eb61d856060cbd3. Real A13 smoke and defaultUID1000 writable-layer permission/CLI probes passed; private evidence checksum verified.69/69 source/tool contracts. Existing volumes untouched, probes removed. App/DB/provider/production never started/accessed. Next bounded A13 isolated restore prerequisite checks, then full app/Redis/sanitized-data/attachment/new-write rollback proof; mail compatibility/host remain open. No push/deploy. Source-consolidation report holds detail.
+
+## 2026-09-19 — Exact-image permission blocker caught locally
+
+Source904376e4 built amd64 but non-root static smoke failed EACCES due archive extraction under umask077. Corrected only source archive permissions, preserving private roots/evidence. Regression RED/GREEN, combined69/69 contracts, actual Git mode probe and independent code/security review pass. New exact-image build/runtime acceptance pending. No application/DB/provider/live/push/deploy; existing Docker volumes untouched. See source-consolidation report for rejected image ID and limits.
+
+## 2026-09-19 — Minimal non-root image source
+
+Combined non-root + release/restore contract tests68/68 passed, exit0; independent review approved local checkpoint. Whitespace-only fixture change independently confirmed and separated into style commit. Exact image not yet built/run.
+
+Audited actual writes, including startup OpenAPI export and editable MJML screens. Dockerfile now defaults node, preserving root-owned code with narrowly owned uploads/OpenAPI/screens and conditional template bases. Migration/CLI/dependencies unchanged. New source tests RED then5/5GREEN; runtime image proof still open. No live/DB/container mutations. Existing fixture indentation diff preserved outside this batch. Next exact Linux/amd64 image/writable-path rehearsal.
+
+## 2026-09-19 — Stabilization-only release reconciliation
+
+Added opt-in real-client loopback SMTP/IMAP TLS tests plus ephemeral certificate generator;10/10 tests pass and TypeScript0 diagnostics. Trusted success, invalid trust/name/expiry rejection and absence of plaintext AUTH verified using actual provider entrypoints. Temporary test keys cleaned; no production code changes. Local-only Node24/macOS proof; production image/server, delivery and sender-trust gates remain open.
+
+Owner froze new features/customer requests. Independent source audit reconciled stale reports: PG17/fail-closed DR and boot checks exist, but root backend runtime, current amd64 artifact, full application/attachment/new-write rollback acceptance remain open. Fresh56/56 SQL checksum comparison and63/63 A13 fake-Docker contracts pass. Local Docker inventory read only; no running containers, cached old non-root image arm64/no revision. No live access, DB access, deploy, image build, container creation or deletion. Existing source-consolidation report updated rather than creating a duplicate roadmap.
+
+## 2026-09-19 — Strict local SMTP/IMAP transport
+
+Final focused run:4suites/29tests passed; backend plus new tests TypeScript no-emit0 diagnostics, using existing isolated generated client. Code and security reviewers approve local commit. Initial scratch dependency-resolution failures corrected without package/source changes. Full-release build and wire-level acceptance not performed.
+
+Two-file minimal patch requires SMTP TLS/certificate validation and rejects plaintext IMAP before credentials/network, with caught config errors and cron guard release. New mocked tests initially6failed/6passed, then13passed including cron recovery. Actual release source tested offline using existing isolated dependencies; no app lifecycle or real data. Source impact review substituted for unavailable GitNexus/Graphify; final security review has no blockers. Mail TLS report records compatibility and remaining real-handshake gates. No live access, push or deploy.
+
+## 2026-09-19 — Local-only TLS maintenance plan
+
+Rechecked local mail providers and official DMS/Nodemailer documentation. Recorded minimal staged plan in existing mail report, including current client validation bypass, SMTP587 STARTTLS vs direct TLS, coordinated IMAP993 transition, version-pinned server setup, renewal, secure administration, off-host recovery gap, controlled mail-to-ticket acceptance and non-destructive rollback. Historical pending-inspection statements explicitly superseded. No runtime code/config, production access, tests, certificate issuance, restart, push or deployment this turn.
+
+## 2026-09-19 — Authorized on-host mail backup
+
+Effective Postfix/Dovecot TLSoff confirmed viareadonlyqueries. Explicitbackupapproval used for freshroot0700folder,0600archive of maildata/state/config/Compose/env, no secretcontentdisplay. gzip/tarcompare/SHA256pass; extracted persistentfiles match with31socketexceptions; live-to-stage dryruns zerochanges, runtimeidentityunchanged. File-level only, notatomic/fullrestore/offhost/DBbackup. Shellclosed; noTLS/restart/deploy. Evidence/path/limits in existingmailtransport report. Next prepare separatelyapproved TLSmaintenance and offhost/recoveryacceptance.
+
+## 2026-09-19 — Mail DNS and IMAP capability follow-up
+
+Correlated owner's masked live settings screenshot with freshDNS A/MX. Credential-free IMAP143CAPABILITY advertisesPLAIN/LOGIN withoutSTARTTLS; no mailboxaccess. Browser simultaneoususerinteraction respected; no furtherUIactions or livechanges. Existing mailtransport report updated with evidence and explicitunverified certificate/backup gates. Noappcode/test/deploy changes.
+
+## 2026-09-19 — Read-only mail service identification
+
+Owner-provided Coolify service read in existingFirefox session: DockerMailserver latest,Runningunknown,persistentmailvolumes. NoCompose save. Unauthenticated external587 EHLO lacksSTARTTLS and advertisesAUTH;993refuses. Noauth/email/datachange. Actualapp mailtarget unknown; independentsecurityreview keeps strictTLSdeployment blocked pendingtarget/certcompatibility. New mailtransport observation report records limitations and narrow nextread-only gate; no runtime edits or releaseapproval.
+
+## 2026-09-19 — Local canonical-history source checkpoint
+
+Consolidated885candidate source files into separate canonical-history worktree;279canonical-only entries preserved,69changed/addedpaths committed in four scoped batches. Independent code/security reviewers approved mechanical consolidation. Secret/whitespace checks clean. Fresh tests in source-identical isolated candidate: backend149suites/1728pass/1existing skip,frontend47/327pass,bothTypeScriptchecks pass. New worktree itself not installed/booted/built. Initialsymlink-verifier and executable-mode issues corrected without data access. See issues/2026-09-19-source-consolidation.md. No production,DB,provider,push/deploy. Root runtime/mailtrust/TLS/data-rehearsal gates still open.
+
+## 2026-08-08 — Independent help-center i18n verification
+
+- Independently reviewed Claude product commit `313e5b47`; its four-file scope is limited to the three locale catalogs and one real-next-intl render spec.
+- Verified all 11 affected admin help components across TR/EN/DE: focused 33/33, full frontend 40/40 files and 299/299 tests, frontend typecheck and i18n integrity all passed.
+- Corrected the documentation count: 193 keys, not 188, were added per locale. Every added key is consumed; 218 unique component keys are used in total, of which 25 pre-existed.
+- Verified both restore bundles, their tag targets and SHA-256 values. Restarted local development with frontend on 3000 and backend on 4000; local HTTP checks returned frontend auth redirect 307 and backend health 200.
+- Product decision: GO for the help-center i18n fix. Authenticated visual refresh remains a user-side acceptance check; no push/deploy/live access occurred.
+
+## 2026-08-08 — Announcement email final local closure
+
+- Closed the remaining announcement email safety/reconciliation blockers in `117526b1` using RED/GREEN TDD.
+- Handlebars validation now covers parameterless blocks, `@root/@data`, helper arity and rejects unsupported partial/decorator syntax fail-closed.
+- Reconciliation now filters only actionable linked outcomes, maps SENT/DELIVERED/BOUNCED/FAILED completely, drains deterministic 200-row batches, and conditions writes on both AnnouncementLog and EmailLog snapshot state.
+- Stabilized broadcast property tests by restricting successful-payload properties to inputs the send-time safety contract accepts; the previously failing seed passed independently.
+- Final evidence: focused 108/108, broad announcement/email 159/159, backend 130/130 suites (1305 passed, 1 skipped), frontend 39/39 files (266 passed), both typechecks, i18n, ops/API/RBAC/migration contracts and diff hygiene passed.
+- Independent code and security reviews both returned GO with C/H/M=0. Verified pre/post restore bundle SHA-256 values are recorded in the dedicated GAP report §17 and common report.
+- No push/tag-push/deploy, production/shadow access, migration/seed, or live email send occurred. Claude independent review is requested before any release decision.
+
+## 2026-08-08 — Independent announcement Phase 4 verification
+
+- Independently reviewed Claude product commit `edae3067` without changing product code or data.
+- Confirmed closures: retry-aware terminal FAILED, customer response allowlist, direct unknown variable/hash/subexpression rejection, malformed Handlebars normalization, diff scope and restore integrity.
+- Reproduced two remaining HIGH defects: parameterless unknown block/helper paths bypass the AST allowlist and silently render empty; QUEUED announcement logs ignore EmailLog DELIVERED/BOUNCED when webhook wins the cron race.
+- Identified MEDIUM batch-starvation risk: `take:200` scans have no cursor/order/progress or DB-side outcome filter.
+- Verification passed: focused backend 95/95, full backend 130/130 suites (1264 passed, 1 skipped), frontend 39/39 files (266 passed), both typechecks, i18n, 24/24 ops safety, API/RBAC/migration contracts and restore bundle hashes.
+- Appended the full NO-GO result to the dedicated GAP report §16 and the common report. No product code, migration, DB, push, deploy or live system was touched.
+
+## 2026-08-08 — Independent announcement email verification
+
+- Independently reviewed `d8f42c6d`, `df724734`, `f4668592`, and `e4c2ddc8` without changing product code.
+- Narrow GO: BUG-02 canonical customer-field parity; GAP-08 additive computed `contentFormat` with non-blocking edge caveats.
+- NO-GO: incomplete Handlebars AST/fail-closed coverage and inactive runtime announcement Zod contract; retry/webhook-inaccurate AnnouncementLog reconciliation; customer response leakage of internal email-log/error fields.
+- Evidence: focused backend 110/110, focused frontend 4/4, full backend 129/129 suites with 1230 passed/1 skipped, full frontend 39/39 files with 266 passed; typecheck/i18n/ops/API/RBAC/migration gates passed; all reported announcement restore hashes and bundles verified.
+- Appended full evidence and remediation order to the dedicated GAP report and `codex-claude-ortak-rapor.md`. Personalized/dynamic announcements remain NO-GO; push/deploy/live restrictions unchanged.
+
+## Follow-up - 2026-08-06 Faz 7 Schema Parity
+
+### What changed
+
+- Added the additive, no-DROP `20260806000000_align_schema_parity` migration and aligned `schema.prisma` with production-proven indexes, four unique constraints, the Knowledge Pool parent FK, and physical type/default truth.
+- Removed two misleading Prisma B-tree declarations named as HNSW indexes. HNSW lifecycle remains external under `RagMaintenanceService`; 3072-dimensional embeddings use exact search.
+- Added blocking schema-parity, migration-safety, and source/target data-fingerprint tooling. The comparator rejects identical databases, opens read-only sessions, and is restricted operationally to local/sanitized clones.
+- Technical commit: `612706c1` (`fix(database): align fresh and shadow schema parity`).
+
+### Verification
+
+- Fresh disposable PG17: all 50 migrations applied; second deploy had no pending migrations; integrity and schema-parity gates passed.
+- Restored production-shadow clone: only the expected foundation + parity migrations applied; second deploy had no pending migrations.
+- Source shadow versus restored clone fingerprints matched across 61 public business tables and sequences both before and after clone migrations.
+- Both fresh and clone parity gates retain exactly one documented residual: externally managed partial index `idx_faq_entries_embedding_version_dim`.
+- Prisma validate, backend/frontend typecheck, i18n, migration file gate, Node syntax, and `git diff --check` passed.
+- Full backend suite: 116/116 suites passed; 1020 tests passed, 1 skipped, 0 failed.
+- Final code review, database review, and security review approved the local commit with no P0-P2 blocker.
+
+### Safety correction
+
+- The reusable snapshot previously described as fully sanitized still contains 14 non-empty rows marked `settings.is_secret=true`. Values were not printed or inspected. CRM/webhook secrets, active integration flags, and user refresh-token hashes remain zero.
+- The dump and shadow env are mode `600` and git-ignored, but the dump must not be treated as secret-free or shared. Create a new clone-only sanitized snapshot before any application runtime or external handoff.
+- No production connection/write/migration, deploy, remote push, or tag push occurred.
+
+## Follow-up - 2026-08-06 Graphify And GitNexus Tooling Audit
+
+- Refreshed the local Graphify 0.9.30 code graph: 835 code files, 7,338 nodes, 14,249 edges, and 614 communities. Graphify retained a dated curated-graph backup and did not emit the smaller-graph overwrite warning.
+- Verified the `RagMaintenanceService` maintenance path and identified `PrismaService` as the largest current graph hub (degree 254).
+- Graphify reported 52 SQL files without structural nodes because the optional SQL parser is not installed; database migration acceptance must continue to rely on PostgreSQL and migration-integrity/parity gates.
+- GitNexus CLI and local index are absent. Historical AGENTS.md index counts are not current verification.
+- Did not install GitNexus: official package 1.6.9 uses PolyForm Noncommercial 1.0.0, so commercial-use rights must be confirmed first for this production product.
+- Added a user-requested top-of-report coordination note explaining tool roles, coexistence, ignore boundaries, and the license gate. No production state or remote changed.
+
+## Follow-up - 2026-08-05 Production Shadow Database Baseline
+
+### What changed
+
+- Established the production-data safety baseline as a binding workflow:
+  - production is read-only,
+  - data only flows `prod -> local`,
+  - local development must never point `DATABASE_URL` at production IP `167.86.84.107`,
+  - production Prisma migration/restore/reset/resolve commands remain forbidden without a separate maintenance decision.
+- Took a read-only PostgreSQL custom-format dump from production Coolify database container `lwk8ok04ocg4w4soog0c888g` (`pgvector/pgvector:pg17`), database `aluplan_support`.
+- Stored the raw dump outside Git at `.private-data/prod-dumps/aluplan-support-prod-20260805-193338-pg17.dump`.
+- Created a separate local shadow Postgres container:
+  - `aluplan_shadow_postgres_pg17`
+  - `pgvector/pgvector:pg17`
+  - `localhost:55432`
+  - database `aluplan_support`
+  - local env file `.private-data/shadow/shadow-postgres.env`
+- Restored the production dump into this separate shadow DB without touching existing local `aluplan_postgres`.
+- Sanitized the shadow DB so local work cannot accidentally call production-like integrations:
+  - CRM connections inactive,
+  - CRM/webhook secrets removed,
+  - user refresh-token hashes removed,
+  - secret/token/API-key/password settings emptied.
+- Created a sanitized reusable local snapshot at `.private-data/prod-dumps/aluplan-support-shadow-sanitized-20260805-194053-pg17.dump`.
+- Intentionally did not copy production Redis. Local Redis should remain empty/ephemeral to avoid replaying live BullMQ jobs, sessions, OAuth state, semantic cache, or throttle counters.
+
+### Evidence
+
+- Raw dump:
+  - size `132 MB` / `138034033` bytes,
+  - SHA-256 `d12371d0b316fdab1e811fa658a0ca890968596c53d02d3b845cc709679d56da`,
+  - archive header: `dbname: aluplan_support`, `TOC Entries: 399`, `Format: CUSTOM`.
+- Shadow DB restore:
+  - public tables: `64`,
+  - database size: approximately `233 MB`,
+  - counts: `users=1282`, `tickets=162`, `ticket_messages=476`, `knowledge_sources=241`, `knowledge_embeddings=77`, `knowledge_pool_embeddings=7745`, `_prisma_migrations=54`.
+- Sanitization verification:
+  - `crm_active=0`,
+  - `crm_secrets=0`,
+  - `webhooks_active=0`,
+  - `webhook_secrets=0`,
+  - `user_refresh_hashes=0`,
+  - `secret_settings_nonempty=0`.
+- Sanitized snapshot:
+  - SHA-256 `2e5f7e09a7e4ffbf61787f978a4a401527be46eae4895a5d7ba26c39ef5d770b`,
+  - `pg_restore --list` produced `399` TOC entries.
+- Prisma shadow verification:
+  - `DATABASE_URL="$SHADOW_DATABASE_URL" pnpm exec prisma migrate status --config packages/database/prisma.config.js`
+  - result: `Database schema is up to date!`
+
+### Notes
+
+- The temporary SSH key `aluplan-codex-dump-20260805` may still be present in `/root/.ssh/authorized_keys` on the VPS. Remove it after no further backup access is needed.
+- `.private-data/`, `*.dump`, and `*.backup` are ignored by Git.
+- Continue GAP remediation locally against the shadow DB. Do not use the production database for tests or migration inspection.
+- Next safe targets: BULGU-02/BULGU-18 auth-token negative tests and BULGU-10 migration-history inspection using the shadow DB.
+
 ## Follow-up - 2026-06-30 Ticket Filter Hardening
 
 ### What changed
@@ -3577,3 +4635,648 @@ Maintenance rule:
 
 - Deploy backend first so `/ai/copilot/draft/:ticketId` returns the `visuals` payload.
 - Deploy frontend after backend so admin ticket detail renders the draft visual evidence cards.
+
+## Follow-up - 2026-08-06 BULGU-10 Local Migration Recovery
+
+### What changed
+
+- Restored `0_add_ticket_number_seq` and `20260219151110_init_reset` to their production-shadow ledger-matching Git contents.
+- Added `20260314900000_restore_crm_foundation` before the first CRM-dependent migration to recover missing RBAC, CRM, and AI response-cache foundations on fresh installs.
+- Added a read-only migration integrity verifier, a canonical SHA-256 manifest for all 49 migration files, and a pre-deploy file gate; fresh PG17 deploy/status/ledger integrity remain blocking in CI.
+
+### Verification
+
+- Fresh disposable PG17: 49/49 migrations, no pending migration on the second deploy, integrity gate passed.
+- Sanitized production-shadow clone: new migration applied, 49 distinct successful migrations, integrity gate passed, business row fingerprints unchanged.
+- Prisma validate, monorepo typecheck, and backend full test suite passed (`116/116` suites, `1020/1021` tests passed, one skipped, zero failed).
+- Pre-change restore tag and verified bundle point to `dfd5eccb`.
+
+### Boundary and next action
+
+- No production connection, migration, restore, push, tag push, or deploy occurred.
+- The new migration remains pending for production and requires a separately approved maintenance window.
+- Pre-existing full `schema.prisma` drift remains a separate follow-up; do not claim exact fresh-schema parity yet.
+
+## Follow-up - 2026-08-05 Repo Consolidation Baseline And BULGU-23 Console Cleanup
+
+### What changed
+
+- Active work continued only in `/Users/hazarvolgaekiz/dev/studio/aluplan-support-desk-v02/aluplan-support-desk-v02-main-live-site` after repo consolidation.
+- Recorded the local consolidation baseline commit in `codex-claude-ortak-rapor.md`.
+- Added `apps/backend/src/common/utils/cli-logger.ts` and moved backend CLI/diagnostic helper output from direct `console.*` calls to Nest `Logger` through `createCliLogger(...)`.
+- Replaced remaining direct console calls in helper scripts, including `raw-sync.js`.
+- Removed `raw-sync.js` hardcoded Postgres URL and personal dataset path; the script now requires `DATABASE_URL` and uses `DATASET_DIR` with a relative fallback.
+- Adjusted one RAG utility spec fixture string so raw `console.*` scans do not report a non-call test snippet.
+
+### Verification
+
+- `pnpm --filter @aluplan/backend lint` passed with 0 errors and existing warnings only.
+- `pnpm --filter @aluplan/backend typecheck` passed.
+- `git diff --check` passed.
+- Direct-call scan for `console.log/warn/error/info/debug/trace/dir/table(` under `apps/backend/src` returned no direct calls.
+- Raw `console.` scan only reports `console.x.ai/billing` URL strings in `generic-openai.service.ts`.
+
+### Notes
+
+- Push remains forbidden unless the user explicitly requests it.
+- Next safe local technical target is stabilizing `ai-pipeline-optimization.pbt.spec.ts` with deterministic seed/failure-seed handling.
+
+## Follow-up - 2026-08-06 Post-Faz-7 DR, Migration And Auth Closure
+
+### What changed
+
+- Added direct structural comparison and migration-effect audit tooling, exact allowlist payloads, repeatable-read snapshots, and a root-level Faz 8 production runbook.
+- Restored the already-applied foundation migration to its immutable canonical checksum; no historical applied migration remains modified.
+- Added the new auth-state migration with action-token hashes, verification/password-reset cooldown timestamps, and durable session version.
+- Hardened login/refresh cookies, verification/reset token contracts, account-state binding, resend cooldown/rollback, password-reset/refresh race handling, and URL-fragment token transport.
+- Removed plaintext registration passwords from welcome-email payloads.
+
+### Verification
+
+- Fresh PG17 and sanitized production-derived clone: 51/51 migrations and migration-integrity gate passed.
+- Direct DB comparison: 0 blocking, 4 exact allowlisted, 93 informational column-order differences.
+- PRE read-only audit against the original shadow: 49 historical migrations, 1190 parsed effects, the expected 7 ghost effects and one pending foundation ledger entry. POST audit against its migrated disposable clone: 0 ghost, 0 pending/failed, 0 shadow-only. Exact definitions remain the separate comparator's responsibility.
+- Backend full suite: 116/116 suites, 1051 passed, 1 skipped, 0 failed. Frontend unit suite: 24/24 files and 217/217 tests passed.
+- Backend/frontend typecheck, i18n, Prisma validate/generation, migration manifest, shell syntax and `git diff --check` passed. Playwright discovery listed 60 tests in 21 files.
+- Three-run current migration measurements on the sanitized PG17 clone stayed below 11 ms per migration without lock contention. A verified `users` AccessExclusiveLock caused Prisma to exit non-zero in 5.946 seconds when timeout was delivered through the URL `options` parameter; no application start was attempted. Shell `PGOPTIONS` was rejected as an unreliable assumption after it failed to affect Prisma.
+
+### Boundary
+
+- No production DB/Redis connection or mutation, deploy, push, tag-push or publish occurred.
+- Production migration and live secret rotation remain user-controlled maintenance-window work.
+
+## Follow-up - 2026-08-06 Knowledge Pool URL Duplicate Prevention
+
+### What changed
+
+- Added a conservative, deterministic Knowledge Source URL canonicalizer.
+- Manual URL creation and LearnNow article import now share one transaction/advisory-lock writer, preventing equivalent concurrent submissions from creating two URL sources.
+- Duplicate attempts create no record and enqueue no second sync job.
+- URL DTO validation now requires URL values for URL sources, validates any supplied URL, and bounds name/URL length.
+- Removed raw submitted-URL retention and internal source IDs from duplicate error responses.
+- Added localized duplicate feedback and native URL input semantics to the Knowledge Pool modal.
+
+### Verification
+
+- TDD RED failures were observed before implementation.
+- Focused backend: 4/4 suites, 39/39 tests passed.
+- Full backend: 118/118 suites, 1067 passed, 1 skipped, 0 failed.
+- Frontend unit: 25/25 files, 219/219 tests passed; focused duplicate helper 2/2 passed.
+- Backend/frontend typecheck, TR/EN/DE i18n integrity, and `git diff --check` passed.
+- Independent code and security re-reviews approved with no current-diff Critical/High blocker.
+
+### Boundary
+
+- Existing duplicate data was preserved unchanged; no cleanup or migration was run.
+- No production/shadow mutation, push, tag-push, deploy, or publish occurred.
+- Pre-existing SSRF risk remains separately open; indexed canonical identity is a future scalability/migration task.
+
+## Runtime Hotfix - 2026-08-06 Prisma Advisory Lock And Knowledge Pool Messages
+
+- User browser smoke exposed Prisma `P2010`: `pg_advisory_xact_lock()` returned PostgreSQL `void`, which Prisma could not deserialize.
+- The query now projects `pg_advisory_xact_lock(...) IS NULL AS locked`; the blocking transaction lock still executes while Prisma receives a supported boolean value.
+- A real Prisma transaction against local dev PG17 returned `{ok:true,rowType:"boolean"}` without changing application data.
+- Missing `admin.knowledge_pool.crawler.public_notice_title` and `public_notice_desc` keys were added for TR/EN/DE; a namespace regression test now checks all three locales.
+- Focused backend 20/20 and frontend 5/5 tests, backend/frontend typecheck, i18n, and independent code/security reviews passed.
+- Hotfix commit: `6e280ea8`. No production/shadow mutation, push, or deploy occurred.
+
+## Follow-up - 2026-08-06 AI Solution History And FAQ Provenance
+
+### What changed
+
+- Preserved `/kb-approvals` as the FAQ publication queue and added a separate `/admin/ai-interactions` history for the exact customer question and AI solution shown before ticket creation.
+- Added paginated ticketed/ticketless, confidence, free-text and exact UUID filters; raw context, attachments, token/cost fields and unused customer text are excluded from FAQ provenance responses.
+- Added dedicated `ai-interactions:read` and `faq:review` permissions. Customer/Viewer access is denied; existing Support Manager/KB Editor FAQ-review behavior is preserved without granting AI-history access.
+- Added normalized FAQ provenance for tickets and AI interactions. Duplicate updates plus provenance writes are transactional and interaction-derived FAQ candidates cannot auto-publish.
+- Added safe Markdown/HTML rendering for stored AI answers and exposed the same answer in the staff-only ticket AI trace after ticket-scope authorization.
+- Added privacy-safe read audit records and capped FAQ pagination at 100.
+
+### Verification
+
+- Backend full suite: 119/119 suites, 1083 passed, 1 skipped, 0 failed.
+- Frontend unit suite: 28/28 files, 227/227 tests passed.
+- Final focused checks: backend 22/22 and frontend 4/4 passed after data-minimization changes.
+- Backend/frontend typecheck, TR/EN/DE i18n, Prisma validate, migration status and `git diff --check` passed.
+- Pre-migration local dump restored into a disposable PG17 DB; all 53 migrations applied and counts stayed 1282 users / 162 tickets / 259 AI interactions / 29 FAQs / 0 inferred legacy provenance rows.
+- Independent code and security re-reviews approved with no remaining Critical/High blocker in this feature diff.
+
+### Boundary
+
+- Production/shadow DB and production Redis were not contacted or mutated. No push, tag-push, deploy or publish occurred.
+- Legacy FAQ provenance was intentionally not guessed. Existing rows remain unchanged and display an explicit unknown-source state.
+- `packages/database/scripts/production-sync.js` remains unmodified and must not be run in production because of a pre-existing hardcoded admin-password/user-reactivation risk tracked outside this feature.
+- Post-feature restore point: commit `348411c5`, tag `restore/after-ai-interaction-visibility-20260806-348411c5`, verified complete-history bundle `.private-data/restore-points/post-ai-interaction-visibility-348411c5.bundle`, SHA-256 `222067a628f8cf5cd2d1817bc5c381a7030aca6e5658a7ed703f2a6eb56fd28a`.
+
+## Follow-up - 2026-08-06 Production Boot And Migration Safety
+
+### What changed
+
+- Added an append-only migration-manifest writer that refuses modified, deleted, malformed, or non-forward migration history; CI retains read-only blocking verification.
+- Added the data-preserving FAQ provenance timestamp-default alignment migration and advanced the canonical manifest to 54 migrations.
+- Replaced divergent production entrypoints with one executable fail-closed deployment script. Normal boot now contains only migration verification/deploy, ledger verification, and API start.
+- Removed automatic production data synchronization, role repair, admin bootstrap, direct DDL, and migration-ledger rewriting from application boot.
+- Made database seed and manual production sync explicit opt-in maintenance operations; production E2E seeding, implicit credentials, mass user reactivation, and legacy admin mutation are blocked.
+- Removed tracked `extracted_users.json` while preserving its ignored local copy, and removed the historical embedded credential from the current tracked tree.
+
+### Verification
+
+- Ops safety 15/15; backend 119/119 suites with 1083 passed and 1 skipped; frontend 28/28 files with 227/227 tests.
+- Backend/frontend and focused seed typechecks, i18n, shell/Node syntax, frozen-lock install, migration manifest 54/54, local ledger/relations, schema parity, and diff checks passed.
+- Local migration counts remained 1282 users / 162 tickets / 259 AI interactions / 29 FAQs / 0 FAQ provenance rows.
+- Independent code, security, and TDD reviews approved with no Critical/High blocker.
+
+### Boundary
+
+- Product/ops commit: `6759b077`.
+- Docker image build remains unproven because registry networking failed before the source build stage; release-environment image smoke is still required.
+- No production/shadow connection, push, tag-push, deploy, publish, or live secret rotation occurred.
+
+## Runtime Hotfix - 2026-08-06 Dashboard Strict Mode Loading Loop
+
+### What changed
+
+- Fixed the local Next.js development Dashboard remaining indefinitely in its loading state after React Strict Mode replayed mount effects.
+- The Dashboard mount effect now restores `mountedRef.current = true` during setup before cleanup marks it false.
+- Added a Strict Mode regression that reproduces the original infinite-loading behavior and verifies that the admin Dashboard renders after asynchronous data loading.
+- Strengthened the existing loading assertion so a missing pulse element can no longer pass as a false positive.
+
+### Verification
+
+- TDD RED was observed before the product fix: 1/9 Dashboard tests failed with the loading pulse still mounted.
+- Focused Dashboard suite passed after the fix: 9/9.
+- Full frontend unit suite passed: 28/28 files, 228/228 tests.
+- Frontend typecheck, TR/EN/DE i18n integrity, and `git diff --check` passed.
+- Independent code and security reviews approved with no Critical/High/Medium blocker.
+
+### Boundary
+
+- Product commit: `8c802d29`.
+- Pre-fix restore tag: `restore/pre-dashboard-strictmode-fix-20260806-a29690aa`.
+- Verified complete-history bundle: `.private-data/restore-points/pre-dashboard-strictmode-fix-a29690aa.bundle`, SHA-256 `5f29afac3b96f33431c00448688c988c7349ade7d93c99cc8761757e3c0b0660`.
+- GitNexus CLI was unavailable in this checkout, so `detect_changes` could not run. The reviewed diff was limited to the Dashboard component and its co-located test.
+- Dashboard-specific timeout, abort, retry and stale-response generation control remain a separate resilience improvement; the global API helper was intentionally left unchanged to avoid affecting long-running uploads, crawler jobs and AI requests.
+- No backend, database, migration, production/shadow data, push, tag-push, deploy or publish operation occurred.
+
+## Follow-up - 2026-08-07 Canonical RBAC Contract And Local SUPPORT_AGENT
+
+### What changed
+
+- Added a TypeScript-AST RBAC source scanner and a machine-readable canonical role/permission contract.
+- Added blocking CI checks before and after fresh migration deploy so unknown decorators, missing permissions, and an over-privileged `SUPPORT_AGENT` fail closed.
+- Added an additive migration that materializes the full 22-permission catalog and creates `SUPPORT_AGENT` with exactly 16 approved permissions; no user is assigned and existing permission metadata is preserved.
+- Updated the local RBAC seed to consume the canonical catalog and give ADMIN only the existing `*` wildcard.
+- The RBAC seed now uses the generated local database client and refuses to query the database without explicit `ALLOW_DATABASE_SEED=true` opt-in; the operations-safety test locks this ordering.
+- Fixed `RbacGuard` role matching so existing hyphenated controller aliases and underscore-backed DB roles resolve consistently.
+- Aligned migration alias detection with runtime normalization, including surrounding-whitespace rejection via `BTRIM`.
+
+### Verification
+
+- TDD: the alias regression failed 3 cases before the guard fix, then passed 16/16.
+- Operational safety contracts passed 21/21; RBAC source and local DB contracts passed.
+- All 55 migrations plus the RBAC database contract passed on a newly created temporary PostgreSQL database; the temporary database was removed afterward.
+- Local development DB read-only verification: `SUPPORT_AGENT` has 16 permissions and 0 assigned users.
+- Backend full suite: 119/119 suites, 1086 passed, 1 skipped, 0 failed.
+- Backend/frontend typecheck, TR/EN/DE i18n, 55-file migration integrity, and `git diff --check` passed.
+
+### Boundary
+
+- Only the local development database received the new migration. Production/shadow DB, production Redis, external services, push, tag-push, deploy, and publish were not touched.
+- The repository-declared Node 20 binary was absent; verification ran on the active local Node 24.18.0 runtime. New scripts use Node 20-compatible APIs, but CI remains the authoritative Node 20 execution proof.
+- Görev Merkezi API/UI implementation has not started; it is the next local-only phase after this RBAC prerequisite checkpoint.
+- Post-phase restore point: tag `restore/post-support-agent-rbac-20260807-05483a67`; verified complete-history bundle `.private-data/restore-points/post-support-agent-rbac-05483a67.bundle`, SHA-256 `3671b51e2a7a211b78618746e5b4aa546b96262d8321f102fd2901f353805e4e`.
+
+## 2026-08-07 - Authorization-scoped Review Center
+
+### What changed
+
+- Added `GET /api/v1/review-center/summary` and a localized `/[locale]/review-center` operational UI.
+- Added a sidebar task/approval group whose queue links and aggregate badge come only from the authorization-scoped backend response.
+- Added ticket filters for live-chat-requested and unassigned work, plus fail-closed query parsing on destination pages.
+- Kept AI interaction history as an audit-only link outside action totals; no customer interaction count is exposed by the summary.
+- Aligned FAQ approve/dismiss role metadata with the approved `SUPPORT_AGENT` `faq:manage` contract without widening crawler approval roles.
+- Updated OpenAPI and project/RBAC maps to 231 operations.
+
+### Verification
+
+- Backend: 121/121 suites, 1102 passed, 1 skipped, 0 failed.
+- Frontend: 34/34 files, 248 tests passed.
+- Backend/frontend typecheck, i18n, 21/21 ops safety, RBAC source contract and 55/55 migration manifest passed.
+- Unauthenticated local smoke: API 401 with no-store/no-cache; frontend route redirects to localized login.
+- Product commits: `1efacf33`, `ef9bfe7e`.
+- Independent review blockers were closed: real CUSTOMER permissions cannot expose global counts; cards require destination-read plus action authority; legacy `admin` is not a role wildcard; active ticket and authored-article count/list predicates match; same-route queries resynchronize; unauthorized RoleGuard children never render.
+
+### Boundary and next step
+
+- No production/shadow DB, production Redis, external integration, migration, seed, user-role assignment, push, tag-push, deploy or publish occurred.
+- Authenticated local visual acceptance remains: ADMIN and, when a safe local account exists, SUPPORT_AGENT should verify queue visibility, direct links and empty/error states.
+- Claude was asked to independently review the authorization-query boundary, action/audit separation, query validation and 231-route documentation parity before any release decision.
+- Local restore point: tag `restore/post-review-center-20260807-2fe9eb8e`; verified complete-history bundle `.private-data/restore-points/post-review-center-2fe9eb8e.bundle`, SHA-256 `9a6864b8ab7fe4d32928fed4823dae022d9e6e8dbbee24a563825b1a432c5829`.
+
+## 2026-08-07 - Frontend/backend contract and CRM egress closure
+
+### Delivered
+
+- Corrected CRM settings route and camelCase payload/response contract; added DTO validation and typed frontend client usage.
+- Preserved omitted webhook secrets, masked CRM and SettingsService secret responses, and separated CRM credential saving from the legacy API-key save.
+- Restricted Dynamics URLs to a trusted HTTPS origin, disabled redirects, and rejected cross-origin OData next/delta links before bearer-token requests.
+- Removed the unsupported MFA UI/client contract and unreachable MJML block editor while preserving the two independent email systems: file-backed transactional templates and DB-backed announcements.
+- Moved the customer Hotinfo download to the authenticated central client.
+- Added a blocking AST/OpenAPI route parity check with function-level, reason-required raw-network allowlisting.
+
+### Evidence
+
+- Product commit `eaa1fc53`; CI contract commit `e294623d`.
+- Backend full suite: 124/124 suites, 1152 passed, 1 skipped. Frontend full suite: 38/38 files, 260/260 tests.
+- Backend/frontend typecheck, TR/EN/DE i18n, 24/24 operations safety, RBAC source contract, 56/56 migration manifest, API route parity 182/233 with missing=0/raw-network=0, and `git diff --check` passed.
+- Independent code review and security review returned GO after Dynamics SSRF/token-origin, omitted webhook-secret and secret-response findings were fixed.
+
+### Boundary
+
+- Pre-work restore: `restore/pre-endpoint-parity-20260807-acafd92b`; complete-history bundle `.private-data/restore-points/pre-endpoint-parity-acafd92b.bundle`, SHA-256 `3400a13c1dbb245e8ce262b387bd64cbc10cc274abf94efea0a6faf0c5349327`.
+- No database migration, seed, production/shadow/live access, external CRM request, push, tag-push, deploy or publish occurred.
+- Post-work restore tag `restore/post-endpoint-parity-20260807-5320926d` resolves to documentation checkpoint `5320926d353a664026e1e39a369aceada4a42497`. Complete-history bundle `.private-data/restore-points/post-endpoint-parity-5320926d.bundle` passed `git bundle verify`; SHA-256 `117978cb2592aea937f2ccdfde66bc6625836eecefec3bb72451ba12e06afa9c`; `git fsck --strict` exit 0 (dangling trees only).
+
+## 2026-08-07 - Product taxonomy CRUD, archive safety, and endpoint parity audit
+
+### What changed
+
+- Added the missing product PATCH/archive endpoints and moved every products-page mutation to the authenticated central API client.
+- Added DTO validation, normalized duplicate detection, P2002-to-409 mapping, and partial normalized unique indexes for active product/category names.
+- Product and category archive operations preserve historical foreign keys. Product-first `FOR UPDATE` locking keeps concurrent archive/create/update operations consistent.
+- Ticket creation, AI diagnosis, and smart-tagging now reject or ignore archived taxonomy.
+- FAQ taxonomy restoration now creates an active replacement instead of silently reusing archived records.
+- Added unit, DTO, frontend, real-Postgres concurrency, and Playwright product lifecycle coverage.
+
+### Verification
+
+- Backend full suite: 122/122 suites, 1129 passed, 1 skipped.
+- Frontend full suite: 35/35 files, 254/254 tests.
+- Product Playwright lifecycle: 4/4 passed; generated product/category and E2E users were removed from local dev DB afterward.
+- Fresh PG17: all 56 migrations, migration integrity, schema parity, RBAC DB contract, duplicate-index behavior, and concurrency regression passed; disposable container removed.
+- Backend/frontend typecheck, TR/EN/DE i18n, migration manifest, OpenAPI/RBAC matrix 233/233 parity, and diff hygiene passed.
+- Independent code review and security review both returned GO after restore/P2002 and TOCTOU findings were fixed.
+
+### Local-only boundary and follow-up
+
+- Local dev DB on `localhost:55433` received migration `20260807143000_add_product_taxonomy_unique_indexes` after a zero-duplicate read-only audit. Production and shadow DBs were not connected to or changed.
+- Product code commit: `93870762`; migration commit: `c23867e1`.
+- No push, tag-push, deploy, publish, or live-system action occurred.
+
+- Static frontend/OpenAPI parity audit found three pre-existing gaps for separate work: CRM settings wrong route, unimplemented MFA backend contract, and unimplemented MJML content/announcement contract. No code change for those findings was made in this phase.
+
+## 2026-08-07 - Review Center active-record parity Aşama A
+
+- Product commit `69655f1c` aligned live-chat, unassigned-ticket and FAQ pending counts with active target lists through explicit `deletedAt: null` predicates.
+- FAQ list/count, single read, public feed, approval, dismissal and edit paths now preserve soft-delete integrity without changing the global Prisma layer.
+- Added runtime `UpdateFaqDto` plus service-side allowlisting to prevent PATCH mass assignment; null, blank, size and OpenAPI parity constraints are regression-tested.
+- Tickets UI now distinguishes API failure from an empty queue, offers localized retry, and ignores stale concurrent responses.
+- Verification: backend 125/125 suites (1168 passed, 1 skipped), frontend 38/38 files (262 passed), targeted backend 33/33, both typechecks, i18n, ops 24/24, API contract, RBAC contract, migration manifest/integrity and diff hygiene passed. Independent code/security reviews returned GO with no Critical/High/Medium findings.
+- Restore: `restore/post-review-center-phase-a-20260807-69655f1c`; complete-history bundle `.private-data/restore-points/post-review-center-phase-a-69655f1c.bundle`, SHA-256 `466460f32cfb0bddf5a3adc478dd4f64c95f71bf18585a84aa12fb549f2a5c80`.
+- No production/live/shadow access or write, DB mutation, migration/seed, push, tag push, deploy or publish. Global Prisma soft-delete Aşama B remains NO-GO pending a separate full inventory and user approval.
+
+## 2026-08-08 - Production Release A.1.2 local closure
+
+- Product/tooling commit `64c5d2bc` hardens the operator backup path with explicit opt-in, PG17 custom-format dump validation, checksums, private artifact boundaries, lock and symlink protections, S3 conditional no-clobber upload, verified metadata and READY-last publication.
+- The legacy in-process scheduled/API backup implementation is quarantined behind a fixed 503 response; exception and public-health responses no longer expose unsafe status, query, audit or driver details.
+- Final evidence: backup `44/44`, ops `87/87`, backend `132/132` suites (`1311 passed`, `1 skipped`), frontend `42/42` files (`308 passed`), both typechecks, i18n, API/RBAC and migration `56/56`; independent TDD/code/security reviews GO with C/H/M `0/0/0`.
+- Existing Cloudflare R2 application bucket `aluplan-support-desk` (`402` objects, `37.42 GB` observed) was not written, moved, renamed or deleted. `aluplancoolify` is unrelated. Proposed DB-only bucket `aluplan-support-desk-db-backups` is not yet created/configured.
+- Verified restore point: `restore/post-release-a12-20260808-64c5d2bc`; bundle SHA-256 `a6b1f98e8828d3a6ec9b5f01e2887408eb42832d777699eb3aba9d147b67c0cd`.
+- Production remains NO-GO until A.1.3 exact-image, real Cloudflare R2 round-trip and disposable PG17+pgvector restore evidence. No live DB/R2/SSH action, migration, seed, push, tag-push or deploy occurred.
+
+## 2026-08-08 - Pause and morning handoff
+
+- Work paused after the verified A.1.2 local closure; no additional product
+  code, live system action or external mutation was started.
+- Last product/tooling commit is `64c5d2bc`; the preceding release-doc
+  checkpoint is `46ec376c`. A.1.1 migration planning and A.1.2 backup
+  hardening are locally complete, but production remains NO-GO.
+- Final evidence carried forward: backend `132/132` suites (`1311 passed`,
+  `1 skipped`), frontend `42/42` files (`308/308`), backup `44/44`, ops
+  `87/87`, typechecks, i18n, API/RBAC and migration `56/56`; independent
+  TDD/code/security reviews GO with C/H/M `0/0/0`.
+- Existing Cloudflare R2 `aluplan-support-desk` application data (`402`
+  objects / `37.42 GB` observed) remains untouched. `aluplancoolify` is
+  unrelated. Proposed `aluplan-support-desk-db-backups` is not created or
+  configured.
+- Next phase A.1.3 must prove the exact backend image, conditional R2
+  round-trip and a disposable PG17+pgvector restore before any cutover.
+  Production ledger, credential rotation, object parity, all nine queues,
+  cron/repeatable-job singleton behavior and rollback remain acceptance gates.
+- New sessions must start at `FIRST-READ.md` section 10. No push, tag-push,
+  deploy, production DB/R2/SSH write, migration or seed is authorized.
+- Pause handoff was committed as `ab2bd04f`. Verified local restore tag
+  `restore/pause-before-release-a13-20260808-ab2bd04f` points to that commit;
+  complete-history bundle SHA-256 is
+  `63e8f45bc7f2eb51ae6aae4ec49961598c64225d08130fb0b92d93868633c12d`.
+  The tag and bundle remain local and were not pushed.
+- Claude independently re-ran the source, local read-only DB, restore-integrity, targeted/full test, typecheck, i18n and contract checks and returned GO with no contradicted claim or count deviation. Aşama A is therefore closed; work pauses here.
+- Root `FIRST-READ.md` is the shared Codex/Claude account-switch and new-session entry point. It preserves the canonical directory, read order, archive reference, local-only boundaries, Aşama A closure, and Aşama B NO-GO gate.
+
+## 2026-08-10 - Encrypted SharePoint DEV acceptance
+
+- Pinned the official `age v1.3.1` darwin/arm64 release under `.private-data/tools`; its archive matched the publisher SHA-256 `01120ea2cbf0463d4c6bd767f99f3271bbed1cdc8a9aa718a76ba1fe4f01998b`.
+- Generated a DEV-only age identity under `.private-data/release-credentials` with mode `0600`. The private identity was never uploaded, committed, printed or documented.
+- Encrypted a 288-byte synthetic canary, uploaded only the 488-byte ciphertext and a non-secret JSON manifest to the new SharePoint DEV site's `Manifests` library.
+- Downloaded the ciphertext back through Microsoft Graph. Ciphertext SHA-256 `65f66f049c8b31315c27a7fd0f2456fe59c455e067cd08ac08861ef9c10aac25` matched exactly; age decryption succeeded and recovered plaintext SHA-256 `1e38c0dbdbd1c4bcaef3f13335718048ce9997d8ad90d11b1182728cc452ad95` matched the source.
+- Verified SharePoint version `1.0` and no anonymous sharing link on the canary. Existing production DB/R2/application SharePoint data remained untouched.
+- This is a DEV encrypted round-trip acceptance only. Production remains NO-GO pending organizational key escrow/recovery, automation identity, retention, read-only live inventories, maintenance/cutover and rollback gates.
+
+## 2026-08-10 - DEV object-manifest and encrypted offsite round-trip
+
+- Read-only listed only `aluplan-support-desk-db-backups-dev`: one synthetic canary object, 106 bytes. HEAD size/ETag matched the normalized private manifest.
+- Manifest SHA-256 is `fc2041066e4bd4fa35fae0c0570ee13d51bc9a7166fcd68cff3215c1f7b51798`, stored mode `0600` under `.private-data/release-evidence/r2-manifest-dev/`.
+- Bucket versioning visibility returned `AccessDenied`; no versioning claim was made and versioning remains excluded from recovery acceptance.
+- Encrypted the manifest client-side, uploaded the 689-byte ciphertext to the new SharePoint DEV `Manifests` library, downloaded it, matched SHA-256 `113b4cd4a70e5548a0dce1352bf97553111247a0e9957486ddc5f524fd59064b`, decrypted it and proved exact byte equality with the source JSON.
+- No production bucket, database, deploy or production copy was touched. Next authorization gate is organizational key custody plus a separately approved read-only live inventory credential.
+
+## 2026-08-10 - Dual-recipient DEV recovery and SharePoint round-trip
+
+- Created two independent DEV-only age identities under the Git-ignored private root. Directory permissions are `0700`; identities and all recovered artifacts are `0600`.
+- Encrypted the existing synthetic canary once for both recipients. The 586-byte ciphertext SHA-256 is `90e7dc235d6b267b58727deaf361d720f8b857205852713468acfb0a8ee63d7f`.
+- Proved locally that either identity alone recovers the exact original plaintext SHA-256 `1e38c0dbdbd1c4bcaef3f13335718048ce9997d8ad90d11b1182728cc452ad95`.
+- Uploaded only the synthetic ciphertext to the new SharePoint DEV `Manifests` library, downloaded it through Graph, proved ciphertext byte equality, and independently decrypted the round-trip copy with both identities.
+- No private key or recipient value was printed, committed, or uploaded. Local-only dual custody is accepted for DEV evidence, not production recovery. Production keys require separate organizational and offline custody locations.
+- No live database, live application bucket, production SharePoint site, deploy, migration, seed, push or production copy was touched. Production remains NO-GO.
+
+## 2026-08-10 - A.1.4 offline production inventory preparation
+
+- Added a network-incapable production-inventory preparation contract in commit `fdee46c8`. It accepts no credentials/endpoints, rejects `--execute`, requires explicit `--prepare`, and writes only private no-clobber mode-`0600` evidence.
+- Locked the exact nine BullMQ queues, nine source cron declarations, four repeatable jobs, PostgreSQL statement allowlist, and R2/Redis read-operation allowlists. Runtime singleton and live parity remain intentionally unverified.
+- Closed a fail-closed SQL review finding by replacing broad `SELECT` acceptance with an exact statement allowlist; side-effect functions such as `set_config` and `lo_unlink` are regression-tested as rejected.
+- Verification passed: A.1.4 `12/12`, broad operations safety `163/163`, syntax/format/JSON/secret/diff checks. Manual code/security review found no Critical/High/Medium issue.
+- No production PostgreSQL, Redis, R2, SSH, migration, seed, queue mutation, push or deploy occurred. Production remains NO-GO. The next phase requires separate user approval for A.1.4-B live read-only inventory access.
+- The private preparation plan is bound to documentation commit `b07203e8260a34460e733b15074e2d1651c1c0bf`. Recovery evidence: local tag `restore/post-release-a14-preparation-20260810-b07203e8`; verified complete-history bundle `.private-data/restore-points/post-release-a14-preparation-20260810-b07203e8.bundle`, SHA-256 `762309f39a05496a9ba1637fdbfd304686f241b05609744492c3d784d5263486`.
+
+## 2026-08-09 - Production Release A.1.3 exact-image and disposable restore evidence
+
+### Outcome
+
+- Local-only exact-image and disposable PG17+pgvector restore evidence is complete. Production remains NO-GO.
+- Final tooling commit: `ca26caa1` (`fix(release): serialize fingerprint queries`). Exact amd64 image: `sha256:74a4fac812a84082184c8d42a41473f08a235ed772cc615cfcfd316f7299f6ac`.
+- The input was the existing sanitized production-derived PG17 custom archive, SHA-256 `544260dd42453b6510433e27de0ef19e03e3e08793923af8c699fb27a98f1ff7`, `138028808` bytes, mode `0600`. Raw production dumps were not used.
+- Baseline and candidate-pre fingerprints were identical. Migration round 1 applied the eight expected pending migrations; round 2 reported no pending migrations. Candidate post-round-1 and post-round-2 fingerprints were identical.
+- Final parity evidence records business/RAG/object-reference/sequence/RBAC-baseline/schema-baseline stability, canonical RBAC, schema parity, a true round-two no-op, zero invalid constraints/indexes, clean disposable resource teardown, and `productionGo:false`.
+
+### Fail-closed findings closed during the drill
+
+- Docker Desktop lowercase missing-object messages are accepted only as exact immutable-ID/name matches; wrong ID, suffix and daemon-error cases remain rejected.
+- All backend evidence jobs explicitly run as `linux/amd64` on Apple Silicon.
+- RBAC fingerprint reads no longer overlap queries on one node-postgres `Client`; a side-effect-free helper and behavior test prove `maxInFlight=1` and deterministic roles -> permissions -> assignments order.
+- Every source change received TDD, code review and security review closure with Critical/High/Medium `0/0/0`.
+
+### Verification and recovery
+
+- A.1.3 safety: `52/52`; broad operations-safety: `151/151`; Node syntax and diff hygiene passed.
+- Restore tag: `restore/post-release-a13-fingerprint-20260809-ca26caa1`.
+- Complete-history bundle: `.private-data/restore-points/post-release-a13-fingerprint-20260809-ca26caa1.bundle`; SHA-256 `dca8524a59d61525bf6f20b5fd4eeda739d5486c5d47356634699fb185280034`.
+- Private exact-image/restore evidence is under `.private-data/release-evidence/` and is intentionally not committed.
+
+### Remaining release boundary
+
+- No Cloudflare R2 backup round-trip was performed and no DB-only backup bucket was created. Existing `aluplan-support-desk` application objects were untouched.
+- Still required before any production GO: dedicated DB-backup R2 conditional upload/download/hash/restore canary; read-only live migration ledger plan; production PostgreSQL credential rotation; full DB-to-S3/local object-reference parity; all nine BullMQ queues plus cron/repeatable-job singleton checks; approved maintenance/cutover and rollback rehearsal.
+- No production DB/R2/SSH access or write, migration, seed, push, tag-push, deploy or publish occurred.
+
+## 2026-08-10 DEV R2 and SharePoint offsite acceptance
+
+### Completed external DEV evidence
+
+- Created the isolated Cloudflare R2 bucket `aluplan-support-desk-db-backups-dev`; the live application bucket remained untouched.
+- Created a 30-day Object Read & Write credential scoped to that bucket only. Its values remain untracked under `.private-data` with mode `0600` and were not printed or documented.
+- Uploaded a 106-byte synthetic canary with `If-None-Match: *`, verified HEAD metadata, downloaded it, matched SHA-256 on both copies, and proved a repeat conditional upload is rejected.
+- Created the separate non-group SharePoint site `ALUPLAN Destek Yedek Kasası DEV` at `/sites/aluplan-destek-backups-dev`, Turkish locale, Istanbul time zone and 100 GB site quota. External sharing is organization-only.
+- Created empty `Database Backups`, `Object Storage Snapshots`, and `Manifests` libraries. Existing `ALUPLAN DESTEK PLATFORMU 2026` was not modified.
+
+### Boundary and next action
+
+- No production dump or live R2 object was copied. R2 returned no object `VersionId`, so the release design still requires immutable unique keys plus an independent encrypted SharePoint copy.
+- Next: define client-side encryption/key custody, run an encrypted synthetic SharePoint round-trip, then produce a read-only live object manifest and staged initial/delta-copy plan. Production remains NO-GO.
+## 2026-08-08 - Announcement email preference BUG-05 closure
+
+- Captured and independently verified the announcement dynamic-data GAP/BUG report in `.ai/issues/2026-08-08-announcement-email-template-dynamic-data-gap-bug-report.md`; docs baseline commit is `cc1a7896`.
+- Created and verified pre-change restore tag `restore/pre-announcement-email-safety-20260808-cc1a7896` and complete-history bundle `.private-data/restore-points/pre-announcement-email-safety-cc1a7896.bundle` (SHA-256 `d174ba9c1687ca48e571f69349198d59bfe4c2770f821d1eb092aac64735c27c`).
+- TDD RED proved `master-announcement` incorrectly queried `SYSTEM`; the minimal mapping fix now classifies it as `ANNOUNCEMENTS`.
+- Product commit `8f40deef`; regression-test commit `bddd51ac`.
+- Verification: focused test `14/14`, expanded email/announcement set `61/61`, full backend `125/125 suites` with `1169 passed, 1 skipped`, backend typecheck and `git diff --check` passed.
+- Independent code review and security/privacy review returned GO for BUG-05; Critical/High/Medium attributable to the diff are `0/0/0`. The test-isolation warning was fixed before commit.
+- Post-fix restore tag `restore/post-announcement-bug05-20260808-bddd51ac`; complete-history bundle `.private-data/restore-points/post-announcement-bug05-bddd51ac.bundle` verified with SHA-256 `236c1800c7ad09486b7bc5ecde455150c1d773437a6311874e1fa140f5b7b2f6`.
+- Residual boundary: BUG-04 remains open because consent-skipped announcements can still be recorded as `SENT`; subject rendering, canonical context/Zod validation, preview parity and unresolved placeholder protection also remain open. Personalized dynamic announcements remain NO-GO.
+- No production/shadow/live connection, migration, seed, DB mutation, external email send, push, tag-push, deploy or publish occurred.
+
+## 2026-08-08 - Production release readiness and live-drift audit
+
+- Chose a release-readiness/live-drift audit instead of another broad code GAP report; canonical artifact: `.ai/issues/2026-08-08-production-release-readiness-live-drift-audit.md`.
+- Local candidate is `4e1c6819`, 153 commits ahead of local `main`; this is release scope evidence, not proof of live drift. Live image digest/commit remains unknown until a separately authorized read-only inventory.
+- Current local gates passed: operations safety 24/24, backend/frontend typecheck, TR/EN/DE i18n, API contract `182/233 missing=0 raw-network=0`, RBAC source `12 roles/19 permissions`, migration manifest `56/56` and diff hygiene.
+- Production decision remains NO-GO: Faz 8 runbook is fixed to an obsolete three-migration set; DR/backup paths can mask failures; staging does not prove immutable image promotion; PG version is inconsistent; worker/cron jobs are in-process; old shadow sanitization is incomplete; PostgreSQL restore alone does not protect R2/local object data.
+- Independent planning, CI/DR/backup and data/RAG/storage reviews agreed on the same NO-GO decision. No code, DB, migration, seed, live system, push, tag-push or deploy was changed.
+- Next safe phase is local-only Faz A: repair the current runbook/DR/backup/staging contracts, define a worker/cron maintenance boot strategy, create exact immutable images, and rerun full release gates before requesting live read-only drift authorization.
+
+## Follow-up - 2026-08-08 Production Release Faz A.1.1
+
+- Replaced the stale fixed migration assumptions with a canonical-ledger resolver and fail-closed Faz 8 runbook.
+- Product/tooling commit: `8fbdc0b1` (`fix(release): derive production migration plan from ledger`).
+- The resolver is opt-in for database access, uses a read-only repeatable-read transaction, writes only mode-`0600` artifacts under `.private-data`, records provenance, and never logs the connection URL.
+- Independent review found and closed three important issues before commit: contradictory lifecycle rows, hidden historical checksum-marker acceptance, and insufficient artifact/storage provenance.
+- Final tests: planner 19/19, combined operations safety 43/43, migration files 56/56; code/security reviews GO with no Critical/High/Medium findings.
+- Read-only Coolify inventory showed backend/frontend running deployed commit `d9b21b9d`, healthy PG17+pgvector and running Redis. MinIO is intentionally retired; S3-compatible storage is canonical.
+- A Coolify database configuration snapshot unexpectedly returned the PostgreSQL credential unmasked. It was neither reused nor written into project docs; production PostgreSQL credential rotation is now a mandatory release checklist item.
+- Restore tag/bundle: `restore/post-release-a11-20260808-8fbdc0b1`, SHA-256 `ecb15b14da121665c3d30c94df13784b954c3b939b0ebb39b724c3a2250eb9af`; bundle verify and strict fsck passed (historical dangling trees only).
+- No production query, SSH command, data write, migration, seed, push, tag-push or deploy occurred. Next local phase: A.1.2 backup hardening.
+
+## 2026-08-11 - A.1.4 independent-review hardening closure
+
+- Preserved Claude's independent A.1.4 verification as docs commit `6a523cda`, then created and verified the pre-fix restore tag/bundle.
+- Closed the one Medium and six Low hardening findings in only the two authorized A.1.4 files. Code commit: `9461d52a`; regression-test commit: `c7c8c039`.
+- Queue inventory discovery now uses the TypeScript AST to enumerate actual `registerQueue` calls, fails on async/unreviewed registration shapes, and compares the distinct set with the canonical nine queues. Anchors prove real registrations rather than substrings.
+- PostgreSQL operations and the independently frozen statement allowlist must match; defense-in-depth rejects known side-effect functions. Timestamps require canonical UTC ISO-8601 and output is restricted to `.private-data/release-evidence`.
+- Added real symlink/permissive-directory tests and broader static network-capability guards. R2/Redis restrictions remain declarative future-collector contracts, not live enforcement evidence.
+- RED produced 4 expected failures out of 16. Final A.1.4 is 16/16 and broad operations safety is 167/167; syntax, formatting, secret and diff checks passed. Manual C/H/M closure: 0/0/0.
+- Generated a private mode-0600 plan bound to `c7c8c03983755a08e9d59ae267e6c7f96bb84486`, with production access/GO both false. No live system, credential, deploy, push, migration, seed or queue mutation was touched. Production remains NO-GO.
+- Post-fix recovery: tag `restore/post-release-a14-hardening-20260811-865090f3`; verified complete-history bundle `.private-data/restore-points/post-release-a14-hardening-20260811-865090f3.bundle`, SHA-256 `d05a3ca0a3d801e5062e05fe76fe22dbe0d7d7c974214c7cfe466e5af4aa6423`.
+
+## 2026-08-11 - A.1.4 H1-H5 local commit and restore closure
+
+- Recorded the in-process schedule inventory contract in local commit `5e77ffdc`, its regression suite in `ff38340e`, and the append-only Claude/Codex handoff in `021ae1c5`.
+- Final evidence: A.1.4 target `21/21`, broad operations-safety `172/172`, code/security reviews GO with Critical/High/Medium `0/0/0`.
+- Created local annotated tag `restore/post-release-a14-h1-h5-20260811-021ae1c5` at `021ae1c577e503f1e584b1f8b5e08d133ebbad87`.
+- Created and verified complete-history bundle `.private-data/restore-points/post-release-a14-h1-h5-20260811-021ae1c5.bundle`; mode `0600`, SHA-256 `2ae4e178ac3762a4fbb321d36a08bddbeb2f520828b322a736f1421a773c0cc3`.
+- The A.1.4-B live collector was not implemented or run. Its next step is a design-only, fail-closed read-only contract and requires separate user approval before any production access.
+- `StalledJobRecoveryService` multi-replica behavior remains a separate product/architecture decision; it must not be silently folded into inventory work.
+- No push, tag-push, deploy, live credential access, production connection, migration, seed, queue/object/Redis mutation or production data change occurred. Production remains NO-GO.
+
+## 2026-08-12 - A.1.4-B design-only collector contract
+
+- Added `.ai/issues/2026-08-12-production-readonly-inventory-collector-design.md`; no collector/runtime/product code was implemented or executed.
+- The design separates PostgreSQL, R2, Redis, runtime-topology and local-volume adapters from an offline reconciler. Each transport receives a distinct short-lived least-privilege credential; no process receives all credentials.
+- Source analysis found the prior count-only PostgreSQL and Redis command declarations insufficient for key-level DB↔R2 and active/repeatable BullMQ evidence. Exact object-reference and exact-known-key contracts are required before implementation.
+- The first security review found C/H/M `0/2/3`. The design was hardened to avoid SCAN-as-ACL isolation, bracket DB+R2 as moving targets, probe effective PostgreSQL PUBLIC privileges, isolate the R2 parent token in a minting broker, HMAC keys before persistence and require a separately approved local-volume manifest.
+- Final security re-review returned GO for design-only closure with C/H/M `0/0/0`. Independent planning agreed that the next phase must remain offline TDD/implementation, not live access.
+- Cloudflare R2 Object Read includes object-body read; the narrow target is an action-scoped child credential for `ListObjectsV2` and `HeadObject`, with the parent secret outside the collector. Redis discovery defaults to exact known keys; BullMQ getters/Lua and fallback SCAN are outside the default contract.
+- No production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint access, credential operation, object body read, migration, seed, queue/object/Redis mutation, push or deploy occurred. Production and live A.1.4-B remain NO-GO.
+
+## 2026-08-12 - A.1.4-B0 offline collector core
+
+- Implemented a local-only, import-safe modular collector core under `scripts/a14b/`; it contains no production client construction, endpoint, credential provisioning or CLI execution path.
+- Added fail-closed PostgreSQL, R2 and Redis adapter contracts, fixed-order double observation, reference classification, closed evidence generation and private atomic evidence publishing.
+- Final focused verification: `21/21`; coverage `%96.81` lines, `%82.53` branches, `%96.47` functions. Broad operations-safety: `193/193`. Syntax, formatting and diff hygiene passed.
+- Independent code and security reviews both returned GO with Critical/High/Medium `0/0/0` for the offline core only.
+- Local code/test/tooling commit was created: `f6982564` (`feat(release): add A14B offline collector core`). Documentation commits: `3c7c9fe1` and final addendum `1107b7fa`.
+- Canonical final restore tag: `restore/post-release-a14b-offline-core-final-20260812-1107b7fa`, target `1107b7fa633abce35b27d6ebd0754a7a990a9bea`. Complete-history bundle: `.private-data/restore-points/post-release-a14b-offline-core-final-20260812-1107b7fa.bundle`, SHA-256 `7d2f17fd8556acd2ca3124cf32cadaf3477f6f6617ee9c77aa43d86a9c66e8eb`; `git bundle verify` passed.
+- No live system, credential, database, object store, Redis, SSH, Coolify or SharePoint access occurred. No push, deploy, migration, seed or data mutation occurred. Production and B1 live observation remain NO-GO.
+
+## 2026-08-12 - A.1.4-B0 follow-up hardening
+
+- Closed Claude's B0-1 diagnostic gap locally: moving-target and DB-referenced-but-missing R2 cases now produce closed, `ready:false`, `productionGo:false` diagnostic evidence instead of throwing before artifact generation. Publisher persists blocked diagnostics but never writes `READY.json` for them.
+- Closed B0-4 with explicit historical-marker acknowledgement: `manual-psql-fix` is default-deny unless passed through exact `acknowledgedHistoricalMarkers`, and accepted markers are projected as `historicalLedgerMarkersAccepted`.
+- Closed B0-5/B0-6/B0-7: publisher now uses `fileURLToPath`, pid+UUID temp names, raw storage-key pattern detection, and a redacted fixed EEXIST message.
+- Verification: focused A.1.4-B set `25/25`, broad operations-safety set `197/197`, syntax, Prettier and `git diff --check` passed.
+- Follow-up hardening commit: `219d1142` (`fix(release): close A14B B0-1 and low hardening findings`).
+- B0-3 is closed with an annotated restore tag: `restore/post-release-a14b-b0-hardening-20260812-219d1142`; tag object `2d5ab23b383a4e9b50e833660344a7f0737c6047`, peeled commit `219d11428a96da7fdb6737e076a1f9ba946fe79b`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b0-hardening-20260812-219d1142.bundle`, mode `0600`, SHA-256 `bbbb9a9636208ca2b81dab0a9ddd1f02c884825d587bb2b8101ad0bdf191554e`; `git bundle verify` passed.
+- A.1.4-B0 B0-1 through B0-7 are now committed and recovery-recorded for local/offline hardening. No live access, credential operation, deploy, migration, seed, queue/object/Redis mutation, push or tag-push occurred. B1/live observation and production deploy remain NO-GO.
+
+## 2026-08-12 - A.1.4-B1 live observation preflight
+
+- Added docs-only preflight plan: `.ai/issues/2026-08-12-a14b-b1-live-observation-preflight.md`.
+- The plan freezes the next safe gate before any live read: distinct short-lived read-only credentials, exact PostgreSQL/R2/Redis operation scopes, private evidence location, bounded before/after observation, DB↔R2 parity classes, runtime moving-target semantics and explicit GO/NO-GO conditions.
+- No concrete transport, credential provisioning or live observation was implemented or run. Production PostgreSQL, Redis, Cloudflare R2, SSH, Coolify and SharePoint remain untouched.
+- Production deploy remains **NO-GO**. B1 live observation requires a separate explicit user approval and should preferably run during a low-traffic or maintenance window because active tickets/uploads can make exact parity a moving target.
+- Claude independently verified B1-1 through B1-5 as closed with no remaining documentation findings. The docs-only closure commit is `454f6693` (`docs(release): close A14B B1 live observation preflight plan`).
+- Recovery evidence: annotated tag `restore/post-release-a14b-b1-preflight-20260812-454f6693`, tag object `d067d68fa4b405712d6a07c9cbdfc4d183ef561c`, peeled commit `454f6693c37f312313f55d75cf070c05df83bfa7`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-preflight-20260812-454f6693.bundle`, mode `0600`, SHA-256 `c708dbeb8feefa56be3807504694ae24b126401e3c294a12ab7e3757db18aeee`.
+- Push, tag-push, deploy, production connection, credential read/write, migration, seed and queue/object/Redis/DB mutation did not occur.
+
+## 2026-08-12 - B1 night observation and deploy gates
+
+- Added docs-only night plan: `.ai/issues/2026-08-12-a14b-b1-night-observation-and-deploy-gates.md`.
+- The plan separates credential preparation, B1 live read-only observation, runtime-topology access and deploy into distinct approvals. General B1 observation does not include SSH/Coolify runtime topology, and no wording grants deploy.
+- Recommended sequence: credential plan → explicit B1 read-only observation approval → B1 observation result → backup/restore/rollback gate → final deploy GO/NO-GO → explicit `deploy et` approval.
+- Because production tickets/uploads can continue, exact DB↔R2 parity should be attempted in a low-traffic/night window and treated as moving-target if before/after digests drift.
+- No live system access, credential operation, mutation, push, tag-push or deploy occurred.
+- Commit: `869e1f38` — `docs(release): close A14B B1 night observation and deploy gates plan`.
+- Recovery evidence: annotated tag `restore/post-release-a14b-b1-night-gates-20260812-869e1f38`, tag object `04fb516cb097889c4c5ea41d9845c996d9ab03a5`, peeled commit `869e1f38a37033eb9b64f8c12b09b94f14880012`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-night-gates-20260812-869e1f38.bundle`, mode `0600`, SHA-256 `3bc8da35eab7792349b813ddcf11eaa7d374bc1965ab896b31fdaf6a2587495f`.
+- B1 concrete transports, credential provisioning, live observation, runtime-topology/SSH/Coolify and production deploy remain **NO-GO** pending separate explicit approval.
+
+## 2026-08-16 - B1 credential provisioning plan
+
+- Added docs-only credential plan: `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`.
+- The plan separates PostgreSQL, R2 and Redis credentials, requires short-lived least-privilege scope, keeps SSH/Coolify outside default scope, and requires revocation/cleanup before any deploy gate can open.
+- It explicitly preserves the R2 `GetObject` compensating-control caveat and Redis exact-known-key/no-SCAN boundary.
+- Claude independently verified the docs-only plan as GO with C/H/M `0/0/0`; the only Low note was an append-only formatting discipline issue, not a content or security finding.
+- Commit: `508bb43f` — `docs(release): close A14B B1 credential provisioning plan`.
+- Recovery evidence: annotated tag `restore/post-release-a14b-b1-credential-plan-20260816-508bb43f`, tag object `a5de08ba2165f43f5414b3ba0f082e2cd5e66109`, peeled commit `508bb43f4aee1936322bb474f1a1c69c131ff4ab`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-credential-plan-20260816-508bb43f.bundle`, mode `0600`, SHA-256 `1df4de44c9aed670a399e30a6f795549d9617bcdcddc75810240569bac686444`.
+- User approved only the credential provisioning method with `B1 credential provisioning yöntemini onaylıyorum`; this does not authorize credential creation, concrete transports, live observation, SSH/Coolify or deploy.
+- Added a secret-free operator checklist for PostgreSQL, R2 and Redis credential preparation. No credential value was created, read, stored or printed.
+- Added docs-only pre-deploy backup/restore gate: `.ai/issues/2026-08-16-a14b-b1-predeploy-backup-restore-gate.md`. It requires PostgreSQL restore evidence, R2/object parity strategy, Redis/BullMQ runtime state and rollback target evidence before deploy can be considered.
+- Claude independently verified the backup/restore gate plan as GO with C/H/M/L `0/0/0/0`.
+- Commit: `aecbf6c2` — `docs(release): close A14B B1 backup and credential planning`.
+- Recovery evidence: annotated tag `restore/post-release-a14b-b1-backup-gate-20260816-aecbf6c2`, tag object `82a66bb6ef33ee4bc9dcc0bb9d65f9b333812b63`, peeled commit `aecbf6c264c58557eed1e8ebd551b03ce95a52ed`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-backup-gate-20260816-aecbf6c2.bundle`, mode `0600`, SHA-256 `be55dd9585f68eed35c230be6367bb550d3e905948d2ac874e9e5bbfa0a58a2f`.
+- No production connection, credential read/write, backup execution, mutation, push, tag-push or deploy occurred. Credential provisioning, B1 concrete transports, B1 live observation, runtime-topology/SSH/Coolify, production backup execution and production deploy remain **NO-GO** pending separate explicit approval.
+
+## 2026-08-16 - B1 PostgreSQL credential provisioning guidance
+
+- User gave the narrow approval phrase `B1 PostgreSQL credential provisioning başlat`.
+- This was treated as PostgreSQL credential production guidance only; it did not authorize Codex to connect to production PostgreSQL, create/alter/drop a role, read or write a password/connection string, run backup, start live observation or deploy.
+- Added §14 to `.ai/issues/2026-08-16-a14b-b1-credential-provisioning-plan.md`.
+- The new guide defines the expected short-lived read-only role contract: `LOGIN`, `NOINHERIT`, `default_transaction_read_only=on`, no membership/admin attributes, target database only, `public` schema usage only, and `SELECT` only on `public."_prisma_migrations"`, `public.attachments`, `public.knowledge_sources` and `public.settings`.
+- The guide requires a secret-free effective-scope probe before B1 live observation, fail-closed handling for broad `PUBLIC`/database/schema/table/function grants, and a revoke/drop plan before any deploy gate can open.
+- No production PostgreSQL/R2/Redis/SSH/Coolify/SharePoint access occurred. No credential/token/secret was created, read, stored or printed. No mutation, push, tag-push or deploy occurred.
+- Commit: `46fe0ad7` — `docs(release): close A14B B1 PostgreSQL credential guidance`.
+- Recovery evidence: annotated tag `restore/post-release-a14b-b1-postgres-credential-20260816-46fe0ad7`, tag object `d21dcab7fc3ddb43e40bb9c07e318a83d9eec489`, peeled commit `46fe0ad70fee888f10e72f55fe3a6ca75e750fce`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-postgres-credential-20260816-46fe0ad7.bundle`, mode `0600`, SHA-256 `fa40a3cbcdd3b5c44310f702bb371accecae1ec007b7aa8fbcbd40c16ec57e00`.
+
+## 2026-08-16 - B1 PostgreSQL credential provisioning attempt
+
+- User gave the explicit narrow production-write approval: `Production PostgreSQL üzerinde yalnız B1 için geçici read-only rol oluşturmanı onaylıyorum; parola/connection string değerlerini okuma, yazma veya rapora geçirme.`
+- Codex did not receive, read, print or store any PostgreSQL password, token, endpoint or connection string. The user/operator worked inside the Coolify PostgreSQL terminal and set the password via `\password`.
+- Production DB context was confirmed as `postgres`; the preflight role existence check returned `role_exists = f`, and all four target tables existed.
+- A temporary role was created: `a14b_inventory_ro_20260816`, with expiry `2026-08-16T23:59:00.000Z`, `LOGIN`, `NOINHERIT`, `default_transaction_read_only=on`, and `SELECT` grants on only the four intended tables.
+- Effective-scope probe result: **NO-GO**.
+  - Database privilege output showed broader access than allowed: `aluplan_support` and `template1` appeared in addition to `postgres`, and `can_temporary = true` appeared for `aluplan_support` and `postgres`.
+  - Pager output also showed public/pgvector function execute rows, which violates the zero non-system function execute expectation.
+  - Relation grants for the four target tables were otherwise as expected: four rows, `relkind = r`, `can_read = true`, `can_write = false`.
+- Because the scope probe failed, B1 live observation was not started.
+- Cleanup completed in production PostgreSQL: grants were revoked, `DROP ROLE a14b_inventory_ro_20260816` succeeded, and final verification returned `role_exists = f`.
+- No production backup, B1 live observation, runtime-topology/SSH/Coolify observation, migration, seed, queue/object/Redis data mutation, deploy, push or tag-push occurred.
+- Claude independently verified the attempt record as GO with C/H/M/L `0/0/1/0`; the single Medium was stale wording in credential-plan §14.7 that still described the earlier docs-only moment.
+- Fixed that docs-only gap by narrowing §14.7 to "rehber hazırlandığı andaki sonuç" and adding §14.8 "Gerçek deneme sonucu" with the role attempt, NO-GO reason and cleanup proof.
+- Commit: `c76f3758` — `docs(release): record B1 PostgreSQL credential attempt outcome`.
+- Recovery evidence: annotated tag `restore/post-release-a14b-b1-postgres-attempt-20260816-c76f3758`, tag object `b4981c4709e4873c0731eeebe239e8441371f48a`, peeled commit `c76f37588bc3191004a97628d6aecd087df0eb75`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-postgres-attempt-20260816-c76f3758.bundle`, mode `0600`, SHA-256 `4b68a51eeaf7e7b3623cdb693ebe342cba8f6a69b61feb13477917201da71378`.
+- No new production connection, credential read/write, role create/alter/drop, backup execution, live observation, mutation, push, tag-push or deploy occurred during restore-evidence recording. B1 live observation and production deploy remain **NO-GO** pending separate explicit approval.
+- Added a docs-only PostgreSQL strategy decision after the failed scope probe: do not repeat the same live-role attempt, do not attempt production-wide `PUBLIC`/`TEMPORARY`/function revocation in this release path, prefer collecting PostgreSQL evidence from an isolated disposable PG17 restore under the pre-deploy backup/restore gate. A public-default-aware live PostgreSQL adapter contract remains a separate design/TDD/security-review phase.
+- Closed Claude's follow-up findings on that strategy note: documented PostgreSQL dump vs live R2 manifest temporal-skew handling, clarified that `pg_dump` is broader read privilege but shorter-lived/operator-controlled, and named the future adapter redesign target as the `postgres-adapter.mjs` forbidden-function comment versus `functionRows.length !== 0` enforcement mismatch.
+- Claude independently verified the final strategy closure as GO with C/H/M/L `0/0/0/0`.
+- Commit: `9f2b43bb` — `docs(release): close B1 PostgreSQL credential strategy findings`.
+- Recovery evidence: annotated tag `restore/post-release-a14b-b1-postgres-strategy-20260816-9f2b43bb`, tag object `79465f77e3b0e0a5c6b9a1849ea02f91b8e0e6e9`, peeled commit `9f2b43bb4106c1603c6e6a28cfb245594363b890`.
+- Verified complete-history bundle: `.private-data/restore-points/post-release-a14b-b1-postgres-strategy-20260816-9f2b43bb.bundle`, mode `0600`, SHA-256 `98494cda53c27842e085d121731c82cfabcda8cea039619d50ea573df280a4b8`.
+- No production access, credential operation, backup execution, live observation, push, tag-push or deploy occurred. Production deploy remains **NO-GO**.
+
+## 2026-08-20 - B1 R2 offline credential minting tool
+
+- Implemented a local-only Cloudflare R2 temporary-credential signer in a separate `scripts/a14b-minting/` trust boundary; it is not exported by the collector core.
+- The policy is non-configurable: bucket `aluplan-support-desk`, scope `object-read-only`, exact actions `ListObjectsV2` and `HeadObject`, TTL 900 seconds, and no `paths` claim.
+- Parent account/access-key metadata is read only from a private mode-0600 metadata file. The parent secret is accepted only through hidden interactive TTY input, never argv/environment/config/log/report. Child credentials are published mode-0600 with symlink/path/mode/owner checks and no-clobber semantics; stdout contains only a redacted receipt.
+- Cloudflare's official HS256 JWT, SHA-256 child-secret and `base64("jwt/" + signedJwt)` session-token derivation are covered with synthetic fixtures. Final hardening rejects secret/unknown metadata fields, cleans invocation-owned bearer files after write/publish and post-publish verification failures, restores TTY state on EOF/error/close, and locks imports to an offline allowlist. Focused tests passed 16/16; combined A14B tests passed 41/41; sequential full ops-safety passed 213/213; focused coverage was 86.54% lines, 83.44% branches and 82.05% functions. Independent TDD/code/security re-reviews were GO with Critical/High/Medium/Low 0/0/0/0.
+- Local closure commits: `3b2d5edb` (tool), `2ffe6d7b` (tests), `b90b6279` (docs). Recovery evidence: annotated tag `restore/post-release-a14b-r2-offline-mint-20260820-b90b6279`, tag object `5a7c7d9dd2cb542fdbca466293eca72aa4ee7f98`, peeled commit `b90b6279832e2cc944d6028789fc52882d2d355b`; complete-history bundle `.private-data/restore-points/post-release-a14b-r2-offline-mint-20260820-b90b6279.bundle`, mode `0600`, SHA-256 `9aaec3e369b69b4ebacbe63040add03ee93dd90c4afa417ec71486f6a7f1b479`, verified successfully.
+- No real token or credential was created/read, no Cloudflare or production system was contacted, and no R2 request, push, tag-push or deploy occurred. Real parent creation, real child mint, provider canary, B1 live observation and deploy remain separate NO-GO gates.
+# MySQL2 checkpoint — 2026-09-27
+
+Local f8fee179 tests /9b40133f scoped Prisma mysql2 3.22.0. Actual default auth-switch now rejects synthetic clear-password request before writing packets; no DB/config execution. Five new tests incl normal auth and public escaping; aggregate27files230/230, focused7/7 independently verified; both typechecks passed. Code/security GO for bounded patch, not advisory/image/live clearance. Advisory metadata still has no patched version. Frozen install and XLSX integrity preserved. No live/schema/image/rescan/push/deploy; WIP untouched. Current-focus records provenance, secondary lock changes and next remaining dependency decisions.
+
+## 2026-09-27 - production read-only data and storage inventory
+
+- Narrow user approval covered live service/DB/attachment inventory only. Docker metadata, read-only PostgreSQL queries and bounded R2 object listing were performed over SSH; no backup, object download, live write, restart, migration, push or deploy occurred.
+- Application database point-in-time counts: 182 tickets / 578 messages / 114 attachments / 1289 users. R2 listing returned 477 objects, about 62.9 GB. Of 114 active attachment rows, 109 non-marker keys matched exact R2 key and recorded size; the other five are historical `FAILED_STORAGE_UPLOAD_...` markers. No non-marker key was missing, no size mismatch; overall active-attachment availability remains unproved/failed.
+- Independent code/security reviews of the private inventory script closed endpoint/credential-target and timeout hazards before execution. No credentials, customer rows or raw object keys were printed. Listing does not prove byte integrity, restored backup or a stable cutover snapshot.
+- Canonical sanitized report: `.ai/issues/2026-09-27-live-readonly-release-inventory.md`. Production remains NO-GO pending fresh restore-tested DB backup, R2 recovery evidence, marker exception decision, rollback validation and separate deploy approval. User WIP `apps/frontend/next-env.d.ts` untouched.
+
+## 2026-09-27 - local backup execution preflight only
+
+- The user's general `devam edelim` did not authorize a new production connection or backup under repo `AGENTS.md`; no live access or write occurred in this step.
+- Reviewed the local PG17 custom-backup and disposable-restore scripts. `node --test scripts/backup-safety.test.mjs` passed 44/44. The Mac had about 1.2 TiB free; local `pg_dump` was absent, while Docker PG17 tooling is available.
+- The current backup script expects a separately configured S3 backup bucket in normal mode; its production destination was not verified. Proposed the smallest separately approved path: one-way production PG17 custom archive stream into private Mac storage, checksum/catalog and isolated restore verification. Raw customer-data custody/retention and the R2/Redis/mail recovery gates remain open. No deploy, push or production backup was performed.
+- A subsequent local `fdesetup status` returned `FileVault is Off`; therefore mode-0700/0600 private Mac storage alone is not an acceptable raw production backup target. The unencrypted-target proposal was explicitly superseded. Require a tested encrypted destination and key custody before any raw production transfer; no dump was taken.
+- User-provided Cloudflare R2 UI showed the application bucket at 477 objects / 62.9 GB, a DEV backup bucket with only one 184-byte test object, and an empty Coolify bucket. This corroborates the application inventory but does not establish a production DB backup. No R2 settings, bucket or token were changed.
+
+## 2026-09-27 - encrypted live PostgreSQL backup and next R2 gate
+
+- With separate narrow approval, streamed a PG17 custom dump of live `aluplan_support` directly into a Git-ignored AES-256 APFS sparsebundle. No live DB write, restart, migration, R2 operation, push or deploy. The first empty image used a cloud-exposed passphrase and was not used for customer data; it was moved recoverably to Trash.
+- Dump was 144758018 bytes, mode 0600, SHA-256 `213523ac7a760d1b89606509e8b286ba9d1fa108826cb483a432bab72c48a8bc`. `pg_restore --list` and a full `--exit-on-error --single-transaction` restore into network-isolated PG17 passed. Direct encrypted bind mount replaced the image's default Docker VOLUME; no plaintext anonymous data volume in the actual restore. Counts (tickets/messages/attachments/users) matched live read-only counts at comparison time: 182/578/114/1289. Image detached; Docker Desktop restarted locally; no running test containers. Evidence is in `.ai/issues/2026-09-27-live-readonly-release-inventory.md`, committed locally as `7d75d75e`.
+- Subsequent local-only R2 review: `scripts/a14b/r2-adapter.mjs` allows only LIST/HEAD, so metadata parity cannot prove body availability. The application storage service can delete R2 objects; locking the live app bucket could break behavior. A separate backup destination plus bounded body-read/restore proof is the minimum candidate strategy, but any production R2 read beyond existing scope or external write requires separate explicit approval. Five failed-upload markers and full 477-object dependency classification remain open. Production remains NO-GO.
+
+## 2026-09-27 - bounded R2 body canary prepared, not executed
+
+- User approved a narrow R2 metadata refresh and up to three small object-body reads. A further explicit question was sent because the effective R2 settings and active attachment selection require live PostgreSQL `SELECT`; that approval has not yet been received in this work step, so no such SELECT or R2 GET was executed.
+- Added `scripts/release-r2-body-canary.cjs` and focused regression tests, local tooling commit `e10d419e`. It pins the production R2 endpoint and application bucket, excludes failed-upload markers, selects at most three DB-referenced objects of at most 1 MiB, requires LIST/HEAD size agreement, and uses Range plus HEAD ETag If-Match for bounded GET. Bytes are hashed in memory only; raw keys, bodies, hashes and credentials are not printed or saved.
+- Tests 4/4 and independent code/security reviews passed. A no-execute stdin smoke check in the live backend container proved dependency resolution only, without touching DB or R2. Existing `apps/frontend/next-env.d.ts` WIP was preserved. No push, deploy, restart, migration or live data write. Production remains NO-GO; a three-object canary would not be an attachment backup or restore proof.
+
+## 2026-09-27 - approved bounded R2 body canary passed
+
+- After the user's scoped continuation approval to the pending DB `SELECT` question, the reviewed canary was streamed once to the existing live backend container via stdin. No script file was placed on the VPS. It read only effective R2 settings and active attachment references in a read-only PostgreSQL transaction, listed the fixed R2 application bucket, and did HEAD plus Range/ETag-conditional GET for three selected objects.
+- Result `PASS`: 477 listed objects, three active small attachments, 385445 bytes read and hashed in memory. No raw key, body, digest or credential was printed/saved. Post-check: backend container still up and public login HTTP 200. No live write, restart, migration, push or deploy.
+- This does not prove a complete R2 backup, independent historical integrity, restore, the five failed-upload markers, or coverage for the other objects. Production remains NO-GO; separate target copy and recovery test require new scope/approval. Evidence: `.ai/issues/2026-09-27-live-readonly-release-inventory.md`.
+
+## 2026-09-28 - local Dynamics CRM regression gate repair
+
+- Updated the stale Dynamics 365 OData integration suite to instantiate the current shared `CrmRecordSyncService` with a realistic mocked Prisma boundary. Kept account/contact mapping, pagination, OAuth and failure assertions; added cross-origin nextLink rejection, partial-page no-write, and complete-import reconciliation checks. Target suite: 39/39 passed. Related record-sync and CRM email-validator suites: 48/48 passed; backend TypeScript no-emit passed.
+- Added an assertion that full-import contact reconciliation queries only profiles with non-null CRM contact IDs, plus a negative case that a manually managed user's status is not set to `INACTIVE`. This is not proof that a test account remains login/ticket-eligible if it also has a stale CRM-linked profile: that profile can still be soft-deleted. Before release, identify the actual test-account/profile links and verify access without changing customer records.
+- Independent code review found no new high issue in the final test diff. It also identified pre-existing `getAccessToken` logging of portions of `clientSecret` in `dynamics365.adapter.ts`; this is a separate security release gate, not fixed by the test-only change. No production access, DB write, migration, push or deploy in this step. User-owned `apps/frontend/next-env.d.ts` remains untouched.
+
+## 2026-09-28 candidate CI follow-up (local only)
+
+- Remote draft PR #26 remains at `ed23bfc0`: Backend CI unit/integration and E2E passed; Frontend CI failed lint after unit/coverage passed; Quality Gate failed one timing-sensitive operational-safety test and the seven-High dependency audit. Application builds and browser E2E were skipped by downstream gates, not proven successful.
+- Local test-only commit `b0e00ceb` makes the R2 abort assertion require the exact R2 timeout with a CI-tolerant budget; it does not change production collector code. Focused 10/10 and full operational-safety 238/238 passed locally, and an independent reviewer found no blocker. The commit was not pushed.
+- Read-only audit triage grouped seven High advisories into five dependency families. No broad package upgrade or audit suppression was made. The prior read-only Coolify metadata does not prove that its exited frontend record controls the active serving frontend; plan a reviewed manual cutover, not a blind Deploy click.
+- Preserved the user-owned `apps/frontend/next-env.d.ts` modification. No production, GitHub, mail, DB, queue or R2 change occurred. Release remains NO-GO pending candidate CI, frontend lint/audit disposition, browser acceptance, and the separately approved final data/mail maintenance gates.
+
+## 2026-09-28 - licensing category and CRM delta recovery release candidate
+
+- `feat: route licensing tickets through billing category` (`2cb58641`) adds a visible Lisanslama ticket category, stores a `licensing` tag and routes it through the existing Billing & Payments department. It does not create a new department or implement true team-wide ticket ownership.
+- Read-only production CRM evidence: the most recent full import completed on 2026-09-27 with 2094 successful records and zero errors; both saved delta cursors last succeeded on 2026-08-25; the account cursor is still receiving HTTP 400. Thus a working renewed credential does not prove the independent delta job works. Dataverse's documented default change-tracking retention is seven days; cursor expiry is likely but the provider's detailed 400 code was not available without another request.
+- Local CRM fix retries a stale HTTP-400 delta cursor from a fresh baseline only if a newer clean full import exists. It refuses an empty/incomplete baseline, missing mapped IDs, missing previously verified CRM IDs, or any per-record processing error before committing the replacement cursor. A genuine CRM deletion since the full import requires supervised reconciliation; the code does not silently revoke access or claim guaranteed automatic recovery. No schema migration or live data change is part of the local patch.
+- Focused backend CRM suites and typecheck passed; frontend licensing tests and typecheck passed. Independent code/security review found no new critical/high regression in the final local diff. Pre-existing unrelated `apps/frontend/next-env.d.ts`, root `package.json`, and `pnpm-lock.yaml` changes were not staged. GitHub push/Coolify deploy and live post-release verification are separate next actions.

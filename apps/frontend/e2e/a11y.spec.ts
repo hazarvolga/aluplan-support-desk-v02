@@ -35,7 +35,7 @@ test.describe('Authenticated Dashboard A11y (requires login)', () => {
         await page.goto('/tr/login');
         await page.waitForSelector('[data-testid="login-email"]', { timeout: 30000 });
         await page.getByTestId('login-email').fill('admin@example.com');
-        await page.getByTestId('login-password').fill('Vol1872017');
+        await page.getByTestId('login-password').fill('E2E-Only-Not-A-Secret-2026!');
         await page.getByTestId('login-submit').click();
         await page.waitForURL(/.*\/dashboard/, { timeout: 60000 });
     });

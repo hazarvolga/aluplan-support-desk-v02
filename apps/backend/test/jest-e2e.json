@@ -19,6 +19,7 @@
         "^@aluplan/database$": "<rootDir>/../../../packages/database"
     },
     "setupFiles": [
+        "<rootDir>/e2e-db-guard.cjs",
         "<rootDir>/setup.ts"
     ],
     "globalTeardown": "<rootDir>/global-teardown.ts",

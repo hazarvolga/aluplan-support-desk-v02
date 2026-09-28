@@ -1,0 +1,34 @@
+[
+  {
+    "category": "enums",
+    "key": "public.AgentStatus.DND",
+    "kind": "definition_mismatch",
+    "expectedSource": { "key": "public.AgentStatus.DND", "enumsortorder": 3 },
+    "expectedTarget": { "key": "public.AgentStatus.DND", "enumsortorder": 4 },
+    "rationale": "The production-derived history added DND before OFFLINE; the fresh chain rebuilt OFFLINE before re-adding DND. Application and SQL use equality, not enum ordering; labels and default are identical."
+  },
+  {
+    "category": "enums",
+    "key": "public.AgentStatus.OFFLINE",
+    "kind": "definition_mismatch",
+    "expectedSource": { "key": "public.AgentStatus.OFFLINE", "enumsortorder": 4 },
+    "expectedTarget": { "key": "public.AgentStatus.OFFLINE", "enumsortorder": 3 },
+    "rationale": "The production-derived history added DND before OFFLINE; the fresh chain rebuilt OFFLINE before re-adding DND. Application and SQL use equality, not enum ordering; labels and default are identical."
+  },
+  {
+    "category": "indexes",
+    "key": "public.idx_ke_content_hash",
+    "kind": "missing_in_target",
+    "expectedSource": { "key": "public.idx_ke_content_hash", "table_name": "knowledge_embeddings", "access_method": "btree", "is_unique": false, "is_primary": false, "is_valid": true, "is_ready": true, "predicate": "parent_id IS NOT NULL", "definition": "CREATE INDEX idx_ke_content_hash ON knowledge_embeddings USING btree (md5(content)) WHERE parent_id IS NOT NULL" },
+    "expectedTarget": null,
+    "rationale": "Operational expression index created by RagMaintenanceService.optimizeIndexes, not a declarative migration dependency; no correctness query depends on it."
+  },
+  {
+    "category": "indexes",
+    "key": "public.idx_kpe_content_hash",
+    "kind": "missing_in_target",
+    "expectedSource": { "key": "public.idx_kpe_content_hash", "table_name": "knowledge_pool_embeddings", "access_method": "btree", "is_unique": false, "is_primary": false, "is_valid": true, "is_ready": true, "predicate": "parent_id IS NOT NULL", "definition": "CREATE INDEX idx_kpe_content_hash ON knowledge_pool_embeddings USING btree (md5(content)) WHERE parent_id IS NOT NULL" },
+    "expectedTarget": null,
+    "rationale": "Historical production-only expression index with no current creator or correctness query; retained on production but intentionally not promoted into the migration chain."
+  }
+]

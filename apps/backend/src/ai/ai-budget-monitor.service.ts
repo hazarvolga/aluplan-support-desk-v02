@@ -234,7 +234,7 @@ export class AiBudgetMonitor {
     /**
      * Periodic health check: Every 5 minutes verify budget status.
      */
-    @Cron('*/5 * * * *')
+    @Cron('*/5 * * * *', { waitForCompletion: true })
     async periodicBudgetCheck(): Promise<void> {
         const today = new Date().toISOString().split('T')[0];
         const globalCost = parseFloat((await this.redis.get(`ai:budget:global:cost:${today}`)) || '0');

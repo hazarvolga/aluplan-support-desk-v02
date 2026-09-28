@@ -32,6 +32,18 @@ describe('CrmRecordSyncService', () => {
         service = new CrmRecordSyncService(mockPrisma as unknown as PrismaService);
     });
 
+    it('resolves external IDs through the same configured mappings used by upserts', () => {
+        const config = {
+            syncSettings: {
+                accountMapping: { externalAccountId: 'custom_account_id' },
+                contactMapping: { externalContactId: 'custom_contact_id' },
+            },
+        };
+        expect(service.resolveExternalIdFromDynamics({ custom_account_id: 'acc-1' }, config, 'account')).toBe('acc-1');
+        expect(service.resolveExternalIdFromDynamics({ custom_contact_id: 'contact-1' }, config, 'contact')).toBe('contact-1');
+        expect(service.resolveExternalIdFromDynamics({ name: 'No ID' }, config, 'account')).toBeNull();
+    });
+
     it('normalizes numeric Dynamics industry values before saving account records', async () => {
         mockPrisma.crmAccount.findUnique.mockResolvedValue(null);
         mockPrisma.crmAccount.upsert.mockResolvedValue({ id: 'acc-1' });
@@ -238,6 +250,11 @@ describe('CrmRecordSyncService', () => {
         });
 
         expect(result).toBe(1);
+        expect(mockPrisma.customerProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({
+            where: expect.objectContaining({
+                externalContactId: { not: null, notIn: ['dyn-contact-active'] },
+            }),
+        }));
         expect(mockPrisma.customerProfile.update).toHaveBeenCalledWith({
             where: { id: 'profile-missing' },
             data: {
@@ -249,6 +266,26 @@ describe('CrmRecordSyncService', () => {
             where: { id: 'user-missing' },
             data: { status: 'INACTIVE' },
         });
+    });
+
+    it('does not inactivate a manually managed test user during CRM reconciliation', async () => {
+        mockPrisma.customerProfile.findMany.mockResolvedValue([{
+            id: 'profile-test',
+            externalContactId: 'dyn-contact-test',
+            deletedAt: null,
+            user: {
+                id: 'user-test',
+                email: 'local-test@example.com',
+                passwordHash: 'local-password-hash',
+            },
+        }]);
+
+        await service.reconcileMissingContactsFromFullImport(['dyn-contact-active']);
+
+        expect(mockPrisma.customerProfile.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'profile-test' },
+        }));
+        expect(mockPrisma.user.update).not.toHaveBeenCalled();
     });
 
     it('updates an existing profile by CRM contact id before creating a new one', async () => {

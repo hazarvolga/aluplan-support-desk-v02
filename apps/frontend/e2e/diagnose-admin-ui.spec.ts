@@ -37,7 +37,7 @@ test.describe('Admin Panel Interactivity Diagnostic', () => {
         // 3. Perform login using data-testid
         console.log('Filling login credentials...');
         await page.fill('[data-testid="login-email"]', 'admin@example.com');
-        await page.fill('[data-testid="login-password"]', 'Vol1872017');
+        await page.fill('[data-testid="login-password"]', 'E2E-Only-Not-A-Secret-2026!');
 
         console.log('Clicking submit...');
         await page.click('[data-testid="login-submit"]');

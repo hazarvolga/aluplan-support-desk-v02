@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
@@ -21,11 +21,12 @@ import { checkAnswerConfidence } from './utils/answer-self-check';
 import { countTokens, estimateTokenCost } from './utils/token-counter';
 import { RagObservabilityService } from './rag-observability.service';
 import { AiDiagnosisService, DiagnosisResult } from './ai-diagnosis.service';
-import { AiSemanticCache } from './ai-semantic-cache.service';
+import { AiCacheScope, AiSemanticCache } from './ai-semantic-cache.service';
 import { createHash } from 'crypto';
 import { buildSupportAnswerContractPrompt } from './ai-answer-contract';
 import { isNoKnowledgeAnswer } from './ai-answer-quality';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
+import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 
 // local type with NO_MATCH
 export type LocalConfidenceBand = 'HIGH' | 'MEDIUM' | 'LOW' | 'NO_MATCH';
@@ -191,9 +192,18 @@ export class AiQueryService {
         private readonly storage: StorageService,
         private readonly semanticCache: AiSemanticCache,
         private readonly supportAnswerOrchestrator: SupportAnswerOrchestrator,
+        private readonly work: MaintenanceWorkService,
     ) { }
 
     async query(options: AiQueryOptions): Promise<any> {
+        const parent = this.work.currentLease();
+        const operation = () => this.queryTracked(options);
+        return parent
+            ? this.work.runChild(parent, 'ai.query', operation)
+            : this.work.runRoot('ai.query', operation);
+    }
+
+    private async queryTracked(options: AiQueryOptions): Promise<any> {
         const { userQuery, userId, channel = 'WEB', hotinfoContext, wait = true, attachments } = options;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
@@ -228,9 +238,10 @@ export class AiQueryService {
         // --- END QUOTA CHECK ---
 
         // 1. Precise unique cache key
-        const queryHash = this.buildQueryHash(userQuery, isStaff, lang, hotinfoContext, attachments);
-        const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
-        const cached = await this.redis.get(cacheKey);
+        const cacheScope = this.buildCacheScope(options, isStaff, lang);
+        const queryHash = cacheScope ? this.buildQueryHash(userQuery, cacheScope) : null;
+        const cacheKey = queryHash ? `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}` : null;
+        const cached = cacheKey ? await this.redis.get(cacheKey) : null;
 
         if (cached) {
             const result = JSON.parse(cached);
@@ -262,6 +273,15 @@ export class AiQueryService {
      * Exported as public for the Processor to call, but prefixed with internal for clarity.
      */
     async queryInternal(options: AiQueryOptions): Promise<AiQueryResult> {
+        // Bull invokes this entry directly; it cannot inherit the enqueue lease.
+        const parent = this.work.currentLease();
+        const operation = () => this.queryInternalTracked(options);
+        return parent
+            ? this.work.runChild(parent, 'ai.query.internal', operation)
+            : this.work.runRoot('ai.query.internal', operation);
+    }
+
+    private async queryInternalTracked(options: AiQueryOptions): Promise<AiQueryResult> {
         const { userQuery, userId, channel = 'WEB', hotinfoContext, attachments } = options;
         const startTime = Date.now();
         const isStaff = await this.isStaff(userId);
@@ -276,17 +296,14 @@ export class AiQueryService {
         }
 
         // Setup cache key for later saving
-        const queryHash = this.buildQueryHash(userQuery, isStaff, lang, hotinfoContext, attachments);
-        const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
+        const cacheScope = this.buildCacheScope(options, isStaff, lang);
+        const queryHash = cacheScope ? this.buildQueryHash(userQuery, cacheScope) : null;
+        const cacheKey = queryHash ? `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}` : null;
 
         // R-P1: Semantic cache lookup — same query within 5 min served from cache
         const hasAttachments = (attachments?.length ?? 0) > 0;
-        if (!hasAttachments) {
-            const semanticCached = await this.semanticCache.get(userQuery, 'system', {
-                userId: userId ?? undefined,
-                language: lang,
-                hotinfoContext,
-            });
+        if (!hasAttachments && cacheScope) {
+            const semanticCached = await this.semanticCache.get(userQuery, cacheScope);
             if (semanticCached) {
                 this.ragObs.recordQuery(Date.now() - startTime, true);
                 this.logger.log(`🔍 [Semantic Cache Hit] query="${userQuery.slice(0, 40)}"`);
@@ -415,14 +432,15 @@ export class AiQueryService {
         let results = searchResponse.results;
 
         // Langfuse retrieval span (non-blocking)
-        this.langfuse.traceRetrieval({
+        const retrievalTrace = {
             query: userQuery,
             hypotheticalDoc: retrievalDocument,
             chunksRetrieved: results.length,
             topScore: searchResponse.diagnostics.topScore,
             cacheHit: false,
             chunkIds: results.slice(0, 10).map(r => r.articleId),
-        }).catch(() => {});
+        };
+        this.startQueryBackground('ai.query.trace', () => this.langfuse.traceRetrieval(retrievalTrace));
 
         /* 
         // 3. Vertex AI Data Store Hybrid Merge (DEACTIVATED FOR COST OPTIMIZATION)
@@ -591,7 +609,7 @@ export class AiQueryService {
                 this.logger.warn(`⚠️ Diagnosis generation timed out or returned empty. Falling back to top matched content.`);
             }
 
-            let rawAnswer = aiResult?.response ?? this.buildDeterministicFallbackAnswer(userQuery, results, lang, {
+            const rawAnswer = aiResult?.response ?? this.buildDeterministicFallbackAnswer(userQuery, results, lang, {
                 showSourceDetails: isStaff,
                 diagnosis,
             });
@@ -747,29 +765,37 @@ export class AiQueryService {
         };
 
         // Cache with centralized TTL
-        if (answerMode === 'LLM' && finalResult.confidence !== 'NO_MATCH') {
+        if (answerMode === 'LLM' && finalResult.confidence !== 'NO_MATCH' && cacheScope && cacheKey) {
             await this.redis.set(cacheKey, JSON.stringify(finalResult), RAG_CONFIG.CACHE.DEFAULT_TTL);
 
             // R-P1: Store in semantic cache for similarity-based future hits.
             // Fallback answers are intentionally not cached; a transient model timeout
             // must not lock future users into a weaker deterministic answer.
-            this.semanticCache.set(userQuery, 'system', finalResult, {
-                userId: userId ?? undefined,
-                language: lang,
-                hotinfoContext,
-            }).catch(() => {});  // non-blocking, cache failure must not break the query
+            this.startQueryBackground('ai.query.cache', () => this.semanticCache.set(userQuery, cacheScope, finalResult));
         }
 
         // NO_MATCH escalation: queue interaction for admin training review (non-blocking)
         if (finalResult.confidence === 'NO_MATCH') {
-            this.prisma.trainingQueue.create({
+            this.startQueryBackground('ai.query.training', () => this.prisma.trainingQueue.create({
                 data: { interactionId: interaction.id },
-            }).catch(() => {});
+            }));
         }
 
         this.ragObs.recordQuery(Date.now() - startTime, false);
 
         return finalResult;
+    }
+
+    private startQueryBackground(
+        label: 'ai.query.trace' | 'ai.query.cache' | 'ai.query.training',
+        operation: () => Promise<unknown>,
+    ): void {
+        const parent = this.work.currentLease();
+        if (!parent) throw new Error('Expected active query work lease');
+        // Reserve before invoking IO, without extending the customer response.
+        void this.work.runChild(parent, label, operation).catch(() => {
+            this.logger.warn(`Background query operation failed (${label})`);
+        });
     }
 
     private async rankResultsWithLLM(query: string, results: SearchResult[]): Promise<SearchResult[]> {
@@ -1740,29 +1766,37 @@ If context contains usable procedural evidence, synthesize the answer instead of
         };
     }
 
-    private buildQueryHash(
-        userQuery: string,
-        isStaff: boolean,
-        lang: SupportedAnswerLanguage,
-        hotinfoContext?: any,
-        attachments?: any[],
-    ): string {
-        const attachmentFingerprint = (attachments ?? [])
-            .map((att) => [
-                att?.fileName || '',
-                att?.mimeType || '',
-                att?.url || '',
-                typeof att?.data === 'string' ? att.data.length : 0,
-            ].join(':'))
-            .join('|');
-
+    private buildQueryHash(userQuery: string, scope: AiCacheScope): string {
         return createHash('sha256')
             .update(userQuery)
-            .update(String(isStaff))
-            .update(lang)
-            .update(hotinfoContext ? JSON.stringify(hotinfoContext) : '')
-            .update(attachmentFingerprint)
+            .update(JSON.stringify(scope))
             .digest('hex');
+    }
+
+    private buildCacheScope(
+        options: AiQueryOptions,
+        isStaff: boolean,
+        language: SupportedAnswerLanguage,
+    ): AiCacheScope | null {
+        if (!options.userId || (options.attachments?.length ?? 0) > 0) return null;
+
+        const contextFingerprint = createHash('sha256')
+            .update(JSON.stringify({
+                channel: options.channel ?? 'WEB',
+                history: options.history ?? [],
+                hotinfoContext: options.hotinfoContext ?? null,
+                strictLanguage: options.strictLanguage ?? false,
+            }))
+            .digest('hex');
+
+        return {
+            userId: options.userId,
+            audience: isStaff ? 'agent' : 'customer',
+            productId: options.productId ?? null,
+            language,
+            routeLocale: options.routeLocale ?? language,
+            contextFingerprint,
+        };
     }
 
     private async getUserProfileLanguage(userId?: string | null): Promise<string | null> {
@@ -2337,9 +2371,10 @@ If context contains usable procedural evidence, synthesize the answer instead of
         // 0. Cache lookup (simplified for internal/external aware caching)
         const isStaff = await this.isStaff(userId);
         const lang = this.resolveResponseLanguage(options.language, userQuery);
-        const queryHash = this.buildQueryHash(userQuery, isStaff, lang, hotinfoContext, attachments);
-        const cacheKey = `ai:query:stream_cache:${queryHash}`;
-        const cached = await this.redis.get(cacheKey);
+        const cacheScope = this.buildCacheScope(options, isStaff, lang);
+        const queryHash = cacheScope ? this.buildQueryHash(userQuery, cacheScope) : null;
+        const cacheKey = queryHash ? `ai:query:stream_cache:${queryHash}` : null;
+        const cached = cacheKey ? await this.redis.get(cacheKey) : null;
 
         if (cached) {
             this.logger.log(`🎯 AI Stream Query Cache Hit: ${userQuery.slice(0, 40)}...`);
@@ -2542,7 +2577,9 @@ If context contains usable procedural evidence, synthesize the answer instead of
         // --- END INCREMENT ---
 
         // Cache for 1 hour
-        await this.redis.set(cacheKey, fullAnswer, 3600);
+        if (cacheKey) {
+            await this.redis.set(cacheKey, fullAnswer, 3600);
+        }
 
         yield { done: true, interactionId: interaction.id, suggestTicket: (confidence as LocalConfidenceBand) === 'LOW' || confidence === 'NO_MATCH' };
     }
@@ -2700,7 +2737,7 @@ If context contains usable procedural evidence, synthesize the answer instead of
         return { main: mainContent, translations };
     }
 
-    @OnEvent('ai.translate_message', { async: true })
+    @OnEvent('ai.translate_message', { async: true, promisify: true })
     async handleTranslationRequest(payload: { ticketId: string; messageId: string; targetLanguage: string }) {
         try {
             const message = await this.prisma.ticketMessage.findUnique({ where: { id: payload.messageId } });
@@ -2811,7 +2848,14 @@ If context contains usable procedural evidence, synthesize the answer instead of
         return feedback;
     }
 
-    async submitTelemetry(interactionId: string, accepted: boolean, editedResponse?: string) {
+    async submitTelemetry(interactionId: string, userId: string, accepted: boolean, editedResponse?: string) {
+        const interaction = await this.prisma.aiInteraction.findUnique({
+            where: { id: interactionId },
+            select: { id: true, userId: true },
+        });
+        if (!interaction) throw new NotFoundException('AI_INTERACTION_NOT_FOUND');
+        if (interaction.userId !== userId) throw new ForbiddenException('AI_INTERACTION_FORBIDDEN');
+
         return this.prisma.aiInteraction.update({
             where: { id: interactionId },
             data: {
@@ -2992,8 +3036,8 @@ ${conversation}
     async smartTagTicket(productId: string, text: string, hotinfoContext?: any): Promise<{ tags: string[] }> {
         try {
             const product = await this.prisma.product.findUnique({
-                where: { id: productId },
-                include: { categories: true }
+                where: { id: productId, isActive: true, deletedAt: null },
+                include: { categories: { where: { isActive: true, deletedAt: null } } }
             });
 
             if (!product || product.categories.length === 0) return { tags: [] };
@@ -3353,8 +3397,9 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
         const isStaff = await this.isStaff(userId);
         const lang = this.resolveResponseLanguage(options.language, userQuery);
 
-        const queryHash = this.buildQueryHash(userQuery, isStaff, lang, hotinfoContext, attachments);
-        const cacheKey = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}`;
+        const cacheScope = this.buildCacheScope(options, isStaff, lang);
+        const queryHash = cacheScope ? this.buildQueryHash(userQuery, cacheScope) : null;
+        const cacheKey = queryHash ? `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}` : null;
 
         let expandedQuery = userQuery;
         let parsedDocs = '';

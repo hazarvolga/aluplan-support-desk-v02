@@ -5,6 +5,7 @@ import { getSocket } from '@/lib/socket';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { useTranslations } from 'next-intl';
+import { RealtimeSessionNotice } from './realtime-session-notice';
 
 export function GlobalTicketNotification() {
     const { toast } = useToast();
@@ -87,5 +88,5 @@ export function GlobalTicketNotification() {
         };
     }, [t]);
 
-    return null;
+    return <RealtimeSessionNotice />;
 }

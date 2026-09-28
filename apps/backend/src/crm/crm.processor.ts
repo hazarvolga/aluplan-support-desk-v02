@@ -1,5 +1,5 @@
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
+import { Logger, OnModuleDestroy } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { CrmService } from './crm.service';
 import { CrmDeltaSyncService } from './services/crm-delta-sync.service';
@@ -7,8 +7,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SyncStatus } from '@aluplan/database';
 
 @Processor('crm-sync')
-export class CrmProcessor extends WorkerHost {
+export class CrmProcessor extends WorkerHost implements OnModuleDestroy {
     private readonly logger = new Logger(CrmProcessor.name);
+    private readonly pendingFailures = new Set<Promise<void>>();
 
     constructor(
         private readonly crmService: CrmService,
@@ -61,7 +62,25 @@ export class CrmProcessor extends WorkerHost {
     }
 
     @OnWorkerEvent('failed')
-    async onFailed(job: Job, error: Error) {
+    onFailed(job: Job, error: Error): Promise<void> {
+        // Register before IO; EventEmitter does not join listener return promises.
+        const pending = Promise.resolve().then(() => this.persistFailure(job, error));
+        this.pendingFailures.add(pending);
+        void pending.then(
+            () => this.pendingFailures.delete(pending),
+            () => this.pendingFailures.delete(pending),
+        );
+        return pending;
+    }
+
+    async onModuleDestroy(): Promise<void> {
+        // Fail closed if unregistered or close fails; never disconnect ahead of jobs.
+        // Non-forced close is idempotent when BullExplorer calls it again later.
+        await this.worker.close();
+        await Promise.allSettled([...this.pendingFailures]);
+    }
+
+    private async persistFailure(job: Job, error: Error): Promise<void> {
         this.logger.error(`❌ CRM Sync Job ${job.id} failed (Attempt ${job.attemptsMade}/${job.opts?.attempts ?? 1}): ${error.message}`);
 
         try {

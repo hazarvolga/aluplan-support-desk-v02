@@ -41,7 +41,7 @@ export class SettingsService {
         // Guard: Do not overwrite existing secrets with the masked placeholder
         if (dto.value === '********') {
             const existing = await this.get(dto.key, true);
-            if (existing) return existing;
+            if (existing) return this.maskSettingResponse(existing);
         }
 
         const isSecret = this.resolveSecretFlag(dto.key, dto.isSecret);
@@ -92,19 +92,32 @@ export class SettingsService {
             this.eventEmitter.emit('ai.embedding.provider_changed', { key: dto.key, newValue: finalValue, oldValue });
         }
 
-        return setting;
+        return this.maskSettingResponse(setting);
     }
 
     private isSecretKey(key: string): boolean {
-        return this.secretKeyPatterns.some((pattern) => pattern.test(key));
+        return this.isMailPasswordKey(key) || this.secretKeyPatterns.some((pattern) => pattern.test(key));
+    }
+
+    private isMailPasswordKey(key: string): boolean {
+        return key === 'email.imap.pass' || key === 'email.smtp.pass';
     }
 
     private resolveSecretFlag(key: string, requested?: boolean): boolean {
         return requested === true || this.isSecretKey(key);
     }
 
+    private maskSettingResponse<T extends { key: string; value: string; isSecret: boolean }>(setting: T): T {
+        const isSecret = this.resolveSecretFlag(setting.key, setting.isSecret);
+        return isSecret
+            ? { ...setting, value: '********', isSecret: true }
+            : setting;
+    }
+
     private async securePlaintextSecret<T extends { key: string; value: string; isSecret: boolean }>(setting: T): Promise<T> {
-        if (setting.isSecret || !this.isSecretKey(setting.key)) {
+        // Legacy mail passwords remain readable without introducing a read-time DB rewrite.
+        // Explicit saves encrypt them; API responses and caches still classify them as secrets.
+        if (setting.isSecret || this.isMailPasswordKey(setting.key) || !this.isSecretKey(setting.key)) {
             return setting;
         }
 
@@ -249,15 +262,10 @@ export class SettingsService {
 
         // Hydrate cache
         this.cache.set(key, plaintext);
-        this.secretCache.set(key, setting.isSecret);
+        const isSecret = this.resolveSecretFlag(key, setting.isSecret);
+        this.secretCache.set(key, isSecret);
 
-        if (setting.isSecret && !decrypt) {
-            setting.value = '********';
-        } else {
-            setting.value = plaintext;
-        }
-
-        return setting;
+        return { ...setting, value: isSecret && !decrypt ? '********' : plaintext, isSecret };
     }
 
     /**
@@ -281,6 +289,7 @@ export class SettingsService {
 
         return securedSettings.map((s) => {
             let value = s.value;
+            const isSecret = this.resolveSecretFlag(s.key, s.isSecret);
             if (s.isSecret) {
                 try {
                     const plaintext = this.crypto.decrypt(s.value);
@@ -295,9 +304,9 @@ export class SettingsService {
                 }
             } else {
                 this.cache.set(s.key, s.value);
-                this.secretCache.set(s.key, false);
+                this.secretCache.set(s.key, isSecret);
             }
-            return { ...s, value };
+            return { ...s, value: isSecret && !decrypt ? '********' : value, isSecret };
         });
     }
 
@@ -367,7 +376,7 @@ export class SettingsService {
             }
         }
 
-        return results;
+        return results.map((result) => result ? this.maskSettingResponse(result) : result);
     }
 
     private withLegacyAiProviderSync<T extends { key: string; value: string; isSecret?: boolean }>(settings: T[]): T[] {

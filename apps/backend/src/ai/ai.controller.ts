@@ -288,9 +288,11 @@ export class AiController {
     async submitTelemetry(
         @Param('id') interactionId: string,
         @Body() dto: AiTelemetryDto,
+        @Request() req: any,
     ) {
         return this.aiQueryService.submitTelemetry(
             interactionId,
+            req.user.sub,
             dto.accepted,
             dto.editedResponse
         );

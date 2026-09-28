@@ -9,7 +9,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import compression from 'compression';
-import { json, urlencoded } from 'express';
+import { urlencoded } from 'express';
 import * as net from 'net';
 import { Request, Response, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
@@ -18,6 +18,9 @@ import { Logger as PinoLogger } from 'nestjs-pino';
 import { ErrorLoggerService } from './common/services/error-logger.service';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { XssValidationPipe } from './common/pipes/xss-validation.pipe';
+import { MaintenanceAdmissionMiddleware } from './common/middleware/maintenance-admission.middleware';
+import { MaintenanceWorkService } from './common/services/maintenance-work.service';
+import { signedWebhookJsonParser } from './common/http/signed-webhook-json-parser';
 
 async function checkConnection(host: string, port: number, timeout = 3000): Promise<boolean> {
     return new Promise((resolve) => {
@@ -54,7 +57,9 @@ async function bootstrap() {
             const urlObj = new URL(redisUrlString);
             redisHost = urlObj.hostname;
             redisPort = parseInt(urlObj.port) || 6379;
-        } catch { }
+        } catch (error) {
+            logger.warn(`[NetCheck] Invalid REDIS_URL, falling back to REDIS_HOST/REDIS_PORT. Reason: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
     const dbUrl = process.env.DATABASE_URL || '';
     const dbMatch = dbUrl.match(/@([^:/]+):(\d+)/);
@@ -75,7 +80,8 @@ async function bootstrap() {
     });
 
     // GAP-03: Graceful shutdown — drain BullMQ jobs and close connections on SIGTERM
-    app.enableShutdownHooks();
+    // Docker runs Node as PID 1; Nest's default self-SIGTERM is ignored there after hooks finish.
+    app.enableShutdownHooks(undefined, { useProcessExit: true });
 
     // Trust proxy for secure cookies and origin validation behind Coolify/Caddy
     app.set('trust proxy', 1);
@@ -111,12 +117,17 @@ async function bootstrap() {
         hidePoweredBy: true,
     }));
 
+    // Reject new ingress before parsers, guards and their possible side effects.
+    // No shutdown hook closes admission yet; full writer completion is separate.
+    const maintenanceAdmission = app.get(MaintenanceAdmissionMiddleware);
+    app.use(maintenanceAdmission.use.bind(maintenanceAdmission));
+
     app.use(compression());
 
     app.use(cookieParser());
 
     // Payload Limit restriction
-    app.use(json({ limit: '10mb' }));
+    app.use(signedWebhookJsonParser);
     app.use(urlencoded({ extended: true, limit: '10mb' }));
 
     const cacheableApiPaths = [
@@ -143,6 +154,7 @@ async function bootstrap() {
             '/api/v1/auth/refresh',
             '/api/v1/auth/logout',
             '/api/v1/auth/forgot-password',
+            '/api/v1/auth/resend-verification',
             '/api/v1/auth/reset-password',
             '/api/v1/auth/verify-email',
             '/api/v1/email/unsubscribe',
@@ -169,7 +181,7 @@ async function bootstrap() {
             const headerToken = req.headers['x-xsrf-token'];
 
             if (!headerToken || headerToken !== csrfToken) {
-                logger.warn(`[CSRF] REJECTED - Header: [${headerToken}], Cookie: [${csrfToken}], Method: ${req.method}, Path: ${req.path}`);
+                logger.warn('[CSRF] REJECTED - CSRF token missing or mismatched');
                 return res.status(403).json({
                     statusCode: 403,
                     message: 'CSRF validation failed',
@@ -179,7 +191,7 @@ async function bootstrap() {
 
             const requestedWith = req.headers['x-requested-with'];
             if (!requestedWith || requestedWith !== 'XMLHttpRequest') {
-                logger.warn(`[CSRF] REJECTED (Missing Header) - Method: ${req.method}, Path: ${req.path}`);
+                logger.warn('[CSRF] REJECTED - Missing required security headers');
                 return res.status(403).json({
                     statusCode: 403,
                     message: 'Missing required security headers',
@@ -258,7 +270,7 @@ async function bootstrap() {
     // Global Exception Filter (GAP-20: proper imports instead of require())
     const httpAdapterHost = app.get(HttpAdapterHost);
     const errorLogger = app.get(ErrorLoggerService);
-    app.useGlobalFilters(new GlobalExceptionFilter(httpAdapterHost, errorLogger));
+    app.useGlobalFilters(new GlobalExceptionFilter(httpAdapterHost, errorLogger, app.get(MaintenanceWorkService)));
 
     // GAP-08: Swagger Production Constraints & Export
     const swaggerConfig = new DocumentBuilder()

@@ -1,0 +1,38 @@
+# Exact-host temporary admission fence for the approved release window.
+# Copy atomically over the same owned file-provider resource as the inactive
+# variant; never edit another application's router or restart the shared proxy.
+http:
+  services:
+    allplan-release-maintenance:
+      loadBalancer:
+        servers:
+          - url: http://allplan-release-maintenance-20260928:8080
+  routers:
+    allplan-release-maintenance-web-http:
+      entryPoints:
+        - http
+      rule: Host(`allplan.net.tr`)
+      priority: 10000
+      service: allplan-release-maintenance
+    allplan-release-maintenance-web-https:
+      entryPoints:
+        - https
+      rule: Host(`allplan.net.tr`)
+      priority: 10000
+      service: allplan-release-maintenance
+      tls:
+        certResolver: letsencrypt
+    allplan-release-maintenance-api-http:
+      entryPoints:
+        - http
+      rule: Host(`api.allplan.net.tr`)
+      priority: 10000
+      service: allplan-release-maintenance
+    allplan-release-maintenance-api-https:
+      entryPoints:
+        - https
+      rule: Host(`api.allplan.net.tr`)
+      priority: 10000
+      service: allplan-release-maintenance
+      tls:
+        certResolver: letsencrypt
