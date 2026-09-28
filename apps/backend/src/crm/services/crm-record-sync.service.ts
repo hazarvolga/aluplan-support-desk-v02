@@ -23,10 +23,19 @@ export class CrmRecordSyncService {
 
     constructor(private readonly prisma: PrismaService) {}
 
+    resolveExternalIdFromDynamics(data: any, config: any, entityType: EntityType): string | null {
+        const isAccount = entityType === 'account';
+        const mappings = (isAccount ? config?.syncSettings?.accountMapping : config?.syncSettings?.contactMapping) || {};
+        const value = isAccount
+            ? this.resolveField(data, 'externalAccountId', mappings, 'accountid')
+            : this.resolveField(data, 'externalContactId', mappings, 'contactid') || data.contactid;
+        return value === undefined || value === null || String(value).trim() === '' ? null : String(value);
+    }
+
     async upsertAccountFromDynamics(data: any, config?: any, options: SyncOptions = {}) {
         const mappings = (config?.syncSettings?.accountMapping || {}) as Record<string, string>;
 
-        const externalId = this.resolveField(data, 'externalAccountId', mappings, 'accountid');
+        const externalId = this.resolveExternalIdFromDynamics(data, config, 'account');
         if (!externalId) {
             this.logger.warn('CRM account sync skipped because external account id is missing');
             return null;
@@ -97,7 +106,7 @@ export class CrmRecordSyncService {
 
     async upsertContactFromDynamics(data: any, config?: any, options: SyncOptions = {}) {
         const mappings = (config?.syncSettings?.contactMapping || {}) as Record<string, string>;
-        const contactId = this.resolveField(data, 'externalContactId', mappings, 'contactid') || data.contactid;
+        const contactId = this.resolveExternalIdFromDynamics(data, config, 'contact');
         if (!contactId) {
             this.logger.warn('CRM contact sync skipped because external contact id is missing');
             return null;

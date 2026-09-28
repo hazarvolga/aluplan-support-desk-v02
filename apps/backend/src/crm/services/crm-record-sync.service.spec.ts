@@ -32,6 +32,18 @@ describe('CrmRecordSyncService', () => {
         service = new CrmRecordSyncService(mockPrisma as unknown as PrismaService);
     });
 
+    it('resolves external IDs through the same configured mappings used by upserts', () => {
+        const config = {
+            syncSettings: {
+                accountMapping: { externalAccountId: 'custom_account_id' },
+                contactMapping: { externalContactId: 'custom_contact_id' },
+            },
+        };
+        expect(service.resolveExternalIdFromDynamics({ custom_account_id: 'acc-1' }, config, 'account')).toBe('acc-1');
+        expect(service.resolveExternalIdFromDynamics({ custom_contact_id: 'contact-1' }, config, 'contact')).toBe('contact-1');
+        expect(service.resolveExternalIdFromDynamics({ name: 'No ID' }, config, 'account')).toBeNull();
+    });
+
     it('normalizes numeric Dynamics industry values before saving account records', async () => {
         mockPrisma.crmAccount.findUnique.mockResolvedValue(null);
         mockPrisma.crmAccount.upsert.mockResolvedValue({ id: 'acc-1' });
