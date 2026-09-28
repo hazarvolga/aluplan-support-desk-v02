@@ -1,5 +1,9 @@
 # Current Focus
 
+## Yeni 28 Eylül kurtarma provası ve parola teyidi
+
+Yeni operatör parolalı şifreli APFS imajındaki 144.801.989 baytlık canlı PG17 kopyası sunucuyla SHA-256 eşleşti; kesin `86ef3b2c` Linux/amd64 imajıyla izole tam restore, migration, ikinci tur no-op ve korunan veri paritesi geçti. Geçici açık VPS dökümü ve iki başarısız kısmi akış silindi; tam kopya ve özel prova kanıtları duruyor. Yerel doküman commit'i `82ca36d9`; kullanıcıya ait `apps/frontend/next-env.d.ts` değişikliği korunuyor. Yeni parolanın kullanıcı tarafında güvenle kayıtlı olduğu teyit edilmeden şifreli imaj ayrılmayacak; yeniden bağlama testi bekliyor. Mail ayarı iki-alan köprüsünün izole testi yeniden geçti. Canlı mail TLS, eski yazıcı sınırı, son durdurulmuş-yazıcı DB/mail/R2 checkpoint'i, kırmızı PR kontrolleri ve açık bakım kapsamı hâlâ yayın kapısıdır. **Canlı deploy yapılmadı; Production NO-GO.**
+
 ## Yeni şifreli ön kurtarma noktası — 2026-09-27
 
 Kullanıcının ayrı yedekleme onayıyla yeni parolalı AES-256 APFS imajına canlı PG17 custom dump ve üç posta volume'ünün ön arşivi alındı. DB dump izole PG17'de tam restore edildi (62 tablo, 182/578/114/1289); posta arşivindeki 239 düzenli dosyanın çıkarılmış baytları eşleşti. Mevcut özel R2 yedeği 477/477 nesne ve 109 etkin ek için yeniden doğrulandı, delta 0; beş eski failed-upload marker değişmedi. İmaj temizce ayrıldı, yerel Docker yeniden çalışıyor; canlı servise ayar/restart/deploy uygulanmadı. Posta arşivi sıcak kopya, R2'nin tamamı byte-hash'li değil, müşteriler yazmaya devam ediyor. Son writer-quiesced checkpoint, mail TLS, eski backend'in çift-yazıcıdan korunması ve ayrı push/deploy onayı açık. **Production NO-GO.**
