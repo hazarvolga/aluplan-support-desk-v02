@@ -18,7 +18,7 @@ export class WhatsAppService {
 
     async handleIncoming(payload: any) {
         // Simple Meta API payload extraction
-        const entry = payload.entry?.[0];
+        const entry = payload?.entry?.[0];
         const changes = entry?.changes?.[0];
         const value = changes?.value;
         const message = value?.messages?.[0];
@@ -26,12 +26,24 @@ export class WhatsAppService {
 
         if (!message) return { status: 'no_message' };
 
-        const fromPhone = message.from; // WhatsApp ID / Phone
-        const text = message.text?.body;
+        // Reject unsupported or empty text payloads early before any DB or ticket operations
+        const rawText = message.text?.body;
+        if (typeof rawText !== 'string' || !rawText.trim()) {
+            this.logger.debug('WhatsApp incoming message ignored: no_text/unsupported');
+            return { status: 'no_text', reason: 'unsupported' };
+        }
+        const text = rawText.trim();
+
+        const fromPhone = typeof message.from === 'string' ? message.from : '';
         const cleanPhone = fromPhone.replace(/\D/g, '');
 
+        if (!cleanPhone) {
+            this.logger.warn('WhatsApp incoming message rejected: invalid_sender_phone');
+            return { status: 'rejected', reason: 'invalid_sender_phone' };
+        }
+
         // 1. Match customer by phone number (using contains or exact match after normalization)
-        this.logger.debug(`🔍 Attempting to match profile for cleanPhone: ${cleanPhone}`);
+        this.logger.debug('Attempting to match customer profile for incoming WhatsApp message');
         const profile = await this.prisma.customerProfile.findFirst({
             where: {
                 phoneNumber: {
@@ -41,16 +53,23 @@ export class WhatsAppService {
             include: { user: true }
         });
 
+        // 2. Early rejection for unrecognized sender or missing user identity
         if (!profile) {
-            this.logger.warn(`❌ No customer profile found matching ${cleanPhone}`);
-        } else {
-            this.logger.debug(`✅ Matched profile for user: ${profile.user?.email} (${profile.userId})`);
+            this.logger.warn('WhatsApp incoming message rejected: unrecognized_sender');
+            return { status: 'rejected', reason: 'unrecognized_sender' };
         }
 
-        // 3. Find active ticket for this user
+        if (!profile.userId) {
+            this.logger.warn('WhatsApp incoming message rejected: missing_user_identity');
+            return { status: 'rejected', reason: 'missing_user_identity' };
+        }
+
+        this.logger.debug(`Matched customer profile for user: ${profile.userId}`);
+
+        // 3. Find active ticket for matched profile
         const ticket = await this.prisma.ticket.findFirst({
             where: {
-                userId: profile?.userId,
+                userId: profile.userId,
                 status: { notIn: ['RESOLVED', 'CLOSED'] },
                 channel: 'WHATSAPP'
             },
@@ -62,16 +81,17 @@ export class WhatsAppService {
             await this.prisma.ticketMessage.create({
                 data: {
                     ticketId: ticket.id,
-                    senderId: profile?.userId,
+                    senderId: profile.userId,
                     message: text,
                     channel: 'WHATSAPP'
                 }
             });
-            this.logger.log(`🎫 Appended WhatsApp message to ticket ${ticket.ticketNumber}`);
-        } else if (profile) {
-            // Create new ticket
+            this.logger.log(`Appended WhatsApp message to ticket ${ticket.ticketNumber}`);
+        } else {
+            // Create new ticket for matched profile
+            const snippet = text.length > 50 ? `${text.substring(0, 50)}...` : text;
             const newTicket = await this.ticketsService.create({
-                subject: `WhatsApp Talebi: ${text.substring(0, 50)}...`,
+                subject: `WhatsApp Talebi: ${snippet}`,
                 description: text,
                 priority: 'MEDIUM',
             }, profile.userId);
@@ -82,7 +102,7 @@ export class WhatsAppService {
                 data: { channel: 'WHATSAPP' }
             });
 
-            this.logger.log(`🆕 Created new WhatsApp ticket ${newTicket.ticketNumber} for ${fromPhone}`);
+            this.logger.log(`Created new WhatsApp ticket ${newTicket.ticketNumber}`);
         }
 
         return { status: 'success' };
@@ -120,7 +140,7 @@ export class WhatsAppService {
                 throw new Error(`WhatsApp API Error: ${err.error?.message || JSON.stringify(err)}`);
             }
 
-            this.logger.log(`📤 WhatsApp Message sent to ${to}`);
+            this.logger.log('📤 WhatsApp Message sent');
         } catch (error: any) {
             this.logger.error(`❌ Failed to send WhatsApp message: ${error.message}`);
         }
