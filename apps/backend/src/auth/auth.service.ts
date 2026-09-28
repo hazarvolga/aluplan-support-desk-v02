@@ -523,7 +523,7 @@ export class AuthService {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
             include: {
-                role: true,
+                role: { include: { permissions: { include: { permission: true } } } },
                 customerProfile: {
                     select: {
                         id: true,
@@ -537,13 +537,16 @@ export class AuthService {
 
         if (!user) return null;
 
+        const authority = resolveSessionAuthority(user.role);
+
         return {
             id: user.id,
             email: user.email,
             fullName: user.fullName,
             avatarUrl: user.avatarUrl,
             status: user.status,
-            role: user.role?.name || 'CUSTOMER',
+            role: authority?.role || 'CUSTOMER',
+            permissions: authority?.permissions || [],
             agentStatus: user.agentStatus,
             isSupportTeamMember: await this.isActiveSupportTeamMember(user.id),
             customerProfile: user.customerProfile

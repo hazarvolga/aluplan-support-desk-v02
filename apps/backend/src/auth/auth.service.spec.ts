@@ -76,6 +76,43 @@ describe('AuthService', () => {
         jest.restoreAllMocks();
     });
 
+    describe('getProfile', () => {
+        beforeEach(() => {
+            prisma.teamMember = { count: jest.fn().mockResolvedValue(0) };
+        });
+
+        it('returns current database role permissions for frontend action visibility', async () => {
+            prisma.user.findUnique.mockResolvedValue({
+                id: 'staff-1', email: 'staff@example.com', fullName: 'Staff',
+                status: 'ACTIVE', role: {
+                    name: 'AGENT',
+                    permissions: [{ permission: { name: 'ticket:update' } }],
+                },
+                customerProfile: null,
+            });
+            prisma.teamMember.count.mockResolvedValue(1);
+
+            await expect(service.getProfile('staff-1')).resolves.toMatchObject({
+                id: 'staff-1', role: 'AGENT', permissions: ['ticket:update'],
+            });
+            expect(prisma.user.findUnique).toHaveBeenCalledWith(expect.objectContaining({
+                include: expect.objectContaining({
+                    role: { include: { permissions: { include: { permission: true } } } },
+                }),
+            }));
+        });
+
+        it('does not imply permissions when role mappings are unavailable', async () => {
+            prisma.user.findUnique.mockResolvedValue({
+                id: 'staff-2', email: 'staff2@example.com', fullName: 'Staff 2',
+                status: 'ACTIVE', role: { name: 'AGENT' }, customerProfile: null,
+            });
+            prisma.teamMember.count.mockResolvedValue(0);
+
+            await expect(service.getProfile('staff-2')).resolves.toMatchObject({ permissions: [] });
+        });
+    });
+
     describe('login', () => {
         const loginDto = { email: 'test@example.com', password: 'password123' };
 
