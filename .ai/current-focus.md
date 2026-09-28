@@ -1,5 +1,9 @@
 # Current Focus
 
+## 28 Eylül 19:24 TRT — canlı sürüm devri; yeni görev dokümantasyon/inceleme
+
+Güncel kaynak ve frontend/backend kalite planı: `.ai/issues/2026-09-28-current-release-handoff-and-quality-plan.md`. Salt-okunur kontrol: canlı `frontend-api` = `8622312a`, `backend-api` = `64d71aec`; login ve API health 200. GitHub aday dalı `security/release-candidate-20260919` = `64d71aec`, PR #26 draft/açık. Kullanıcı kapalı bileti canlıda yeniden açtığını doğruladı. Önceki aşağıdaki `Production NO-GO` anlatımları kendi yayın-öncesi tarihsel anları içindir; güncel deploy gerçeğini geçersiz kılmaz. Bu devirde kod/canlı servis değiştirilmedi. Yeni ajan frontend AI etiketlerini kullanıcı tarafından seçilecek karşılıklarla planlayacak; lint, audit, Quality Gate E2E ve backend operasyon uyarılarını ayrı değerlendirecek. Ben ajanın diff/test/klasör/sürüm uygunluğunu dönüşte inceleyeceğim. Kullanıcıya ait `apps/frontend/next-env.d.ts`, kök `package.json`, `pnpm-lock.yaml` korunacak; push/deploy ayrı onaylıdır.
+
 ## 28 Eylül — CI kapıları ve yerel aday
 
 Aday dalında ham JSON baytlarını yalnız dört imzalı webhook yolu için koruyan düzeltme `53646460` ve testleri `fdb56a15` yerel commit olarak sabitlendi; CRM HTTP, parser ve ilgili guard odaklı set 34/34, backend typecheck/build geçti. Eski bilet/SLA test düzeneği güncel `TicketsService` bağımlılıkları ve gerçek `MaintenanceWorkService` ile onarıldı (`e225318b`); 8/8 ve backend typecheck geçti. Bu test sahte Prisma kullandığından gerçek DB kalıcılığı kanıtı değildir. PR #26 hâlâ kırmızı: eski CRM Dynamics testi, özel güvenlik provası, CI E2E ortamı, frontend lint ve bağımlılık denetimi ayrı ele alınmalı. Yerel commit'ler push edilmedi; canlı erişim, ayar, migration, deploy veya veri yazma yok. Kullanıcının `apps/frontend/next-env.d.ts` değişikliği korunuyor. **Production NO-GO.**
