@@ -1818,6 +1818,7 @@
       "company_name": "Şirketinizin adı",
       "industry": "Faaliyet gösterdiğiniz sektör",
       "job_title": "Ünvanınız (örn: Satın Alma Müdürü)",
+      "current_password": "Mevcut şifrenizi girin",
       "new_password": "Yeni şifrenizi girin",
       "confirm_password": "Yeni şifrenizi tekrar girin"
     },
@@ -1833,6 +1834,7 @@
     "password_change": {
       "title": "Şifre Değiştir",
       "description": "Şifrenizi değiştirmek istemiyorsanız boş bırakın.",
+      "current_password": "Mevcut Şifre",
       "new_password": "Yeni Şifre",
       "confirm_password": "Şifreyi Doğrula"
     },
@@ -1887,6 +1889,9 @@
       "pref_updated": "Tercih güncellendi",
       "pref_failed": "Güncelleme başarısız",
       "password_mismatch": "Şifreler eşleşmiyor!",
+      "current_password_required": "Şifrenizi değiştirmek için mevcut şifrenizi girmelisiniz.",
+      "password_min_length": "Yeni şifre en az 8 karakter olmalıdır.",
+      "password_changed_relogin": "Şifreniz başarıyla değiştirildi. Güvenliğiniz için lütfen yeni şifrenizle tekrar giriş yapın.",
       "profile_updated": "Profil başarıyla güncellendi.",
       "update_failed": "Güncelleme başarısız",
       "hxl_invalid": "Lütfen geçerli bir .hxl dosyası yükleyin",

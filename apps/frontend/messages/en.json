@@ -1794,6 +1794,7 @@
       "company_name": "Your company name",
       "industry": "Industry you operate in",
       "job_title": "Your job title (e.g. Purchasing Manager)",
+      "current_password": "Enter your current password",
       "new_password": "Enter your new password",
       "confirm_password": "Re-enter your new password"
     },
@@ -1809,6 +1810,7 @@
     "password_change": {
       "title": "Change Password",
       "description": "Leave blank if you do not want to change your password.",
+      "current_password": "Current Password",
       "new_password": "New Password",
       "confirm_password": "Verify Password"
     },
@@ -1863,6 +1865,9 @@
       "pref_updated": "Preference updated",
       "pref_failed": "Update failed",
       "password_mismatch": "Passwords do not match!",
+      "current_password_required": "Current password is required to change your password.",
+      "password_min_length": "New password must be at least 8 characters.",
+      "password_changed_relogin": "Your password has been changed successfully. For security reasons, please log in again with your new password.",
       "profile_updated": "Profile successfully updated.",
       "update_failed": "Update failed",
       "hxl_invalid": "Please upload a valid .hxl file",

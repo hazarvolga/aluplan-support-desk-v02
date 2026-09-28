@@ -1794,6 +1794,7 @@
       "company_name": "Ihr Firmenname",
       "industry": "Branche, in der Sie tätig sind",
       "job_title": "Ihr Jobtitel (z. B. Einkaufsleiter)",
+      "current_password": "Geben Sie Ihr aktuelles Passwort ein",
       "new_password": "Geben Sie Ihr neues Passwort ein",
       "confirm_password": "Geben Sie Ihr neues Passwort erneut ein"
     },
@@ -1809,6 +1810,7 @@
     "password_change": {
       "title": "Passwort ändern",
       "description": "Lassen Sie dieses Feld leer, wenn Sie Ihr Passwort nicht ändern möchten.",
+      "current_password": "Aktuelles Passwort",
       "new_password": "Neues Passwort",
       "confirm_password": "Passwort verifizieren"
     },
@@ -1863,6 +1865,9 @@
       "pref_updated": "Einstellung aktualisiert",
       "pref_failed": "Aktualisierung fehlgeschlagen",
       "password_mismatch": "Passwörter stimmen nicht überein!",
+      "current_password_required": "Das aktuelle Passwort ist erforderlich, um Ihr Passwort zu ändern.",
+      "password_min_length": "Das neue Passwort muss mindestens 8 Zeichen lang sein.",
+      "password_changed_relogin": "Ihr Passwort wurde erfolgreich geändert. Bitte melden Sie sich aus Sicherheitsgründen mit Ihrem neuen Passwort erneut an.",
       "profile_updated": "Profil erfolgreich aktualisiert.",
       "update_failed": "Aktualisierung fehlgeschlagen",
       "hxl_invalid": "Bitte laden Sie eine gültige .hxl-Datei hoch",

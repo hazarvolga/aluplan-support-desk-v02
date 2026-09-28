@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/components/auth/role-guard';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ export default function ProfilePage() {
     const t = useTranslations('profile');
     const tc = useTranslations('common');
     const locale = useLocale();
+    const { logout } = useAuth();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -37,6 +39,7 @@ export default function ProfilePage() {
     const [uploadingHotinfo, setUploadingHotinfo] = useState(false);
 
     // Auth password fields
+    const [currentPassword, setCurrentPassword] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -112,9 +115,21 @@ export default function ProfilePage() {
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (password && password !== confirmPassword) {
-            toast.error(t('toasts.password_mismatch'));
-            return;
+        const isChangingPassword = Boolean(password || confirmPassword || currentPassword);
+
+        if (isChangingPassword) {
+            if (!currentPassword) {
+                toast.error(t('toasts.current_password_required'));
+                return;
+            }
+            if (password.length < 8) {
+                toast.error(t('toasts.password_min_length'));
+                return;
+            }
+            if (password !== confirmPassword) {
+                toast.error(t('toasts.password_mismatch'));
+                return;
+            }
         }
 
         setSaving(true);
@@ -127,10 +142,24 @@ export default function ProfilePage() {
                 industry
             };
 
-            if (password) body.password = password;
+            if (isChangingPassword) {
+                body.currentPassword = currentPassword;
+                body.newPassword = password;
+            }
 
-            await api.users.updateProfile(body);
+            const res = await api.users.updateProfile(body);
+
+            if (res?.passwordChanged) {
+                toast.success(t('toasts.password_changed_relogin'));
+                setCurrentPassword('');
+                setPassword('');
+                setConfirmPassword('');
+                await logout(`/${locale}/login`);
+                return;
+            }
+
             toast.success(t('toasts.profile_updated'));
+            setCurrentPassword('');
             setPassword('');
             setConfirmPassword('');
             loadProfile(); // Refresh to see any auto-generated customerNo
@@ -326,6 +355,17 @@ export default function ProfilePage() {
 
                             <div className="space-y-4">
                                 <div className="space-y-2">
+                                    <Label htmlFor="currentPassword">{t('password_change.current_password')}</Label>
+                                    <Input
+                                        id="currentPassword"
+                                        type="password"
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                        placeholder={t('placeholders.current_password')}
+                                        autoComplete="current-password"
+                                    />
+                                </div>
+                                <div className="space-y-2">
                                     <Label htmlFor="password">{t('password_change.new_password')}</Label>
                                     <Input
                                         id="password"
@@ -333,6 +373,7 @@ export default function ProfilePage() {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder={t('placeholders.new_password')}
+                                        autoComplete="new-password"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -343,6 +384,7 @@ export default function ProfilePage() {
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
                                         placeholder={t('placeholders.confirm_password')}
+                                        autoComplete="new-password"
                                     />
                                 </div>
                             </div>

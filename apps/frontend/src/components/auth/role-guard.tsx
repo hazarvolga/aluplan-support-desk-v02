@@ -37,7 +37,7 @@ interface AuthContextType {
     loading: boolean;
     backendUnavailable: boolean;
     login: (user: User) => void;
-    logout: () => void;
+    logout: (redirectTo?: string) => Promise<void>;
     retryAuth: () => Promise<void>;
 }
 
@@ -46,7 +46,7 @@ const AuthContext = createContext<AuthContextType>({
     loading: true,
     backendUnavailable: false,
     login: () => { },
-    logout: () => { },
+    logout: async () => { },
     retryAuth: async () => { },
 });
 
@@ -93,14 +93,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, [pathname, router]);
 
-    const logout = async () => {
+    const logout = async (redirectTo?: string) => {
         try {
             await api.auth.logout();
         } catch (e) {
             console.error('Logout API call failed', e);
         } finally {
             setUser(null);
-            router.push('/login');
+            const localePrefix = routing.locales.find(l => pathname === `/${l}` || pathname.startsWith(`/${l}/`));
+            const defaultTarget = localePrefix ? `/${localePrefix}/login` : '/login';
+            router.push(redirectTo || defaultTarget);
         }
     };
 
