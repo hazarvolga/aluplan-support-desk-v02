@@ -35,4 +35,50 @@ describe('RoleGuard authorization rendering', () => {
         await waitFor(() => expect(push).toHaveBeenCalledWith('/my-tickets'));
         expect(screen.queryByText('PROTECTED_SENTINEL')).toBeNull();
     });
+
+    it('redirects to locale-aware login on default logout from localized path', async () => {
+        vi.spyOn(api.auth, 'me').mockResolvedValue({ id: 'u1', role: 'ADMIN' } as never);
+        vi.spyOn(api.auth, 'logout').mockResolvedValue({ success: true } as never);
+
+        const { useAuth } = await import('./role-guard');
+        function TestLogout() {
+            const { logout } = useAuth();
+            return <button onClick={() => logout()}>Logout</button>;
+        }
+
+        render(
+            <AuthProvider>
+                <TestLogout />
+            </AuthProvider>,
+        );
+
+        screen.getByRole('button', { name: 'Logout' }).click();
+
+        await waitFor(() => {
+            expect(push).toHaveBeenCalledWith('/tr/login');
+        });
+    });
+
+    it('redirects to explicit target when passed to logout', async () => {
+        vi.spyOn(api.auth, 'me').mockResolvedValue({ id: 'u1', role: 'ADMIN' } as never);
+        vi.spyOn(api.auth, 'logout').mockResolvedValue({ success: true } as never);
+
+        const { useAuth } = await import('./role-guard');
+        function TestLogout() {
+            const { logout } = useAuth();
+            return <button onClick={() => logout('/de/login')}>Logout</button>;
+        }
+
+        render(
+            <AuthProvider>
+                <TestLogout />
+            </AuthProvider>,
+        );
+
+        screen.getByRole('button', { name: 'Logout' }).click();
+
+        await waitFor(() => {
+            expect(push).toHaveBeenCalledWith('/de/login');
+        });
+    });
 });

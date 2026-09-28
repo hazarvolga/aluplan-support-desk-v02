@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { mockPrismaService } from '../test/mock.utils';
+import { mockPrismaService, mockRedisService } from '../test/mock.utils';
+import { RedisService } from '../redis/redis.service';
+import { ConfigService } from '@nestjs/config';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { BCRYPT_ROUNDS } from '../auth/security.constants';
@@ -17,6 +19,8 @@ describe('UsersService', () => {
             providers: [
                 UsersService,
                 { provide: PrismaService, useValue: mockPrismaService },
+                { provide: RedisService, useValue: mockRedisService },
+                { provide: ConfigService, useValue: { get: jest.fn((_k: string, def?: any) => def ?? '24h') } },
             ],
         }).compile();
 
@@ -139,8 +143,10 @@ describe('UsersService', () => {
         it('should update user and create customer profile if it does not exist', async () => {
             // Arrange
             const dto = { fullName: 'New Name', companyName: 'Acme Corp' };
-            const updatedUser = { id: '1', fullName: 'New Name', passwordHash: 'hash', customerProfile: null };
+            const existingUser = { id: '1', fullName: 'Old Name', status: 'ACTIVE', deletedAt: null, passwordHash: 'hash', customerProfile: null };
+            const updatedUser = { id: '1', fullName: 'New Name', status: 'ACTIVE', deletedAt: null, passwordHash: 'hash', customerProfile: null };
 
+            prisma.user.findUnique.mockResolvedValue(existingUser);
             prisma.user.update.mockResolvedValue(updatedUser);
             prisma.customerProfile = { count: jest.fn(), create: jest.fn(), update: jest.fn() };
             prisma.customerProfile.count.mockResolvedValue(0);
