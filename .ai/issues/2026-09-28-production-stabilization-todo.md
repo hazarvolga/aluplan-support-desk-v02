@@ -17,9 +17,9 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 
 | Sıra | Görev ID | Rapor Karşılığı | Başlık / Alan | Paket | Durum |
 | :---: | :--- | :--- | :--- | :--- | :---: |
-| 0 | **STAB-00** | Handoff Bölüm 8 | Ayrı worktree, dal, belge aktarımı ve TODO planı teslimi | Altyapı / Hazırlık | **REVIEW** |
-| 1.1 | **SEC-01** | SEC-01 | CSAT / Bilet Çözüm Değerlendirmesi Müşteri Sahiplik ve Durum Doğrulaması | Paket A (Erişim/Oturum) | **DONE** (Yerel Kabul) |
-| 1.2 | **SEC-02** | SEC-02 | Refresh Token Rotasyonunda Bcrypt 72-Bayt Sınırı ve Token Doğrulama Güvenliği | Paket A (Erişim/Oturum) | **PENDING** |
+| 0 | **STAB-00** | Handoff Bölüm 8 | Ayrı worktree, dal, belge aktarımı ve TODO planı teslimi | Altyapı / Hazırlık | **COMPLETED** (Kabul Edildi) |
+| 1.1 | **SEC-01** | SEC-01 | CSAT / Bilet Çözüm Değerlendirmesi Müşteri Sahiplik ve Durum Doğrulaması | Paket A (Erişim/Oturum) | **COMPLETED** (Kabul Edildi) |
+| 1.2 | **SEC-02** | SEC-02 | Refresh Token Rotasyonunda Bcrypt 72-Bayt Sınırı ve Token Doğrulama Güvenliği | Paket A (Erişim/Oturum) | **COMPLETED** (Kabul Edildi) |
 | 1.3 | **SEC-03** | SEC-03 | Profil Parola Güncellemesinde Mevcut Parola, Model Uyumu ve Oturum İptal Zinciri | Paket A (Erişim/Oturum) | **PENDING** |
 | 1.4 | **SEC-04** | SEC-04 | WhatsApp Webhook Tanınmayan Göndericide Güvenli Ret / Karantina İzolasyonu | Paket A (Erişim/Oturum) | **PENDING** |
 | 1.5 | **SEC-05** | Röntgen Bölüm 5.3 / 13 | Genel / Bulk Bilet Güncellemelerinde Yetki ve Durum Geçiş Sınırları | Paket A (Erişim/Oturum) | **PENDING** |
@@ -44,7 +44,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 ## Sıra 0: STAB-00 — Çalışma Alanı İzolasyonu ve Planlama
 
 ### STAB-00: Doğru Commit'ten Ayrı Worktree, Belge Aktarımı ve TODO Teslimi
-- **Durum:** `REVIEW`
+- **Durum:** `COMPLETED` (Kabul Edildi)
 - **Rapor ID / Kanıt:** Handoff Bölüm 8; Röntgen Bölüm 1.
 - **Dosya / Modül:** 
   - Worktree: `/Users/hazarvolgaekiz/dev/studio/aluplan-support-desk-v02/aluplan-stabilization-20260928`
@@ -65,7 +65,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 ## Sıra 1: Paket A — Erişim ve Oturum Güvenliği
 
 ### SEC-01: CSAT / Çözüm Değerlendirmesi Sahiplik ve Durum Doğrulaması
-- **Durum:** `DONE` (Yerel İnceleme Kabul Edildi)
+- **Durum:** `COMPLETED` (Kabul Edildi)
 - **Rapor ID / Kanıt:** SEC-01; Röntgen Bölüm 13 (Satır 333), Bölüm 5.3 (Satır 114-118); `B/tickets/tickets.controller.ts:257-267`, `B/tickets/tickets.service.ts:1144-1168,367-408`.
 - **Dosya / Modül:** `apps/backend/src/tickets/tickets.controller.ts`, `apps/backend/src/tickets/tickets.service.ts`, `apps/backend/src/tickets/dto/submit-feedback.dto.ts`.
 - **Kullanıcı Kararı (Kesinleşen):** CSAT değerlendirmesi **yalnızca** bileti açan asıl müşteri (`Ticket.userId === req.user.sub`) tarafından gönderilebilir. Personel, yönetici veya admin dahil hiç kimse müşteri adına puan/yorum iletemez (`ForbiddenException`). Bilet çözüm ve yeniden açma süreçleri ayrı olup dokunulmamıştır.
@@ -97,19 +97,49 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Açık Kullanıcı Kararı:** Çözüldü (yalnızca biletin asıl sahibi müşteri puanlayabilir).
 
 ### SEC-02: Refresh Token Rotasyonunda Bcrypt 72-Bayt Sınırı ve Token Doğrulama Güvenliği
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (Kabul Edildi)
 - **Rapor ID / Kanıt:** SEC-02; Röntgen Bölüm 13 (Satır 334); `B/auth/auth.service.ts:121,140,578-581,616-620`.
-- **Dosya / Modül:** `apps/backend/src/auth/auth.service.ts`.
+- **Dosya / Modül:** `apps/backend/src/auth/auth.service.ts`, `apps/backend/src/auth/refresh-token-security.spec.ts`, `apps/backend/src/auth/auth.service.spec.ts`.
 - **Minimum Değişiklik:** 
-  - Refresh token'ın veritabanında saklanan özeti için bcrypt'in ilk 72 bayt kesme açığını önleyecek güvenli bir karma yöntemi kullanılması (refresh token'ın SHA-256 özeti alındıktan sonra bcrypt ile hashlenmesi veya doğrudan kriptografik HMAC/SHA-256 hash karşılaştırması).
-  - Rotasyon sırasında eski token'ın yeniden kullanımının kesin olarak ayırt edilmesi ve geçersiz kılınması.
-  - Mevcut `sessionVersion` ve kullanıcı şifre doğrulama akışlarının korunması.
-- **Kapsam Dışı:** Kullanıcı parolalarının topluca sıfırlanması; JWT access token mimarisinin değiştirilmesi.
-- **Bağımlılık:** SEC-01 tamamlanmış olmalı.
-- **Kabul Ölçütü:** 72 bayttan uzun refresh token'lar güvenle doğrulanabilmeli; aynı 72 baytlık prefix'e sahip farklı token'lar birbirinin yerine kullanılamamalı; geçerli refresh token rotasyonu başarıyla yeni token çifti üretmeli; rotasyona uğramış eski token reddedilmeli.
-- **Dar Doğrulama:** `pnpm --filter @aluplan/backend test -- src/auth/auth.service.spec.ts` odaklı refresh token rotasyon birim testleri.
-- **Veri / Migration Etkisi:** Şemasız; mevcut aktif refresh token'ların geçişi sırasında kullanıcıların en fazla bir kez yeniden oturum açması gerekebilir.
-- **Açık Kullanıcı Kararı:** Token hashleme mantığı güncellendiğinde, mevcut aktif oturumların bir kereye mahsus yeniden giriş yapması operasyonel olarak onaylanıyor mu?
+  - Refresh token'ın tamamı bcrypt'e verilmeden önce SHA-256 ile sabit uzunlukta (64 karakter hex) özetlenerek (`crypto.createHash('sha256').update(token).digest('hex')`) bcrypt 72 bayt sessiz kesme ve çakışma açığı kesin olarak önlendi.
+  - Saklanan hash'e açık sürüm öneki eklendi: `v2:<bcryptHash>`.
+  - Doğrulama (`verifyRefreshToken`): Saklanan hash `v2:` ile başlamıyorsa veya geçersizse eski raw-bcrypt hash'lerine güvensiz geri dönüş (fallback) yapılmadan doğrudan ret (`ForbiddenException('Access denied')`) uygulandı.
+  - Normal `login` ve `refreshTokens` rotasyonu aynı yeni `v2:` formatını üretecek şekilde güncellendi.
+  - `refreshTokens` içerisindeki atomik CAS (`prisma.user.updateMany` with `id`, `status: 'ACTIVE'`, `deletedAt: null`, `sessionVersion`, `refreshTokenHash`) yarış ve eşzamanlı sıfırlama koruması eksiksiz korundu.
+  - Parola hash'leme mantığı, kullanıcı parolaları ve JWT access token mimarisi değiştirilmedi.
+- **Kapsam Dışı:** Kullanıcı parolalarının topluca sıfırlanması; JWT access token mimarisinin değiştirilmesi; veritabanı migration'ı; yeni ortam değişkeni/secret eklenmesi; frontend değişikliği.
+- **Bağımlılık:** SEC-01 tamamlandı (`19155d2d`, `a53170a1`, `dbf6034f`).
+- **Kabul Ölçütü:** 72 bayttan uzun refresh token'lar güvenle doğrulanabilmeli; ilk 72 baytı aynı olan farklı saldırgan token'ları kesin olarak reddedilmeli; legacy raw-bcrypt token'ları fallback olmadan reddedilmeli; geçerli `v2:` token rotasyonu başarıyla yeni `v2:` token çifti üretmeli; rotasyona uğramış eski token ve eşzamanlı CAS kaybedeni reddedilmeli.
+- **Doğrulama Kanıtı ve Mock Test Sınırı:**
+  - **Bağımsız İnceleme Onayı:** Bağımsız reviewer tarafından iki hedefli süitte 70/70 test PASS ile onaylandı. Login ve rotation SHA256hex/bcrypt `v2:` formatı, veritabanı TEXT alan uyumu, parola hash'lerinin değişmezliği ve CAS/sessionVersion dayanıklılığı doğrulandı.
+  - **Kriptografik ve Güvenlik Testleri (`src/auth/refresh-token-security.spec.ts`):** 13/13 test PASS.
+    1. Standart bcrypt 72 bayt kesme zafiyeti ve ilk 72 baytı aynı iki farklı token'ın çakıştığının kriptografik kanıtı.
+    2. SHA-256 ön-özetlemenin bu 72 bayt çakışmasını giderdiğinin kriptografik kanıtı.
+    3. Geçerli `v2:` formatlı token ile `refreshTokens` başarıyla yeni token üretir ve `v2:` hash rotasyonu yapar.
+    4. İlk 72 baytı aynı saldırgan token'ı kesinlikle reddedilir (`ForbiddenException`).
+    5. Tamamen yanlış token kesinlikle reddedilir.
+    6. Legacy raw-bcrypt hash'leri güvensiz fallback yapılmadan reddedilir.
+    7. Bozuk veya eksik hash (`v2:`) reddedilir.
+    8. Rotasyona uğramış eski token reddedilir.
+    9. Eşzamanlı yarışta `updateMany` count 0 dönen CAS kaybedeni reddedilir.
+    10. JWT `sessionVersion` uyumsuzluğu reddedilir.
+    11. Soft-deleted kullanıcı reddedilir.
+    12. Askıya alınmış/inaktif kullanıcı reddedilir.
+    13. `login` işlemi yeni hash'i `v2:` öneki ile üretir ve kaydeder.
+  - **Mevcut Auth Servis Testleri (`src/auth/auth.service.spec.ts`):** 57/57 test PASS (yeni `v2:` sözleşmesine uygun armatür güncellemeleriyle).
+  - **Tüm Auth Modülü Süitleri (`src/auth`):** 9 test suite, 165 testin tamamı PASS (0 fail, 0 regresyon).
+  - **Tip Denetimi:** `pnpm --filter @aluplan/backend typecheck` (`tsc --noEmit`) 0 hata ile PASS.
+  - **Çalışma Zamanı ve Ortam Kanıtı:**
+    - Node: `/Users/hazarvolgaekiz/Library/pnpm/bin/node` (`v24.18.0`)
+    - pnpm: `/Users/hazarvolgaekiz/Library/pnpm/bin/pnpm` (`9.15.4`, `package.json` içindeki `packageManager: "pnpm@9.15.4"` ile tam uyumlu).
+    - `[WARN] The "pnpm" field in package.json is no longer read by pnpm. The following keys were ignored: "pnpm.overrides"` uyarısı pnpm 9.15.4 tarafından üretilmekte olup test çıktısında gizlenmemiştir.
+    - Kurulum mevcut bağımlılıklar üzerinden (frozen lockfile uyumlu, lockfile/package.json modifikasyonu yapılmadan) doğrulanmıştır.
+  - **Mock Test Sınırı:** Bu aşamadaki doğrulamalar izole Jest mock testleri ve kriptografik karşılaştırma fonksiyonları ile yapılmıştır. Canlı müşteri veri tabanı entegrasyonu veya staging ortamı bu kapsamda çalıştırılmamıştır.
+  - **İnceleme Notu (Non-blocking):** Veritabanında bozuk/geçersiz maliyet veya revizyona sahip boş olmayan `v2:` bcrypt hash'i bulunması durumunda `bcrypt.compare` istisna fırlatarak 500 dönebilir; sistem fail-closed kalır ve yetkisiz erişim kesinlikle verilmez. Kapsam dışına çıkmamak adına bu aşamada ek düzeltme yapılmamıştır; ileride genel auth hata davranışı ele alınırken incelenecektir.
+- **Veri / Migration Etkisi:** Sıfır şema değişikliği.
+- **Operasyonel Etki ve Açık Karar Kaydı:**
+  - Bu düzenleme yerel teknik bir karardır; canlı oturumların sonlandırılması veya canlıya yayınlama onayı DEĞİLDİR.
+  - Gelecekte canlıya alındığında: Eski raw-bcrypt formatındaki refresh token'lara sahip mevcut aktif oturumlar yenileme yapamayacak ve bir kereye mahsus yeniden kullanıcı adı/şifre ile giriş yapmaları gerekecektir. Normal giriş yapan kullanıcılara otomatik olarak yeni `v2:` formatı atanacaktır. Şifreler ve access token mimarisi etkilenmez.
 
 ### SEC-03: Profil Parola Güncellemesinde Mevcut Parola, Model Uyumu ve Oturum İptal Zinciri
 - **Durum:** `PENDING`
