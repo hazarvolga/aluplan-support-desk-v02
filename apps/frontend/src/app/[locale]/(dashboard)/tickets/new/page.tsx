@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { useTranslations, useLocale } from 'next-intl';
 import { HotinfoGrid } from '@/components/ui/hotinfo-grid';
 import { getDepartmentDisplayName } from '@/lib/department-display';
+import { buildTicketCategoryOptions, getTicketCategoryCreateFields } from '@/lib/ticket-category-options';
 import { AiVisualEvidence, type AiVisualEvidenceItem } from '@/components/ai/AiVisualEvidence';
 
 const MAX_TICKET_SUBJECT_LENGTH = 255;
@@ -215,7 +216,10 @@ export default function NewTicketPage() {
     const [files, setFiles] = useState<File[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
-    const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('');
+    const [selectedCategoryValue, setSelectedCategoryValue] = useState<string>('');
+    const categoryOptions = useMemo(() => buildTicketCategoryOptions(departments), [departments]);
+    const selectedCategoryOption = categoryOptions.find(option => option.value === selectedCategoryValue);
+    const selectedDepartmentId = selectedCategoryOption?.departmentId ?? '';
     const [selectedProductId, setSelectedProductId] = useState<string>('');
     const [hotinfoData, setHotinfoData] = useState<any | null>(null);
     const [isHotinfoConfirmed, setIsHotinfoConfirmed] = useState(false);
@@ -434,7 +438,7 @@ export default function NewTicketPage() {
         try {
             const ticket = await api.tickets.create({
                 ...values,
-                departmentId: selectedDepartmentId || undefined,
+                ...getTicketCategoryCreateFields(selectedCategoryOption),
                 productId: selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId,
                 hotinfoContext: isHotinfoConfirmed && hotinfoData ? hotinfoData : undefined,
                 interactionId: interactionId ?? undefined,
@@ -481,7 +485,9 @@ export default function NewTicketPage() {
     const watchedSubject = form.watch('subject');
     const watchedDescription = form.watch('description');
     const selectedDepartmentName = selectedDepartmentDetails
-        ? getDepartmentDisplayName(selectedDepartmentDetails, departmentLabels)
+        ? selectedCategoryOption?.isLicensing
+            ? departmentLabels.licensing
+            : getDepartmentDisplayName(selectedDepartmentDetails, departmentLabels)
         : undefined;
     const rainTokens = useMemo(() => buildRainTokens({
         subject: watchedSubject,
@@ -523,14 +529,16 @@ export default function NewTicketPage() {
                                     <ShieldAlert className="h-4 w-4 text-brand-400" />
                                     {t('fields.department')}
                                 </Label>
-                                <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
+                                <Select value={selectedCategoryValue} onValueChange={setSelectedCategoryValue}>
                                     <SelectTrigger className="bg-slate-950/50 border-white/10">
                                         <SelectValue placeholder={t('fields.department_placeholder')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {departments.map(department => (
-                                            <SelectItem key={department.id} value={department.id}>
-                                                {getDepartmentDisplayName(department, departmentLabels)}
+                                        {categoryOptions.map(option => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.isLicensing
+                                                    ? departmentLabels.licensing
+                                                    : getDepartmentDisplayName(option.department, departmentLabels)}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -1077,7 +1085,7 @@ export default function NewTicketPage() {
                         <Label className="text-brand-400 text-[10px] uppercase font-bold">{t('summary.report')}</Label>
                         <p className="text-sm leading-relaxed text-white/80">
                             <strong>{t('summary.subject_label')}</strong> {form.getValues('subject')}<br />
-                            <strong>{t('summary.department_label')}</strong> {selectedDepartmentDetails ? getDepartmentDisplayName(selectedDepartmentDetails, departmentLabels) : '-'}<br />
+                            <strong>{t('summary.department_label')}</strong> {selectedDepartmentName || '-'}<br />
                             <strong>{t('summary.product_label')}</strong> {selectedProductDetails?.name || t('fields.product_general')}<br />
                             <strong>{t('summary.desc_label')}</strong> {form.getValues('description').slice(0, 100)}...
                         </p>
