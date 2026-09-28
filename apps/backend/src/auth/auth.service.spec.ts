@@ -172,7 +172,7 @@ describe('AuthService', () => {
             });
             expect(prisma.user.update).toHaveBeenCalledWith({
                 where: { id: 'user-1' },
-                data: { refreshTokenHash: 'newHash' }
+                data: { refreshTokenHash: 'v2:newHash' }
             });
         });
 
@@ -220,7 +220,7 @@ describe('AuthService', () => {
 
         it('should return new tokens on valid refresh', async () => {
             // Arrange
-            const mockUser = { id: '1', email: 'test@test.com', status: 'ACTIVE', deletedAt: null, sessionVersion: 0, refreshTokenHash: 'hash', roleId: 'role-customer' };
+            const mockUser = { id: '1', email: 'test@test.com', status: 'ACTIVE', deletedAt: null, sessionVersion: 0, refreshTokenHash: 'v2:hash', roleId: 'role-customer' };
             prisma.user.findUnique.mockResolvedValue(mockUser);
             prisma.user.updateMany.mockResolvedValue({ count: 1 });
             (bcrypt.compare as jest.Mock).mockResolvedValue(true);
@@ -235,7 +235,7 @@ describe('AuthService', () => {
         });
 
         it('preserves explicitly empty role permissions without resurrecting defaults', async () => {
-            const mockUser = { id: '1', email: 'test@test.com', fullName: 'Test User', status: 'ACTIVE', deletedAt: null, sessionVersion: 0, refreshTokenHash: 'hash', roleId: 'role-customer' };
+            const mockUser = { id: '1', email: 'test@test.com', fullName: 'Test User', status: 'ACTIVE', deletedAt: null, sessionVersion: 0, refreshTokenHash: 'v2:hash', roleId: 'role-customer' };
             prisma.role = { findUnique: jest.fn() };
             prisma.user.findUnique.mockResolvedValue(mockUser);
             prisma.role.findUnique.mockResolvedValue({ name: 'CUSTOMER', permissions: [] });
@@ -259,7 +259,7 @@ describe('AuthService', () => {
         it('rejects refresh rotation when a concurrent reset changed the durable session', async () => {
             prisma.user.findUnique.mockResolvedValue({
                 id: '1', email: 'test@test.com', fullName: 'Test User', status: 'ACTIVE',
-                deletedAt: null, sessionVersion: 0, refreshTokenHash: 'old-hash', roleId: 'role-customer',
+                deletedAt: null, sessionVersion: 0, refreshTokenHash: 'v2:old-hash', roleId: 'role-customer',
             });
             (bcrypt.compare as jest.Mock).mockResolvedValue(true);
             (bcrypt.hash as jest.Mock).mockResolvedValue('next-hash');
@@ -270,7 +270,7 @@ describe('AuthService', () => {
             await expect(service.refreshTokens('1', 'old-token', 0)).rejects.toThrow(ForbiddenException);
             expect(prisma.user.updateMany).toHaveBeenCalledWith(expect.objectContaining({
                 where: expect.objectContaining({
-                    id: '1', sessionVersion: 0, refreshTokenHash: 'old-hash',
+                    id: '1', sessionVersion: 0, refreshTokenHash: 'v2:old-hash',
                 }),
             }));
         });
@@ -280,7 +280,7 @@ describe('AuthService', () => {
         const user = {
             id: 'authority-user', email: 'authority@example.com', fullName: 'Authority Fixture',
             status: 'ACTIVE', deletedAt: null, passwordHash: 'password-hash',
-            refreshTokenHash: 'refresh-hash', sessionVersion: 4, roleId: 'role-admin',
+            refreshTokenHash: 'v2:refresh-hash', sessionVersion: 4, roleId: 'role-admin',
         };
 
         beforeEach(() => {
