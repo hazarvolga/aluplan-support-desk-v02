@@ -34,6 +34,7 @@ import { TicketsController } from '../../src/tickets/tickets.controller';
 import { TicketsService } from '../../src/tickets/tickets.service';
 import { SlaService } from '../../src/tickets/sla.service';
 import { TicketAccessService } from '../../src/common/services/ticket-access.service';
+import { MaintenanceWorkService } from '../../src/common/services/maintenance-work.service';
 import { PiiMaskingService } from '../../src/common/services/pii-masking.service';
 import { StorageService } from '../../src/common/services/storage.service';
 import { AiQueryService } from '../../src/ai/ai-query.service';
@@ -166,6 +167,7 @@ describe('Disposable PostgreSQL customer security rehearsal', () => {
         const module = await Test.createTestingModule({
             controllers: [AuthController, TicketsController, AttachmentsController],
             providers: [PrismaService, AuthService, TicketsService, AttachmentsService,
+                MaintenanceWorkService,
                 TicketAccessService, PiiMaskingService, JwtStrategy, JwtRefreshStrategy, RbacGuard,
                 { provide: JwtService, useValue: new JwtService() },
                 { provide: MetricsService, useValue: { setDbPoolConnections: jest.fn() } },
@@ -205,7 +207,9 @@ describe('Disposable PostgreSQL customer security rehearsal', () => {
 
         // These are the first writes; connection identity and explicit marker are already verified.
         customerRoleId = await fixtureRole('CUSTOMER', CUSTOMER_GRANTS);
-        const staffRoleId = await fixtureRole('SUPPORT_AGENT', ['ticket:read', 'ticket:update']);
+        // Keep the production SUPPORT_AGENT grants intact; this synthetic
+        // role normalizes to the same staff authority without inheriting them.
+        const staffRoleId = await fixtureRole('support-agent', ['ticket:read', 'ticket:update']);
         customerA = await fixtureUser('customer-a', customerRoleId);
         customerB = await fixtureUser('customer-b', customerRoleId);
         const staff = await fixtureUser('staff', staffRoleId);
