@@ -11,6 +11,14 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 
 **Kullanıcının Kesin Yayın Kararı (28 Eylül 2026):** TODO listesindeki TÜM işler (Paket A, Paket B ve ilgili kalite doğrulamaları) tamamlanıp incelenmeden hiçbir yayın (deploy/release) gündeme alınmayacaktır. Paket A veya Paket B sonrası ara yayın/deploy önerileri iptal edilmiştir; süreç yalnızca yerel geliştirme, hedefli testler, kod incelemeleri ve yerel Git checkpoint commit'leri ile yürütülür. Ayrı açık kullanıcı onayı olmadan remote push, remote tag veya Coolify deploy kesinlikle yapılmaz.
 
+### Kullanıcı Onaylı Ek Düzeltme — E-posta Kategori ve CSAT Bağlantısı (29 Eylül 2026)
+
+- **Durum:** `DONE` (odaklı kontroller ve bağımsız kod incelemesi tamamlandı; yalnız yerel)
+- **Kapsam:** Lisanslama etiketi, müşteri makbuzu ve personel yeni bilet uyarısında `Lisanslama` kategorisini gösterir; şemada tutulmayan bilet türü için sahte `-` gösterilmez. CSAT e-postasındaki boş CTA metni doğru TR/EN anahtarlarıyla, imzalı ve 7 gün geçerli `/tr/feedback/<token>` akışıyla değiştirildi. Bir kez puanlanan bilet yeniden açılıp çözümlense dahi eski bağlantı tekrar gösterim veya puan güncelleme yapamaz; yıldız değerlendirmesi yerel ayarlı erişilebilir native radio grubudur.
+- **Doğrulama:** Backend hedefli testler 6 suite / 67 test; frontend hedefli testler 2 dosya / 7 test; backend ve frontend typecheck; TR/EN/DE i18n kontrolü ve `git diff --check` geçti. Bağımsız reviewer yeniden incelemesi önemli bulgu bildirmedi.
+- **Veri / dış etki:** Şema/migration yok; gerçek müşteri verisi, SMTP, dış servis, push veya deploy kullanılmadı.
+- **Release kapısı:** Bu ek düzeltme, aşağıdaki Paket A/B işlerinin tamamlanıp incelenmesi şartını değiştirmez; ara yayın yoktur.
+
 ---
 
 ## Durum Özeti Tablosu
