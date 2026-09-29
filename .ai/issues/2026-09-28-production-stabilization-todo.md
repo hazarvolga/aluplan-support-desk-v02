@@ -22,8 +22,8 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 1.2 | **SEC-02** | SEC-02 | Refresh Token Rotasyonunda Bcrypt 72-Bayt Sınırı ve Token Doğrulama Güvenliği | Paket A (Erişim/Oturum) | **COMPLETED** (Kabul Edildi) |
 | 1.3 | **SEC-03** | SEC-03 | Profil Parola Güncellemesinde Mevcut Parola, Model Uyumu ve Oturum İptal Zinciri | Paket A (Erişim/Oturum) | **COMPLETED** (Kod incelemesi kabul) |
 | 1.4 | **SEC-04** | SEC-04 | WhatsApp Webhook Tanınmayan Göndericide Güvenli Ret / Karantina İzolasyonu | Paket A (Erişim/Oturum) | **COMPLETED** (dar kapsam kabul) |
-| 1.5 | **SEC-05** | Röntgen Bölüm 5.3 / 13 | Genel / Bulk Bilet Güncellemelerinde Yetki ve Durum Geçiş Sınırları | Paket A (Erişim/Oturum) | **REVIEW** |
-| 2.1 | **REL-01** | Handoff Bölüm 7 (Sıra 2) | Paket A Sonrası Tip Kontrolü, Derleme ve Odaklı Testler (Ara Yayın Yok) | Paket A (Kalite Kontrolü) | **PENDING** |
+| 1.5 | **SEC-05** | Röntgen Bölüm 5.3 / 13 | Genel / Bulk Bilet Güncellemelerinde Yetki ve Durum Geçiş Sınırları | Paket A (Erişim/Oturum) | **COMPLETED** (Bağımsız kabul) |
+| 2.1 | **REL-01** | Handoff Bölüm 7 (Sıra 2) | Paket A Sonrası Tip Kontrolü, Derleme ve Odaklı Testler (Ara Yayın Yok) | Paket A (Kalite Kontrolü) | **COMPLETED** (Bağımsız kabul; tarayıcı kapsam sınırı kayıtlı) |
 | 2.2 | **REL-02** | Handoff Bölüm 5 (P1) | Erişilebilir High Bağımlılık Denetimi ve Quality Gate CI/E2E Analizi | Paket A (Yayın Hazırlığı) | **PENDING** |
 | 3.1 | **RAG-01** | RAG-01 | Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi | Paket B (Güvenilir Bilgi) | **PENDING** |
 | 3.2 | **CACHE-01**| Röntgen Bölüm 10 | Redis ve Semantic Cache Tutarsızlığı / İptal (Invalidation) Olayları | Paket B (Güvenilir Bilgi) | **PENDING** |
@@ -296,25 +296,62 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 ## Sıra 2: Paket A — Kalite Doğrulaması (Ara Yayın Yok)
 
 ### REL-01: Paket A Sonrası Tip Kontrolü, Derleme ve Odaklı Dosya Bazlı Testler
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (Kalite doğrulaması bağımsız incelemeden geçti; tarayıcı kapsam sınırı aşağıda kayıtlı)
 - **Rapor ID / Kanıt:** Handoff Bölüm 7 (Sıra 2); `apps/backend/package.json`, `apps/frontend/package.json`.
-- **Dosya / Modül:** `apps/backend`, `apps/frontend` (yalnızca profil UI etkilenirse).
-- **Minimum Değişiklik:** 
-  - Backend tip kontrolü: `pnpm --filter @aluplan/backend typecheck`.
-  - Backend derlemesi: `pnpm --filter @aluplan/backend build`.
-  - Backend odaklı dosya bazlı birim testleri (backend `package.json`'da `test:unit` scripti bulunmadığından doğrudan gerçek Jest scripti ile):
-    - `pnpm --filter @aluplan/backend test -- src/tickets/tickets.service.spec.ts`
-    - `pnpm --filter @aluplan/backend test -- src/auth/auth.service.spec.ts`
-    - `pnpm --filter @aluplan/backend test -- src/users/users.service.spec.ts`
-    - `pnpm --filter @aluplan/backend test -- src/whatsapp/whatsapp.service.spec.ts`
-  - Eğer SEC-03 kapsamında frontend profil formu (`apps/frontend/src/app/[locale]/(dashboard)/profile/page.tsx`) değiştirildiyse:
-    - Frontend tip kontrolü: `pnpm --filter @aluplan/frontend typecheck`
-    - Frontend derlemesi: `pnpm --filter @aluplan/frontend build`
-    - Profil ekranı yerel render doğrulaması.
-- **Kapsam Dışı:** Depo genelindeki 240 test dosyasının veya Playwright E2E testlerinin topluca çalıştırılması; yeni kalite/test altyapısı eklemek; ara yayın veya deploy yapmak.
+- **Dosya / Modül:** `apps/backend`, `apps/frontend`, `apps/backend/src/tickets/tickets.service.spec.ts`.
+- **Minimum Değişiklik ve Doğrulama Kapsamı:**
+  - **Backend Tip Kontrolü:** `pnpm --filter @aluplan/backend typecheck` (`tsc --noEmit`) 0 hata ile PASS (Exit code 0).
+  - **Backend Derlemesi (Build):** `pnpm --filter @aluplan/backend build` (`nest build`) 0 hata ile derlendi (Antigravity görev kaydında exit code 0; çıktı: `/Users/hazarvolgaekiz/.gemini/antigravity/brain/ecd74b96-ce3d-4a79-9a46-4591965f2929/.system_generated/tasks/task-1941.log`; ham çıktı dosyası tek başına exit kodu içermiyor).
+  - **Frontend Tip Kontrolü:** `pnpm --filter @aluplan/frontend typecheck` (`tsc --noEmit`) 0 hata ile PASS (Exit code 0).
+  - **Frontend Derlemesi (Build):** `pnpm --filter @aluplan/frontend build` (`next build`, Next.js 15.5.24 standalone) tüm sayfalar (özellikle `/[locale]/profile`) derlendi ve statik/dinamik optimizasyonlar başarıyla tamamlandı (Antigravity görev kaydında exit code 0; çıktı: `/Users/hazarvolgaekiz/.gemini/antigravity/brain/ecd74b96-ce3d-4a79-9a46-4591965f2929/.system_generated/tasks/task-1947.log`; ham çıktı dosyası tek başına exit kodu içermiyor). Next build tip kontrolü/lint’i atladığından bunlar yukarıdaki ayrı typecheck kanıtlarıyla karşılanmıştır.
+  - **Dört Hedefli Modülün Birim Testleri (Final SHA: `23682769` ürün, `45a34287` test, `45193711` belge):**
+    - `src/tickets/tickets.service.spec.ts`: 35/35 test PASS (0 fail). SEC-05 kapsamında `tickets.service.ts` içine eklenen koşulsuz iyimser kilit (`where: { id, status, deletedAt: null }`) sözleşmesine uygun olarak, VIP chat testindeki mock bilet verisine `status: TicketStatus.NEW` eklendi ve `where` assertion'ı minimal olarak hizalandı.
+    - `src/auth/auth.service.spec.ts`: 57/57 test PASS (0 fail).
+    - `src/users/users.service.spec.ts`: 8/8 test PASS (0 fail).
+    - `src/whatsapp/whatsapp.service.spec.ts`: 12/12 test PASS (0 fail).
+    - **Toplam:** 4 test suite, 112/112 test PASS (%100 yeşil).
+  - **SEC-03 Gerçek Chromium Motorunda Yerel UI Doğrulaması (Mock API):**
+    - **Doğrulama Betiği ve Log Kanıtı:**
+      - Betik: `scratch/verify-profile-browser.js` (Playwright 1.58.2 Chromium headless).
+      - Log Yolu: `/Users/hazarvolgaekiz/.gemini/antigravity/brain/ecd74b96-ce3d-4a79-9a46-4591965f2929/scratch/verify-profile-browser.log` (Exit code: 0).
+      - Sunucu: `HOSTNAME=127.0.0.1 PORT=3099 node apps/frontend/.next/standalone/apps/frontend/server.js` (doğrulama sonrası sunucu süreci sonlandırılmıştır).
+    - **Sertleştirilmiş İzolasyon ve Ağ Kısıtları:**
+      - Context düzeyinde `serviceWorkers: 'block'` yapılandırması etkinleştirildi.
+      - Context düzeyinde `context.routeWebSocket('**', ws => ws.close())` ile WebSocket bağlantı denemeleri engellendi.
+      - Sentry tünel rotası (`/monitoring`), `socket.io` yoklamaları, Next.js link prefetch RSC istekleri (`/tr/dashboard`, `/tr/my-tickets`, vb.) ve tüm beklenmeyen istekler fail-closed olarak `route.abort('blockedbyclient')` ile engellendi (toplam 19 beklenmeyen istek engellendi).
+      - Web güvenliği/TLS atlanmadı (`ignoreHTTPSErrors` kaldırıldı).
+      - Gerçek veritabanı, gerçek parola, canlı CRM, mail, AI veya harici R2 servisleri kesinlikle kullanılmadı; bellek içi sentetik müşteri kimliği (`CUSTOMER`, `syn-user-1`) işletildi.
+      - **Kapsam sınırı:** Bunlar gerçek Chromium’da yerel derlenmiş profil UI’sinin mock API ile odaklı etkileşim doğrulamalarıdır; backend/DB entegrasyon testi veya tüm dashboard navigasyonu/asset’leri için genel render kabulü değildir. Engellenen 19 istek arasında dashboard RSC prefetch’leri (`/dashboard`, `/my-tickets`, `/knowledge-base`, `/help`), proactive-chat/announcement yardımcı API’leri ve logo asset’leri bulunur. Bunlar konsol hatası/uyarıları ve RSC fallback’leri üretmiştir; profil senaryolarının doğrudan assertion’ları yine geçmiştir. Yardımcı akışlar, logo görünümü ve engellenen sayfalar doğrulanmış sayılmaz. Gövdenin tamamı loglanmış olsa da assertion'lar normal güncellemede tam `fullName` ve parola alanlarının yokluğu; parola senaryolarında mevcut/yeni parola değerleri, istek sayıları ve logout/nihai URL koşullarıyla sınırlıdır; kalan profil alanlarının tümü exact-match değildir.
+    - **Alt Alan Adı (Subdomain) Teşhisi ve Dürüst Not:**
+      - Önceki koşuda doğrudan IP adresine (`http://127.0.0.1:3099`) gidildiğinde `apps/frontend/src/lib/env.ts` dosyasındaki `window.location.hostname !== 'localhost'` mantığı nedeniyle `https://api.127.0.0.1/api/v1` şeklinde geçersiz bir alt alan adına yönelindiği ve DNS çözümlemesi başarısız olduğu tespit edilmiştir. Doğrulama hedefi `http://localhost:3099` (arkada `127.0.0.1:3099` loopback'e bağlı) olarak ayarlanarak `window.location.hostname === 'localhost'` koşulu sağlandı ve API isteklerinin `http://localhost:4000/api/v1` üzerinden bellek içi mock katmanına ulaşması sağlandı.
+    - **Deterministik Bekleme ve Doğrulanan Assertion'lar:**
+      - **Senaryo 1 (Normal Profil Güncelleme):**
+        - Form alanına `'Synthetic User Renamed'` girildi ve submit tıklandı.
+        - PATCH yanıtı `page.waitForResponse(...)` ile deterministik olarak beklendi (HTTP 200).
+        - Loglanan PATCH gövdesi: `{"fullName":"Synthetic User Renamed","phone":"+905550000000","companyName":"Synthetic Mimarlik A.S.","jobTitle":"Mimar","industry":"Architecture"}`. Betik `fullName` değerini tam eşleştirir; diğer profil alanlarının değerleri ayrı ayrı eşleştirilmemiştir.
+        - Parola alanlarının (`currentPassword`, `newPassword`) gövdede yer almadığı assert edildi.
+        - PATCH Çağrı Sayısı: `1` (tam olarak 1 çağrı assert edildi).
+        - Logout Çağrı Sayısı: `0` (oturum kapatma çağrılmadı, `logoutCount === 0` assert edildi).
+        - URL Doğrulaması: Tarayıcının `/tr/profile` üzerinde kalmaya devam ettiği doğrulandı (PASS).
+      - **Senaryo 2 (Parola Değişimi - Türkçe):**
+        - Mevcut ve yeni parolalar girildi (`OldSecurePass123!`, `NewSecurePass123!`).
+        - PATCH ve Logout yanıtları `page.waitForResponse(...)` ile deterministik olarak beklendi (her ikisi de HTTP 200).
+        - Loglanan PATCH gövdesi: `{"fullName":"Synthetic User","phone":"+905550000000","companyName":"Synthetic Mimarlik A.S.","jobTitle":"Mimar","industry":"Architecture","currentPassword":"OldSecurePass123!","newPassword":"NewSecurePass123!"}`. Betik mevcut/yeni parola değerlerini ve çağrı sayısını assert eder; diğer profil alanları tek tek eşleştirilmemiştir.
+        - PATCH Çağrı Sayısı: `1`.
+        - Logout Çağrı Sayısı: `1` (tam olarak 1 logout çağrısı assert edildi).
+        - URL Doğrulaması: Tarayıcının `/tr/login` sayfasına yönlendiği `page.waitForURL('**/tr/login')` ile doğrulandı (PASS).
+      - **Senaryo 3 (Parola Değişimi - İngilizce):**
+        - İngilizce profil sayfası (`/en/profile`) yüklendi ve parola alanları dolduruldu.
+        - PATCH ve Logout yanıtları `page.waitForResponse(...)` ile deterministik olarak beklendi (her ikisi de HTTP 200).
+        - Loglanan EN PATCH gövdesi: `{"fullName":"Synthetic User","phone":"+905550000000","companyName":"Synthetic Mimarlik A.S.","jobTitle":"Mimar","industry":"Architecture","currentPassword":"OldSecurePass123!","newPassword":"NewSecurePass123!"}`. Betik mevcut/yeni parola değerlerini ve çağrı sayısını assert eder; diğer profil alanları tek tek eşleştirilmemiştir.
+        - EN PATCH Çağrı Sayısı: `1`.
+        - EN Logout Çağrı Sayısı: `1` (tam olarak 1 logout çağrısı assert edildi).
+        - URL Doğrulaması: Tarayıcının `/en/login` sayfasına yönlendiği `page.waitForURL('**/en/login')` ile doğrulandı (PASS).
+      - **İddia Düzeltmesi:** Ölçülmemiş olan "çift yönlendirme olmaksızın / tek adımda" ifadesi belgeden çıkarılmış, yalnızca ulaşılan nihai URL'ler ve çağrı adetleri assert edilmiştir.
+- **Kapsam Dışı:** Depo genelindeki 240 test dosyasının veya ağır E2E paketinin topluca çalıştırılması; bağımlılık yükseltme; ara yayın veya deploy yapmak.
+- **Bağımsız İnceleme:** Reviewer REL-01 kabulünü verdi. Betikte üç hedefli profil akışı gerçek submit, PATCH payload/çağrı adedi, logout ve nihai URL assertion’ları ile denetleniyor. API’ler mock’tur; engellenen RSC/asset/yardımcı API isteklerinin konsol hatası ve fallback ürettiği, bu akışların kapsam dışı kaldığı açıkça kayıtlıdır.
 - **Bağımlılık:** SEC-01'den SEC-05'e kadar tüm Paket A maddelerinin tamamlanmış olması.
-- **Kabul Ölçütü:** Backend (ve gerekirse frontend) typecheck ve build 0 hata ile tamamlanmalı; dokunulan 4 odaklı test dosyası %100 yeşil geçmeli.
-- **Dar Doğrulama:** Yukarıdaki odaklı dosya komutları (uygulama aşamasında).
+- **Kabul Ölçütü:** Backend ve frontend typecheck ve build 0 hata ile tamamlanmalı; 4 odaklı test dosyası %100 yeşil geçmeli; profil sayfası gerçek tarayıcıda doğrulanmalıdır.
 - **Veri / Migration Etkisi:** Sıfır.
 - **Açık Kullanıcı Kararı (Kesinleşen):** Kullanıcının kesin kararı doğrultusunda Paket A sonrası ara yayın önerisi kaldırılmıştır. Tüm işler (Paket A ve B) bitip bağımsız olarak incelenene kadar yayın gündeme alınmayacaktır; yalnızca yerel derleme/test doğrulaması ve yerel checkpoint commit'i işletilir.
 
