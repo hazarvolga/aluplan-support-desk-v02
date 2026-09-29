@@ -1,8 +1,8 @@
 # Current Focus
 
-## 28 Eylül 19:24 TRT — canlı sürüm devri; yeni görev dokümantasyon/inceleme
+## 29 Eylül — mevcut devir ve sıradaki iş
 
-Güncel kaynak ve frontend/backend kalite planı: `.ai/issues/2026-09-28-current-release-handoff-and-quality-plan.md`. Salt-okunur kontrol: canlı `frontend-api` = `8622312a`, `backend-api` = `64d71aec`; login ve API health 200. GitHub aday dalı `security/release-candidate-20260919` = `64d71aec`, PR #26 draft/açık. Kullanıcı kapalı bileti canlıda yeniden açtığını doğruladı. Önceki aşağıdaki `Production NO-GO` anlatımları kendi yayın-öncesi tarihsel anları içindir; güncel deploy gerçeğini geçersiz kılmaz. Bu devirde kod/canlı servis değiştirilmedi. Yeni ajan frontend AI etiketlerini kullanıcı tarafından seçilecek karşılıklarla planlayacak; lint, audit, Quality Gate E2E ve backend operasyon uyarılarını ayrı değerlendirecek. Ben ajanın diff/test/klasör/sürüm uygunluğunu dönüşte inceleyeceğim. Kullanıcıya ait `apps/frontend/next-env.d.ts`, kök `package.json`, `pnpm-lock.yaml` korunacak; push/deploy ayrı onaylıdır.
+Kullanıcı kalan TODO görevlerinin Antigravity'siz bu ajan tarafından, sırayla ve atlanmadan yürütülmesini istedi. UX-01 tamamlandı: TR/EN/DE kullanıcıya görünen AI/talep meta etiketleri sadeleştirildi; i18n kontrolü, JSON/diff kontrolleri, sentetik API fixture'larıyla yerel detay/yeni talep render'ı ve bağımsız metin incelemesi geçti. Gerçek DB/müşteri verisi kullanılmadı. Ürün dosyaları ayrıca yerel commit edilecek; kullanıcı WIP'i `apps/frontend/next-env.d.ts` dışarıda kalacak. TODO'daki bir sonraki görev REL-02'dir. Tüm işler tamamlanıp incelenmeden ara yayın yok; push/deploy yalnız ayrıca açık kullanıcı onayıyla.
 
 ## 28 Eylül — CI kapıları ve yerel aday
 

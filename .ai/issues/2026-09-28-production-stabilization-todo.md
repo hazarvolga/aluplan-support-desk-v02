@@ -11,6 +11,8 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 
 **Kullanıcının Kesin Yayın Kararı (28 Eylül 2026):** TODO listesindeki TÜM işler (Paket A, Paket B ve ilgili kalite doğrulamaları) tamamlanıp incelenmeden hiçbir yayın (deploy/release) gündeme alınmayacaktır. Paket A veya Paket B sonrası ara yayın/deploy önerileri iptal edilmiştir; süreç yalnızca yerel geliştirme, hedefli testler, kod incelemeleri ve yerel Git checkpoint commit'leri ile yürütülür. Ayrı açık kullanıcı onayı olmadan remote push, remote tag veya Coolify deploy kesinlikle yapılmaz.
 
+**29 Eylül çalışma devri:** Kullanıcı kalan görevleri Antigravity yerine bu ajan üzerinden yürütmemi ve istediği işleri sırayla, atlamadan tamamlamamı istedi. UX-01 etiketleri, REL-02'ye geçmeden önce bitirilecek şekilde öne alındı; sonraki işlerde TODO sırası izlenecek. Tüm çalışmalar yerel kalır; ara paket yayını/deploy yapılmaz.
+
 ### Kullanıcı Onaylı Ek Düzeltme — E-posta Kategori ve CSAT Bağlantısı (29 Eylül 2026)
 
 - **Durum:** `DONE` (odaklı kontroller ve bağımsız kod incelemesi tamamlandı; yalnız yerel)
@@ -40,7 +42,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 4.1 | **CWL-01** | CRAWL-01 | Crawler / Havuz Kuyruk Hatasında SYNCING Takılması ve Eski İndeks Koruması | Paket B (Ingestion) | **PENDING** |
 | 4.2 | **CWL-02** | Handoff Bölüm 7 (Sıra 4) | Temsilî Tek Public URL Uçtan Uca İçe Aktarma ve Vektörleme Doğrulaması | Paket B (Ingestion) | **PENDING** |
 | 4.3 | **MOD-01** | RAG-02 | Model / Embedding Sürüm Değişimi ve Toplu Reindex Operasyonel Kısıtı | Paket B (Ingestion) | **PENDING** |
-| 5.1 | **UX-01** | Handoff Bölüm 4 | Bölüm 4 Görünür Frontend AI / `ANN_*` Metin ve Etiket Revizyonu | Paket B (Kullanım/UX) | **PENDING** |
+| 5.1 | **UX-01** | Handoff Bölüm 4 | Bölüm 4 Görünür Frontend AI / `ANN_*` Metin ve Etiket Revizyonu | Paket B (Kullanım/UX) | **COMPLETED** (TR/EN/DE; yerel render ve odaklı kontroller geçti) |
 | 5.2 | **UX-02** | Röntgen Bölüm 12 | Yardım Ekranı (`/tr/help`) Çeviri Anahtarları ve Gerçek Personel Rol Menüsü | Paket B (Kullanım/UX) | **PENDING** |
 | 5.3 | **UX-03** | Röntgen Bölüm 12 | Öğrenme, Değerlendirme Anketi ve Aday Durumlarının Arayüzde Şeffaf Ayrımı | Paket B (Kullanım/UX) | **PENDING** |
 | 6.1 | **DEF-01** | Handoff Bölüm 5 (P1) | Depo Geneli Kapsamlı Lint Borcunun Kademeli Temizliği | Ertelenen İşler | **DEFERRED** |
@@ -494,12 +496,11 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 ## Sıra 5: Paket B — Anlaşılır Kullanım ve Arayüz (UX / i18n)
 
 ### UX-01: Görünür Frontend AI / `ANN_*` Metin ve Etiket Revizyonu
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (29 Eylül 2026; ürün kodu yerel doğrulandı ve bağımsız incelemeden geçti)
 - **Rapor ID / Kanıt:** Handoff Bölüm 4, Bölüm 7 (Sıra 5); Röntgen Bölüm 12 (Satır 311); `apps/frontend/messages/{tr,en,de}.json`.
 - **Dosya / Modül:** `apps/frontend/messages/tr.json`, `apps/frontend/messages/en.json`, `apps/frontend/messages/de.json`.
-- **Minimum Değişiklik:** 
-  - Yalnızca görünür i18n çeviri değerlerinde (translation values) güncelleme yapılması.
-  - Önerilen karşılıklar (kullanıcı onayına sunulacak):
+- **Uygulanan Değişiklik:** Yalnızca TR/EN/DE i18n değerleri güncellendi; anahtarlar, API ve backend enum'ları değişmedi. Kullanıcı onaylı AI etiketlerine ek olarak aynı talep detayında görünen `ANN_*`, `AI Ticket Trace`, `Ticket Flag`, `STATUS_CODE`, `OPEN_DATE`, `ASSIGNED_EXPERT`, `SECURITY_WARNING`, `STARTED_BY` ve `TS` gibi ham teknik kopyalar doğal dile çevrildi. İç teknik `Provider`/`Model` gibi terimler ve tanılama anlamı korunmuştur.
+  - Onaylı karşılıklar:
     - `ai_summary_btn`: TR `"Yapay Zeka Özeti"` (eski: `ANN_ÖZET`), EN `"AI Summary"`, DE `"KI-Zusammenfassung"`
     - `ai_draft_btn`: TR `"Taslak Yanıt"` / `"AI Yanıtı"` (korunabilir), EN `"Draft Response"`, DE `"Antwortentwurf"`
     - `ai_summary_record`: TR `"Özet Kaydı"` (eski: `ANN_ÖZET_KAYDI`), EN `"Summary Record"`, DE `"Zusammenfassungsaufzeichnung"`
@@ -511,7 +512,9 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Kabul Ölçütü:** Ekranda hiçbir kullanıcıya iç kod gibi görünen `ANN_*` metni gösterilmemeli; TR, EN ve DE tutarlı ve anlaşılır olmalı.
 - **Dar Doğrulama:** `pnpm --filter @aluplan/frontend i18n:check`, yerel render kontrolü.
 - **Veri / Migration Etkisi:** Sıfır.
-- **Açık Kullanıcı Kararı:** Önerilen bu Türkçe/İngilizce/Almanca terimler kullanıcı tarafından onaylandı mı, yoksa alternatif terimler mi tercih ediliyor?
+- **Doğrulama:** `pnpm --dir apps/frontend run i18n:check` üç locale için geçti; üç JSON parse edildi; `git diff --check` geçti; eski ham anahtar etiketleri `rg` ile tarandı ve bulunmadı. Yerel Next render'ında talep detayı ve yeni talep ekranı TR/EN/DE görüntülendi; API yanıtları yalnız sentetik Playwright fixture'larıydı, DB/müşteri verisi ve AI üretimi kullanılmadı. Görsel kanıtlar `/tmp/aluplan-ux01-{tr,en,de}.png` ve `/tmp/aluplan-ux01-new-{tr,en,de}.png` altında. Bağımsız metin incelemesi bloklayıcı bulgu vermedi.
+- **Dış Etki / Sınır:** Gerçek servis, müşteri verisi, bilet gönderimi, e-posta, push veya deploy kullanılmadı. `apps/frontend/next-env.d.ts` içindeki yerel değişiklik kullanıcı WIP'i olarak korunur ve bu görevin commit'ine alınmaz.
+- **Kalan Kullanıcı Kararı:** Yok; terimler kullanıcı tarafından onaylandı. Sıradaki planlı görev REL-02'dir.
 
 ### UX-02: Yardım Ekranı (`/tr/help`) Çeviri Anahtarları ve Gerçek Personel Rol Menüsü
 - **Durum:** `PENDING`
