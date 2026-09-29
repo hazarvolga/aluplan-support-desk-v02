@@ -2,7 +2,7 @@
 
 ## 29 Eylül — mevcut devir ve sıradaki iş
 
-Kullanıcı kalan TODO görevlerinin Antigravity'siz bu ajan tarafından, sırayla ve atlanmadan yürütülmesini istedi. UX-01 tamamlandı: TR/EN/DE kullanıcıya görünen AI/talep meta etiketleri sadeleştirildi; i18n kontrolü, JSON/diff kontrolleri, sentetik API fixture'larıyla yerel detay/yeni talep render'ı ve bağımsız metin incelemesi geçti. Gerçek DB/müşteri verisi kullanılmadı. Ürün dosyaları ayrıca yerel commit edilecek; kullanıcı WIP'i `apps/frontend/next-env.d.ts` dışarıda kalacak. TODO'daki bir sonraki görev REL-02'dir. Tüm işler tamamlanıp incelenmeden ara yayın yok; push/deploy yalnız ayrıca açık kullanıcı onayıyla.
+Kullanıcı kalan TODO görevlerinin Antigravity'siz bu ajan tarafından, sırayla ve atlanmadan yürütülmesini istedi. UX-01 tamamlandı ve ayrı yerel checkpoint'lere kaydedildi: `d1cafcf1` (çeviriler), `b31c3ee3` (durum kaydı). REL-02'de 29 Eylül salt-okunur audit High sayısını 7, mevcut kaynak-checkout WIP'li audit'i 4 olarak buldu. WIP, picomatch/linkify-it düzeltmelerinin yanı sıra SheetJS tarball integrity hash'inin kaldırılmasını da içerdiğinden olduğu gibi birleştirilmeyecek; kullanıcı kapsam kararı bekleniyor. Aynı REL-02 analizinde E2E CI job'ında backend webServer için gerekli Postgres/DATABASE_URL/secrets yokluğu 300 sn timeout'ın kök nedenidir; migration/seed de eklenmeli. CI dosyası/dependency paketleri henüz değiştirilmedi. `apps/frontend/next-env.d.ts` kullanıcı WIP'i dışarıda ve korunuyor. Ara yayın yok; push/deploy ayrıca açık kullanıcı onayı gerektirir.
 
 ## 28 Eylül — CI kapıları ve yerel aday
 
