@@ -196,6 +196,7 @@ describe('TicketsService', () => {
             const ticket = {
                 id: 'tik1',
                 userId: 'customer1',
+                status: TicketStatus.NEW,
                 chatStatus: ChatStatus.NORMAL,
                 creator: { customerProfile: { isVip: true } },
                 messages: [],
@@ -212,7 +213,7 @@ describe('TicketsService', () => {
 
             expect(result.chatStatus).toBe(ChatStatus.REQUESTED);
             expect(prisma.ticket.update).toHaveBeenCalledWith(expect.objectContaining({
-                where: { id: 'tik1' },
+                where: { id: 'tik1', status: TicketStatus.NEW, deletedAt: null },
                 data: expect.objectContaining({ chatStatus: ChatStatus.REQUESTED }),
             }));
         });
