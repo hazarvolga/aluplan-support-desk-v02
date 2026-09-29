@@ -80,4 +80,36 @@ describe('AutomationService message notification visibility', () => {
 
         expect(email.sendNewMessage).not.toHaveBeenCalled();
     });
+
+    it('uses the selected licensing category and does not invent a missing ticket type in the receipt email', async () => {
+        const sendTicketCreated = jest.fn().mockResolvedValue(undefined);
+        const sendNewTicketToStaff = jest.fn().mockResolvedValue(undefined);
+        const serviceWithTicketEmail = new AutomationService(
+            { user: { findMany: jest.fn().mockResolvedValue([{ email: 'support@example.test' }]) } } as unknown as PrismaService,
+            { log: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService,
+            { sendTicketCreated, sendNewTicketToStaff } as unknown as EmailService,
+            { get: jest.fn().mockReturnValue('http://localhost:3000') } as unknown as ConfigService,
+        );
+
+        await serviceWithTicketEmail.handleTicketCreated({
+            id: 'bfaa5692-5b7d-40fb-94fd-b6ac12abaaff',
+            ticketNumber: 'SUP-TEST',
+            subject: 'Synthetic ticket',
+            priority: 'MEDIUM',
+            status: 'NEW',
+            tags: ['licensing'],
+            department: { name: 'Billing & Payments' },
+            creator: { email: 'customer@example.test', fullName: 'Test Customer' },
+            createdAt: new Date(0),
+        });
+
+        expect(sendTicketCreated).toHaveBeenCalledWith(expect.objectContaining({
+            ticketCategory: 'Lisanslama',
+            ticketType: undefined,
+        }));
+        expect(sendNewTicketToStaff).toHaveBeenCalledWith('support@example.test', expect.objectContaining({
+            ticketCategory: 'Lisanslama',
+            ticketType: undefined,
+        }));
+    });
 });

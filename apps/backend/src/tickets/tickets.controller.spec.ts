@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TicketsController } from './tickets.controller';
 import { TicketsService } from './tickets.service';
@@ -6,6 +7,9 @@ import { TicketStatus, TicketPriority } from '@aluplan/database';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { AddMessageDto } from './dto/add-message.dto';
+import { ConfigService } from '@nestjs/config';
+import { generateCsatFeedbackToken } from './csat-feedback-token';
+import { IS_PUBLIC_KEY } from '../auth/decorators/public.decorator';
 
 describe('TicketsController', () => {
     let controller: TicketsController;
@@ -25,6 +29,8 @@ describe('TicketsController', () => {
         escalate: jest.fn(),
         linkTicket: jest.fn(),
         submitFeedback: jest.fn(),
+        getPublicCsatSurvey: jest.fn(),
+        submitEmailCsatFeedback: jest.fn(),
         addMessage: jest.fn(),
         getSlaStats: jest.fn(),
     };
@@ -43,6 +49,7 @@ describe('TicketsController', () => {
             providers: [
                 { provide: TicketsService, useValue: mockTicketsService },
                 { provide: NotificationsGateway, useValue: mockNotificationsGateway },
+                { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('synthetic-csat-secret') } },
             ],
         }).compile();
 
@@ -51,6 +58,29 @@ describe('TicketsController', () => {
         gateway = module.get<NotificationsGateway>(NotificationsGateway);
 
         jest.clearAllMocks();
+    });
+
+    describe('public email CSAT link', () => {
+        const ticketId = 'bfaa5692-5b7d-40fb-94fd-b6ac12abaaff';
+        const token = generateCsatFeedbackToken(ticketId, 1_800_000_000, 'synthetic-csat-secret');
+
+        it('marks token-backed retrieval public without weakening the existing owner-authenticated feedback route', async () => {
+            expect(Reflect.getMetadata(IS_PUBLIC_KEY, TicketsController.prototype.getPublicCsatSurvey)).toBe(true);
+            expect(Reflect.getMetadata(IS_PUBLIC_KEY, TicketsController.prototype.submitPublicCsatFeedback)).toBe(true);
+            expect(Reflect.getMetadata(IS_PUBLIC_KEY, TicketsController.prototype.submitFeedback)).toBeUndefined();
+        });
+
+        it('rejects malformed or expired links before querying the ticket service', async () => {
+            await expect(controller.getPublicCsatSurvey('tampered-token')).rejects.toThrow();
+            expect(service.getPublicCsatSurvey).not.toHaveBeenCalled();
+        });
+
+        it('passes only a verified ticket scope to the public feedback service', async () => {
+            service.getPublicCsatSurvey.mockResolvedValue({ ticketNumber: 'SUP-SYNTHETIC' });
+
+            await expect(controller.getPublicCsatSurvey(token)).resolves.toEqual({ ticketNumber: 'SUP-SYNTHETIC' });
+            expect(service.getPublicCsatSurvey).toHaveBeenCalledWith(ticketId);
+        });
     });
 
     describe('create', () => {

@@ -13,6 +13,7 @@ import { TicketAccessService } from '../common/services/ticket-access.service';
 import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 import { TicketStatus, Prisma } from '@aluplan/database';
 import { SubmitFeedbackDto } from './dto/submit-feedback.dto';
+import { ConfigService } from '@nestjs/config';
 
 describe('SEC-01: CSAT Feedback Security & Ownership', () => {
     let service: TicketsService;
@@ -77,6 +78,7 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
                 { provide: RedisService, useValue: mockRedisService },
                 { provide: TicketAccessService, useValue: mockTicketAccessService },
                 { provide: NotificationsGateway, useValue: mockNotificationsGateway },
+                { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('synthetic-csat-secret') } },
             ],
         }).compile();
 
@@ -87,6 +89,63 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
         notificationsGateway = module.get<NotificationsGateway>(NotificationsGateway);
 
         jest.clearAllMocks();
+    });
+
+    describe('Service: signed public email feedback link', () => {
+        const validTicketId = 'bfaa5692-5b7d-40fb-94fd-b6ac12abaaff';
+        const ownerUserId = 'customer-uuid-1';
+
+        it('returns only a ticket number for an eligible ticket', async () => {
+            prisma.ticket.findFirst.mockResolvedValue({ ticketNumber: 'SUP-SYNTHETIC' });
+
+            await expect(service.getPublicCsatSurvey(validTicketId)).resolves.toEqual({ ticketNumber: 'SUP-SYNTHETIC' });
+            expect(prisma.ticket.findFirst).toHaveBeenCalledWith({
+                where: {
+                    id: validTicketId,
+                    deletedAt: null,
+                    status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                    satisfactionScore: null,
+                },
+                select: { ticketNumber: true },
+            });
+        });
+
+        it('uses a generic unavailable response for an ineligible or deleted ticket', async () => {
+            prisma.ticket.findFirst.mockResolvedValue(null);
+
+            await expect(service.getPublicCsatSurvey(validTicketId)).rejects.toThrow(NotFoundException);
+            await expect(service.submitEmailCsatFeedback(validTicketId, 5)).rejects.toThrow(NotFoundException);
+        });
+
+        it('delegates signed-link submissions to the existing owner and atomic status checks', async () => {
+            prisma.ticket.findFirst.mockResolvedValue({ userId: ownerUserId });
+            const submit = jest.spyOn(service, 'submitFeedback').mockResolvedValue({ id: validTicketId } as any);
+
+            await expect(service.submitEmailCsatFeedback(validTicketId, 4, 'Synthetic feedback')).resolves.toEqual({ submitted: true });
+            expect(prisma.ticket.findFirst).toHaveBeenCalledWith({
+                where: {
+                    id: validTicketId,
+                    deletedAt: null,
+                    status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                    satisfactionScore: null,
+                },
+                select: { userId: true },
+            });
+            expect(submit).toHaveBeenCalledWith(validTicketId, 4, 'Synthetic feedback', ownerUserId);
+        });
+
+        it('does not expose or accept a survey for a previously rated ticket after reopening', async () => {
+            prisma.ticket.findFirst.mockResolvedValue(null);
+
+            await expect(service.getPublicCsatSurvey(validTicketId)).rejects.toThrow(NotFoundException);
+            await expect(service.submitEmailCsatFeedback(validTicketId, 5)).rejects.toThrow(NotFoundException);
+            expect(prisma.ticket.findFirst).toHaveBeenNthCalledWith(1, expect.objectContaining({
+                where: expect.objectContaining({ satisfactionScore: null }),
+            }));
+            expect(prisma.ticket.findFirst).toHaveBeenNthCalledWith(2, expect.objectContaining({
+                where: expect.objectContaining({ satisfactionScore: null }),
+            }));
+        });
     });
 
     describe('Service: submitFeedback ownership and status gates', () => {
@@ -128,6 +187,7 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
                     userId: ownerUserId,
                     deletedAt: null,
                     status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                    satisfactionScore: null,
                 },
                 data: {
                     satisfactionScore: 5,
@@ -258,6 +318,23 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
             await expect(
                 service.submitFeedback('non-existent-uuid', 5, 'Ghost ticket', ownerUserId)
             ).rejects.toThrow(NotFoundException);
+
+            expect(prisma.ticket.update).not.toHaveBeenCalled();
+            expect(eventEmitter.emit).not.toHaveBeenCalled();
+        });
+
+        it('does not overwrite an existing rating when a ticket is reopened and resolved again', async () => {
+            prisma.ticket.findFirst.mockResolvedValue({
+                id: validTicketId,
+                ticketNumber: 'SUP-00108',
+                userId: ownerUserId,
+                status: TicketStatus.RESOLVED,
+                deletedAt: null,
+                satisfactionScore: 5,
+            });
+
+            await expect(service.submitFeedback(validTicketId, 1, 'Overwrite attempt', ownerUserId))
+                .rejects.toThrow('Feedback has already been submitted');
 
             expect(prisma.ticket.update).not.toHaveBeenCalled();
             expect(eventEmitter.emit).not.toHaveBeenCalled();

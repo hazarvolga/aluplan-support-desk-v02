@@ -5,6 +5,12 @@ import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
 import { TicketStatus } from '@aluplan/database';
 import { Logger } from '@nestjs/common';
+import { verifyCsatFeedbackToken } from '../tickets/csat-feedback-token';
+
+const testConfig = {
+    get: () => 'https://example.invalid',
+    getOrThrow: () => 'synthetic-csat-secret',
+} as unknown as ConfigService;
 
 jest.mock('../prisma/prisma.service', () => ({ PrismaService: class {} }));
 jest.mock('./audit.service', () => ({ AuditService: class {} }));
@@ -23,7 +29,7 @@ describe('Automation email child completion', () => {
             { user: { findMany: async () => [{ email: 'staff@example.invalid' }] } } as unknown as PrismaService,
             { log: async () => undefined } as unknown as AuditService,
             email as unknown as EmailService,
-            { get: () => 'https://example.invalid' } as unknown as ConfigService,
+            testConfig,
         );
         try {
             await expect(service.handleTicketCreated({ id: 'synthetic', creator: { email: 'customer@example.invalid' },
@@ -41,14 +47,15 @@ describe('Automation email child completion', () => {
                 sendCsatSurvey: jest.fn().mockResolvedValue(undefined),
             };
             email[failed].mockRejectedValue(new Error('synthetic-sensitive-error-do-not-log'));
+            const ticketId = 'bfaa5692-5b7d-40fb-94fd-b6ac12abaaff';
             const service = new AutomationService(
-                { ticket: { findUnique: async () => ({ id: 'synthetic', creator: { email: 'customer@example.invalid' } }) } } as unknown as PrismaService,
+                { ticket: { findUnique: async () => ({ id: ticketId, creator: { email: 'customer@example.invalid' } }) } } as unknown as PrismaService,
                 { log: async () => undefined } as unknown as AuditService,
                 email as unknown as EmailService,
-                { get: () => 'https://example.invalid' } as unknown as ConfigService,
+                testConfig,
             );
             try {
-                await expect(service.handleStatusChange({ ticketId: 'synthetic', oldStatus: TicketStatus.NEW,
+                await expect(service.handleStatusChange({ ticketId, oldStatus: TicketStatus.NEW,
                     newStatus: TicketStatus.RESOLVED })).resolves.toBeUndefined();
                 expect(email.sendTicketStatusChanged).toHaveBeenCalledTimes(1);
                 expect(email.sendTicketResolved).toHaveBeenCalledTimes(1);
@@ -63,13 +70,13 @@ describe('Automation email child completion', () => {
         const gate = new Promise<void>(resolve => { release = resolve; });
         const email = Object.fromEntries(methods.map(name => [name, jest.fn().mockResolvedValue(undefined)]));
         email[method].mockImplementation(() => gate);
-        const ticket = { id: 'synthetic-ticket', ticketNumber: 'TEST-1', subject: 'Synthetic',
+        const ticket = { id: 'bfaa5692-5b7d-40fb-94fd-b6ac12abaaff', ticketNumber: 'TEST-1', subject: 'Synthetic',
             creator: { email: 'customer@example.invalid' }, createdAt: new Date(0), priority: 'LOW' };
         const service = new AutomationService(
             { ticket: { findUnique: async () => ticket }, user: { findMany: async () => [{ email: 'staff@example.invalid' }] } } as unknown as PrismaService,
             { log: async () => undefined } as unknown as AuditService,
             email as unknown as EmailService,
-            { get: () => 'https://example.invalid' } as unknown as ConfigService,
+            testConfig,
         );
         const calls: Record<typeof methods[number], () => Promise<void>> = {
             sendNewMessage: () => service.handleMessageAdded({ ticket, message: { isInternal: false, channel: 'EMAIL' }, recipientEmail: 'customer@example.invalid' }),
@@ -94,5 +101,63 @@ describe('Automation email child completion', () => {
             await running;
         }
         expect(completed).toBe(true);
+    });
+
+    it('sends a signed, expiring feedback URL to the customer-facing survey emails', async () => {
+        const ticket = {
+            id: 'bfaa5692-5b7d-40fb-94fd-b6ac12abaaff',
+            ticketNumber: 'SUP-SYNTHETIC',
+            subject: 'Synthetic request',
+            priority: 'MEDIUM',
+            creator: { email: 'customer@example.invalid' },
+        };
+        const email = {
+            sendTicketStatusChanged: jest.fn().mockResolvedValue(undefined),
+            sendTicketResolved: jest.fn().mockResolvedValue(undefined),
+            sendCsatSurvey: jest.fn().mockResolvedValue(undefined),
+        };
+        const service = new AutomationService(
+            { ticket: { findUnique: async () => ticket } } as unknown as PrismaService,
+            { log: async () => undefined } as unknown as AuditService,
+            email as unknown as EmailService,
+            testConfig,
+        );
+
+        await service.handleStatusChange({ ticketId: ticket.id, oldStatus: TicketStatus.NEW, newStatus: TicketStatus.RESOLVED });
+
+        const emailSurveyUrl = email.sendCsatSurvey.mock.calls[0][0].surveyUrl as string;
+        const parsedUrl = new URL(emailSurveyUrl);
+        const token = parsedUrl.pathname.split('/').at(-1)!;
+        expect(parsedUrl.origin).toBe('https://example.invalid');
+        expect(parsedUrl.pathname).toMatch(/^\/tr\/feedback\/v1\./);
+        expect(verifyCsatFeedbackToken(token, 'synthetic-csat-secret')).toBe(ticket.id);
+        expect(email.sendTicketResolved.mock.calls[0][0]).not.toHaveProperty('surveyUrl');
+    });
+
+    it('does not send a second survey after a ticket has already been rated and reopened', async () => {
+        const ticket = {
+            id: 'bfaa5692-5b7d-40fb-94fd-b6ac12abaaff',
+            ticketNumber: 'SUP-SYNTHETIC',
+            subject: 'Synthetic request',
+            priority: 'MEDIUM',
+            satisfactionScore: 5,
+            creator: { email: 'customer@example.invalid' },
+        };
+        const email = {
+            sendTicketStatusChanged: jest.fn().mockResolvedValue(undefined),
+            sendTicketResolved: jest.fn().mockResolvedValue(undefined),
+            sendCsatSurvey: jest.fn().mockResolvedValue(undefined),
+        };
+        const service = new AutomationService(
+            { ticket: { findUnique: async () => ticket } } as unknown as PrismaService,
+            { log: async () => undefined } as unknown as AuditService,
+            email as unknown as EmailService,
+            testConfig,
+        );
+
+        await service.handleStatusChange({ ticketId: ticket.id, oldStatus: TicketStatus.OPEN, newStatus: TicketStatus.RESOLVED });
+
+        expect(email.sendTicketResolved).toHaveBeenCalledTimes(1);
+        expect(email.sendCsatSurvey).not.toHaveBeenCalled();
     });
 });

@@ -36,6 +36,21 @@ describe('RoleGuard authorization rendering', () => {
         expect(screen.queryByText('PROTECTED_SENTINEL')).toBeNull();
     });
 
+    it('keeps the signed public feedback route available without an authenticated session', async () => {
+        vi.mocked(usePathname).mockReturnValue('/tr/feedback/signed-token');
+        vi.spyOn(api.auth, 'me').mockRejectedValue(new Error('Unauthenticated'));
+
+        render(
+            <AuthProvider>
+                <div>PUBLIC_FEEDBACK_SENTINEL</div>
+            </AuthProvider>,
+        );
+
+        expect(await screen.findByText('PUBLIC_FEEDBACK_SENTINEL')).toBeInTheDocument();
+        await waitFor(() => expect(api.auth.me).toHaveBeenCalled());
+        expect(push).not.toHaveBeenCalledWith('/login');
+    });
+
     it('redirects to locale-aware login on default logout from localized path', async () => {
         vi.spyOn(api.auth, 'me').mockResolvedValue({ id: 'u1', role: 'ADMIN' } as never);
         vi.spyOn(api.auth, 'logout').mockResolvedValue({ success: true } as never);
