@@ -509,6 +509,13 @@ export const api = {
         bulkDelete: (ids: string[]) => request<{ success: boolean; count: number }>('/knowledge-pool/sources/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
     },
     tickets: {
+        getCsatSurvey: (token: string) =>
+            request<{ ticketNumber: string }>(`/tickets/csat/${encodeURIComponent(token)}`),
+        submitCsatFeedback: (token: string, score: number, comment?: string) =>
+            request<{ submitted: boolean }>(`/tickets/csat/${encodeURIComponent(token)}`, {
+                method: 'POST',
+                body: JSON.stringify({ score, comment }),
+            }),
         list: (params?: Record<string, string>) => {
             const q = params ? '?' + new URLSearchParams(params).toString() : '';
             return request<{ data: any[]; total: number; statusCounts?: Record<string, number> }>(`/tickets${q}`);

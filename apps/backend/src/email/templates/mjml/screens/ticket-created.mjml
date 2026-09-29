@@ -29,7 +29,11 @@
 
     {{#if ticketCategory}}
     <mj-text css-class="ticket-card">
-      • {{t.common.category}}: <strong>{{ticketCategory}}</strong><br/>
+      • {{t.common.category}}: <strong>{{ticketCategory}}</strong>
+    </mj-text>
+    {{/if}}
+    {{#if ticketType}}
+    <mj-text css-class="ticket-card">
       • {{t.common.type}}: <strong>{{ticketType}}</strong>
     </mj-text>
     {{/if}}

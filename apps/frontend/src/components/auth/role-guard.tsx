@@ -82,7 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 cleanPath.startsWith('/login') ||
                 cleanPath.startsWith('/register') ||
                 cleanPath.startsWith('/reset-password') ||
-                cleanPath.startsWith('/verify-email');
+                cleanPath.startsWith('/verify-email') ||
+                cleanPath.startsWith('/feedback');
             if (!isPublicRoute) {
                 router.push('/login');
             }

@@ -268,7 +268,7 @@
       "avg_response": "DURCHSCHN._REAKTIONSZEIT",
       "sla_violations": "SLA_VERLETZUNGEN",
       "daily_resolved": "TÄGLICH_GELÖST",
-      "ai_confidence": "ANN_KONFIDENZ_DURCHSCHN.",
+      "ai_confidence": "KI-Konfidenz",
       "status_stable": "Stabil",
       "status_online": "ONLINE",
       "status_offline": "OFFLINE",
@@ -280,7 +280,7 @@
       "cta": "AUFZEICHNUNGEN_ÜBERPRÜFEN"
     },
     "ai_diagnostic": {
-      "title": "ANN_DIAGNOSE",
+      "title": "Systemdiagnose",
       "description": "Starten Sie eine KI-Analyse für eine schnelle technische Weiterleitung.",
       "cta": "SITZUNG_STARTEN"
     },
@@ -313,7 +313,7 @@
         "unassigned": "Ohne Zuweisung",
         "crm_updates": "CRM-Updates",
         "crawl_candidates": "Crawler-Kandidaten",
-        "ai_confidence": "ANN-Vertrauen"
+        "ai_confidence": "KI-Konfidenz"
       },
       "cost": {
         "title": "KI-Kostenzentrum",
@@ -528,7 +528,7 @@
           "resolved_today": "Heute gelöst",
           "queue_failed": "Fehlgeschlagene Jobs",
           "live_events": "Live-Ereignisse",
-          "ai_confidence": "ANN-Vertrauen",
+          "ai_confidence": "KI-Konfidenz",
           "crm_updates": "CRM-Updates",
           "crm_failures": "CRM-Fehler",
           "crm_recent": "Letzte Änderungen",
@@ -670,7 +670,7 @@
       "help": "Hilfe & Support",
       "profile": "Mein Profil",
       "account": "Mein Konto",
-      "ai_assistant": "ANN-Assistent",
+      "ai_assistant": "KI-Assistent",
       "announcements_bell": "Ankündigungen"
     }
   },
@@ -759,9 +759,9 @@
       "reopen_success": "Ticket wurde wieder geöffnet",
       "close_ticket": "TICKET SCHLIESSEN",
       "summarizing": "ZUSAMMENFASSUNG_LÄUFT...",
-      "ai_summary_btn": "ANN_ZUSAMMENFASSUNG",
+      "ai_summary_btn": "KI-Zusammenfassung",
       "drafting": "ENTWURF_WIRD_VORBEREITET...",
-      "ai_draft_btn": "KI-Antwort",
+      "ai_draft_btn": "Antwortentwurf",
       "load_error": "Fehler beim Laden der Anfragedaten",
       "live_request_success": "Live-Support-Anfrage gesendet",
       "live_start_success": "Live-Support-Sitzung gestartet",
@@ -812,7 +812,7 @@
       "ai_trace_visuals_open": "Öffnen",
       "ai_trace_visuals_source": "Quelle",
       "draft_visuals_title": "Visuelle Entwurfsnachweise",
-      "draft_visuals_desc": "Quellbilder, die diesen ANN-Entwurf stützen. Sie bleiben vom Text getrennt und helfen bei der Prüfung der Antwort.",
+      "draft_visuals_desc": "Quellbilder, die diesen KI-Entwurf stützen. Sie bleiben vom Text getrennt und helfen bei der Prüfung der Antwort.",
       "draft_visuals_open": "Öffnen",
       "draft_visuals_source": "Quelle",
       "ai_trace_pass": "OK",
@@ -827,7 +827,7 @@
       "auto_sync_active": "AUTO-SYNC AKTIV",
       "debug_reject": "FEHLER_ABLEHNEN",
       "debug_approve": "FEHLER_BESTÄTIGEN",
-      "ai_summary_record": "ANN_ZUSAMMENFASSUNGS_AUFZEICHNUNG",
+      "ai_summary_record": "Zusammenfassungsaufzeichnung",
       "sending": "SENDEN...",
       "secure_chat": "ENDE-ZU-ENDE SICHERE KOMMUNIKATION",
       "message_placeholder": "Nachricht hier eingeben... (Strg/Cmd+Enter zum Senden)",
@@ -949,7 +949,7 @@
         "synthesizing_btn": "Antwort wird synthetisiert...",
         "synthesis": {
           "title": "Supportfähige Antwort wird synthetisiert",
-          "desc": "Wir verwenden denselben Antwortkern wie der Admin-ANN-Entwurf und prüfen Wissensbasis, Anfragedetails und Screenshots gemeinsam.",
+          "desc": "Wir verwenden denselben Antwortkern wie der Admin-KI-Entwurf und prüfen Wissensbasis, Anfragedetails und Screenshots gemeinsam.",
           "patience": "Das kann etwas länger dauern als eine schnelle Suche, verhindert aber schwache oder irreführende Antworten.",
           "steps": {
             "sources": "Freigegebene Quellen prüfen",
@@ -5248,6 +5248,23 @@
       "pipeline_started": "Pipeline tetiklendi.",
       "pipeline_error": "Pipeline hatası: {error}"
     }
+  },
+  "public_feedback": {
+    "loading": "Der Bewertungslink wird geprüft…",
+    "invalid_title": "Dieser Bewertungslink ist nicht verfügbar",
+    "invalid_description": "Der Link ist möglicherweise abgelaufen, bereits verwendet worden oder nicht mehr gültig. Bei Fragen hilft Ihnen unser Support-Team.",
+    "title": "Bewerten Sie Ihre Support-Erfahrung",
+    "description": "Wie war Ihre Support-Erfahrung? Ihr Feedback hilft uns, unseren Service zu verbessern.",
+    "ticket_reference": "Ticketnummer:",
+    "rating_label": "Bewerten Sie Ihre Erfahrung mit 1 bis 5 Sternen",
+    "rating_option": "{score} Sterne",
+    "comment_label": "Möchten Sie eine Notiz hinzufügen? (optional)",
+    "comment_placeholder": "Schreiben Sie eine kurze Notiz",
+    "submit": "Feedback senden",
+    "submitting": "Wird gesendet…",
+    "submit_error": "Ihr Feedback konnte nicht gesendet werden. Der Link ist möglicherweise nicht mehr gültig; bitte wenden Sie sich an unser Support-Team.",
+    "success_title": "Vielen Dank für Ihr Feedback",
+    "success_description": "Ihre Bewertung wurde an unser Team übermittelt. Dieser Link kann nicht erneut verwendet werden."
   },
   "system_topology": {
     "title": "Sistem Kaynak Topolojisi",

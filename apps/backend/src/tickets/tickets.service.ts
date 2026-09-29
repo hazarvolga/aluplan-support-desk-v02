@@ -175,6 +175,7 @@ export class TicketsService {
                 },
             },
             product: { select: { name: true } },
+            department: { select: { name: true } },
         };
     }
 
@@ -1292,6 +1293,40 @@ export class TicketsService {
     // =============================================
     // SUBMIT FEEDBACK (Self-Learning KB Trigger)
     // =============================================
+    async getPublicCsatSurvey(id: string): Promise<{ ticketNumber: string }> {
+        const ticket = await this.prisma.ticket.findFirst({
+            where: {
+                id,
+                deletedAt: null,
+                status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                satisfactionScore: null,
+            },
+            select: { ticketNumber: true },
+        });
+
+        if (!ticket) throw new NotFoundException('Feedback link is invalid, expired, or no longer available.');
+        return { ticketNumber: ticket.ticketNumber };
+    }
+
+    async submitEmailCsatFeedback(id: string, score: number, comment?: string): Promise<{ submitted: true }> {
+        const eligibleTicket = await this.prisma.ticket.findFirst({
+            where: {
+                id,
+                deletedAt: null,
+                status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                satisfactionScore: null,
+            },
+            select: { userId: true },
+        });
+
+        if (!eligibleTicket?.userId) {
+            throw new NotFoundException('Feedback link is invalid, expired, or no longer available.');
+        }
+
+        await this.submitFeedback(id, score, comment, eligibleTicket.userId);
+        return { submitted: true };
+    }
+
     async submitFeedback(id: string, score: number, comment?: string, customerId?: string) {
         if (!customerId || !customerId.trim()) {
             throw new UnauthorizedException('Authentication required to submit feedback.');
@@ -1309,6 +1344,10 @@ export class TicketsService {
             throw new ForbiddenException('Only the ticket creator can submit feedback.');
         }
 
+        if (ticket.satisfactionScore !== null && ticket.satisfactionScore !== undefined) {
+            throw new BadRequestException('Feedback has already been submitted for this ticket.');
+        }
+
         if (ticket.status !== TicketStatus.PENDING_CUSTOMER_REVIEW && ticket.status !== TicketStatus.RESOLVED) {
             throw new BadRequestException('Feedback can only be submitted for tickets pending review or recently resolved.');
         }
@@ -1321,6 +1360,7 @@ export class TicketsService {
                     userId: customerId,
                     deletedAt: null,
                     status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                    satisfactionScore: null,
                 },
                 data: {
                     satisfactionScore: score,

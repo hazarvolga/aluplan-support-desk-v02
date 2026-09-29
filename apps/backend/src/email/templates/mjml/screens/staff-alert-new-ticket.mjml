@@ -37,6 +37,16 @@
       • {{t.common.status}}: <strong>{{ticketStatus}}</strong><br/>
       • {{t.common.date}}: {{createdAt}}
     </mj-text>
+    {{#if ticketCategory}}
+    <mj-text>
+      • {{t.common.category}}: <strong>{{ticketCategory}}</strong>
+    </mj-text>
+    {{/if}}
+    {{#if ticketType}}
+    <mj-text>
+      • {{t.common.type}}: <strong>{{ticketType}}</strong>
+    </mj-text>
+    {{/if}}
   </mj-column>
 </mj-section>
 

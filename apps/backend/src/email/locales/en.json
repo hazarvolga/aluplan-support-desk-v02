@@ -28,6 +28,8 @@
         "inspect_reply": "Inspect & Send",
         "unsubscribe_info": "If you don't want to receive these emails click {unsubscribe_url}.",
         "rate_experience": "Rate Your Experience",
+        "submit_feedback": "Submit your feedback",
+        "feedback_footer": "This link is valid for 7 days. Your feedback helps us improve our support service.",
         "link_expires_in": "Link validity period:"
     },
     "ticket_created": {

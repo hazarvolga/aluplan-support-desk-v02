@@ -268,7 +268,7 @@
       "avg_response": "AVG_RESPONSE_TIME",
       "sla_violations": "SLA_VIOLATIONS",
       "daily_resolved": "DAILY_RESOLVED",
-      "ai_confidence": "ANN_CONFIDENCE_AVG",
+      "ai_confidence": "AI Confidence",
       "status_stable": "Stable",
       "status_online": "ONLINE",
       "status_offline": "OFFLINE",
@@ -280,7 +280,7 @@
       "cta": "REVIEW_RECORDS"
     },
     "ai_diagnostic": {
-      "title": "ANN_DIAGNOSTIC",
+      "title": "System Diagnostic",
       "description": "Start an AI analysis for fast technical routing.",
       "cta": "START_SESSION"
     },
@@ -313,7 +313,7 @@
         "unassigned": "Unassigned",
         "crm_updates": "CRM Updates",
         "crawl_candidates": "Crawl Candidates",
-        "ai_confidence": "ANN Confidence"
+        "ai_confidence": "AI Confidence"
       },
       "cost": {
         "title": "AI Cost Center",
@@ -528,7 +528,7 @@
           "resolved_today": "Resolved today",
           "queue_failed": "Failed jobs",
           "live_events": "Live events",
-          "ai_confidence": "ANN confidence",
+          "ai_confidence": "AI Confidence",
           "crm_updates": "CRM updates",
           "crm_failures": "CRM failures",
           "crm_recent": "Recent changes",
@@ -670,7 +670,7 @@
       "help": "Help & Support",
       "profile": "My Profile",
       "account": "My Account",
-      "ai_assistant": "ANN Assistant",
+      "ai_assistant": "AI Assistant",
       "announcements_bell": "Announcements"
     }
   },
@@ -759,9 +759,9 @@
       "reopen_success": "Ticket reopened",
       "close_ticket": "CLOSE TICKET",
       "summarizing": "SUMMARIZING_IN_PROGRESS...",
-      "ai_summary_btn": "ANN_SUMMARY",
+      "ai_summary_btn": "AI Summary",
       "drafting": "DRAFT_PREPARATION_IN_PROGRESS...",
-      "ai_draft_btn": "AI Response",
+      "ai_draft_btn": "Draft Response",
       "load_error": "An error occurred while loading request data",
       "live_request_success": "Live support request sent",
       "live_start_success": "Live support session started",
@@ -812,7 +812,7 @@
       "ai_trace_visuals_open": "Open",
       "ai_trace_visuals_source": "Source",
       "draft_visuals_title": "Draft Visual Evidence",
-      "draft_visuals_desc": "Source images supporting this ANN draft. They stay separate from the text and help the agent verify the answer.",
+      "draft_visuals_desc": "Source images supporting this AI draft. They stay separate from the text and help the agent verify the answer.",
       "draft_visuals_open": "Open",
       "draft_visuals_source": "Source",
       "ai_trace_pass": "PASS",
@@ -827,7 +827,7 @@
       "auto_sync_active": "AUTO-SYNC ACTIVE",
       "debug_reject": "DEBUG_REJECT",
       "debug_approve": "DEBUG_APPROVE",
-      "ai_summary_record": "ANN_SUMMARY_RECORD",
+      "ai_summary_record": "Summary Record",
       "sending": "SENDING...",
       "secure_chat": "END-TO-END SECURE COMMUNICATION",
       "message_placeholder": "Type your message here... (Ctrl/Cmd+Enter to send)",
@@ -949,7 +949,7 @@
         "synthesizing_btn": "Synthesizing answer...",
         "synthesis": {
           "title": "Synthesizing a support-grade answer",
-          "desc": "We are using the same answer core as the admin ANN draft and checking the knowledge base, ticket details, and screenshots together.",
+          "desc": "We are using the same answer core as the admin AI draft and checking the knowledge base, ticket details, and screenshots together.",
           "patience": "This can take a little longer than a quick search, but it helps avoid weak or misleading answers.",
           "steps": {
             "sources": "Checking approved sources",
@@ -5248,6 +5248,23 @@
       "pipeline_started": "Pipeline tetiklendi.",
       "pipeline_error": "Pipeline hatası: {error}"
     }
+  },
+  "public_feedback": {
+    "loading": "Checking your feedback link…",
+    "invalid_title": "This feedback link is unavailable",
+    "invalid_description": "The link may have expired, already been used, or no longer be valid. Contact our support team if you need help.",
+    "title": "Rate your support experience",
+    "description": "How was your support experience? Your feedback helps us improve our service.",
+    "ticket_reference": "Ticket number:",
+    "rating_label": "Rate your experience from 1 to 5 stars",
+    "rating_option": "{score} stars",
+    "comment_label": "Would you like to add a note? (optional)",
+    "comment_placeholder": "Write a short note",
+    "submit": "Submit feedback",
+    "submitting": "Submitting…",
+    "submit_error": "We could not submit your feedback. The link may no longer be valid; please contact our support team.",
+    "success_title": "Thank you for your feedback",
+    "success_description": "Your rating has been shared with our team. This link cannot be used again."
   },
   "system_topology": {
     "title": "Sistem Kaynak Topolojisi",

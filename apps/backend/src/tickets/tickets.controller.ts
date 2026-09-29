@@ -1,5 +1,5 @@
 import {
-    BadRequestException, Controller, Get, Post, Patch, Param, Body,
+    BadRequestException, Controller, Get, Post, Patch, Param, Body, NotFoundException,
     Request, Query, UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
@@ -15,6 +15,10 @@ import { RequirePermissions, Roles } from '../rbac/decorators/rbac.decorators';
 import { ChatStatus, TicketStatus, TicketPriority } from '@aluplan/database';
 import { Delete } from '@nestjs/common';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { ConfigService } from '@nestjs/config';
+import { Throttle } from '@nestjs/throttler';
+import { Public } from '../auth/decorators/public.decorator';
+import { verifyCsatFeedbackToken } from './csat-feedback-token';
 
 const CHAT_STATUSES = new Set<string>(Object.values(ChatStatus));
 
@@ -62,7 +66,35 @@ export class TicketsController {
     constructor(
         private readonly ticketsService: TicketsService,
         private readonly notificationsGateway: NotificationsGateway,
+        private readonly config: ConfigService,
     ) { }
+
+    @Public()
+    @Get('csat/:token')
+    @Throttle({ default: { limit: 20, ttl: 60_000 } })
+    @ApiOperation({ summary: 'Read minimal ticket details for a signed CSAT link' })
+    async getPublicCsatSurvey(@Param('token') token: string) {
+        const ticketId = this.resolveCsatTicketId(token);
+        return this.ticketsService.getPublicCsatSurvey(ticketId);
+    }
+
+    @Public()
+    @Post('csat/:token')
+    @Throttle({ default: { limit: 5, ttl: 60_000 } })
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Submit customer feedback with a signed CSAT link' })
+    async submitPublicCsatFeedback(@Param('token') token: string, @Body() dto: SubmitFeedbackDto) {
+        const ticketId = this.resolveCsatTicketId(token);
+        await this.ticketsService.submitEmailCsatFeedback(ticketId, dto.score, dto.comment);
+        return { submitted: true };
+    }
+
+    private resolveCsatTicketId(token: string): string {
+        const secret = this.config.getOrThrow<string>('AUTH_ACTION_JWT_SECRET');
+        const ticketId = verifyCsatFeedbackToken(token, secret);
+        if (!ticketId) throw new NotFoundException('Feedback link is invalid or expired.');
+        return ticketId;
+    }
 
     // ─── CREATE ─────────────────────────────────
     @Post()

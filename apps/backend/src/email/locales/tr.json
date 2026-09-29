@@ -28,6 +28,8 @@
         "inspect_reply": "Cevabı İncele & Gönder",
         "unsubscribe_info": "Bu e-postayı almak istemiyorsanız {unsubscribe_url} tıklayın.",
         "rate_experience": "Deneyiminizi Değerlendirin",
+        "submit_feedback": "Değerlendirmenizi gönderin",
+        "feedback_footer": "Bağlantı 7 gün boyunca geçerlidir. Geri bildiriminiz destek hizmetimizi geliştirmemize yardımcı olur.",
         "link_expires_in": "Bağlantı geçerlilik süresi:"
     },
     "ticket_created": {

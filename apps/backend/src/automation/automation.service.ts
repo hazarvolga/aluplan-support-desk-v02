@@ -5,6 +5,7 @@ import { AuditService } from './audit.service';
 import { TicketStatus } from '@aluplan/database';
 import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
+import { generateCsatFeedbackToken } from '../tickets/csat-feedback-token';
 
 @Injectable()
 export class AutomationService {
@@ -63,18 +64,19 @@ export class AutomationService {
                         ticketPriorityLow: ticket.priority?.toLowerCase() || 'low',
                         closedAt: new Date().toLocaleString(),
                         resolution: payload.resolution || 'Bilet çözümlendi',
-                        ticketUrl: `${frontendUrl}/tickets/${ticket.id}`,
-                        surveyUrl: `${frontendUrl}/tickets/${ticket.id}/feedback`
+                        ticketUrl: `${frontendUrl}/tickets/${ticket.id}`
                     }).catch(() => this.logger.error('Failed to enqueue ticket resolution email'));
                 }
 
-                await this.emailService.sendCsatSurvey({
-                    customerEmail: ticket.creator.email,
-                    customerName: ticket.creator.fullName,
-                    ticketNumber: ticket.ticketNumber,
-                    ticketId: ticket.id,
-                    surveyUrl: `${frontendUrl}/tickets/${ticket.id}/feedback`
-                }).catch(() => this.logger.error('Failed to enqueue customer survey email'));
+                if (ticket.satisfactionScore == null) {
+                    await this.emailService.sendCsatSurvey({
+                        customerEmail: ticket.creator.email,
+                        customerName: ticket.creator.fullName,
+                        ticketNumber: ticket.ticketNumber,
+                        ticketId: ticket.id,
+                        surveyUrl: this.createCsatFeedbackUrl(frontendUrl, ticket.id)
+                    }).catch(() => this.logger.error('Failed to enqueue customer survey email'));
+                }
             }
         }
 
@@ -138,8 +140,10 @@ export class AutomationService {
                 ticketPriority: ticket.priority,
                 ticketPriorityLow: ticket.priority?.toLowerCase() || 'low',
                 ticketStatus: ticket.status,
-                ticketCategory: ticket.category?.name || '-',
-                ticketType: ticket.ticketType || '-',
+                ticketCategory: ticket.tags?.includes('licensing')
+                    ? 'Lisanslama'
+                    : ticket.department?.name || undefined,
+                ticketType: undefined,
                 createdAt: new Date(ticket.createdAt).toLocaleString(),
                 ticketUrl: `${frontendUrl}/tickets/${ticket.id}`
             }).catch(() => {
@@ -167,6 +171,10 @@ export class AutomationService {
                     ticketPriority: ticket.priority,
                     ticketPriorityLow: ticket.priority?.toLowerCase() || 'low',
                     ticketStatus: ticket.status,
+                    ticketCategory: ticket.tags?.includes('licensing')
+                        ? 'Lisanslama'
+                        : ticket.department?.name || undefined,
+                    ticketType: undefined,
                     customerName: ticket.creator?.fullName || 'Müşteri',
                     customerEmail: ticket.creator?.email || '-',
                     customerCompany: (ticket.creator as unknown as { customerProfile?: { companyName?: string } })?.customerProfile?.companyName || '-',
@@ -179,6 +187,13 @@ export class AutomationService {
         }
 
         await this.evaluateRules(ticket.id, 'TICKET_CREATED', ticket);
+    }
+
+    private createCsatFeedbackUrl(frontendUrl: string, ticketId: string): string {
+        const expiresAt = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
+        const secret = this.config.getOrThrow<string>('AUTH_ACTION_JWT_SECRET');
+        const token = generateCsatFeedbackToken(ticketId, expiresAt, secret);
+        return new URL(`/tr/feedback/${token}`, frontendUrl).toString();
     }
 
     @OnEvent('user.created')

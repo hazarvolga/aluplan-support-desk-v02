@@ -268,7 +268,7 @@
       "avg_response": "ORT_YANIT_SÜRESİ",
       "sla_violations": "SLA_İHLALLERİ",
       "daily_resolved": "GÜNLÜK_ÇÖZÜLEN",
-      "ai_confidence": "ANN_GÜVEN_DÜZEYİ",
+      "ai_confidence": "Yapay Zeka Güven Düzeyi",
       "status_stable": "Stabil",
       "status_online": "ÇEVRİMİÇİ",
       "status_offline": "ÇEVRİMDIŞI",
@@ -280,7 +280,7 @@
       "cta": "KAYITLARI_İNCELE"
     },
     "ai_diagnostic": {
-      "title": "ANN_TANILAMA",
+      "title": "Sistem Tanılama",
       "description": "Hızlı teknik yönlendirme için bir yapay zeka analizi başlatın.",
       "cta": "OTURUMU_BAŞLAT"
     },
@@ -313,7 +313,7 @@
         "unassigned": "Atama Bekleyen",
         "crm_updates": "CRM Update",
         "crawl_candidates": "Crawl Adayı",
-        "ai_confidence": "ANN Güveni"
+        "ai_confidence": "Yapay Zeka Güven Düzeyi"
       },
       "cost": {
         "title": "AI Maliyet Merkezi",
@@ -528,7 +528,7 @@
           "resolved_today": "Bugün çözülen",
           "queue_failed": "Başarısız job",
           "live_events": "Canlı olay",
-          "ai_confidence": "ANN güveni",
+          "ai_confidence": "Yapay Zeka Güven Düzeyi",
           "crm_updates": "CRM update",
           "crm_failures": "CRM hata",
           "crm_recent": "Son değişim",
@@ -694,7 +694,7 @@
       "help": "Yardım ve Destek",
       "profile": "Profilim",
       "account": "Hesabım",
-      "ai_assistant": "ANN Asistanı",
+      "ai_assistant": "Yapay Zeka Asistanı",
       "announcements_bell": "Duyurular"
     }
   },
@@ -783,7 +783,7 @@
       "reopen_success": "Bilet yeniden açıldı",
       "close_ticket": "BİLETİ KAPAT",
       "summarizing": "ÖZETLEME_DEVAM_EDİYOR...",
-      "ai_summary_btn": "ANN_ÖZET",
+      "ai_summary_btn": "Yapay Zeka Özeti",
       "drafting": "TASLAK_HAZIRLANIYOR...",
       "ai_draft_btn": "AI Yanıtı",
       "load_error": "Talep verileri yüklenirken hata oluştu",
@@ -836,7 +836,7 @@
       "ai_trace_visuals_open": "Aç",
       "ai_trace_visuals_source": "Kaynak",
       "draft_visuals_title": "Taslak Görsel Kanıtları",
-      "draft_visuals_desc": "Bu ANN taslağını destekleyen kaynak görseller. Metne gömülmez; yanıtı kontrol ederken ayrı kanıt kartı olarak kullanılır.",
+      "draft_visuals_desc": "Bu yapay zeka taslağını destekleyen kaynak görseller. Metne gömülmez; yanıtı kontrol ederken ayrı kanıt kartı olarak kullanılır.",
       "draft_visuals_open": "Aç",
       "draft_visuals_source": "Kaynak",
       "ai_trace_pass": "GEÇTİ",
@@ -851,7 +851,7 @@
       "auto_sync_active": "OTOMATİK SENKRONİZASYON AKTİF",
       "debug_reject": "HATA_REDDET",
       "debug_approve": "HATA_ONAYLA",
-      "ai_summary_record": "ANN_ÖZET_KAYDI",
+      "ai_summary_record": "Özet Kaydı",
       "sending": "GÖNDERİLİYOR...",
       "secure_chat": "UÇTAN_UCA_GÜVENLİ_İLETİŞİM",
       "message_placeholder": "Mesajınızı buraya yazın... (Ctrl/Cmd+Enter ile gönder)",
@@ -973,7 +973,7 @@
         "synthesizing_btn": "Yanıt sentezleniyor...",
         "synthesis": {
           "title": "Destek kalitesinde yanıt sentezleniyor",
-          "desc": "Admin ANN taslak ile aynı yanıt çekirdeğini kullanıyor; bilgi kaynağını, talep detaylarını ve ekran görüntülerini birlikte değerlendiriyoruz.",
+          "desc": "Yönetici yapay zeka taslağıyla aynı yanıt çekirdeğini kullanıyor; bilgi kaynağını, talep detaylarını ve ekran görüntülerini birlikte değerlendiriyoruz.",
           "patience": "Bu işlem hızlı aramadan biraz uzun sürebilir, ama zayıf veya yanıltıcı yanıt vermemek için gerekli.",
           "steps": {
             "sources": "Onaylı kaynaklar kontrol ediliyor",
@@ -5272,6 +5272,23 @@
       "pipeline_started": "Pipeline tetiklendi.",
       "pipeline_error": "Pipeline hatası: {error}"
     }
+  },
+  "public_feedback": {
+    "loading": "Değerlendirme bağlantısı kontrol ediliyor…",
+    "invalid_title": "Değerlendirme bağlantısı kullanılamıyor",
+    "invalid_description": "Bu bağlantının süresi dolmuş, daha önce kullanılmış veya artık geçerli değil. Yardım için destek ekibimizle iletişime geçebilirsiniz.",
+    "title": "Desteğimizi değerlendirin",
+    "description": "Destek deneyiminiz nasıldı? Geri bildiriminiz hizmetimizi geliştirmemize yardımcı olur.",
+    "ticket_reference": "Talep numarası:",
+    "rating_label": "Deneyiminizi 1 ile 5 yıldız arasında puanlayın",
+    "rating_option": "{score} yıldız",
+    "comment_label": "Eklemek istediğiniz bir not var mı? (isteğe bağlı)",
+    "comment_placeholder": "Kısa bir not yazabilirsiniz",
+    "submit": "Değerlendirmeyi gönder",
+    "submitting": "Gönderiliyor…",
+    "submit_error": "Değerlendirmeniz gönderilemedi. Bağlantı artık geçerli olmayabilir; lütfen destek ekibimizle iletişime geçin.",
+    "success_title": "Geri bildiriminiz için teşekkürler",
+    "success_description": "Değerlendirmeniz ekibimize ulaştı. Bu bağlantı artık yeniden kullanılamaz."
   },
   "system_topology": {
     "title": "Sistem Kaynak Topolojisi",

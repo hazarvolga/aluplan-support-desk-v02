@@ -175,7 +175,8 @@ async function bootstrap() {
             });
         }
 
-        const isBypassed = csrfBypassPaths.some(path => req.path.startsWith(path));
+        const isCsatFeedbackRequest = req.method === 'POST' && /^\/api\/v1\/tickets\/csat\/[^/]+$/.test(req.path);
+        const isBypassed = isCsatFeedbackRequest || csrfBypassPaths.some(path => req.path.startsWith(path));
 
         if (!isBypassed && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
             const headerToken = req.headers['x-xsrf-token'];
