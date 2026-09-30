@@ -140,6 +140,9 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
             existingMetadata: sourceMetadata,
         });
         const enrichedContent = visualResult.content;
+        if (!enrichedContent || !enrichedContent.trim()) {
+            throw new Error(`Knowledge source ${source.id} produced empty content; existing embeddings remain active`);
+        }
         const finalHash = crypto.createHash('sha256').update(enrichedContent).digest('hex');
 
         // Section 3.5.3: Change Monitor

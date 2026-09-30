@@ -643,29 +643,22 @@ export class EmbeddingService {
 
     async indexPoolContent(sourceId: string, content: string, metadata: any = {}): Promise<void> {
         const parentMax = RAG_CONFIG.CHUNKING.PARENT_MAX_TOKENS;
-        const contentHash = createHash('md5').update(content).digest('hex');
         const config = await this.registry.getActiveVersionConfig();
 
         // [DEBUG] Log entry
         this.logger.log(`🧬 Starting indexing for source ${sourceId}. Content length: ${content?.length}`);
 
-        // Use secure $executeRaw template literals with cast operators to ensure safety and type correctness
-        const deleted = await this.prisma.$executeRaw`
-            DELETE FROM knowledge_pool_embeddings WHERE source_id = ${sourceId}::uuid
-        `;
-        this.logger.log(`🗑️ Deleted ${deleted} existing chunks for source ${sourceId}`);
-
         if (!content || !content.trim()) {
-            this.logger.log(`⚠️ Empty content passed for source ${sourceId}. Cleared existing embeddings.`);
-            this.eventEmitter.emit('knowledge-pool.synced', { sourceId });
+            this.logger.log(`⚠️ Empty content passed for source ${sourceId}. Existing embeddings were preserved.`);
             return;
         }
+        const contentHash = createHash('md5').update(content).digest('hex');
 
         try {
             const hierarchies = hierarchicalChunk(content, { maxTokens: parentMax });
             this.logger.log(`🧩 Chunker produced ${hierarchies.length} hierarchies for source ${sourceId}`);
+            const stagedRows: Array<{ id: string; parentId: string | null; content: string; metadata: string; embedding: string }> = [];
 
-            let totalInserted = 0;
             for (const h of hierarchies) {
                 const parentId = crypto.randomUUID();
                 const parentEmb = this.ensureEmbeddingCompatibility(
@@ -673,21 +666,16 @@ export class EmbeddingService {
                     config,
                     `knowledge pool parent ${sourceId}`,
                 );
-                if (!parentEmb) {
-                    this.logger.warn(`⚠️ Parent embedding failed for source ${sourceId}`);
-                    continue;
-                }
+                if (!parentEmb) throw new Error(`No embeddings generated for pool source ${sourceId}`);
                 await this.delayPoolEmbedding();
 
-                const parentVector = JSON.stringify(parentEmb.embedding);
-                const parentMeta = JSON.stringify({ ...metadata, hash: contentHash, total_children: h.children.length });
-
-                const res = await this.prisma.$executeRaw`
-                    INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, embedding_version, embedding_dim)
-                    VALUES (${parentId}::uuid, ${sourceId}::uuid, NULL, ${parentVector}::vector, ${h.parent}, ${parentMeta}::jsonb, ${config.version}, ${config.dimension})
-                `;
-                this.logger.log(`✅ Parent Insert Res: ${res} | ID: ${parentId}`);
-                totalInserted++;
+                stagedRows.push({
+                    id: parentId,
+                    parentId: null,
+                    content: h.parent,
+                    metadata: JSON.stringify({ ...metadata, hash: contentHash, total_children: h.children.length }),
+                    embedding: JSON.stringify(parentEmb.embedding),
+                });
 
                 for (const childContent of h.children) {
                     const childEmb = this.ensureEmbeddingCompatibility(
@@ -695,32 +683,44 @@ export class EmbeddingService {
                         config,
                         `knowledge pool child ${sourceId}`,
                     );
-                    if (childEmb) {
-                        const childVector = JSON.stringify(childEmb.embedding);
-                        const childMeta = JSON.stringify(metadata);
-                        const cRes = await this.prisma.$executeRaw`
-                            INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, embedding_version, embedding_dim)
-                            VALUES (gen_random_uuid(), ${sourceId}::uuid, ${parentId}::uuid, ${childVector}::vector, ${childContent}, ${childMeta}::jsonb, ${config.version}, ${config.dimension})
-                        `;
-                        this.logger.log(`✅ Child Insert Res: ${cRes}`);
-                        totalInserted++;
-                    }
+                    if (!childEmb) throw new Error(`No child embedding generated for pool source ${sourceId}`);
+                    stagedRows.push({
+                        id: crypto.randomUUID(),
+                        parentId,
+                        content: childContent,
+                        metadata: JSON.stringify(metadata),
+                        embedding: JSON.stringify(childEmb.embedding),
+                    });
                     await this.delayPoolEmbedding();
                 }
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
 
-            if (totalInserted === 0) {
-                throw new Error(`No embeddings generated for pool source ${sourceId}`);
-            }
+            if (stagedRows.length === 0) throw new Error(`No embeddings generated for pool source ${sourceId}`);
 
-            this.logger.log(`📐 FINISHED: Indexed ${totalInserted} chunks for pool source ${sourceId}`);
+            // Provider calls happen before the short replacement transaction. Queue job
+            // deduplication prevents same-source workers from generating stale sets.
+            const indexedCount = await this.prisma.$transaction(async (tx: any) => {
+                await tx.$executeRaw`
+                    SELECT pg_advisory_xact_lock(hashtextextended(${sourceId}, 0))
+                `;
+                const deleted = await tx.$executeRaw`
+                    DELETE FROM knowledge_pool_embeddings WHERE source_id = ${sourceId}::uuid
+                `;
+                this.logger.log(`🗑️ Replacing ${deleted} existing chunks for source ${sourceId}`);
+                for (const row of stagedRows) {
+                    await tx.$executeRaw`
+                        INSERT INTO knowledge_pool_embeddings (id, source_id, parent_id, embedding, content, metadata, embedding_version, embedding_dim)
+                        VALUES (${row.id}::uuid, ${sourceId}::uuid, ${row.parentId ? row.parentId : null}::uuid, ${row.embedding}::vector, ${row.content}, ${row.metadata}::jsonb, ${config.version}, ${config.dimension})
+                    `;
+                }
+                return stagedRows.length;
+            }, { maxWait: 5_000, timeout: 30_000 });
+
+            this.logger.log(`📐 FINISHED: Indexed ${indexedCount} chunks for pool source ${sourceId}`);
             this.eventEmitter.emit('knowledge-pool.synced', { sourceId });
         } catch (error) {
-            await this.prisma.$executeRaw`
-                DELETE FROM knowledge_pool_embeddings WHERE source_id = ${sourceId}::uuid
-            `;
-            this.logger.warn(`🧹 Removed partial embeddings after failure for source ${sourceId}`);
+            this.logger.warn(`🛡️ Preserved existing embeddings after failed indexing for source ${sourceId}`);
             throw error;
         }
     }

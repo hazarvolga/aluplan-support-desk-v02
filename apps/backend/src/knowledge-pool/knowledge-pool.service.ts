@@ -265,12 +265,26 @@ export class KnowledgePoolService {
             data: { status: KnowledgeSourceStatus.SYNCING },
         });
 
-        await this.syncQueue.add('sync-source', { sourceId: id }, {
-            attempts: 3,
-            backoff: { type: 'exponential', delay: 5000 },
-            removeOnComplete: true,
-            delay,
-        });
+        try {
+            await this.syncQueue.add('sync-source', { sourceId: id }, {
+                attempts: 3,
+                backoff: { type: 'exponential', delay: 5000 },
+                removeOnComplete: true,
+                delay,
+                jobId: `knowledge-sync:${id}`,
+            });
+        } catch (error) {
+            try {
+                await this.prisma.knowledgeSource.update({
+                    where: { id },
+                    data: { status: KnowledgeSourceStatus.FAILED },
+                });
+            } catch (statusError) {
+                this.logger.error(`❌ Failed to mark source ${id} FAILED after enqueue error: ${statusError.message}`, statusError.stack);
+            }
+            this.logger.error(`❌ Failed to enqueue sync job for source ${id}: ${error.message}`, error.stack);
+            throw error;
+        }
 
         this.logger.log(`🔄 Enqueued sync job for source: ${source.name} (${id})${delay > 0 ? ` with ${delay}ms pacing delay` : ''}`);
     }
