@@ -107,6 +107,27 @@ describe('EmbeddingService', () => {
             expect(result.diagnostics.queryEmbeddingModel).toBe('text-embedding-3-small');
         });
 
+        it('should restrict article retrieval to published, public, non-deleted, active current-version embeddings', async () => {
+            mockAiService.embed.mockResolvedValue(mockEmbedResult);
+            mockPrismaService.$queryRaw.mockResolvedValue([]);
+
+            await service.search('published article query', 5, null, false);
+
+            const query = mockPrismaService.$queryRaw.mock.calls[0][0];
+            const sql = query.join('');
+            const keywordSearch = sql.split('WITH keyword_search AS (')[1]?.split('pool_keyword_search AS (')[0] ?? '';
+            const articleSearch = sql.split('FROM knowledge_embeddings ke')[1]?.split('UNION ALL')[0] ?? '';
+
+            expect(keywordSearch).toContain("ka.status = 'PUBLISHED'");
+            expect(keywordSearch).toContain('ka.deleted_at IS NULL');
+            expect(keywordSearch).toContain('ka.is_internal = false');
+            expect(articleSearch).toContain("ka.status = 'PUBLISHED'");
+            expect(articleSearch).toContain('ka.deleted_at IS NULL');
+            expect(articleSearch).toContain('ka.is_internal = false');
+            expect(articleSearch).toContain('ke.is_active = true');
+            expect(articleSearch).toMatch(/JOIN knowledge_article_versions kav ON ka\.id = kav\.article_id\s+AND ka\.current_version = kav\.version\s+AND ke\.article_version_id = kav\.id/);
+        });
+
         it('should expose approved FAQ entries as first-class search results', async () => {
             mockAiService.embed.mockResolvedValue(mockEmbedResult);
             mockPrismaService.$queryRaw.mockResolvedValue([
