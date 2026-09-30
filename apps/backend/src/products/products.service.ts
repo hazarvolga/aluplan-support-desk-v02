@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@aluplan/database';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -10,7 +11,10 @@ import {
 
 @Injectable()
 export class ProductsService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly eventEmitter: EventEmitter2,
+    ) { }
 
     async createProduct(data: CreateProductDto) {
         const normalized = this.normalizeProductData(data);
@@ -275,6 +279,7 @@ export class ProductsService {
         }
 
         const actualCategory = category;
+        let faqChanged = false;
 
         // FAQ restoration
         const faqs = [
@@ -297,6 +302,7 @@ export class ProductsService {
                     where: { id: existing.id },
                     data: faq
                 });
+                faqChanged = true;
             } else {
                 await this.prisma.faqEntry.create({
                     data: {
@@ -306,8 +312,11 @@ export class ProductsService {
                         isInternal: false,
                     }
                 });
+                faqChanged = true;
             }
         }
+
+        if (faqChanged) await this.eventEmitter.emitAsync('faq.changed');
 
         return { message: 'Restoration completed successfully', product: actualProduct, category: actualCategory };
     }

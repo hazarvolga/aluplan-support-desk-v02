@@ -40,6 +40,7 @@ export interface AiCacheScope {
  */
 @Injectable()
 export class AiSemanticCache {
+    private static readonly KNOWLEDGE_EPOCH_SETTING = 'ai.query.cache.knowledge_epoch';
     private readonly logger = new Logger(AiSemanticCache.name);
     private readonly SEMANTIC_THRESHOLD = RAG_CONFIG.CACHE.SEMANTIC_THRESHOLD;
     private readonly DEFAULT_TTL_SECONDS = RAG_CONFIG.CACHE.DEFAULT_TTL;
@@ -58,8 +59,9 @@ export class AiSemanticCache {
     async get(
         query: string,
         scope: AiCacheScope,
+        knowledgeEpoch: string,
     ): Promise<AiQueryResult | null> {
-        const scopeHash = this.buildScopeHash(scope);
+        const scopeHash = this.buildScopeHash(scope, knowledgeEpoch);
         const exactKey = this.buildExactKey(query, scopeHash);
 
         // Tier 1: Exact match (Redis)
@@ -91,8 +93,9 @@ export class AiSemanticCache {
         query: string,
         scope: AiCacheScope,
         result: AiQueryResult,
+        knowledgeEpoch: string,
     ): Promise<void> {
-        const scopeHash = this.buildScopeHash(scope);
+        const scopeHash = this.buildScopeHash(scope, knowledgeEpoch);
         const exactKey = this.buildExactKey(query, scopeHash);
 
         // Store exact match in Redis
@@ -106,20 +109,72 @@ export class AiSemanticCache {
      * Invalidate cache for a tenant (e.g., after KB update).
      */
     async invalidateScope(scope: AiCacheScope): Promise<void> {
-        const scopeHash = this.buildScopeHash(scope);
+        const knowledgeEpoch = await this.getKnowledgeEpoch();
+        const scopeHash = this.buildScopeHash(scope, knowledgeEpoch);
         const scopeId = this.scopeHashToUuid(scopeHash);
         // Delete semantic cache entries
         await this.prisma.$executeRaw`DELETE FROM "ai_response_cache" WHERE "tenant_id" = ${scopeId}::uuid`;
 
-        // Delete exact cache entries (pattern-based)
+        // Delete exact cache entries (pattern-based) without blocking Redis with KEYS.
         const pattern = `ai:query:cache:*:scope:${scopeHash}:*`;
-        await this.redis.getClient().eval(
-            `local keys = redis.call('keys', ARGV[1])\nfor i=1,#keys do\n  redis.call('del', keys[i])\nend\nreturn #keys`,
-            0,
-            pattern,
-        );
+        await this.deleteRedisKeys(pattern);
 
         this.logger.log(`🗑️ Cache invalidated for audience=${scope.audience}`);
+    }
+
+    /** Read the durable knowledge epoch used to fence all AI query cache namespaces. */
+    async getKnowledgeEpoch(): Promise<string> {
+        const rows = await this.prisma.$queryRaw<Array<{ value: string }>>`
+            SELECT "value" FROM "settings"
+            WHERE "key" = ${AiSemanticCache.KNOWLEDGE_EPOCH_SETTING}
+            LIMIT 1
+        `;
+
+        return rows[0]?.value ?? '0';
+    }
+
+    /** Atomically rotate the durable cache namespace before knowledge visibility changes become observable. */
+    async advanceKnowledgeEpoch(): Promise<string> {
+        const rows = await this.prisma.$queryRaw<Array<{ value: string }>>`
+            INSERT INTO "settings" ("id", "key", "value", "is_secret", "updated_at")
+            VALUES (gen_random_uuid(), ${AiSemanticCache.KNOWLEDGE_EPOCH_SETTING}, gen_random_uuid()::text, false, NOW())
+            ON CONFLICT ("key") DO UPDATE SET
+                "value" = gen_random_uuid()::text,
+                "is_secret" = false,
+                "updated_at" = NOW()
+            RETURNING "value"
+        `;
+
+        const epoch = rows[0]?.value;
+        if (!epoch) throw new Error('Failed to advance AI knowledge cache epoch');
+        return epoch;
+    }
+
+    /** Rotate cache namespace then reclaim old rows/keys. */
+    async invalidateAll(): Promise<void> {
+        await this.advanceKnowledgeEpoch();
+        await this.purgeAll();
+    }
+
+    /** Reclaim both cache tiers; generation fencing already makes in-flight old writes unreachable. */
+    async purgeAll(): Promise<void> {
+        const results = await Promise.allSettled([
+            this.prisma.$executeRaw`DELETE FROM "ai_response_cache"`,
+            this.deleteRedisKeys('ai:query:*cache:*'),
+        ]);
+
+        const failures = results.filter((result) => result.status === 'rejected');
+        if (failures.length > 0) {
+            for (const failure of failures) {
+                if (failure.status === 'rejected') {
+                    this.logger.error(`❌ Cache cleanup tier failed: ${failure.reason?.message ?? failure.reason}`);
+                }
+            }
+            throw new Error(`AI cache cleanup incomplete in ${failures.length} tier(s)`);
+        }
+
+        const deletedExactEntries = results[1].status === 'fulfilled' ? results[1].value : 0;
+        this.logger.log(`🗑️ Reclaimed old AI query caches (redis=${deletedExactEntries})`);
     }
 
     /**
@@ -160,6 +215,22 @@ export class AiSemanticCache {
 
     private async setExact(key: string, result: AiQueryResult): Promise<void> {
         await this.redis.set(key, JSON.stringify({ ...result, cacheVersion: RAG_CONFIG.CACHE.VERSION }), this.DEFAULT_TTL_SECONDS);
+    }
+
+    private async deleteRedisKeys(pattern: string): Promise<number> {
+        const client = this.redis.getClient();
+        let cursor = '0';
+        let totalDeleted = 0;
+
+        do {
+            const [nextCursor, keys] = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+            cursor = nextCursor;
+            if (keys.length > 0) {
+                totalDeleted += await client.del(...keys);
+            }
+        } while (cursor !== '0');
+
+        return totalDeleted;
     }
 
     // ─── Private: Semantic Match (pgvector) ─────────────────────────────────
@@ -284,8 +355,9 @@ export class AiSemanticCache {
         return `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:exact:scope:${scopeHash}:${hash}`;
     }
 
-    private buildScopeHash(scope: AiCacheScope): string {
+    private buildScopeHash(scope: AiCacheScope, knowledgeEpoch: string): string {
         return createHash('sha256')
+            .update(knowledgeEpoch)
             .update(JSON.stringify({
                 audience: scope.audience,
                 contextFingerprint: scope.contextFingerprint,

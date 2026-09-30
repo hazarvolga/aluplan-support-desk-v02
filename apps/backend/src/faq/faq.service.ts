@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { FaqStatus } from '@aluplan/database';
 import { PrismaService } from '../prisma/prisma.service';
-import { OnEvent } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { EmbeddingService } from '../ai/embedding.service';
@@ -33,7 +33,13 @@ export class FaqService {
         private readonly aiService: AiService,
         private readonly registry: EmbeddingVersionRegistry,
         private readonly settingsService: SettingsService,
+        private readonly eventEmitter: EventEmitter2,
     ) { }
+
+    private async emitFaqChanged(faqId?: string): Promise<void> {
+        if (faqId) await this.eventEmitter.emitAsync('faq.changed', { faqId });
+        else await this.eventEmitter.emitAsync('faq.changed');
+    }
 
     @OnEvent('ticket.kb_summarize')
     async handleTicketKbSummarize(ticket: any) {
@@ -303,9 +309,12 @@ export class FaqService {
                 });
             }
 
-            if (status === 'PUBLISHED') autoPublished++;
-            else queued++;
+            if (status === 'PUBLISHED') {
+                autoPublished++;
+            } else queued++;
         }
+
+        if (autoPublished > 0) await this.emitFaqChanged();
 
         this.logger.log(`📊 FAQ Pipeline: ${autoPublished} auto-published, ${queued} queued, ${skipped} skipped`);
         return { autoPublished, queued, skipped };
@@ -388,12 +397,16 @@ export class FaqService {
                 isInternal: false // Make public when approved by human
             },
         });
+        await this.emitFaqChanged(id);
         await this.refreshFaqQuestionEmbedding(faq);
+        await this.emitFaqChanged(id);
         return faq;
     }
 
     async dismissFaq(id: string): Promise<any> {
-        return this.prisma.faqEntry.update({ where: { id, deletedAt: null }, data: { status: 'DISMISSED' } });
+        const faq = await this.prisma.faqEntry.update({ where: { id, deletedAt: null }, data: { status: 'DISMISSED' } });
+        await this.emitFaqChanged(id);
+        return faq;
     }
 
     async updateFaq(id: string, data: { question?: string; answer?: string; tags?: string[] }): Promise<any> {
@@ -409,14 +422,18 @@ export class FaqService {
             ...(data.tags !== undefined ? { tags: data.tags } : {}),
         };
         const faq = await this.prisma.faqEntry.update({ where: { id, deletedAt: null }, data: updateData });
+        if (Object.keys(updateData).length > 0) await this.emitFaqChanged(id);
         if (data.question !== undefined || data.answer !== undefined || data.tags !== undefined) {
             await this.refreshFaqQuestionEmbedding(faq);
+            await this.emitFaqChanged(id);
         }
         return faq;
     }
 
     async deleteFaq(id: string): Promise<any> {
-        return this.prisma.faqEntry.update({ where: { id }, data: { deletedAt: new Date() } });
+        const faq = await this.prisma.faqEntry.update({ where: { id }, data: { deletedAt: new Date() } });
+        await this.emitFaqChanged(id);
+        return faq;
     }
 
     private async refreshFaqQuestionEmbedding(faq: { id: string; question?: string | null }) {

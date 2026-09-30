@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../ai/embedding.service';
 import { AiService } from '../ai/ai.service';
 import { CreateArticleDto, UpdateArticleDto, ReviewArticleDto, SubmitFeedbackDto } from './dto/article.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 // ArticleStatus from schema: DRAFT | REVIEW | PUBLISHED | ARCHIVED
 // We use string literals to avoid Prisma client import resolution order issues.
@@ -26,7 +27,12 @@ export class KnowledgeBaseService {
         private readonly prisma: PrismaService,
         private readonly embeddingService: EmbeddingService,
         private readonly aiService: AiService,
+        private readonly eventEmitter: EventEmitter2,
     ) { }
+
+    private async emitArticleChanged(articleId: string): Promise<void> {
+        await this.eventEmitter.emitAsync('article.updated', { articleId });
+    }
 
     // ─── CATEGORIES ─────────────────────────────────────────
     async listCategories() {
@@ -137,6 +143,7 @@ export class KnowledgeBaseService {
             include: { versions: true },
         });
 
+        if (article.status === 'PUBLISHED') await this.emitArticleChanged(article.id);
         this.logger.log(`📝 Article created: "${dto.title}"`);
         return article;
     }
@@ -179,6 +186,7 @@ export class KnowledgeBaseService {
             });
         }
 
+        if (hasMetadataChange || hasContentChange) await this.emitArticleChanged(id);
         return this.findOne(id);
     }
 
@@ -217,6 +225,7 @@ export class KnowledgeBaseService {
                 include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
             });
 
+            await this.emitArticleChanged(id);
             const latestVersion = updated.versions[0];
             if (latestVersion) {
                 this.embeddingService
@@ -227,27 +236,33 @@ export class KnowledgeBaseService {
             this.logger.log(`✅ Article "${article.title}" published`);
             return updated;
         } else {
-            return this.prisma.knowledgeArticle.update({
+            const updated = await this.prisma.knowledgeArticle.update({
                 where: { id },
                 data: { status: 'DRAFT' },
             });
+            await this.emitArticleChanged(id);
+            return updated;
         }
     }
 
     // ─── ARCHIVE ────────────────────────────────────────────
     async archive(id: string): Promise<any> {
-        return this.prisma.knowledgeArticle.update({
+        const article = await this.prisma.knowledgeArticle.update({
             where: { id },
             data: { status: 'ARCHIVED' },
         });
+        await this.emitArticleChanged(id);
+        return article;
     }
 
     async remove(id: string): Promise<any> {
         await this.findOne(id);
-        return this.prisma.knowledgeArticle.update({
+        const article = await this.prisma.knowledgeArticle.update({
             where: { id },
             data: { deletedAt: new Date() },
         });
+        await this.emitArticleChanged(id);
+        return article;
     }
 
     // ─── KEYWORD SEARCH ─────────────────────────────────────

@@ -174,6 +174,8 @@ export class AiQueryService {
     private readonly SYNC_DIAGNOSIS_GENERATION_TIMEOUT_MS = 120000;
     private invalidationTimeout: NodeJS.Timeout | null = null;
     private readonly pendingInvalidationReasons = new Set<string>();
+    private knowledgeCacheHealthy = true;
+    private knowledgeCacheRevision = 0;
     constructor(
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
@@ -239,11 +241,12 @@ export class AiQueryService {
 
         // 1. Precise unique cache key
         const cacheScope = this.buildCacheScope(options, isStaff, lang);
-        const queryHash = cacheScope ? this.buildQueryHash(userQuery, cacheScope) : null;
-        const cacheKey = queryHash ? `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}` : null;
+        const knowledgeEpoch = cacheScope ? await this.getKnowledgeCacheEpoch() : null;
+        const queryHash = cacheScope && knowledgeEpoch ? this.buildQueryHash(userQuery, cacheScope, knowledgeEpoch) : null;
+        const cacheKey = queryHash && knowledgeEpoch ? `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${knowledgeEpoch}:${queryHash}` : null;
         const cached = cacheKey ? await this.redis.get(cacheKey) : null;
 
-        if (cached) {
+        if (cached && knowledgeEpoch && await this.isKnowledgeCacheEpochCurrent(knowledgeEpoch)) {
             const result = JSON.parse(cached);
             this.metrics.recordCacheOp('AI_QUERY', 'HIT');
             this.logger.log(`⚡ [Cache Hit] interactionId=${result.interactionId} (${RAG_CONFIG.CACHE.VERSION})`);
@@ -297,14 +300,15 @@ export class AiQueryService {
 
         // Setup cache key for later saving
         const cacheScope = this.buildCacheScope(options, isStaff, lang);
-        const queryHash = cacheScope ? this.buildQueryHash(userQuery, cacheScope) : null;
-        const cacheKey = queryHash ? `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}` : null;
+        const knowledgeEpoch = cacheScope ? await this.getKnowledgeCacheEpoch() : null;
+        const queryHash = cacheScope && knowledgeEpoch ? this.buildQueryHash(userQuery, cacheScope, knowledgeEpoch) : null;
+        const cacheKey = queryHash && knowledgeEpoch ? `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${knowledgeEpoch}:${queryHash}` : null;
 
         // R-P1: Semantic cache lookup — same query within 5 min served from cache
         const hasAttachments = (attachments?.length ?? 0) > 0;
-        if (!hasAttachments && cacheScope) {
-            const semanticCached = await this.semanticCache.get(userQuery, cacheScope);
-            if (semanticCached) {
+        if (!hasAttachments && cacheScope && knowledgeEpoch) {
+            const semanticCached = await this.semanticCache.get(userQuery, cacheScope, knowledgeEpoch);
+            if (semanticCached && await this.isKnowledgeCacheEpochCurrent(knowledgeEpoch)) {
                 this.ragObs.recordQuery(Date.now() - startTime, true);
                 this.logger.log(`🔍 [Semantic Cache Hit] query="${userQuery.slice(0, 40)}"`);
                 return semanticCached;
@@ -765,13 +769,16 @@ export class AiQueryService {
         };
 
         // Cache with centralized TTL
-        if (answerMode === 'LLM' && finalResult.confidence !== 'NO_MATCH' && cacheScope && cacheKey) {
+        if (answerMode === 'LLM' && finalResult.confidence !== 'NO_MATCH' && cacheScope && cacheKey && knowledgeEpoch && this.knowledgeCacheHealthy) {
             await this.redis.set(cacheKey, JSON.stringify(finalResult), RAG_CONFIG.CACHE.DEFAULT_TTL);
 
             // R-P1: Store in semantic cache for similarity-based future hits.
             // Fallback answers are intentionally not cached; a transient model timeout
             // must not lock future users into a weaker deterministic answer.
-            this.startQueryBackground('ai.query.cache', () => this.semanticCache.set(userQuery, cacheScope, finalResult));
+            this.startQueryBackground('ai.query.cache', async () => {
+                if (!this.knowledgeCacheHealthy) return;
+                await this.semanticCache.set(userQuery, cacheScope, finalResult, knowledgeEpoch);
+            });
         }
 
         // NO_MATCH escalation: queue interaction for admin training review (non-blocking)
@@ -1766,11 +1773,40 @@ If context contains usable procedural evidence, synthesize the answer instead of
         };
     }
 
-    private buildQueryHash(userQuery: string, scope: AiCacheScope): string {
+    private buildQueryHash(userQuery: string, scope: AiCacheScope, knowledgeEpoch: string): string {
         return createHash('sha256')
             .update(userQuery)
+            .update(knowledgeEpoch)
             .update(JSON.stringify(scope))
             .digest('hex');
+    }
+
+    private async getKnowledgeCacheEpoch(): Promise<string | null> {
+        if (!this.knowledgeCacheHealthy) return null;
+        const revision = this.knowledgeCacheRevision;
+
+        try {
+            const epoch = await this.semanticCache.getKnowledgeEpoch();
+            return this.knowledgeCacheHealthy && revision === this.knowledgeCacheRevision ? epoch : null;
+        } catch (error: any) {
+            this.logger.warn(`⚠️ AI cache epoch unavailable; bypassing response caches: ${error?.message ?? error}`);
+            return null;
+        }
+    }
+
+    private async isKnowledgeCacheEpochCurrent(capturedEpoch: string): Promise<boolean> {
+        if (!this.knowledgeCacheHealthy) return false;
+        const revision = this.knowledgeCacheRevision;
+
+        try {
+            const currentEpoch = await this.semanticCache.getKnowledgeEpoch();
+            return this.knowledgeCacheHealthy
+                && revision === this.knowledgeCacheRevision
+                && currentEpoch === capturedEpoch;
+        } catch (error: any) {
+            this.logger.warn(`⚠️ AI cache epoch validation failed; ignoring cached response: ${error?.message ?? error}`);
+            return false;
+        }
     }
 
     private buildCacheScope(
@@ -2372,11 +2408,14 @@ If context contains usable procedural evidence, synthesize the answer instead of
         const isStaff = await this.isStaff(userId);
         const lang = this.resolveResponseLanguage(options.language, userQuery);
         const cacheScope = this.buildCacheScope(options, isStaff, lang);
-        const queryHash = cacheScope ? this.buildQueryHash(userQuery, cacheScope) : null;
-        const cacheKey = queryHash ? `ai:query:stream_cache:${queryHash}` : null;
+        const knowledgeEpoch = cacheScope ? await this.getKnowledgeCacheEpoch() : null;
+        const queryHash = cacheScope && knowledgeEpoch ? this.buildQueryHash(userQuery, cacheScope, knowledgeEpoch) : null;
+        const cacheKey = queryHash && knowledgeEpoch
+            ? `ai:query:stream_cache:${RAG_CONFIG.CACHE.VERSION}:${knowledgeEpoch}:${queryHash}`
+            : null;
         const cached = cacheKey ? await this.redis.get(cacheKey) : null;
 
-        if (cached) {
+        if (cached && knowledgeEpoch && await this.isKnowledgeCacheEpochCurrent(knowledgeEpoch)) {
             this.logger.log(`🎯 AI Stream Query Cache Hit: ${userQuery.slice(0, 40)}...`);
             yield { chunk: cached };
             return;
@@ -2577,7 +2616,7 @@ If context contains usable procedural evidence, synthesize the answer instead of
         // --- END INCREMENT ---
 
         // Cache for 1 hour
-        if (cacheKey) {
+        if (cacheKey && this.knowledgeCacheHealthy) {
             await this.redis.set(cacheKey, fullAnswer, 3600);
         }
 
@@ -2637,20 +2676,40 @@ If context contains usable procedural evidence, synthesize the answer instead of
      * Event-driven cache invalidation.
      * Clears AI query caches when knowledge base content changes.
      */
-    @OnEvent('article.published', { async: true })
-    @OnEvent('article.updated', { async: true })
+    @OnEvent('article.published')
+    @OnEvent('article.updated')
     async handleArticleChange(payload: { articleId?: string }) {
         await this.debounceInvalidateQueryCaches('article change');
     }
 
-    @OnEvent('knowledge-pool.synced', { async: true })
-    @OnEvent('knowledge-pool.source_processed', { async: true })
+    @OnEvent('faq.changed')
+    async handleFaqChange(payload?: { faqId?: string }) {
+        await this.debounceInvalidateQueryCaches('FAQ change');
+    }
+
+    @OnEvent('knowledge-pool.synced')
+    @OnEvent('knowledge-pool.source_processed')
     async handleKnowledgePoolChange(payload: { sourceId?: string }) {
         await this.debounceInvalidateQueryCaches('knowledge pool sync');
     }
 
     private async debounceInvalidateQueryCaches(reason: string) {
         this.pendingInvalidationReasons.add(reason);
+        const invalidationRevision = ++this.knowledgeCacheRevision;
+        this.knowledgeCacheHealthy = false;
+
+        try {
+            await this.semanticCache.advanceKnowledgeEpoch();
+            if (invalidationRevision === this.knowledgeCacheRevision) {
+                this.knowledgeCacheHealthy = true;
+            }
+        } catch (error: any) {
+            if (invalidationRevision === this.knowledgeCacheRevision) {
+                this.knowledgeCacheHealthy = false;
+            }
+            this.logger.error(`❌ Failed to advance AI cache epoch for ${reason}: ${error?.message ?? error}`);
+            await this.invalidateQueryCaches(`${reason} (epoch fallback)`);
+        }
 
         if (this.invalidationTimeout) {
             clearTimeout(this.invalidationTimeout);
@@ -2666,24 +2725,8 @@ If context contains usable procedural evidence, synthesize the answer instead of
 
     private async invalidateQueryCaches(reason: string) {
         try {
-            const client = this.redis.getClient();
-            const pattern = `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:*`;
-            let cursor = '0';
-            let totalDeleted = 0;
-
-            // Use SCAN for production safety (non-blocking vs KEYS)
-            do {
-                const [nextCursor, keys] = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
-                cursor = nextCursor;
-                if (keys.length > 0) {
-                    await client.del(...keys);
-                    totalDeleted += keys.length;
-                }
-            } while (cursor !== '0');
-
-            if (totalDeleted > 0) {
-                this.logger.log(`🗑️ Invalidated ${totalDeleted} AI query caches (reason: ${reason})`);
-            }
+            await this.semanticCache.purgeAll();
+            this.logger.log(`🗑️ Reclaimed AI query and semantic caches (reason: ${reason})`);
         } catch (err) {
             this.logger.warn(`⚠️ Cache invalidation failed: ${err}`);
         }
@@ -3398,8 +3441,11 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
         const lang = this.resolveResponseLanguage(options.language, userQuery);
 
         const cacheScope = this.buildCacheScope(options, isStaff, lang);
-        const queryHash = cacheScope ? this.buildQueryHash(userQuery, cacheScope) : null;
-        const cacheKey = queryHash ? `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${queryHash}` : null;
+        const knowledgeEpoch = cacheScope ? await this.getKnowledgeCacheEpoch() : null;
+        const queryHash = cacheScope && knowledgeEpoch ? this.buildQueryHash(userQuery, cacheScope, knowledgeEpoch) : null;
+        const cacheKey = queryHash && knowledgeEpoch
+            ? `ai:query:cache:${RAG_CONFIG.CACHE.VERSION}:${knowledgeEpoch}:${queryHash}`
+            : null;
 
         let expandedQuery = userQuery;
         let parsedDocs = '';
