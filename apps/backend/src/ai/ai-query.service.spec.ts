@@ -301,6 +301,33 @@ describe('AiQueryService', () => {
 
             expect(buildHash('test query', baseScope, 'generation-1')).not.toEqual(buildHash('test query', changedScope, 'generation-1'));
             expect(buildHash('test query', baseScope, 'generation-1')).not.toEqual(buildHash('test query', baseScope, 'generation-2'));
+            expect(buildScope(baseOptions, false, 'tr').contextFingerprint).not.toEqual(
+                buildScope({ ...baseOptions, privacySafeContext: true }, false, 'tr').contextFingerprint,
+            );
+        });
+
+        it('omits profile and raw Hotinfo inputs from prompt context in privacy-safe mode', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue(null);
+            mockEmbeddingService.search.mockResolvedValue({
+                results: [{
+                    articleId: 'art-1', sourceType: 'ARTICLE', title: 'License guide',
+                    content: 'Use the license settings screen.', similarity: 0.95, confidence: 'HIGH',
+                }],
+                diagnostics: { topScore: 0.95, passedThreshold: 1, queryEmbeddingModel: 'nomic', thresholdUsed: 0.78 },
+            });
+
+            await (service as any).prepareQueryContext({
+                userQuery: 'License issue',
+                userId: 'customer-1',
+                hotinfoContext: { rawSecret: 'PRIVATE HOTINFO' },
+                privacySafeContext: true,
+                history: [{ role: 'user', content: 'Public masked history' }],
+            });
+
+            expect(mockPromptContextBuilder.buildContext).toHaveBeenCalledWith(expect.objectContaining({
+                userId: undefined,
+                hotinfoSnapshot: undefined,
+            }));
         });
 
         it('should return cached result without hitting DB when cache exists', async () => {
