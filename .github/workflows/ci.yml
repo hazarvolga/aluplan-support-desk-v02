@@ -141,6 +141,37 @@ jobs:
     name: End-to-End Tests
     runs-on: ubuntu-latest
     needs: typecheck-and-build
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: aluplan_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d aluplan_e2e"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      CI: true
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/aluplan_e2e
+      REDIS_URL: redis://localhost:6379
+      FRONTEND_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_INTERNAL_API_URL: http://localhost:4000/api/v1
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v3
@@ -151,13 +182,41 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
       - run: pnpm install
+      - name: Generate disposable E2E secrets
+        run: |
+          node <<'NODE'
+          const crypto = require('node:crypto');
+          const fs = require('node:fs');
+          const randomSecret = () => crypto.randomBytes(32).toString('base64url');
+          const values = {
+            JWT_SECRET: randomSecret(),
+            JWT_REFRESH_SECRET: randomSecret(),
+            AUTH_ACTION_JWT_SECRET: randomSecret(),
+            ENCRYPTION_KEY: crypto.randomBytes(32).toString('hex'),
+            ADMIN_BYPASS_EMAILS: 'e2e-admin@aluplan.test',
+            E2E_ADMIN_EMAIL: 'e2e-admin@aluplan.test',
+            E2E_ADMIN_PASSWORD: randomSecret(),
+            E2E_AGENT_EMAIL: 'e2e-agent@aluplan.test',
+            E2E_AGENT_PASSWORD: randomSecret(),
+            E2E_CUSTOMER_EMAIL: 'e2e-customer@aluplan.test',
+            E2E_CUSTOMER_PASSWORD: randomSecret(),
+            E2E_CUSTOMER_PHONE: '905550009988',
+          };
+          const env = Object.entries(values).map(([name, value]) => `${name}=${value}`).join('\n');
+          fs.appendFileSync(process.env.GITHUB_ENV, `${env}\n`, { mode: 0o600 });
+          NODE
+      - name: Prisma Generate
+        run: pnpm --filter @aluplan/database db:generate
+      - name: Prisma E2E Migration
+        run: pnpm exec prisma migrate deploy --config packages/database/prisma.config.js
+      - name: Seed synthetic E2E users
+        run: pnpm --filter @aluplan/backend exec tsx seed-e2e.ts
+        env:
+          E2E_SEED_ALLOWED: true
       - name: Install Playwright Browsers
         run: pnpm --filter @aluplan/frontend exec playwright install --with-deps
       - name: Run E2E Tests
         run: pnpm --filter @aluplan/frontend test:e2e
-        env:
-          CI: true
-          NEXT_INTERNAL_API_URL: http://localhost:4000/api/v1
       - name: Upload E2E Results
         if: always()
         uses: actions/upload-artifact@v4
