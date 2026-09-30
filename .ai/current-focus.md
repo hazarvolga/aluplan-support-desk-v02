@@ -1,6 +1,6 @@
 # Current Focus
 
-## 30 Eylül — RAG-01 tamamlandı; sıradaki görev CACHE-01 (yerel)
+## 30 Eylül — CACHE-01 tamamlandı; sıradaki görev PRIV-01 (yerel)
 
 - Kullanıcı kalan işleri Antigravity yerine bu ajan üzerinden sıralı tamamlamayı devretti. UX-01'in TR/EN/DE ticket etiketleri tamamlandı; TODO'daki `apps/frontend/next-env.d.ts` kullanıcı değişikliği korunuyor ve stage edilmeyecek.
 - REL-02'nin risk matrisi ve CI E2E 300 sn timeout kök nedeni belgelendi; E2E job'ı izole Postgres/Redis, sentetik geçici sırlar, migration ve seed ile düzeltildi. Seed aracı açık opt-in, non-production, loopback IP ve `_e2e` database guard'larıyla fail-closed. High advisories için dar MJML graph patch'i ve ilgili dependency override'ları uygulandı; XLSX CDN `integrity` hash'i Git başlangıcından doğrulanıp lockfile'da korundu.
@@ -9,7 +9,10 @@
 - REL-02, audit/CI regresyonları + 263/263 dependency test, 24/24 odaklı test, frozen install, backend typecheck, pinned audit 0 High, bağımsız review ve izole runtime seed kanıtıyla yerel tamamlandı. Hosted GitHub E2E çalıştırılmadı; push/deploy yapılmadı. Local commits `70ee21d4`, `c2f277ab`, `003221ce`, `fe7305b5`.
 - **RAG-01** yerel olarak tamamlandı: makale araması `deleted_at IS NULL`, `is_active = true` ve makalenin güncel sürümüne FK eşleşmesini gerektiriyor; keyword CTE de published/deleted/internal görünürlük filtrelerini uyguluyor. Odaklı embedding testleri 23/23, backend typecheck, `git diff --check`, bağımsız kod ve güvenlik incelemesi geçti. Sıfır şema/migration/veri değişikliği; push/deploy yok.
 - GitNexus CLI bir defa `pnpm dlx` ile denendi; macOS'te gerekli `libssl.3.dylib` olmadığından `analyze`/`detect-changes` çalışmadı. Sistem kitaplığı yüklenmedi ve repoya dosya/dependency eklenmedi. `EmbeddingService.search` çağrı zinciri elle kontrol edilip bağımsız incelemeden geçirildi.
-- Sıradaki planlı görev **CACHE-01**: makale/SSS değişiminde Redis ve DB semantic cache invalidation tutarlılığını incele; mevcut cache testinden başla. Canlı Redis/DB'ye yazma yok.
+- **CACHE-01** yerel olarak tamamlandı: paylaşılan DB knowledge epoch, Redis exact/stream ve DB semantic cache ad alanlarını birlikte çeviriyor; devam eden eski sorguların sonradan yazdığı sonuçlar yeni isteklerden ayrılıyor. Gecikmiş epoch okumaları cache hit dönmeden tekrar doğrulanıyor; çakışan invalidation başarısızlığında eski işlem cache'i yanlışlıkla yeniden açamıyor. Makale/SSS/knowledge-pool/ürün SSS geri-yükleme olayları kapsamda. Fiziksel temizlik Redis ve DB katmanlarında bağımsız ve Redis tarafı `SCAN` tabanlıdır; epoch hatasında bu süreç cache'i fail-closed bypass eder, hemen denenilen temizlik yalnız best-effort reclamation'dır. TTL kısaltılmadı. Hedefli testler 5 suite / 120 test, backend typecheck ve diff kontrolü geçti; canlı veri/servis, migration, push/deploy yok.
+- CACHE-01 bağımsız epoch tasarım/kod incelemesinin üç somut yarış bulgusu kapatıldı ve son yeniden inceleme commit'e uygun buldu. Ayrı code/security reviewer ajanları kullanım sınırına takıldı; bu denemeler başarılı inceleme olarak gösterilmedi.
+- GitNexus kurulmadı: mevcut CLI denemesi eksik `libssl.3.dylib` nedeniyle çalışmıyor ve paketin ticari ürün kullanımı için lisans uygunluğu net değil. Repo veya makine bağımlılığı değiştirilmedi.
+- Sıradaki planlı görev **PRIV-01**: SSS özeti ve bilet embedding içeriğinden `isInternal: true` mesajları test-first biçimde kesin olarak dışla. Geçmiş kayıtları topluca değiştirme yok.
 
 ## 29 Eylül — tarihsel devir notu (REL-02 kapsam kararı artık geçerli değil)
 

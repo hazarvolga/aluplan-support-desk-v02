@@ -36,7 +36,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 2.1 | **REL-01** | Handoff Bölüm 7 (Sıra 2) | Paket A Sonrası Tip Kontrolü, Derleme ve Odaklı Testler (Ara Yayın Yok) | Paket A (Kalite Kontrolü) | **COMPLETED** (Bağımsız kabul; tarayıcı kapsam sınırı kayıtlı) |
 | 2.2 | **REL-02** | Handoff Bölüm 5 (P1) | Erişilebilir High Bağımlılık Denetimi ve Quality Gate CI/E2E Analizi | Paket A (Yayın Hazırlığı) | **COMPLETED** (yerel audit/CI düzeltmeleri, izole seed smoke ve bağımsız inceleme geçti; hosted CI çalıştırılmadı) |
 | 3.1 | **RAG-01** | RAG-01 | Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; odaklı test, typecheck ve bağımsız inceleme geçti) |
-| 3.2 | **CACHE-01**| Röntgen Bölüm 10 | Redis ve Semantic Cache Tutarsızlığı / İptal (Invalidation) Olayları | Paket B (Güvenilir Bilgi) | **PENDING** |
+| 3.2 | **CACHE-01**| Röntgen Bölüm 10 | Redis ve Semantic Cache Tutarsızlığı / İptal (Invalidation) Olayları | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; odaklı test ve typecheck geçti) |
 | 3.3 | **PRIV-01** | PRIV-01 | SSS Özetlerinde ve Bilet Vektörlerinde İç Notların Ayrıştırılması ve Gizlilik | Paket B (Güvenilir Bilgi) | **PENDING** |
 | 3.4 | **LRN-01** | Röntgen Bölüm 8.2 / 8.3 | Çözüm Temelli SSS Çıkarımı, Puanlama Ayrımı ve Yaşam Döngüsü Açıklığı | Paket B (Güvenilir Bilgi) | **PENDING** |
 | 4.1 | **CWL-01** | CRAWL-01 | Crawler / Havuz Kuyruk Hatasında SYNCING Takılması ve Eski İndeks Koruması | Paket B (Ingestion) | **PENDING** |
@@ -421,7 +421,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Uygulama / Doğrulama:** `EmbeddingService.search` ARTICLE dalı soft-deleted makaleleri ve pasif embedding'leri eler; embedding `article_version_id` değeri `knowledge_article_versions` üzerinden makalenin `current_version` sürümüne bağlanır. Makale görünürlük filtreleri anahtar-kelime CTE'sinde de korunur. Odaklı test 23/23 ve backend typecheck geçti; bağımsız kod/güvenlik incelemesinde engelleyici bulgu yok. GitNexus tek-seferlik CLI, yerel macOS `libssl.3.dylib` eksikliği nedeniyle indeks/etki analizi çalıştıramadı; çağrı zinciri elle izlenip incelemede doğrulandı. DB/migration, canlı servis/verisi, push veya deploy yok.
 
 ### CACHE-01: Redis ve Semantic Cache Tutarsızlığı / İptal (Invalidation) Olayları
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (yerel; yayın yok)
 - **Rapor ID / Kanıt:** Röntgen Bölüm 10 (Satır 282-284); `B/ai/ai-semantic-cache.service.ts`, `B/faq/faq.service.ts`, `B/knowledge-base/knowledge-base.service.ts`.
 - **Dosya / Modül:** `apps/backend/src/ai/ai-semantic-cache.service.ts`, `apps/backend/src/faq/faq.service.ts`.
 - **Minimum Değişiklik:** 
@@ -431,7 +431,12 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Kabul Ölçütü:** Güncellenen veya silinen bir SSS/makale yanıtı semantik veya Redis önbelleğinden eski haliyle kullanıcılara dönmemeli.
 - **Dar Doğrulama:** `pnpm --filter @aluplan/backend test -- src/ai/ai-semantic-cache.service.spec.ts`.
 - **Veri / Migration Etkisi:** Sıfır şema değişikliği.
-- **Açık Kullanıcı Kararı:** Semantic cache TTL süresi (varsayılan süre) operasyonel olarak kısaltılmalı mı?
+- **Açık Kullanıcı Kararı:** Çözüldü. Varsayılan TTL kısaltılmadı; kalıcı knowledge epoch doğruluk sağladığı için gereksiz AI/DB maliyeti yaratacak operasyonel kısaltma uygulanmadı.
+- **Uygulama / Doğrulama:** Makale, SSS, knowledge-pool ve ürün SSS geri-yükleme değişimleri paylaşılan `settings` tablosundaki kalıcı knowledge epoch değerini hemen döndürür. Redis exact/stream anahtarları ile `AiResponseCache` tenant scope hash'i sorgu başında yakalanan epoch'a bağlandığından, değişiklik öncesinde başlayan bir sorgunun sonradan yazdığı eski yanıt yeni isteklerce erişilemez. Fiziksel Redis ve DB temizliği debounce edilerek iki katmanda bağımsız çalışır. Epoch güncellemesi başarısızsa bu uygulama sürecinde cache okuma/yazma fail-closed olarak kapalı kalır; derhal denenilen fiziksel temizlik yalnız best-effort eski kayıt toplama işlemidir, doğruluk garantisi değildir. Redis `KEYS` yerine `SCAN` kullanılır. Yeni şema/migration yoktur; mevcut `settings` tablosunda ayrılmış bir anahtar kullanılır.
+- **Olay Kapsamı:** Yayındaki makale oluşturma/güncelleme/onay-red/archive/soft-delete; SSS auto-publish/onay/güncelleme/dismiss/soft-delete; ürün SSS geri-yükleme; knowledge-pool sync/source-processed.
+- **Kanıt:** Hedefli backend doğrulaması 5 suite / 120 test PASS; backend TypeScript typecheck ve `git diff --check` PASS. Bağımsız epoch tasarım/kod incelemesinin stale-write, gecikmiş stale-read ve çakışan invalidation bulguları revision/health fencing ve kalıcı epoch yeniden doğrulamasıyla kapatıldı; son yeniden inceleme commit'e uygun buldu. Ayrı code/security reviewer ajanları kullanım sınırına takıldığı için başarı olarak kaydedilmedi.
+- **Tutarlılık Sınırı:** Olaylar içerik yazımı tamamlandıktan hemen sonra ve servis çağrısı dönmeden await edilir; bu, işlem tamamlandıktan sonra event-driven invalidation sağlar. İçerik transaction commit'i ile event/epoch dönüşü arasındaki çok kısa pencere transactionally linearizable değildir. Tam sıfır-pencere garantisi aynı transaction içinde epoch dönüşü veya transactional outbox gerektirir ve bu dar kapsamın dışındadır; mevcut API çağrısı tamamlandıktan sonra kalıcı epoch doğrulaması eski cache hit'ini reddeder.
+- **Veri / Dış Etki:** Canlı DB/Redis, gerçek müşteri verisi, push, deploy veya migration kullanılmadı. `apps/frontend/next-env.d.ts` kullanıcı WIP'i korunur.
 
 ### PRIV-01: SSS Özetlerinde ve Bilet Vektörlerinde İç Notların Ayrıştırılması ve Gizlilik
 - **Durum:** `PENDING`
