@@ -38,7 +38,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 3.1 | **RAG-01** | RAG-01 | Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; odaklı test, typecheck ve bağımsız inceleme geçti) |
 | 3.2 | **CACHE-01**| Röntgen Bölüm 10 | Redis ve Semantic Cache Tutarsızlığı / İptal (Invalidation) Olayları | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; odaklı test ve typecheck geçti) |
 | 3.3 | **PRIV-01** | PRIV-01 | SSS Özetlerinde ve Bilet Vektörlerinde İç Notların Ayrıştırılması ve Gizlilik | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
-| 3.4 | **LRN-01** | Röntgen Bölüm 8.2 / 8.3 | Çözüm Temelli SSS Çıkarımı, Puanlama Ayrımı ve Yaşam Döngüsü Açıklığı | Paket B (Güvenilir Bilgi) | **PENDING** |
+| 3.4 | **LRN-01** | Röntgen Bölüm 8.2 / 8.3 | Çözüm Temelli SSS Çıkarımı, Puanlama Ayrımı ve Yaşam Döngüsü Açıklığı | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 4.1 | **CWL-01** | CRAWL-01 | Crawler / Havuz Kuyruk Hatasında SYNCING Takılması ve Eski İndeks Koruması | Paket B (Ingestion) | **PENDING** |
 | 4.2 | **CWL-02** | Handoff Bölüm 7 (Sıra 4) | Temsilî Tek Public URL Uçtan Uca İçe Aktarma ve Vektörleme Doğrulaması | Paket B (Ingestion) | **PENDING** |
 | 4.3 | **MOD-01** | RAG-02 | Model / Embedding Sürüm Değişimi ve Toplu Reindex Operasyonel Kısıtı | Paket B (Ingestion) | **PENDING** |
@@ -459,7 +459,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Açık Kullanıcı Kararı:** Çözüldü. Güvenli varsayılan olarak tarihsel kayıtlar otomatik değiştirilmedi; ayrı veri mutasyonu ancak envanter ve açık uygulama onayıyla ele alınacaktır.
 
 ### LRN-01: Çözüm Temelli SSS Çıkarımı, Puanlama Ayrımı ve Yaşam Döngüsü Açıklığı
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (yerel; yayın yok)
 - **Rapor ID / Kanıt:** Röntgen Bölüm 8.2 (Satır 209-214), Bölüm 8.3 (Satır 216-218); `B/faq/faq.service.ts`, `B/ai/ticket-clustering.service.ts`.
 - **Dosya / Modül:** `apps/backend/src/faq/faq.service.ts`, `apps/backend/src/ai/ticket-clustering.service.ts`.
 - **Minimum Değişiklik:** 
@@ -469,9 +469,12 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Kapsam Dışı:** İnsan onay mekanizmasını devreden çıkarıp tam otomatik yayınlama yapmak.
 - **Bağımlılık:** PRIV-01.
 - **Kabul Ölçütü:** Çözümü olmayan veya çözümü doğrulanmamış biletlerden SSS adayı üretilmemeli; üretilen adaylar Review Center'da kaynak bilet referansıyla listelenmeli.
-- **Dar Doğrulama:** `pnpm --filter @aluplan/backend test -- src/faq/faq.service.spec.ts`.
+- **Dar Doğrulama:** `pnpm --filter @aluplan/backend test -- src/ai/ticket-clustering.service.spec.ts src/faq/faq.service.spec.ts --runInBand` (28/28 PASS); backend typecheck ve `git diff --check` PASS.
 - **Veri / Migration Etkisi:** Sıfır şema değişikliği.
-- **Açık Kullanıcı Kararı:** Çözüm mesajı bulunmayan biletler kümeleme analizinde SSS adayı olarak önerilmesin mi?
+- **Uygulama:** FAQ ve clustering yalnızca RESOLVED/CLOSED, `deletedAt:null`, CSAT >= 4 biletleri işler. Çözüm mesajı, ticket sahibinden farklı ve `rbac-canonical.json` staff allowlist'inde olan rolün public, silinmemiş mesajı olmalıdır; CUSTOMER mesajları çözüm sayılmaz. Küme üretim sorgusu status/CSAT/deletedAt koşullarını ikinci kez doğrular ve eksik çözümde fail-closed kalır. Subject/açıklama/mesaj/embedding araması, FAQ fallback'i ve modelden dönen aday alanları temel PII maskelemesinden geçer. Boş model soru/yanıtı aday üretmez. Adaylar mevcut insan Review Center akışında `PENDING_REVIEW` ve internal kalır; otomatik public yayın yoktur.
+- **Gizlilik İddia Sınırı:** Regex maskeleme tam anonimleştirme değildir; isim/adres/lisans anahtarı gibi serbest metin PII'leri daha geniş veri-minimizasyonu gerektirebilir.
+- **Açık Kullanıcı Kararı:** Çözüldü. Çözüm mesajı olmayan veya rolü doğrulanmayan biletler aday olarak önerilmez; tarihsel kayıtlar otomatik temizlenmedi.
+- **Veri / Dış Etki:** Geçmiş FAQ/embedding/PENDING_REVIEW kayıtları değiştirilmedi; canlı DB/sağlayıcı, migration, push/deploy kullanılmadı. `apps/frontend/next-env.d.ts` kullanıcı WIP'i korunuyor.
 
 ---
 

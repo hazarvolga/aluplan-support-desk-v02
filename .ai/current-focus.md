@@ -1,6 +1,10 @@
 # Current Focus
 
-## 30 Eylül — PRIV-01 tamamlandı; sıradaki görev LRN-01 (yerel)
+## 30 Eylül — LRN-01 tamamlandı; sıradaki görev CWL-01 (yerel)
+
+- LRN-01 ile SSS öğrenimi yalnızca çözümlenmiş/kapanmış, CSAT >= 4, silinmemiş biletlerde doğrulanmış staff rolü çözüm mesajını kullanıyor. Customer mesajları çözüm kabul edilmiyor; ikinci küme sorgusunda uygunluk yeniden doğrulanıyor. Prompt, embedding index/search, fallback ve model çıktısı persist öncesi temel PII maskelemesinden geçiyor; boş model çıktıları atlanıyor. Adaylar insan Review Center akışına `PENDING_REVIEW`/internal olarak gidiyor.
+- İki hedefli suite 28/28, backend typecheck ve `git diff --check` geçti; bağımsız kod ve güvenlik incelemeleri APPROVE verdi. Regex maskeleme tam anonimleştirme değildir; serbest metin PII residual olarak kayıtlıdır. Geçmiş kayıtlar, canlı DB/sağlayıcı, migration, push/deploy yok; `apps/frontend/next-env.d.ts` korunuyor.
+- Sıradaki planlı görev **CWL-01**: crawler/pool queue failure'da SYNCING durumunu fail-closed düzeltmek ve yeniden indekslemede eski çalışan vektörleri korumak.
 
 - SSS özeti, ticket embedding'i, otomatik taslak/öneri geçmişi ve sentiment girdilerinde iç notlar ile soft-delete edilmiş mesajlar DB sorgusu ve bellek içi savunmayla dışlanıyor. Soft-delete edilmiş bilet event'leri üç handler'da da yan etkisiz reddediliyor.
 - Müşteri-personel metinleri kamuya açık kabul edilmiyor; konu/açıklama/mesaj/sentiment girdileri temel PII maskelemesinden geçiyor. `privacySafeContext`, kullanıcı kimliğini auth/kota/cache sahipliği için korurken PromptContextBuilder'a profil, yakın bilet ve ham Hotinfo aktarmıyor; normal ve privacy-safe cache kapsamları ayrıldı.
