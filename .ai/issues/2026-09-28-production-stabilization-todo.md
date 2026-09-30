@@ -40,7 +40,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 3.3 | **PRIV-01** | PRIV-01 | SSS Özetlerinde ve Bilet Vektörlerinde İç Notların Ayrıştırılması ve Gizlilik | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 3.4 | **LRN-01** | Röntgen Bölüm 8.2 / 8.3 | Çözüm Temelli SSS Çıkarımı, Puanlama Ayrımı ve Yaşam Döngüsü Açıklığı | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 4.1 | **CWL-01** | CRAWL-01 | Crawler / Havuz Kuyruk Hatasında SYNCING Takılması ve Eski İndeks Koruması | Paket B (Ingestion) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
-| 4.2 | **CWL-02** | Handoff Bölüm 7 (Sıra 4) | Temsilî Tek Public URL Uçtan Uca İçe Aktarma ve Vektörleme Doğrulaması | Paket B (Ingestion) | **PENDING** |
+| 4.2 | **CWL-02** | Handoff Bölüm 7 (Sıra 4) | Temsilî Tek Public URL Uçtan Uca İçe Aktarma ve Vektörleme Doğrulaması | Paket B (Ingestion) | **COMPLETED** (yerel izole smoke; bağımsız kod/güvenlik incelemesi geçti) |
 | 4.3 | **MOD-01** | RAG-02 | Model / Embedding Sürüm Değişimi ve Toplu Reindex Operasyonel Kısıtı | Paket B (Ingestion) | **PENDING** |
 | 5.1 | **UX-01** | Handoff Bölüm 4 | Bölüm 4 Görünür Frontend AI / `ANN_*` Metin ve Etiket Revizyonu | Paket B (Kullanım/UX) | **COMPLETED** (TR/EN/DE; yerel render ve odaklı kontroller geçti) |
 | 5.2 | **UX-02** | Röntgen Bölüm 12 | Yardım Ekranı (`/tr/help`) Çeviri Anahtarları ve Gerçek Personel Rol Menüsü | Paket B (Kullanım/UX) | **PENDING** |
@@ -498,16 +498,18 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Veri / Dış Etki:** Sıfır schema/migration; canlı DB/Redis/sağlayıcı, push/deploy kullanılmadı. `apps/frontend/next-env.d.ts` kullanıcı WIP'i korunuyor.
 
 ### CWL-02: Temsilî Tek Public URL Uçtan Uca İçe Aktarma ve Vektörleme Doğrulaması
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (yerel izole smoke; 30 Eylül 2026)
 - **Rapor ID / Kanıt:** Handoff Bölüm 7 (Sıra 4); Röntgen Bölüm 9.2.
 - **Dosya / Modül:** `apps/backend/src/knowledge-pool`.
 - **Minimum Değişiklik:** Tek bir temsili kamuya açık dokümantasyon URL'sinin yerel ortamda crawl -> chunk -> embedding -> semantic search zincirinde test edilmesi.
 - **Kapsam Dışı:** Toplu URL taraması; eski 500 failed işin topluca yeniden denenmesi.
 - **Bağımlılık:** CWL-01.
 - **Kabul Ölçütü:** Tek bir URL başarıyla ACTIVE duruma geçmeli ve vektör aramalarında ilgili içeriği döndürmeli.
-- **Dar Doğrulama:** İzole entegrasyon smoke testi.
+- **Dar Doğrulama:** `pnpm --filter @aluplan/backend test -- src/knowledge-pool/cwl02.integration.spec.ts --runInBand` (1/1 PASS); backend typecheck ve `git diff --check` PASS.
 - **Veri / Migration Etkisi:** Sıfır.
-- **Açık Kullanıcı Kararı:** Temsilî doğrulama için hangi Allplan yardım/dokümantasyon URL'si referans seçilmeli?
+- **Uygulama / Kanıt:** `apps/backend/src/knowledge-pool/cwl02.integration.spec.ts`, sentetik `https://example.com/help` fixture'ı ile gerçek `KnowledgePoolProcessor.handleUrlSync`, `EmbeddingService.indexPoolContent` ve `EmbeddingService.search` zincirini çalıştırır. `$executeRaw` INSERT interpolasyonundan alınan içerik aynı test deposuna kaydedilir ve `$queryRaw` bu indekslenmiş içerikten döner; sabit arama sonucu yoktur. Kaynak ACTIVE olur ve ilgili içerik semantic search'te bulunur.
+- **Kapsam Sınırı:** Gerçek ağ, PostgreSQL/pgvector, embedding sağlayıcısı, canlı veri/credential ve dış servis kullanılmadı; bu production/provider kabul testi değildir. Sıfır schema/migration.
+- **Açık Kullanıcı Kararı:** Çözüldü; referans URL test izolasyonu için sentetik tutuldu.
 
 ### MOD-01: Model / Embedding Sürüm Değişimi ve Toplu Reindex Operasyonel Kısıtı
 - **Durum:** `PENDING`

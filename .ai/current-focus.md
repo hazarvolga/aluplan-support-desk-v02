@@ -1,5 +1,11 @@
 # Current Focus
 
+## 30 Eylül — CWL-02 tamamlandı; sıradaki görev MOD-01 (yerel)
+
+- CWL-02 için sentetik `https://example.com/help` fixture'ı ile gerçek processor → chunk → embedding → semantic search zinciri çalıştırıldı. `$executeRaw` INSERT değerlerinden alınan indekslenmiş içerik aynı test deposundan `$queryRaw` ile döndürülüyor; sabit arama satırı kullanılmıyor. Kaynak ACTIVE oldu ve lisans aktivasyonu içeriği semantic search'te bulundu.
+- 1 hedefli suite 1/1, backend typecheck ve `git diff --check` geçti; bağımsız kod ve güvenlik incelemeleri APPROVE verdi. Gerçek ağ, PostgreSQL/pgvector, embedding sağlayıcısı, canlı veri/credential kullanılmadı; bu production/provider kabul testi değildir. `apps/frontend/next-env.d.ts` korunuyor.
+- Sıradaki planlı görev **MOD-01**: model/embedding sürüm değişikliği ve kontrolsüz toplu reindex için açık operasyonel guard.
+
 ## 30 Eylül — LRN-01 tamamlandı; sıradaki görev CWL-01 (yerel)
 
 - LRN-01 ile SSS öğrenimi yalnızca çözümlenmiş/kapanmış, CSAT >= 4, silinmemiş biletlerde doğrulanmış staff rolü çözüm mesajını kullanıyor. Customer mesajları çözüm kabul edilmiyor; ikinci küme sorgusunda uygunluk yeniden doğrulanıyor. Prompt, embedding index/search, fallback ve model çıktısı persist öncesi temel PII maskelemesinden geçiyor; boş model çıktıları atlanıyor. Adaylar insan Review Center akışına `PENDING_REVIEW`/internal olarak gidiyor.

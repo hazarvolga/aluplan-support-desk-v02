@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-30 — Yerel CWL-02 tamamlandı; sıradaki MOD-01
+
+CWL-02 için sentetik `https://example.com/help` fixture'ı kullanılarak gerçek `KnowledgePoolProcessor.handleUrlSync`, `EmbeddingService.indexPoolContent` ve `EmbeddingService.search` zinciri doğrulandı. `$executeRaw` INSERT interpolasyonundan yakalanan içerik aynı fake repository'ye kaydedildi ve `$queryRaw` aynı indekslenmiş içerikten döndü; arama sonucu sabit mock satırına bağlı değil. Kaynak ACTIVE oldu, lisans aktivasyonu içeriği semantic search'te bulundu. Hedefli suite 1/1, backend typecheck ve diff kontrolü geçti; bağımsız kod/güvenlik incelemeleri APPROVE verdi. Gerçek ağ, PostgreSQL/pgvector, embedding sağlayıcısı, canlı veri/credential, migration, push/deploy yok; bu production/provider kabul testi değildir. `apps/frontend/next-env.d.ts` korunuyor. Sıradaki görev MOD-01.
+
 ## 2026-09-30 — Yerel LRN-01 tamamlandı; sıradaki CWL-01
 
 LRN-01 kapsamında FAQ extraction ve ticket clustering; yalnız RESOLVED/CLOSED, `deletedAt:null`, CSAT >= 4 ve sender role'u canonical staff allowlist'inde olan public çözüm mesajlarına dayanıyor. CUSTOMER/CC mesajları çözüm sayılmıyor; cluster FAQ sorgusunda eligibility yeniden doğrulanıyor. Prompt, embedding index/search, fallback ve model çıktısı persist öncesi temel PII maskelemesi uygulanıyor; boş model soru/yanıtı aday üretmiyor. PENDING_REVIEW/internal insan onayı akışı korunuyor. Hedefli backend 2 suite / 28 test, typecheck ve diff kontrolü geçti; bağımsız code/security reviewer APPROVE verdi. Regex maskeleme tam anonimleştirme değildir; isim/adres/lisans anahtarı residual risktir. Geçmiş kayıtlar, canlı DB/sağlayıcı, migration, push/deploy yok; `apps/frontend/next-env.d.ts` korunuyor. Sıradaki görev CWL-01.
