@@ -1,13 +1,15 @@
 # Current Focus
 
-## 30 Eylül — REL-02 tamamlandı; sıradaki görev RAG-01 (yerel)
+## 30 Eylül — RAG-01 tamamlandı; sıradaki görev CACHE-01 (yerel)
 
 - Kullanıcı kalan işleri Antigravity yerine bu ajan üzerinden sıralı tamamlamayı devretti. UX-01'in TR/EN/DE ticket etiketleri tamamlandı; TODO'daki `apps/frontend/next-env.d.ts` kullanıcı değişikliği korunuyor ve stage edilmeyecek.
 - REL-02'nin risk matrisi ve CI E2E 300 sn timeout kök nedeni belgelendi; E2E job'ı izole Postgres/Redis, sentetik geçici sırlar, migration ve seed ile düzeltildi. Seed aracı açık opt-in, non-production, loopback IP ve `_e2e` database guard'larıyla fail-closed. High advisories için dar MJML graph patch'i ve ilgili dependency override'ları uygulandı; XLSX CDN `integrity` hash'i Git başlangıcından doğrulanıp lockfile'da korundu.
 - Sabit pnpm 9.15.4 audit: 0 High / 23 Moderate / 7 Low (30 toplam); bu yaşayan advisory verisinin o anki sonucudur. Dependency security suite 263/263, odaklı regression 24/24, frozen install, backend typecheck ve diff whitespace check geçti. Bağımsız final review uygulanabilir bulgu bulmadı. Hosted GitHub E2E çalışması push yapılmadığı için doğrulanmadı.
 - Son kanıt: başarısız P1000 tekrarından sonra kullanıcı onayıyla yeni, boş, loopback-only, tmpfs ve geçici Postgres container'ı açıldı; 57 migration ve `NODE_ENV=test E2E_SEED_ALLOWED=true` ile seed smoke geçti. Geçici container otomatik kaldırıldı ve durumu doğrulandı; kalıcı volume yoktu. Önceki P1000'li container/volume değiştirilmedi; preview stack çalışır durumda ve dokunulmamış.
 - REL-02, audit/CI regresyonları + 263/263 dependency test, 24/24 odaklı test, frozen install, backend typecheck, pinned audit 0 High, bağımsız review ve izole runtime seed kanıtıyla yerel tamamlandı. Hosted GitHub E2E çalıştırılmadı; push/deploy yapılmadı. Local commits `70ee21d4`, `c2f277ab`, `003221ce`, `fe7305b5`.
-- Sıradaki planlı görev **RAG-01**: knowledge article raw SQL search soft-delete ve current-version filtreleri. Önce RAG/Graphify bağlamını, mevcut query/testleri ve GitNexus durumunu kontrol et; mevcut article/embedding verisine yazma veya destructive işlem yok.
+- **RAG-01** yerel olarak tamamlandı: makale araması `deleted_at IS NULL`, `is_active = true` ve makalenin güncel sürümüne FK eşleşmesini gerektiriyor; keyword CTE de published/deleted/internal görünürlük filtrelerini uyguluyor. Odaklı embedding testleri 23/23, backend typecheck, `git diff --check`, bağımsız kod ve güvenlik incelemesi geçti. Sıfır şema/migration/veri değişikliği; push/deploy yok.
+- GitNexus CLI bir defa `pnpm dlx` ile denendi; macOS'te gerekli `libssl.3.dylib` olmadığından `analyze`/`detect-changes` çalışmadı. Sistem kitaplığı yüklenmedi ve repoya dosya/dependency eklenmedi. `EmbeddingService.search` çağrı zinciri elle kontrol edilip bağımsız incelemeden geçirildi.
+- Sıradaki planlı görev **CACHE-01**: makale/SSS değişiminde Redis ve DB semantic cache invalidation tutarlılığını incele; mevcut cache testinden başla. Canlı Redis/DB'ye yazma yok.
 
 ## 29 Eylül — tarihsel devir notu (REL-02 kapsam kararı artık geçerli değil)
 

@@ -35,7 +35,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 1.5 | **SEC-05** | Röntgen Bölüm 5.3 / 13 | Genel / Bulk Bilet Güncellemelerinde Yetki ve Durum Geçiş Sınırları | Paket A (Erişim/Oturum) | **COMPLETED** (Bağımsız kabul) |
 | 2.1 | **REL-01** | Handoff Bölüm 7 (Sıra 2) | Paket A Sonrası Tip Kontrolü, Derleme ve Odaklı Testler (Ara Yayın Yok) | Paket A (Kalite Kontrolü) | **COMPLETED** (Bağımsız kabul; tarayıcı kapsam sınırı kayıtlı) |
 | 2.2 | **REL-02** | Handoff Bölüm 5 (P1) | Erişilebilir High Bağımlılık Denetimi ve Quality Gate CI/E2E Analizi | Paket A (Yayın Hazırlığı) | **COMPLETED** (yerel audit/CI düzeltmeleri, izole seed smoke ve bağımsız inceleme geçti; hosted CI çalıştırılmadı) |
-| 3.1 | **RAG-01** | RAG-01 | Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi | Paket B (Güvenilir Bilgi) | **PENDING** |
+| 3.1 | **RAG-01** | RAG-01 | Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; odaklı test, typecheck ve bağımsız inceleme geçti) |
 | 3.2 | **CACHE-01**| Röntgen Bölüm 10 | Redis ve Semantic Cache Tutarsızlığı / İptal (Invalidation) Olayları | Paket B (Güvenilir Bilgi) | **PENDING** |
 | 3.3 | **PRIV-01** | PRIV-01 | SSS Özetlerinde ve Bilet Vektörlerinde İç Notların Ayrıştırılması ve Gizlilik | Paket B (Güvenilir Bilgi) | **PENDING** |
 | 3.4 | **LRN-01** | Röntgen Bölüm 8.2 / 8.3 | Çözüm Temelli SSS Çıkarımı, Puanlama Ayrımı ve Yaşam Döngüsü Açıklığı | Paket B (Güvenilir Bilgi) | **PENDING** |
@@ -400,7 +400,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 ## Sıra 3: Paket B — Güvenilir Bilgi ve Öğrenme Döngüsü
 
 ### RAG-01: Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (yerel)
 - **Rapor ID / Kanıt:** RAG-01; Röntgen Bölüm 10, Bölüm 13 (Satır 338); `B/ai/embedding.service.ts:465-477`, `B/knowledge-base/knowledge-base.service.ts:145-182`.
 - **Dosya / Modül:** `apps/backend/src/ai/embedding.service.ts`.
 - **Minimum Değişiklik:** 
@@ -418,6 +418,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Dar Doğrulama:** Eski ve güncel makale sürümlerini ayırt eden odaklı embedding birim testi (`pnpm --filter @aluplan/backend test -- src/ai/embedding.service.spec.ts`).
 - **Veri / Migration Etkisi:** Sıfır şema değişikliği.
 - **Açık Kullanıcı Kararı:** Yok (teknik gereklilik doğrudan şema alanlarıyla karşılanır).
+- **Uygulama / Doğrulama:** `EmbeddingService.search` ARTICLE dalı soft-deleted makaleleri ve pasif embedding'leri eler; embedding `article_version_id` değeri `knowledge_article_versions` üzerinden makalenin `current_version` sürümüne bağlanır. Makale görünürlük filtreleri anahtar-kelime CTE'sinde de korunur. Odaklı test 23/23 ve backend typecheck geçti; bağımsız kod/güvenlik incelemesinde engelleyici bulgu yok. GitNexus tek-seferlik CLI, yerel macOS `libssl.3.dylib` eksikliği nedeniyle indeks/etki analizi çalıştıramadı; çağrı zinciri elle izlenip incelemede doğrulandı. DB/migration, canlı servis/verisi, push veya deploy yok.
 
 ### CACHE-01: Redis ve Semantic Cache Tutarsızlığı / İptal (Invalidation) Olayları
 - **Durum:** `PENDING`
