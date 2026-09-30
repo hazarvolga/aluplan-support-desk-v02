@@ -407,7 +407,10 @@ export class EmbeddingService {
             ts_rank_cd(to_tsvector('simple', ka.title || ' ' || kav.content_plain), websearch_to_tsquery('simple', ${cleanQuery})) as rank
         FROM knowledge_articles ka
         JOIN knowledge_article_versions kav ON ka.id = kav.article_id AND ka.current_version = kav.version
-          WHERE to_tsvector('simple', ka.title || ' ' || kav.content_plain) @@ websearch_to_tsquery('simple', ${cleanQuery})
+        WHERE ka.status = 'PUBLISHED'
+          AND ka.deleted_at IS NULL
+          AND (${includeInternal} = true OR ka.is_internal = false)
+          AND to_tsvector('simple', ka.title || ' ' || kav.content_plain) @@ websearch_to_tsquery('simple', ${cleanQuery})
       ),
       pool_keyword_search AS (
         SELECT
@@ -464,9 +467,12 @@ export class EmbeddingService {
             NULL::jsonb AS visual_summaries
         FROM knowledge_embeddings ke
         JOIN knowledge_articles ka ON ka.id = ke.article_id
+        JOIN knowledge_article_versions kav ON ka.id = kav.article_id AND ka.current_version = kav.version AND ke.article_version_id = kav.id
         LEFT JOIN knowledge_embeddings parent ON ke.parent_id = parent.id
         WHERE ka.status = 'PUBLISHED' 
+          AND ka.deleted_at IS NULL
           AND (${includeInternal} = true OR ka.is_internal = false)
+          AND ke.is_active = true
           AND ke.embedding_version = ${config.version}
           AND ke.embedding_dim = ${config.dimension}
           AND (
