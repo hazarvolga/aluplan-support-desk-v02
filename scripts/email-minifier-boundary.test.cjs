@@ -8,9 +8,13 @@ const ts = require('typescript');
 
 const root = path.resolve(__dirname, '..');
 const backend = createRequire(path.join(root, 'apps/backend/package.json'));
+const mjmlEntry = backend.resolve('mjml');
 const realMjml = backend('mjml');
-const core = createRequire(createRequire(backend.resolve('mjml')).resolve('mjml-core'));
-const minifier = core('html-minifier');
+const mjmlRequire = createRequire(mjmlEntry);
+const mjmlPackage = require(path.resolve(path.dirname(mjmlEntry), '../package.json'));
+const coreEntry = mjmlRequire.resolve('mjml-core');
+const corePackage = require(path.resolve(path.dirname(coreEntry), '../package.json'));
+const lockfile = fs.readFileSync(path.join(root, 'pnpm-lock.yaml'), 'utf8');
 const sourcePath = path.join(root, 'apps/backend/src/email/email.templates.ts');
 
 function loadRenderer(optionsSeen) {
@@ -42,32 +46,42 @@ function loadRenderer(optionsSeen) {
     return load(sourcePath).TemplateService;
 }
 
-test('real transactional and raw templates explicitly disable vulnerable minification', () => {
+test('production MJML dependencies do not include the unmaintained CLI or vulnerable html-minifier', () => {
+    assert.equal(mjmlPackage.dependencies['mjml-cli'], undefined);
+    assert.equal(corePackage.dependencies['html-minifier'], undefined);
+    const mjmlSnapshot = lockfile.match(/^  mjml@4\.18\.0\(patch_hash=[^\n]+\n(?:(?!^  [^ ])[^\n]*\n)*/m)?.[0];
+    const coreSnapshot = lockfile.match(/^  mjml-core@4\.18\.0\(patch_hash=[^\n]+\n(?:(?!^  [^ ])[^\n]*\n)*/m)?.[0];
+    assert.ok(mjmlSnapshot, 'The patched MJML snapshot must be present in the lockfile');
+    assert.ok(coreSnapshot, 'The patched MJML core snapshot must be present in the lockfile');
+    assert.doesNotMatch(mjmlSnapshot, /^      mjml-cli:/m);
+    assert.doesNotMatch(coreSnapshot, /^      html-minifier:/m);
+});
+
+test('deprecated core minification fails closed instead of loading an unsafe minifier', () => {
+    const input = '<mjml><mj-body><mj-section><mj-column><mj-text>Fixture</mj-text></mj-column></mj-section></mj-body></mjml>';
+    assert.throws(() => realMjml(input, { minify: true }), /minify option is not supported/i);
+});
+
+test('real transactional and raw templates preserve rendering with minification disabled', () => {
     const optionsSeen = [];
     const renderer = loadRenderer(optionsSeen);
-    const original = minifier.minify;
-    let minifierCalls = 0;
-    minifier.minify = () => { minifierCalls++; throw new Error('Forbidden minifier path'); };
-    try {
-        const brand = { name: 'Synthetic Brand', email: 'support@example.test',
-            help_center_url: 'https://example.test', api_base_url: 'https://api.example.test/api/v1',
-            logo_url: 'https://example.test/logo.png' };
-        for (const template of ['ticket-created', 'password-reset', 'raw']) {
-            const result = renderer.compile(template, { locale: 'tr', dynamicSubject: 'Çağrı testi',
-                ticketNumber: 'FIXTURE-1', ticketSubject: 'Ölçü kontrolü', customerName: 'Çağrı',
-                ticketUrl: 'https://example.test/ticket/fixture', resetUrl: 'https://example.test/reset/fixture',
-                mjml: '<mjml><mj-body><mj-section><mj-column><mj-text>Çağrı testi</mj-text></mj-column></mj-section></mj-body></mjml>' }, brand);
-            assert.ok(result.html.length > 500);
-            assert.ok(result.text.length > 5);
-            assert.equal(result.subject, 'Çağrı testi');
-            if (template === 'password-reset') assert.ok(result.html.includes('https://example.test/reset/fixture'));
-            else assert.match(result.text, /Çağrı/);
-        }
-        assert.equal(minifierCalls, 0);
-        assert.equal(optionsSeen.length, 3);
-        for (const options of optionsSeen) {
-            assert.equal(options.minify, false, 'Do not rely on a dependency default');
-            assert.equal(options.beautify, false);
-        }
-    } finally { minifier.minify = original; }
+    const brand = { name: 'Synthetic Brand', email: 'support@example.test',
+        help_center_url: 'https://example.test', api_base_url: 'https://api.example.test/api/v1',
+        logo_url: 'https://example.test/logo.png' };
+    for (const template of ['ticket-created', 'password-reset', 'raw']) {
+        const result = renderer.compile(template, { locale: 'tr', dynamicSubject: 'Çağrı testi',
+            ticketNumber: 'FIXTURE-1', ticketSubject: 'Ölçü kontrolü', customerName: 'Çağrı',
+            ticketUrl: 'https://example.test/ticket/fixture', resetUrl: 'https://example.test/reset/fixture',
+            mjml: '<mjml><mj-body><mj-section><mj-column><mj-text>Çağrı testi</mj-text></mj-column></mj-section></mj-body></mjml>' }, brand);
+        assert.ok(result.html.length > 500);
+        assert.ok(result.text.length > 5);
+        assert.equal(result.subject, 'Çağrı testi');
+        if (template === 'password-reset') assert.ok(result.html.includes('https://example.test/reset/fixture'));
+        else assert.match(result.text, /Çağrı/);
+    }
+    assert.equal(optionsSeen.length, 3);
+    for (const options of optionsSeen) {
+        assert.equal(options.minify, false, 'Do not rely on a dependency default');
+        assert.equal(options.beautify, false);
+    }
 });

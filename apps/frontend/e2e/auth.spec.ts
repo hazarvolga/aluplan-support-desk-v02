@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { TEST_USERS } from './helpers/auth';
 
 test.describe('Authentication Flow', () => {
 
@@ -27,10 +28,7 @@ test.describe('Authentication Flow', () => {
         const dashboardPage = new DashboardPage(page);
 
         await loginPage.navigateTo('/tr/login');
-        // Use the same default seeded admin credentials as helpers/auth.ts.
-        // Override with E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD in CI.
-        const email = process.env.E2E_ADMIN_EMAIL || 'admin@example.com';
-        const password = process.env.E2E_ADMIN_PASSWORD || 'E2E-Only-Not-A-Secret-2026!';
+        const { email, password } = TEST_USERS.admin;
 
         await loginPage.loginWithRetry(email, password);
         expect(await dashboardPage.isAtDashboard()).toBe(true);

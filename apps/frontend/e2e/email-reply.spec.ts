@@ -1,5 +1,6 @@
 import { test, expect, request } from '@playwright/test';
 import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
+import { TEST_USERS } from './helpers/auth';
 
 /**
  * EMAIL REPLY THREADING TESTS
@@ -16,7 +17,7 @@ test.describe('Email Threading Integration', () => {
 
         // Login to get token
         const loginRes = await apiContext.post('/api/v1/auth/login', {
-            data: { email: 'admin@example.com', password: 'E2E-Only-Not-A-Secret-2026!' }
+            data: TEST_USERS.admin
         });
         const access_token = extractAccessTokenFromSetCookie(loginRes.headers()['set-cookie']);
 
@@ -66,8 +67,8 @@ test.describe('Email Threading Integration', () => {
         // But for Playwright, I will just verify that the ticket exists and the subject is correct.
 
         await page.goto('/tr/login');
-        await page.getByTestId('login-email').fill('admin@example.com');
-        await page.getByTestId('login-password').fill('E2E-Only-Not-A-Secret-2026!');
+        await page.getByTestId('login-email').fill(TEST_USERS.admin.email);
+        await page.getByTestId('login-password').fill(TEST_USERS.admin.password);
         await page.getByTestId('login-submit').click();
         await page.waitForURL(/.*\/dashboard/);
 

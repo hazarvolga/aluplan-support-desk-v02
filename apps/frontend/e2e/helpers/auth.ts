@@ -17,6 +17,7 @@ export const TEST_USERS = {
     customer: {
         email: process.env.E2E_CUSTOMER_EMAIL || 'e2e-customer@aluplan.test',
         password: process.env.E2E_CUSTOMER_PASSWORD || 'E2eCustomer!Pass123',
+        phone: process.env.E2E_CUSTOMER_PHONE || '905550009988',
     },
 } as const;
 

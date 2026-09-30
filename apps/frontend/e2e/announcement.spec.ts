@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
+import { TEST_USERS } from './helpers/auth';
 
 /**
  * ANNOUNCEMENT SYSTEM E2E TESTS
@@ -49,8 +50,8 @@ async function apiPatch(url: string, token: string, body: any = {}) {
 
 // ── Credentials ───────────────────────────────────────────────────────────
 
-const ADMIN = { email: 'admin@example.com', password: 'E2E-Only-Not-A-Secret-2026!' };
-const CUSTOMER = { email: 'e2e-customer@aluplan.com', password: 'E2E-Only-Not-A-Secret-2026!' };
+const ADMIN = TEST_USERS.admin;
+const CUSTOMER = TEST_USERS.customer;
 
 // ── Shared setup: broadcast an announcement via API ───────────────────────
 

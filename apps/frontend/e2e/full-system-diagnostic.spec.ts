@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { TEST_USERS } from './helpers/auth';
 
 test.describe('Full System Diagnostic E2E Test', () => {
 
@@ -18,11 +19,11 @@ test.describe('Full System Diagnostic E2E Test', () => {
         await page.waitForTimeout(8000);
 
         // Fill credentials and strictly enforce state update
-        await page.getByTestId('login-email').fill('admin@example.com');
-        await expect(page.getByTestId('login-email')).toHaveValue('admin@example.com');
+        await page.getByTestId('login-email').fill(TEST_USERS.admin.email);
+        await expect(page.getByTestId('login-email')).toHaveValue(TEST_USERS.admin.email);
 
-        await page.getByTestId('login-password').fill('E2E-Only-Not-A-Secret-2026!');
-        await expect(page.getByTestId('login-password')).toHaveValue('E2E-Only-Not-A-Secret-2026!');
+        await page.getByTestId('login-password').fill(TEST_USERS.admin.password);
+        await expect(page.getByTestId('login-password')).toHaveValue(TEST_USERS.admin.password);
 
         // Wait for React hydration
         await page.waitForTimeout(1500);
@@ -71,11 +72,11 @@ test.describe('Full System Diagnostic E2E Test', () => {
         // but E2E tests are isolated. We need to login again.
         await page.goto('/tr/login', { waitUntil: 'domcontentloaded' });
         await page.waitForTimeout(8000);
-        await page.getByTestId('login-email').fill('admin@example.com');
-        await expect(page.getByTestId('login-email')).toHaveValue('admin@example.com');
+        await page.getByTestId('login-email').fill(TEST_USERS.admin.email);
+        await expect(page.getByTestId('login-email')).toHaveValue(TEST_USERS.admin.email);
 
-        await page.getByTestId('login-password').fill('E2E-Only-Not-A-Secret-2026!');
-        await expect(page.getByTestId('login-password')).toHaveValue('E2E-Only-Not-A-Secret-2026!');
+        await page.getByTestId('login-password').fill(TEST_USERS.admin.password);
+        await expect(page.getByTestId('login-password')).toHaveValue(TEST_USERS.admin.password);
 
         await page.waitForTimeout(1000);
         await page.getByTestId('login-submit').click({ force: true });

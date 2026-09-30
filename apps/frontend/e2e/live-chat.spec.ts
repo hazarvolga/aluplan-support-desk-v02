@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
+import { TEST_USERS } from './helpers/auth';
 
 /**
  * LIVE CHAT / WEBSOCKET E2E TEST
@@ -42,10 +43,8 @@ async function apiPatch(url: string, body: any, token: string) {
 }
 
 test.describe('Live Chat WebSocket Flow', () => {
-    const customerEmail = 'test_customer@aluplan.com';
-    const customerPassword = 'Test1234!';
-    const adminEmail = 'admin@example.com';
-    const adminPassword = 'E2E-Only-Not-A-Secret-2026!';
+    const { email: customerEmail, password: customerPassword } = TEST_USERS.customer;
+    const { email: adminEmail, password: adminPassword } = TEST_USERS.admin;
 
     test('should activate live chat session end-to-end', async ({ page }) => {
         // ── SETUP: Create ticket via API ──────────────────────────────────

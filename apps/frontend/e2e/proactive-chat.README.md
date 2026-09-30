@@ -72,9 +72,10 @@ Comprehensive end-to-end tests for the Proactive Chat feature, covering all majo
    pnpm --filter @aluplan/frontend dev
    ```
 
-3. **Test users must exist in database:**
-   - Agent: `hazarvolga@gmail.com` / `E2E-Only-Not-A-Secret-2026!`
-   - Customer: `e2e-customer@aluplan.com` / `E2E-Only-Not-A-Secret-2026!`
+3. **Seed only an isolated E2E database:**
+   - The database name must end in `_e2e`; `seed-e2e.ts` refuses production mode and other database names.
+   - The shared `apps/frontend/e2e/helpers/auth.ts` `TEST_USERS` values are used by the specs and match `apps/backend/seed-e2e.ts`.
+   - CI injects disposable `E2E_*` credentials; never point E2E at customer or production data.
 
 ### Run All Proactive Chat Tests
 

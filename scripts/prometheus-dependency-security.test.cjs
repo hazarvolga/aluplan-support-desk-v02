@@ -27,12 +27,13 @@ function request(reader, url) {
     });
 }
 
-test('SDK retains its metrics family and resolves the patched exporter', () => {
+test('SDK resolves the patched exporter with compatible OpenTelemetry metrics APIs', () => {
     assert.equal(sdk('@opentelemetry/exporter-prometheus/package.json').version, '0.217.0');
-    assert.equal(sdk('@opentelemetry/sdk-metrics/package.json').version, '2.6.0');
     const exporter = createRequire(sdk.resolve('@opentelemetry/exporter-prometheus/package.json'));
-    assert.equal(exporter('@opentelemetry/sdk-metrics/package.json').version, '2.7.1');
-    assert.equal(backend('@opentelemetry/sdk-node/package.json').version, '0.213.0');
+    for (const resolver of [sdk, exporter]) {
+        assert.equal(resolver('@opentelemetry/sdk-metrics/package.json').version.split('.')[0], '2');
+    }
+    assert.equal(backend('@opentelemetry/sdk-node/package.json').version, '0.217.0');
 });
 
 test('malformed URL is rejected without throwing or starting a listener', { timeout: 3000 }, async () => {

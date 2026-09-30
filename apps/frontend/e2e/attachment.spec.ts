@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
 import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
+import { TEST_USERS } from './helpers/auth';
 
 /**
  * ATTACHMENT / FILE UPLOAD E2E TEST (v8)
@@ -34,8 +35,7 @@ async function apiPost(url: string, body: any, token?: string) {
 }
 
 test.describe('Attachment Upload Flow', () => {
-    const customerEmail = 'e2e-customer@aluplan.com';
-    const customerPassword = 'E2E-Only-Not-A-Secret-2026!';
+    const { email: customerEmail, password: customerPassword } = TEST_USERS.customer;
     const testFileName = 'e2e-test-attachment.txt';
     const testFilePath = path.join('/tmp', testFileName);
 

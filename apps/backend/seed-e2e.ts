@@ -17,7 +17,11 @@ import * as path from 'path';
 
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const { assertSafeE2eDatabaseUrl } = require('./seed-e2e-safety.cjs') as {
+    assertSafeE2eDatabaseUrl: (environment?: NodeJS.ProcessEnv) => string;
+};
+
+const pool = new Pool({ connectionString: assertSafeE2eDatabaseUrl(process.env) });
 const adapter = new PrismaPg(pool as any);
 const prisma = new PrismaClient({ adapter });
 
@@ -32,7 +36,7 @@ const AGENT = {
     email: process.env.E2E_AGENT_EMAIL || 'e2e-agent@aluplan.test',
     password: process.env.E2E_AGENT_PASSWORD || 'E2eAgent!Pass123',
     fullName: 'E2E Agent',
-    roleName: 'AGENT',
+    roleName: 'SUPPORT_AGENT',
 };
 
 const CUSTOMER = {
@@ -41,6 +45,7 @@ const CUSTOMER = {
     fullName: 'E2E Customer',
     roleName: 'CUSTOMER',
 };
+const CUSTOMER_PHONE = process.env.E2E_CUSTOMER_PHONE || '905550009988';
 
 async function ensureRole(name: string) {
     const existing = await prisma.role.findFirst({ where: { name } });
@@ -75,12 +80,66 @@ async function ensureUser(spec: { email: string; password: string; fullName: str
     return user;
 }
 
+async function ensurePermissionGrant(roleName: string, permissionName: string): Promise<void> {
+    const role = await prisma.role.findUnique({ where: { name: roleName }, select: { id: true } });
+    const permission = await prisma.permission.findUnique({ where: { name: permissionName }, select: { id: true } });
+    if (!role || !permission) {
+        throw new Error(`E2E RBAC prerequisite missing: ${roleName} / ${permissionName}`);
+    }
+
+    await prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } },
+        create: { roleId: role.id, permissionId: permission.id },
+        update: {},
+    });
+}
+
+async function assertRoleHasPermissions(roleName: string, requiredPermissions: string[]): Promise<void> {
+    const role = await prisma.role.findUnique({
+        where: { name: roleName },
+        include: { permissions: { include: { permission: { select: { name: true } } } } },
+    });
+    const granted = new Set(role?.permissions.map(({ permission }) => permission.name) ?? []);
+    const missing = requiredPermissions.filter((permission) => !granted.has(permission));
+    if (missing.length > 0) {
+        throw new Error(`E2E RBAC migration is missing ${roleName} permissions: ${missing.join(', ')}`);
+    }
+}
+
 async function main() {
     const created: Array<{ role: string; email: string }> = [];
     for (const spec of [ADMIN, AGENT, CUSTOMER]) {
         const user = await ensureUser(spec);
         created.push({ role: spec.roleName, email: user.email });
+        if (spec === CUSTOMER) {
+            await prisma.customerProfile.upsert({
+                where: { userId: user.id },
+                update: {
+                    firstName: 'E2E',
+                    lastName: 'Customer',
+                    customerNo: `E2E-${user.id}`,
+                    companyName: 'E2E Test Company',
+                    phoneNumber: CUSTOMER_PHONE,
+                },
+                create: {
+                    userId: user.id,
+                    firstName: 'E2E',
+                    lastName: 'Customer',
+                    customerNo: `E2E-${user.id}`,
+                    companyName: 'E2E Test Company',
+                    phoneNumber: CUSTOMER_PHONE,
+                },
+            });
+        }
     }
+
+    // The admin wildcard exists only for the synthetic user in an isolated _e2e database.
+    await ensurePermissionGrant('ADMIN', '*');
+    // Staff and customer users rely only on the canonical, migration-owned least-privilege matrices.
+    await assertRoleHasPermissions('SUPPORT_AGENT', [
+        'ticket:read', 'ticket:create', 'ticket:update', 'ticket:assign', 'ticket:close', 'ticket:escalate',
+    ]);
+    await assertRoleHasPermissions('CUSTOMER', ['kb:read', 'ticket:create', 'ticket:read', 'ticket:update']);
 
     console.log('\nE2E test users seeded:');
     for (const u of created) {

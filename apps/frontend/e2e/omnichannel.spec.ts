@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
+import { TEST_USERS } from './helpers/auth';
 
 /**
  * OMNI-CHANNEL / WHATSAPP INTEGRATION E2E TEST (v5)
@@ -10,12 +11,11 @@ test.describe('Omni-channel Integration', () => {
     test.use({ viewport: { width: 1280, height: 800 } });
 
     test('should create a ticket from an incoming WhatsApp message', async ({ page, request }) => {
-        const adminEmail = 'admin@example.com';
-        const adminPassword = 'E2E-Only-Not-A-Secret-2026!';
+        const { email: adminEmail, password: adminPassword } = TEST_USERS.admin;
 
         // E2E customer phone number (reconciled in DB)
-        const testPhone = '905550009988';
-        const testCustomerEmail = 'e2e-customer@aluplan.com';
+        const testPhone = TEST_USERS.customer.phone;
+        const testCustomerEmail = TEST_USERS.customer.email;
         const uniqueBody = `E2E WhatsApp Simulation ${Date.now()}`;
 
         console.log(`Testing with phone: ${testPhone} for customer ${testCustomerEmail}`);

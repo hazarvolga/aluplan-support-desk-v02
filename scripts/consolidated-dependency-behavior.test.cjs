@@ -13,8 +13,9 @@ const backendRequire = createRequire(path.join(root, 'apps/backend/package.json'
 function protobufDependency() {
     const store = path.join(root, 'node_modules/.pnpm');
     const entries = readdirSync(store).filter(name => name.startsWith('protobufjs@'));
-    assert.equal(entries.length, 1, 'expected one unambiguous installed protobufjs version');
-    return require(path.join(store, entries[0], 'node_modules/protobufjs'));
+    const versions = entries.map(name => name.match(/^protobufjs@([^_]+)/)?.[1]).sort();
+    assert.deepEqual(versions, ['7.6.5', '8.4.1'], 'both protobuf families must stay on their reviewed patched releases');
+    return entries.map(entry => require(path.join(store, entry, 'node_modules/protobufjs')));
 }
 
 test('Handlebars preserves string rendering and HTML escaping', () => {
@@ -39,19 +40,20 @@ test('Handlebars rejects arithmetic text masquerading as a numeric AST literal',
     assert.throws(() => handlebars.compile(ast)({}));
 });
 
-test('protobufjs preserves trusted descriptor encode/decode behavior', () => {
-    const protobuf = protobufDependency();
-    const schema = protobuf.Root.fromJSON({
-        nested: { Smoke: { fields: {
-            id: { type: 'string', id: 1 },
-            count: { type: 'uint32', id: 2 },
-        } } },
-    });
-    const type = schema.lookupType('Smoke');
-    const input = { id: 'synthetic-case', count: 7 };
-    assert.equal(type.verify(input), null);
-    const bytes = type.encode(type.create(input)).finish();
-    assert.deepEqual(type.toObject(type.decode(bytes)), input);
+test('protobufjs 7 and 8 preserve trusted descriptor encode/decode behavior', () => {
+    for (const protobuf of protobufDependency()) {
+        const schema = protobuf.Root.fromJSON({
+            nested: { Smoke: { fields: {
+                id: { type: 'string', id: 1 },
+                count: { type: 'uint32', id: 2 },
+            } } },
+        });
+        const type = schema.lookupType('Smoke');
+        const input = { id: 'synthetic-case', count: 7 };
+        assert.equal(type.verify(input), null);
+        const bytes = type.encode(type.create(input)).finish();
+        assert.deepEqual(type.toObject(type.decode(bytes)), input);
+    }
 });
 
 test('direct and Nest runtime resolve patched multer', () => {

@@ -11,16 +11,19 @@ const api = backend('@opentelemetry/api');
 const propagator = new JaegerPropagator();
 const extract = (carrier) => propagator.extract(api.ROOT_CONTEXT, carrier, api.defaultTextMapGetter);
 
-test('SDK resolves reviewed Jaeger without upgrading the SDK family', () => {
+test('patched Jaeger resolves with the aligned patched OpenTelemetry SDK family', () => {
     assert.equal(sdk('@opentelemetry/propagator-jaeger/package.json').version, '2.9.0');
-    assert.equal(backend('@opentelemetry/sdk-node/package.json').version, '0.213.0');
+    assert.equal(backend('@opentelemetry/sdk-node/package.json').version, '0.217.0');
 });
 
-test('frontend Sentry retains its existing Core peer binding', () => {
+test('frontend Sentry remains on a compatible patched OpenTelemetry Core 2.x release', () => {
     const frontend = createRequire(path.resolve(__dirname, '../apps/frontend/package.json'));
     const sentry = createRequire(frontend.resolve('@sentry/nextjs/package.json'));
     const telemetry = createRequire(sentry.resolve('@sentry/opentelemetry/package.json'));
-    assert.equal(telemetry('@opentelemetry/core/package.json').version, '2.6.0');
+    const version = telemetry('@opentelemetry/core/package.json').version;
+    const [major, minor] = version.split('.').map(Number);
+    assert.equal(major, 2);
+    assert.ok(minor >= 6, `Core ${version} must remain compatible with Sentry's ^2.6 peer range`);
 });
 
 test('malformed trace and baggage encoding never escapes extraction', () => {

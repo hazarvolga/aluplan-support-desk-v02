@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { extractAccessTokenFromSetCookie } from './helpers/auth-cookie';
+import { TEST_USERS } from './helpers/auth';
 
 /**
  * PROACTIVE CHAT E2E TESTS
@@ -75,8 +76,7 @@ async function apiPatch(url: string, token: string, body?: any) {
 // ── Auth Helpers ─────────────────────────────────────────────────────────────
 
 async function loginAsAgent(page: Page) {
-    const email = process.env.E2E_ADMIN_EMAIL || 'admin@example.com';
-    const password = process.env.E2E_ADMIN_PASSWORD || 'E2E-Only-Not-A-Secret-2026!';
+    const { email, password } = TEST_USERS.agent;
 
     console.log('--- [AUTH] Agent Login ---');
     await page.goto('/tr/login');
@@ -93,8 +93,7 @@ async function loginAsAgent(page: Page) {
 }
 
 async function loginAsCustomer(page: Page) {
-    const email = 'e2e-customer@aluplan.com';
-    const password = 'E2E-Only-Not-A-Secret-2026!';
+    const { email, password } = TEST_USERS.customer;
 
     console.log('--- [AUTH] Customer Login ---');
     await page.goto('/tr/login');
@@ -118,10 +117,8 @@ async function getAuthToken(email: string, password: string): Promise<string> {
 // ── Test Suite ───────────────────────────────────────────────────────────────
 
 test.describe('Proactive Chat E2E Tests', () => {
-    const agentEmail = 'admin@example.com';
-    const agentPassword = 'E2E-Only-Not-A-Secret-2026!';
-    const customerEmail = 'e2e-customer@aluplan.com';
-    const customerPassword = 'E2E-Only-Not-A-Secret-2026!';
+    const { email: agentEmail, password: agentPassword } = TEST_USERS.agent;
+    const { email: customerEmail, password: customerPassword } = TEST_USERS.customer;
 
     test('1. Happy Path: Agent initiates chat → Customer accepts → Messaging → End session', async ({ browser }) => {
         // Create two separate contexts for agent and customer

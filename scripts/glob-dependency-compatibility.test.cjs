@@ -37,9 +37,9 @@ function resolvedVersion(consumer, name) {
 for (const [label, consumer, dependency, version] of [
     ['editorconfig', editorconfig, 'minimatch', '9.0.9'],
     ['js-beautify glob', glob, 'minimatch', '9.0.9'],
-    ['editorconfig minimatch', editorMinimatch, 'brace-expansion', '2.1.4'],
-    ['glob minimatch', globMinimatch, 'brace-expansion', '2.1.4'],
-    ['Sentry Fastify minimatch', otelMinimatch, 'brace-expansion', '5.0.9'],
+    ['editorconfig minimatch', editorMinimatch, 'brace-expansion', '2.1.6'],
+    ['glob minimatch', globMinimatch, 'brace-expansion', '2.1.6'],
+    ['Sentry Fastify minimatch', otelMinimatch, 'brace-expansion', '5.0.11'],
     ['MJML CLI chokidar anymatch', anymatch, 'picomatch', '2.3.2'],
 ]) {
     test(`${label} resolves reviewed ${dependency} ${version}`, (t) => {

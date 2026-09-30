@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { TEST_USERS } from './helpers/auth';
 
 /**
  * GAP-17: Accessibility Smoke Tests
@@ -34,8 +35,8 @@ test.describe('Authenticated Dashboard A11y (requires login)', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/tr/login');
         await page.waitForSelector('[data-testid="login-email"]', { timeout: 30000 });
-        await page.getByTestId('login-email').fill('admin@example.com');
-        await page.getByTestId('login-password').fill('E2E-Only-Not-A-Secret-2026!');
+        await page.getByTestId('login-email').fill(TEST_USERS.admin.email);
+        await page.getByTestId('login-password').fill(TEST_USERS.admin.password);
         await page.getByTestId('login-submit').click();
         await page.waitForURL(/.*\/dashboard/, { timeout: 60000 });
     });

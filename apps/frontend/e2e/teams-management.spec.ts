@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { TEST_USERS } from './helpers/auth';
 
 test.describe('Team Management', () => {
 
@@ -6,8 +7,8 @@ test.describe('Team Management', () => {
         // 1. Navigation and Login
         await page.goto('/tr/login');
 
-        await page.getByTestId('login-email').fill('admin@example.com');
-        await page.getByTestId('login-password').fill('E2E-Only-Not-A-Secret-2026!');
+        await page.getByTestId('login-email').fill(TEST_USERS.admin.email);
+        await page.getByTestId('login-password').fill(TEST_USERS.admin.password);
         await page.getByTestId('login-submit').click();
 
         // Wait for dashboard load

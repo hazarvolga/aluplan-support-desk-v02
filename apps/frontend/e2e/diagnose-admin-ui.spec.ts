@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { TEST_USERS } from './helpers/auth';
 
 /**
  * 🛠️ DIAGNOSTIC E2E TEST
@@ -36,8 +37,8 @@ test.describe('Admin Panel Interactivity Diagnostic', () => {
 
         // 3. Perform login using data-testid
         console.log('Filling login credentials...');
-        await page.fill('[data-testid="login-email"]', 'admin@example.com');
-        await page.fill('[data-testid="login-password"]', 'E2E-Only-Not-A-Secret-2026!');
+        await page.fill('[data-testid="login-email"]', TEST_USERS.admin.email);
+        await page.fill('[data-testid="login-password"]', TEST_USERS.admin.password);
 
         console.log('Clicking submit...');
         await page.click('[data-testid="login-submit"]');
