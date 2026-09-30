@@ -1,0 +1,12 @@
+diff --git a/package.json b/package.json
+index 5d67a4814f30c7844380ec6e3a5fdad3451bcbe5..4d7009a2cc6b4904085b361b427e74f67b3b8911 100644
+--- a/package.json
++++ b/package.json
+@@ -27,7 +27,6 @@
+   },
+   "dependencies": {
+     "@babel/runtime": "^7.28.4",
+-    "mjml-cli": "4.18.0",
+     "mjml-core": "4.18.0",
+     "mjml-migrate": "4.18.0",
+     "mjml-preset-core": "4.18.0",

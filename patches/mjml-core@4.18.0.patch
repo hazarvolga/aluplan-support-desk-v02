@@ -1,0 +1,41 @@
+diff --git a/lib/index.js b/lib/index.js
+index 6bd5cb348468dcca806556dc7c5b62762c18088a..cf5e23ad70d0516f95a2af54e29ecb3311794787 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -84,7 +84,6 @@ var _find2 = _interopRequireDefault(require("lodash/find"));
+ var _path = _interopRequireDefault(require("path"));
+ var _juice = _interopRequireDefault(require("juice"));
+ var _jsBeautify = require("js-beautify");
+-var _htmlMinifier = require("html-minifier");
+ var _cheerio = require("cheerio");
+ var _mjmlParserXml = _interopRequireDefault(require("mjml-parser-xml"));
+ var _mjmlValidator = _interopRequireWildcard(require("mjml-validator"));
+@@ -414,15 +413,7 @@ function mjml2html(mjml, options = {}) {
+     });
+   }
+   if (minify) {
+-    // eslint-disable-next-line no-console
+-    console.warn('"minify" option is deprecated in mjml-core and only available in mjml cli.');
+-    content = (0, _htmlMinifier.minify)(content, {
+-      collapseWhitespace: true,
+-      minifyCSS: false,
+-      caseSensitive: true,
+-      removeEmptyAttributes: true,
+-      ...minifyOptions
+-    });
++    throw new Error('The minify option is not supported in this application build.');
+   }
+   return {
+     html: content,
+diff --git a/package.json b/package.json
+index 58ce19ec47d5aa3d4fd7df80323654c980d2e3cb..2129790ffa692023eb3d786a428771865d35af2f 100644
+--- a/package.json
++++ b/package.json
+@@ -25,7 +25,6 @@
+     "@babel/runtime": "^7.28.4",
+     "cheerio": "1.0.0-rc.12",
+     "detect-node": "^2.0.4",
+-    "html-minifier": "^4.0.0",
+     "js-beautify": "^1.6.14",
+     "juice": "^10.0.0",
+     "lodash": "^4.17.21",
