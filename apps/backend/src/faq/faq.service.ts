@@ -25,6 +25,10 @@ export interface ExtractedPattern {
 export class FaqService {
     private readonly logger = new Logger(FaqService.name);
     private readonly AUTO_PUBLISH_THRESHOLD = RAG_CONFIG.FAQ.AUTO_PUBLISH_THRESHOLD; // Questions above this confidence are published automatically.
+    private readonly SUPPORT_ROLES = new Set([
+        'ADMIN', 'SUPER_ADMIN', 'SUPPORT_AGENT', 'SENIOR_AGENT', 'TEAM_LEAD',
+        'DEPARTMENT_MANAGER', 'MANAGER', 'AGENT', 'KB_EDITOR', 'SUPPORT_MANAGER', 'SUPERUSER',
+    ]);
 
     constructor(
         private readonly prisma: PrismaService,
@@ -65,11 +69,16 @@ export class FaqService {
     async extractFromTickets(limit = 100): Promise<ExtractedPattern[]> {
         // Query remains standard, Prisma Client is now aware of department_id
         const tickets = await this.prisma.ticket.findMany({
-            where: { status: { in: ['RESOLVED', 'CLOSED'] } },
+            where: {
+                status: { in: ['RESOLVED', 'CLOSED'] },
+                satisfactionScore: { gte: 4 },
+                deletedAt: null,
+            },
             include: {
                 messages: {
-                    where: { isInternal: false },
+                    where: { isInternal: false, deletedAt: null },
                     orderBy: { createdAt: 'asc' },
+                    include: { sender: { select: { role: { select: { name: true } } } } },
                 },
                 department: true
             },
@@ -82,33 +91,39 @@ export class FaqService {
         for (const ticket of tickets) {
             if (ticket.messages.length < 2) continue; // Need at least Q + A
 
-            const answerMsg = ticket.messages.find((m: { senderId: string | null }) => m.senderId !== ticket.userId);
+            const answerMsg = ticket.messages.find((m: any) =>
+                this.isVerifiedSupportMessage(m, ticket.userId),
+            );
             if (!answerMsg) continue;
 
             // AI Extraction Logic: Ask AI to format a clean Q&A pair from the conversation
-            const conversation = ticket.messages.map(m => `${m.senderId === ticket.userId ? 'Müşteri' : 'Destek'}: ${m.message}`).join('\n');
+            const conversation = ticket.messages
+                .map(m => `${this.isVerifiedSupportMessage(m, ticket.userId) ? 'Destek' : 'Müşteri'}: ${this.maskCustomerPii(m.message)}`)
+                .join('\n');
             const aiFormatted = await this.aiService.reformat(
                 'Aşağıdaki destek bileti konuşmasından temel Soru ve Cevap çiftini çıkar. Yanıtı SADECE JSON formatında ver: { "question": "...", "answer": "..." }',
-                `Konu: ${ticket.subject}\n\nKonuşma:\n${conversation}`,
+                `Konu: ${this.maskCustomerPii(ticket.subject)}\n\nKonuşma:\n${conversation}`,
                 'FAQ Extraction',
                 undefined,
                 'faq_extraction'
             );
 
-            let question = ticket.subject;
-            let answer = answerMsg.message;
+            let question = this.maskCustomerPii(ticket.subject);
+            let answer = this.maskCustomerPii(answerMsg.message);
 
             if (aiFormatted?.response) {
                 try {
                     const parsed = JSON.parse(aiFormatted.response);
-                    question = parsed.question || question;
-                    answer = parsed.answer || answer;
+                    question = this.maskCustomerPii(parsed.question || question);
+                    answer = this.maskCustomerPii(parsed.answer || answer);
                 } catch { /* fallback to defaults */ }
             }
 
             // Simple confidence: based on message length and content
             // (Optimization: Removed per-ticket DB count to avoid N+1)
-            const confidenceScore = Math.min(0.6 + (answerMsg.message.length / 500) * 0.2, 0.95);
+            const satisfactionSignal = Math.min((ticket.satisfactionScore ?? 4) / 5, 1) * 0.2;
+            const solutionEvidence = Math.min(answerMsg.message.trim().length / 500, 1) * 0.1;
+            const confidenceScore = Math.min(0.65 + satisfactionSignal + solutionEvidence, 0.95);
 
             patterns.push({
                 question,
@@ -122,6 +137,23 @@ export class FaqService {
         }
 
         return patterns;
+    }
+
+    private isVerifiedSupportMessage(message: any, ticketUserId: string | null): boolean {
+        const roleName = String(message?.sender?.role?.name ?? '').toUpperCase();
+        return message?.senderId !== ticketUserId
+            && this.SUPPORT_ROLES.has(roleName)
+            && !message?.isInternal
+            && !message?.deletedAt
+            && typeof message?.message === 'string'
+            && message.message.trim().length > 0;
+    }
+
+    private maskCustomerPii(value: string): string {
+        return String(value ?? '')
+            .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
+            .replace(/(?:\+?90|0)?\s*\(?5\d{2}\)?[\s.-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}/g, '[telefon]')
+            .replace(/\b[A-Z0-9]{8,}\b/g, '[kimlik]');
     }
 
     /**

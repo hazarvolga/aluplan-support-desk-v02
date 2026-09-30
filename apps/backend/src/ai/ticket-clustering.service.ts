@@ -11,6 +11,10 @@ export class TicketClusteringService {
     private readonly logger = new Logger(TicketClusteringService.name);
     private readonly SIMILARITY_THRESHOLD = RAG_CONFIG.CLUSTERING.SIMILARITY_THRESHOLD;
     private readonly MIN_CLUSTER_SIZE = RAG_CONFIG.CLUSTERING.MIN_CLUSTER_SIZE; // R-T3 uyumu: CLAUDE.md §4.2
+    private readonly SUPPORT_ROLES = new Set([
+        'ADMIN', 'SUPER_ADMIN', 'SUPPORT_AGENT', 'SENIOR_AGENT', 'TEAM_LEAD',
+        'DEPARTMENT_MANAGER', 'MANAGER', 'AGENT', 'KB_EDITOR', 'SUPPORT_MANAGER', 'SUPERUSER',
+    ]);
 
     constructor(
         private readonly prisma: PrismaService,
@@ -33,30 +37,37 @@ export class TicketClusteringService {
             where: {
                 status: { in: ['RESOLVED', 'CLOSED'] },
                 knowledgeBaseAdded: false,
+                deletedAt: null,
                 updatedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-                satisfactionScore: { gte: 3 }, // R-T3: CSAT < 3/5 olan ticket FAQ kaynağı olamaz
+                satisfactionScore: { gte: 4 },
             },
             include: {
-                messages: { orderBy: { createdAt: 'asc' } },
+                messages: {
+                    where: { isInternal: false, deletedAt: null },
+                    orderBy: { createdAt: 'asc' },
+                    include: { sender: { select: { role: { select: { name: true } } } } },
+                },
                 department: true // Optional: tracking which department these belong to
             }
         });
 
-        if (tickets.length < this.MIN_CLUSTER_SIZE) {
+        const eligibleTickets = tickets.filter(ticket => this.findVerifiedSolution(ticket));
+        if (eligibleTickets.length < this.MIN_CLUSTER_SIZE) {
             this.logger.log('💤 Not enough tickets to cluster.');
             return;
         }
 
         // 2. Ensure embeddings exist for these tickets
-        for (const ticket of tickets) {
-            const content = `${ticket.subject}\n${ticket.description || ''}`;
+        for (const ticket of eligibleTickets) {
+            const solution = this.findVerifiedSolution(ticket)!;
+            const content = `${this.maskCustomerPii(ticket.subject)}\n${this.maskCustomerPii(ticket.description || '')}\nSOLUTION: ${this.maskCustomerPii(solution.message)}`;
             await this.embeddingService.indexTicket(ticket.id, content);
         }
 
         // 3. Simple clustering logic (Centroid-based)
         // Note: For a production app, we might use a dedicated clustering engine or Python microservice.
         // Here we'll use a simplified similarity-graph approach.
-        const clusters = await this.findClusters(tickets.map(t => t.id));
+        const clusters = await this.findClusters(eligibleTickets.map(t => t.id));
         this.logger.log(`🧬 Found ${clusters.length} potential clusters.`);
 
         // 4. Transform clusters into FAQ candidates
@@ -79,10 +90,10 @@ export class TicketClusteringService {
             visited.add(id);
 
             // Fetch subject for search
-            const ticket = await this.prisma.ticket.findUnique({ where: { id } });
+            const ticket = await this.prisma.ticket.findFirst({ where: { id, deletedAt: null } });
             if (!ticket) continue;
 
-            const matches = await this.embeddingService.searchTickets(ticket.subject, 10);
+            const matches = await this.embeddingService.searchTickets(this.maskCustomerPii(ticket.subject), 10);
             for (const match of matches) {
                 if (ticketIds.includes(match.ticketId) && !visited.has(match.ticketId) && match.similarity > this.SIMILARITY_THRESHOLD) {
                     currentCluster.push(match.ticketId);
@@ -100,12 +111,30 @@ export class TicketClusteringService {
 
     private async generateFaqFromCluster(ticketIds: string[]) {
         const tickets = await this.prisma.ticket.findMany({
-            where: { id: { in: ticketIds } },
-            include: { messages: { take: 5 } }
+            where: {
+                id: { in: ticketIds },
+                status: { in: ['RESOLVED', 'CLOSED'] },
+                satisfactionScore: { gte: 4 },
+                deletedAt: null,
+            },
+            include: {
+                messages: {
+                    where: { isInternal: false, deletedAt: null },
+                    orderBy: { createdAt: 'asc' },
+                    take: 20,
+                    include: { sender: { select: { role: { select: { name: true } } } } },
+                },
+            }
         });
 
+        const verifiedSolutions = tickets.map(ticket => this.findVerifiedSolution(ticket));
+        if (tickets.length !== ticketIds.length || verifiedSolutions.some(solution => !solution)) {
+            this.logger.warn('⏭️ Skipping cluster FAQ without a verified public solution for every ticket.');
+            return;
+        }
+
         const context = tickets.map(t =>
-            `Subject: ${t.subject}\nProblem: ${t.description?.substring(0, 200)}...`
+            `Subject: ${this.maskCustomerPii(t.subject)}\nProblem: ${this.maskCustomerPii(t.description?.substring(0, 200) || '')}...\nSolution: ${this.maskCustomerPii(this.findVerifiedSolution(t)!.message)}`
         ).join('\n---\n');
 
         const prompt = `Aşağıda birbirine benzeyen ${tickets.length} adet destek talebi bulunmaktadır. 
@@ -125,12 +154,16 @@ Görevin:
         if (result?.response) {
             try {
                 const parsed = JSON.parse(result.response);
+                if (!parsed.question?.trim() || !parsed.answer?.trim()) {
+                    this.logger.warn('⏭️ Skipping cluster FAQ because the model returned an empty question or answer.');
+                    return;
+                }
                 const avgCsat = tickets.reduce(
                     (sum, t) => sum + ((t.satisfactionScore as number) ?? 3), 0
                 ) / tickets.length;
                 await this.faqService.createFromCluster({
-                    question: parsed.question,
-                    answer: parsed.answer,
+                    question: this.maskCustomerPii(parsed.question),
+                    answer: this.maskCustomerPii(parsed.answer),
                     tags: parsed.tags || [],
                     ticketCount: tickets.length,
                     avgCsat,
@@ -149,5 +182,26 @@ Görevin:
                 this.logger.error('Failed to parse AI generated FAQ cluster', e);
             }
         }
+    }
+
+    private findVerifiedSolution(ticket: any): { message: string } | null {
+        const message = Array.isArray(ticket.messages)
+            ? ticket.messages.find((candidate: any) =>
+                candidate.senderId !== ticket.userId
+                && this.SUPPORT_ROLES.has(String(candidate?.sender?.role?.name ?? '').toUpperCase())
+                && !candidate.isInternal
+                && !candidate.deletedAt
+                && typeof candidate.message === 'string'
+                && candidate.message.trim().length > 0,
+            )
+            : null;
+        return message ? { message: message.message.trim() } : null;
+    }
+
+    private maskCustomerPii(value: string): string {
+        return String(value ?? '')
+            .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
+            .replace(/(?:\+?90|0)?\s*\(?5\d{2}\)?[\s.-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}/g, '[telefon]')
+            .replace(/\b[A-Z0-9]{8,}\b/g, '[kimlik]');
     }
 }
