@@ -37,7 +37,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 2.2 | **REL-02** | Handoff Bölüm 5 (P1) | Erişilebilir High Bağımlılık Denetimi ve Quality Gate CI/E2E Analizi | Paket A (Yayın Hazırlığı) | **COMPLETED** (yerel audit/CI düzeltmeleri, izole seed smoke ve bağımsız inceleme geçti; hosted CI çalıştırılmadı) |
 | 3.1 | **RAG-01** | RAG-01 | Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; odaklı test, typecheck ve bağımsız inceleme geçti) |
 | 3.2 | **CACHE-01**| Röntgen Bölüm 10 | Redis ve Semantic Cache Tutarsızlığı / İptal (Invalidation) Olayları | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; odaklı test ve typecheck geçti) |
-| 3.3 | **PRIV-01** | PRIV-01 | SSS Özetlerinde ve Bilet Vektörlerinde İç Notların Ayrıştırılması ve Gizlilik | Paket B (Güvenilir Bilgi) | **PENDING** |
+| 3.3 | **PRIV-01** | PRIV-01 | SSS Özetlerinde ve Bilet Vektörlerinde İç Notların Ayrıştırılması ve Gizlilik | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 3.4 | **LRN-01** | Röntgen Bölüm 8.2 / 8.3 | Çözüm Temelli SSS Çıkarımı, Puanlama Ayrımı ve Yaşam Döngüsü Açıklığı | Paket B (Güvenilir Bilgi) | **PENDING** |
 | 4.1 | **CWL-01** | CRAWL-01 | Crawler / Havuz Kuyruk Hatasında SYNCING Takılması ve Eski İndeks Koruması | Paket B (Ingestion) | **PENDING** |
 | 4.2 | **CWL-02** | Handoff Bölüm 7 (Sıra 4) | Temsilî Tek Public URL Uçtan Uca İçe Aktarma ve Vektörleme Doğrulaması | Paket B (Ingestion) | **PENDING** |
@@ -439,7 +439,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Veri / Dış Etki:** Canlı DB/Redis, gerçek müşteri verisi, push, deploy veya migration kullanılmadı. `apps/frontend/next-env.d.ts` kullanıcı WIP'i korunur.
 
 ### PRIV-01: SSS Özetlerinde ve Bilet Vektörlerinde İç Notların Ayrıştırılması ve Gizlilik
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (yerel; yayın yok)
 - **Rapor ID / Kanıt:** PRIV-01; Röntgen Bölüm 8.1 (Satır 203-207), Bölüm 13 (Satır 340); `B/faq/kb-summarizer.processor.ts:25-91`, `B/ai/ai-auto-resolver.service.ts:175-200`, `B/ai/embedding.service.ts:722-740`.
 - **Dosya / Modül:** `apps/backend/src/faq/kb-summarizer.processor.ts`, `apps/backend/src/ai/ai-auto-resolver.service.ts`, `apps/backend/src/ai/embedding.service.ts`.
 - **Minimum Değişiklik:** 
@@ -451,7 +451,12 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Kabul Ölçütü:** İç not içeren bir bilet çözüldüğünde oluşturulan SSS adayı prompt'unda ve `ticket_embeddings` içeriğinde `isInternal: true` olan mesaj metinleri kesinlikle yer almamalı.
 - **Dar Doğrulama:** `pnpm --filter @aluplan/backend test -- src/faq/kb-summarizer.processor.spec.ts` ve `src/ai/ai-auto-resolver.service.spec.ts`.
 - **Veri / Migration Etkisi:** Sıfır şema değişikliği.
-- **Açık Kullanıcı Kararı:** Geçmişte oluşturulmuş `PENDING_REVIEW` SSS adaylarında iç not taraması yapılıp temizlensin mi?
+- **Uygulama:** SSS worker'ı soft-delete edilmiş biletleri ve `isInternal: true` veya `deletedAt != null` mesajları hem Prisma sorgusunda hem bellek içi savunmada dışlar. Bilet embedding'i, otomatik taslak geçmişi ve bağlama duyarlı öneri geçmişi aynı görünürlük sınırını kullanır. Konu, açıklama, mesajlar ve sentiment girdileri mevcut `PiiMaskingService` ile maskelenir; yapılandırılmamış model yanıtında ham konu yerine maskelenmiş konu kullanılır. Gecikmiş bir event soft-delete edilmiş bilete aitse üç AI handler'ı da hiçbir DB/AI/embedding yan etkisi üretmeden döner.
+- **Prompt Gizlilik Sınırı:** Auto-resolver çağrıları `privacySafeContext` kullanır. Yetkilendirme, kota ve cache sahipliği için gerçek `userId` korunurken `PromptContextBuilder` katmanına kullanıcı profili, yakın biletler ve ham Hotinfo verilmez. Privacy-safe ve normal yanıt cache kapsamları birbirinden ayrıdır. Dar, allowlist tabanlı sistem/Hotinfo arama sinyalleri retrieval kalitesini korur; ham hata izi, iletişim ve ortam alanları bu yola alınmaz.
+- **Doğrulama:** Test-first RED/GREEN akışıyla dört hedefli suite / 110 test PASS; backend TypeScript typecheck ve `git diff --check` PASS. Bağımsız code reviewer ve security reviewer son diffi ayrı ayrı `APPROVE` etti; Critical/High bulgu kalmadı.
+- **Gizlilik İddia Sınırı:** Regex maskeleme tam anonimleştirme değildir; serbest metindeki isim, adres veya lisans anahtarı gibi alanlar daha geniş veri-minimizasyonu çalışması gerektirebilir. Bu görev, iç notların ve bilinen temel PII biçimlerinin belirtilen AI/embedding yollarından ayrıştırılmasını garanti eder; tüm AI yollarının anonim olduğunu iddia etmez.
+- **Veri / Dış Etki:** Geçmiş `ticket_embeddings` veya `PENDING_REVIEW` kayıtlarında toplu silme/temizlik yapılmadı; canlı DB, gerçek müşteri verisi, dış sağlayıcı, migration, push veya deploy kullanılmadı. Tarihsel veri için önce salt-okunur envanter ve ayrı düzeltme planı gerekir. `apps/frontend/next-env.d.ts` kullanıcı WIP'i korunur.
+- **Açık Kullanıcı Kararı:** Çözüldü. Güvenli varsayılan olarak tarihsel kayıtlar otomatik değiştirilmedi; ayrı veri mutasyonu ancak envanter ve açık uygulama onayıyla ele alınacaktır.
 
 ### LRN-01: Çözüm Temelli SSS Çıkarımı, Puanlama Ayrımı ve Yaşam Döngüsü Açıklığı
 - **Durum:** `PENDING`

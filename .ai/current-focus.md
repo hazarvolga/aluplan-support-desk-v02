@@ -1,5 +1,13 @@
 # Current Focus
 
+## 30 Eylül — PRIV-01 tamamlandı; sıradaki görev LRN-01 (yerel)
+
+- SSS özeti, ticket embedding'i, otomatik taslak/öneri geçmişi ve sentiment girdilerinde iç notlar ile soft-delete edilmiş mesajlar DB sorgusu ve bellek içi savunmayla dışlanıyor. Soft-delete edilmiş bilet event'leri üç handler'da da yan etkisiz reddediliyor.
+- Müşteri-personel metinleri kamuya açık kabul edilmiyor; konu/açıklama/mesaj/sentiment girdileri temel PII maskelemesinden geçiyor. `privacySafeContext`, kullanıcı kimliğini auth/kota/cache sahipliği için korurken PromptContextBuilder'a profil, yakın bilet ve ham Hotinfo aktarmıyor; normal ve privacy-safe cache kapsamları ayrıldı.
+- Dört hedefli suite 110/110, backend typecheck ve `git diff --check` geçti. Bağımsız kod ve güvenlik incelemeleri blocker bulmadı. Regex maskeleme tam anonimlik iddiası değildir; isim/adres/lisans anahtarı ve alternatif AI yolları takip riski olarak kayıtlıdır.
+- Geçmiş embedding ve `PENDING_REVIEW` kayıtlarında otomatik veri temizliği yapılmadı. Canlı DB/sağlayıcı, migration, push/deploy yok; `apps/frontend/next-env.d.ts` kullanıcı WIP'i korunuyor.
+- Sıradaki planlı görev **LRN-01**: yalnız doğrulanmış çözüm mesajından SSS adayı üretmek, güven skorunu cevap uzunluğundan ayırmak ve müşteri görünürlük sınırını test-first güvenceye almak.
+
 ## 30 Eylül — CACHE-01 tamamlandı; sıradaki görev PRIV-01 (yerel)
 
 - Kullanıcı kalan işleri Antigravity yerine bu ajan üzerinden sıralı tamamlamayı devretti. UX-01'in TR/EN/DE ticket etiketleri tamamlandı; TODO'daki `apps/frontend/next-env.d.ts` kullanıcı değişikliği korunuyor ve stage edilmeyecek.
