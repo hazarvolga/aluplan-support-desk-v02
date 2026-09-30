@@ -7,6 +7,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
+import { assertEmbeddingMigrationApproved } from './embedding-migration.guard';
 
 export interface MigrationJobData {
   targetVersion: string;
@@ -34,6 +35,12 @@ export class EmbeddingMigrationProcessor extends WorkerHost {
 
   @OnEvent('ai.embedding.provider_changed')
   async handleProviderChange(payload: { key: string; newValue: string; oldValue: string }) {
+    try {
+      assertEmbeddingMigrationApproved();
+    } catch (error) {
+      this.logger.warn(`Embedding migration blocked for ${payload.key}: operator approval is required.`);
+      return { blocked: true, reason: 'operator-approval-required' };
+    }
     this.logger.log(`Detected embedding provider/model change (${payload.key}: ${payload.oldValue} -> ${payload.newValue}). Scheduling migration.`);
     
     // Get the newly active version configuration
@@ -53,12 +60,13 @@ export class EmbeddingMigrationProcessor extends WorkerHost {
       dryRun: false,
       flushCache: false // Already flushed
     } as MigrationJobData, {
-      jobId: `migrate-${config.version}-${Date.now()}`,
+      jobId: `migrate-${config.version}`,
       removeOnComplete: true
     });
   }
 
   async process(job: Job<MigrationJobData>) {
+    assertEmbeddingMigrationApproved();
     const { targetVersion, targetDimension, provider, model, batchSize, dryRun = false } = job.data;
     this.logger.log(`Starting embedding migration to version: ${targetVersion} (Dim: ${targetDimension}) [DryRun: ${dryRun}]`);
 
@@ -91,6 +99,12 @@ export class EmbeddingMigrationProcessor extends WorkerHost {
 
       if (records.length === 0) break;
 
+      if (dryRun) {
+        processed += records.length;
+        break;
+      }
+
+      let batchProgress = 0;
       for (const record of records) {
         if (!dryRun) {
           try {
@@ -105,13 +119,18 @@ export class EmbeddingMigrationProcessor extends WorkerHost {
               `UPDATE faq_entries SET question_embedding = $1::vector, embedding_version = $2, embedding_dim = $3, migrated_at = NOW() WHERE id = $4`,
               vectorStr, targetVersion, targetDimension, record.id
             );
+            processed++;
+            batchProgress++;
           } catch (e) {
             this.logger.error(`Failed to migrate FAQ ${record.id}`, e);
           }
           // Delay to respect rate limits (Gemini Free Tier constraint)
           await new Promise(resolve => setTimeout(resolve, 500)); 
         }
-        processed++;
+      }
+      if (batchProgress === 0) {
+        this.logger.warn('Stopping FAQ migration because the batch made no progress.');
+        break;
       }
     }
     this.logger.log(`Migrated ${processed} FAQ Entries`);
@@ -129,6 +148,12 @@ export class EmbeddingMigrationProcessor extends WorkerHost {
 
       if (records.length === 0) break;
 
+      if (dryRun) {
+        processed += records.length;
+        break;
+      }
+
+      let batchProgress = 0;
       for (const record of records) {
         if (!dryRun) {
           try {
@@ -143,12 +168,17 @@ export class EmbeddingMigrationProcessor extends WorkerHost {
               `UPDATE knowledge_pool_embeddings SET embedding = $1::vector, embedding_version = $2, embedding_dim = $3, migrated_at = NOW() WHERE id = $4`,
               vectorStr, targetVersion, targetDimension, record.id
             );
+            processed++;
+            batchProgress++;
           } catch (e) {
             this.logger.error(`Failed to migrate KnowledgePool ${record.id}`, e);
           }
           await new Promise(resolve => setTimeout(resolve, 500));
         }
-        processed++;
+      }
+      if (batchProgress === 0) {
+        this.logger.warn('Stopping knowledge-pool migration because the batch made no progress.');
+        break;
       }
     }
     this.logger.log(`Migrated ${processed} Knowledge Pool Embeddings`);
@@ -168,6 +198,12 @@ export class EmbeddingMigrationProcessor extends WorkerHost {
 
       if (records.length === 0) break;
 
+      if (dryRun) {
+        processed += records.length;
+        break;
+      }
+
+      let batchProgress = 0;
       for (const record of records) {
         if (!dryRun) {
           try {
@@ -183,12 +219,17 @@ export class EmbeddingMigrationProcessor extends WorkerHost {
               `UPDATE ticket_embeddings SET embedding = $1::vector, embedding_version = $2, embedding_dim = $3, migrated_at = NOW() WHERE id = $4`,
               vectorStr, targetVersion, targetDimension, record.id
             );
+            processed++;
+            batchProgress++;
           } catch (e) {
             this.logger.error(`Failed to migrate TicketEmbedding ${record.id}`, e);
           }
           await new Promise(resolve => setTimeout(resolve, 500));
         }
-        processed++;
+      }
+      if (batchProgress === 0) {
+        this.logger.warn('Stopping ticket migration because the batch made no progress.');
+        break;
       }
     }
     this.logger.log(`Migrated ${processed} Ticket Embeddings`);
@@ -206,6 +247,12 @@ export class EmbeddingMigrationProcessor extends WorkerHost {
 
       if (records.length === 0) break;
 
+      if (dryRun) {
+        processed += records.length;
+        break;
+      }
+
+      let batchProgress = 0;
       for (const record of records) {
         if (!dryRun) {
           try {
@@ -220,12 +267,17 @@ export class EmbeddingMigrationProcessor extends WorkerHost {
               `UPDATE knowledge_embeddings SET embedding = $1::vector, embedding_version = $2, embedding_dim = $3, migrated_at = NOW() WHERE id = $4`,
               vectorStr, targetVersion, targetDimension, record.id
             );
+            processed++;
+            batchProgress++;
           } catch (e) {
             this.logger.error(`Failed to migrate KnowledgeEmbedding ${record.id}`, e);
           }
           await new Promise(resolve => setTimeout(resolve, 500));
         }
-        processed++;
+      }
+      if (batchProgress === 0) {
+        this.logger.warn('Stopping knowledge-embedding migration because the batch made no progress.');
+        break;
       }
     }
     this.logger.log(`Migrated ${processed} Knowledge Embeddings`);

@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../utils/crypto.service';
 import { UpsertSettingDto } from './dto/upsert-setting.dto';
 import { BulkUpsertSettingDto } from './dto/bulk-upsert-setting.dto';
+import { assertEmbeddingMigrationApproved, isEmbeddingModelSetting } from '../ai/embedding-migration.guard';
 
 @Injectable()
 export class SettingsService {
@@ -29,6 +30,9 @@ export class SettingsService {
     ) { }
 
     async upsert(dto: UpsertSettingDto, userId?: string) {
+        if (isEmbeddingModelSetting(dto.key) && dto.value !== '********') {
+            assertEmbeddingMigrationApproved();
+        }
         const existing = await this.get(dto.key, true);
         const oldValue = existing?.value;
 
@@ -312,6 +316,10 @@ export class SettingsService {
 
     async bulkUpsert(dto: BulkUpsertSettingDto, userId?: string) {
         const settings = this.withLegacyAiProviderSync(dto.settings);
+
+        if (settings.some((item) => isEmbeddingModelSetting(item.key) && item.value !== '********')) {
+            assertEmbeddingMigrationApproved();
+        }
 
         // Run validations first with full context of this request
         const context = new Map<string, string>(settings.map(s => [s.key, s.value]));

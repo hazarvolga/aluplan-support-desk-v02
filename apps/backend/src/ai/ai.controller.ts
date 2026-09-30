@@ -25,6 +25,7 @@ import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
+import { assertEmbeddingMigrationApproved } from './embedding-migration.guard';
 
 
 export class AiQueryDto {
@@ -309,6 +310,7 @@ export class AiController {
     @Roles('ADMIN', 'SUPERUSER')
     @ApiOperation({ summary: 'Re-index all published articles (run after model change)' })
     reindex() {
+        assertEmbeddingMigrationApproved();
         return this.embeddingService.reindexAll();
     }
 
