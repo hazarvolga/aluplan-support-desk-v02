@@ -72,6 +72,21 @@ describe('AiSemanticCache', () => {
     });
 
     describe('get', () => {
+        it('uses a different semantic namespace for each knowledge cache generation', async () => {
+            mockRedisService.get.mockResolvedValue(null);
+            mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
+            mockPrismaService.$queryRaw.mockResolvedValue([
+                { id: '1', response: mockResult, distance: '0.02' },
+            ]);
+
+            await cache.get('test query', defaultScope, 'generation-1');
+            await cache.get('test query', defaultScope, 'generation-2');
+
+            const firstQuery = mockPrismaService.$queryRaw.mock.calls[0]?.[0];
+            const secondQuery = mockPrismaService.$queryRaw.mock.calls[1]?.[0];
+            expect(firstQuery.values).not.toEqual(secondQuery.values);
+        });
+
         it('does not return a cached response to a different requester or audience scope', async () => {
             const cachedEntries = new Map<string, string>();
             mockRedisService.get.mockImplementation((key: string) => cachedEntries.get(key) ?? null);
@@ -88,7 +103,7 @@ describe('AiSemanticCache', () => {
                 language: 'tr',
                 routeLocale: 'tr',
                 contextFingerprint: 'staff-context',
-            }, mockResult);
+            }, mockResult, 'generation-1');
 
             const customerResult = await cache.get('test query', {
                 userId: '22222222-2222-4222-8222-222222222222',
@@ -97,7 +112,7 @@ describe('AiSemanticCache', () => {
                 language: 'tr',
                 routeLocale: 'tr',
                 contextFingerprint: 'customer-context',
-            });
+            }, 'generation-1');
 
             expect(customerResult).toBeNull();
         });
@@ -116,12 +131,12 @@ describe('AiSemanticCache', () => {
             });
             mockEmbeddingService.embedText.mockResolvedValue(null);
 
-            await cache.set('test query', defaultScope, mockResult);
+            await cache.set('test query', defaultScope, mockResult, 'generation-1');
 
             const result = await cache.get('test query', {
                 ...defaultScope,
                 ...changedScope,
-            });
+            }, 'generation-1');
 
             expect(result).toBeNull();
         });
@@ -131,7 +146,7 @@ describe('AiSemanticCache', () => {
             mockRedisService.get.mockResolvedValue(JSON.stringify(mockResult));
 
             // Act
-            const result = await cache.get('test query', defaultScope);
+            const result = await cache.get('test query', defaultScope, 'generation-1');
 
             // Assert
             expect(result).toEqual(mockResult);
@@ -145,7 +160,7 @@ describe('AiSemanticCache', () => {
             mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
 
             // Act
-            const result = await cache.get('test query', defaultScope);
+            const result = await cache.get('test query', defaultScope, 'generation-1');
 
             // Assert
             expect(result).toBeNull();
@@ -160,7 +175,7 @@ describe('AiSemanticCache', () => {
             ]);
 
             // Act
-            const result = await cache.get('test query', defaultScope);
+            const result = await cache.get('test query', defaultScope, 'generation-1');
 
             // Assert
             expect(result).toEqual(mockResult);
@@ -171,7 +186,7 @@ describe('AiSemanticCache', () => {
             mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
             mockPrismaService.$queryRaw.mockResolvedValue([]);
 
-            await cache.get('test query', defaultScope);
+            await cache.get('test query', defaultScope, 'generation-1');
 
             const sqlCall = mockPrismaService.$queryRaw.mock.calls[0]?.[0];
             expect(String(sqlCall.values ?? sqlCall)).not.toContain('00000000-0000-0000-0000-000000000000');
@@ -182,12 +197,12 @@ describe('AiSemanticCache', () => {
             mockEmbeddingService.embedText.mockResolvedValue([1, 0, 0]);
             mockPrismaService.$queryRaw.mockResolvedValue([]);
 
-            await cache.get('test query', defaultScope);
+            await cache.get('test query', defaultScope, 'generation-1');
             await cache.get('test query', {
                 ...defaultScope,
                 userId: '22222222-2222-4222-8222-222222222222',
                 audience: 'agent',
-            });
+            }, 'generation-1');
 
             const firstQuery = mockPrismaService.$queryRaw.mock.calls[0]?.[0];
             const secondQuery = mockPrismaService.$queryRaw.mock.calls[1]?.[0];
@@ -203,7 +218,7 @@ describe('AiSemanticCache', () => {
             ]);
 
             // Act
-            const result = await cache.get('test query', defaultScope);
+            const result = await cache.get('test query', defaultScope, 'generation-1');
 
             // Assert
             expect(result).toBeNull();
@@ -218,7 +233,7 @@ describe('AiSemanticCache', () => {
             mockRedisService.set.mockResolvedValue('OK');
 
             // Act
-            await cache.set('test query', defaultScope, mockResult);
+            await cache.set('test query', defaultScope, mockResult, 'generation-1');
 
             // Assert
             expect(mockRedisService.set).toHaveBeenCalled();
@@ -248,12 +263,33 @@ describe('AiSemanticCache', () => {
         });
     });
 
+    describe('knowledge cache epochs', () => {
+        it('uses generation zero before the durable epoch is created', async () => {
+            mockPrismaService.$queryRaw.mockResolvedValueOnce([]);
+
+            await expect(cache.getKnowledgeEpoch()).resolves.toBe('0');
+        });
+
+        it('atomically increments the durable settings epoch', async () => {
+            mockPrismaService.$queryRaw.mockResolvedValueOnce([{ value: '5' }]);
+
+            await expect(cache.advanceKnowledgeEpoch()).resolves.toBe('5');
+
+            const sql = mockPrismaService.$queryRaw.mock.calls[0][0].join('');
+            expect(sql).toContain('ON CONFLICT');
+            expect(sql).toContain('RETURNING');
+        });
+    });
+
     describe('invalidateScope', () => {
         it('should clear all cache for a scope', async () => {
             // Arrange
             mockPrismaService.$executeRaw.mockResolvedValue({ count: 5 });
+            const scan = jest.fn().mockResolvedValue(['0', []]);
+            const del = jest.fn().mockResolvedValue(0);
             mockRedisService.getClient.mockReturnValue({
-                eval: jest.fn().mockResolvedValue(10),
+                scan,
+                del,
             });
 
             // Act
@@ -261,6 +297,30 @@ describe('AiSemanticCache', () => {
 
             // Assert
             expect(mockPrismaService.$executeRaw).toHaveBeenCalled();
+            expect(scan).toHaveBeenCalledWith('0', 'MATCH', expect.any(String), 'COUNT', 100);
+            expect(del).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('invalidateAll', () => {
+        it('clears semantic responses and scans all current-version Redis query keys', async () => {
+            const scan = jest.fn()
+                .mockResolvedValueOnce(['7', ['query-key-1']])
+                .mockResolvedValueOnce(['0', ['query-key-2']]);
+            const del = jest.fn().mockResolvedValue(1);
+            mockRedisService.getClient.mockReturnValue({ scan, del });
+            mockPrismaService.$executeRaw.mockResolvedValue(3);
+            mockPrismaService.$queryRaw.mockResolvedValueOnce([{ value: 'epoch-next' }]);
+
+            await cache.invalidateAll();
+
+            const deleteSql = mockPrismaService.$executeRaw.mock.calls[0][0].join('');
+            expect(deleteSql).toContain('DELETE FROM "ai_response_cache"');
+            expect(deleteSql).not.toMatch(/WHERE/i);
+            expect(scan).toHaveBeenNthCalledWith(1, '0', 'MATCH', 'ai:query:*cache:*', 'COUNT', 100);
+            expect(scan).toHaveBeenNthCalledWith(2, '7', 'MATCH', 'ai:query:*cache:*', 'COUNT', 100);
+            expect(del).toHaveBeenNthCalledWith(1, 'query-key-1');
+            expect(del).toHaveBeenNthCalledWith(2, 'query-key-2');
         });
     });
 });

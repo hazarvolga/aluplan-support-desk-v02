@@ -4,12 +4,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from '../ai/embedding.service';
 import { AiService } from '../ai/ai.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('KnowledgeBaseService', () => {
     let service: KnowledgeBaseService;
     let mockPrisma: any;
     let mockEmbedding: any;
     let mockAi: any;
+    let mockEventEmitter: any;
 
     beforeEach(async () => {
         mockPrisma = {
@@ -30,6 +32,7 @@ describe('KnowledgeBaseService', () => {
         };
         mockEmbedding = { indexArticle: jest.fn().mockResolvedValue({}) };
         mockAi = { suggestCategory: jest.fn() };
+        mockEventEmitter = { emitAsync: jest.fn().mockResolvedValue([]) };
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -37,6 +40,7 @@ describe('KnowledgeBaseService', () => {
                 { provide: PrismaService, useValue: mockPrisma },
                 { provide: EmbeddingService, useValue: mockEmbedding },
                 { provide: AiService, useValue: mockAi },
+                { provide: EventEmitter2, useValue: mockEventEmitter },
             ],
         }).compile();
 
@@ -89,6 +93,7 @@ describe('KnowledgeBaseService', () => {
                     data: expect.objectContaining({ status: 'DRAFT' })
                 })
             );
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('article.updated', { articleId: 'art-1' });
         });
     });
 
@@ -106,6 +111,7 @@ describe('KnowledgeBaseService', () => {
 
             expect(result.status).toBe('PUBLISHED');
             expect(mockEmbedding.indexArticle).toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('article.updated', { articleId: 'art-1' });
         });
 
         it('should revert to DRAFT on rejection', async () => {
@@ -117,6 +123,26 @@ describe('KnowledgeBaseService', () => {
 
             expect(result.status).toBe('DRAFT');
             expect(mockEmbedding.indexArticle).not.toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('article.updated', { articleId: 'art-1' });
+        });
+    });
+
+    describe('cache invalidation events', () => {
+        it('emits an article change after archiving', async () => {
+            mockPrisma.knowledgeArticle.update.mockResolvedValue({ id: 'art-1', status: 'ARCHIVED' });
+
+            await service.archive('art-1');
+
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('article.updated', { articleId: 'art-1' });
+        });
+
+        it('emits an article change after soft deletion', async () => {
+            mockPrisma.knowledgeArticle.findFirst.mockResolvedValue({ id: 'art-1', status: 'PUBLISHED' });
+            mockPrisma.knowledgeArticle.update.mockResolvedValue({ id: 'art-1', deletedAt: new Date() });
+
+            await service.remove('art-1');
+
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('article.updated', { articleId: 'art-1' });
         });
     });
 

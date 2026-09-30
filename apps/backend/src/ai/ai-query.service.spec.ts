@@ -149,7 +149,13 @@ describe('AiQueryService', () => {
                 { provide: DocumentParserService, useValue: { parse: jest.fn(), extractText: jest.fn().mockResolvedValue('') } },
                 { provide: MetricsService, useValue: { increment: jest.fn(), gauge: jest.fn(), recordCacheOp: jest.fn() } },
                 { provide: StorageService, useValue: mockStorageService },
-                { provide: AiSemanticCache, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn().mockResolvedValue(undefined) } },
+                { provide: AiSemanticCache, useValue: {
+                    get: jest.fn().mockResolvedValue(null),
+                    set: jest.fn().mockResolvedValue(undefined),
+                    getKnowledgeEpoch: jest.fn().mockResolvedValue('0'),
+                    advanceKnowledgeEpoch: jest.fn().mockResolvedValue('1'),
+                    purgeAll: jest.fn().mockResolvedValue(undefined),
+                } },
                 { provide: getQueueToken('ai-query-processing'), useValue: {} },
             ],
         }).compile();
@@ -293,7 +299,8 @@ describe('AiQueryService', () => {
                 routeLocale: 'en',
             }, false, 'tr');
 
-            expect(buildHash('test query', baseScope)).not.toEqual(buildHash('test query', changedScope));
+            expect(buildHash('test query', baseScope, 'generation-1')).not.toEqual(buildHash('test query', changedScope, 'generation-1'));
+            expect(buildHash('test query', baseScope, 'generation-1')).not.toEqual(buildHash('test query', baseScope, 'generation-2'));
         });
 
         it('should return cached result without hitting DB when cache exists', async () => {
@@ -1860,33 +1867,71 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             jest.useRealTimers();
         });
 
-        it('should debounce invalidation calls and execute only once after 1 second', async () => {
-            const mockScan = jest.fn().mockResolvedValue(['0', []]);
-            const mockDel = jest.fn();
+        it('advances the shared knowledge epoch immediately, then debounces physical cache cleanup', async () => {
+            await Promise.all([
+                service.handleArticleChange({}),
+                service.handleKnowledgePoolChange({}),
+                service.handleFaqChange({}),
+            ]);
 
-            const originalImplementation = mockRedisService.getClient.getMockImplementation();
+            expect(semanticCache.advanceKnowledgeEpoch).toHaveBeenCalledTimes(3);
+            expect(semanticCache.purgeAll).not.toHaveBeenCalled();
 
-            mockRedisService.getClient.mockImplementation(() => ({
-                scan: mockScan,
-                del: mockDel,
-            } as any));
+            // Fast-forward timers by 500ms -> should not have called invalidate yet
+            await jest.advanceTimersByTimeAsync(500);
+            expect(semanticCache.purgeAll).not.toHaveBeenCalled();
 
-            try {
-                // Call multiple changes successively
-                service.handleArticleChange({});
-                service.handleKnowledgePoolChange({});
+            // Fast-forward another 500ms -> total 1000ms, should trigger invalidation once
+            await jest.advanceTimersByTimeAsync(500);
+            expect(semanticCache.purgeAll).toHaveBeenCalledTimes(1);
+        });
 
-                // Fast-forward timers by 500ms -> should not have called invalidate yet
-                jest.advanceTimersByTime(500);
-                expect(mockScan).not.toHaveBeenCalled();
+        it('disables cache reads and writes when the durable epoch cannot advance', async () => {
+            semanticCache.advanceKnowledgeEpoch.mockRejectedValueOnce(new Error('settings unavailable'));
 
-                // Fast-forward another 500ms -> total 1000ms, should trigger invalidation once
-                jest.advanceTimersByTime(500);
-                expect(mockScan).toHaveBeenCalledTimes(1);
-                expect(mockScan).toHaveBeenCalledWith('0', 'MATCH', expect.any(String), 'COUNT', 100);
-            } finally {
-                mockRedisService.getClient.mockImplementation(originalImplementation);
-            }
+            await service.handleFaqChange({ faqId: 'faq-1' });
+
+            expect(semanticCache.purgeAll).toHaveBeenCalledTimes(1);
+            await expect((service as any).getKnowledgeCacheEpoch()).resolves.toBeNull();
+
+            await service.handleArticleChange({ articleId: 'article-1' });
+
+            await expect((service as any).getKnowledgeCacheEpoch()).resolves.toBe('0');
+        });
+
+        it('rejects an epoch read that resolves after an invalidation cycle', async () => {
+            let resolveEpoch!: (epoch: string) => void;
+            semanticCache.getKnowledgeEpoch.mockImplementationOnce(() => new Promise<string>((resolve) => {
+                resolveEpoch = resolve;
+            }));
+
+            const staleRead = (service as any).getKnowledgeCacheEpoch();
+            await Promise.resolve();
+            await service.handleFaqChange({ faqId: 'faq-1' });
+            resolveEpoch('stale-epoch');
+
+            await expect(staleRead).resolves.toBeNull();
+        });
+
+        it('does not let an older successful invalidation recover a newer failed one', async () => {
+            let resolveOlder!: (epoch: string) => void;
+            let rejectNewer!: (error: Error) => void;
+            semanticCache.advanceKnowledgeEpoch
+                .mockImplementationOnce(() => new Promise<string>((resolve) => {
+                    resolveOlder = resolve;
+                }))
+                .mockImplementationOnce(() => new Promise<string>((_resolve, reject) => {
+                    rejectNewer = reject;
+                }));
+
+            const older = service.handleArticleChange({ articleId: 'article-1' });
+            const newer = service.handleFaqChange({ faqId: 'faq-1' });
+            rejectNewer(new Error('newer invalidation failed'));
+            await newer;
+            resolveOlder('older-success');
+            await older;
+
+            await expect((service as any).getKnowledgeCacheEpoch()).resolves.toBeNull();
         });
     });
 
@@ -2105,6 +2150,7 @@ Advanced IFC Export Settings consist of Exchange Profiles, Attribute Mapping, Co
             }
 
             expect(chunks).toEqual([{ chunk: 'cached stream answer' }]);
+            expect(mockRedisService.get).toHaveBeenCalledWith(expect.stringContaining(':0:'));
             expect(mockEmbeddingService.search).not.toHaveBeenCalled();
         });
 

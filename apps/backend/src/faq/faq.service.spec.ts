@@ -8,6 +8,7 @@ import { EmbeddingVersionRegistry } from '../ai/embedding-version.registry';
 import { SettingsService } from '../settings/settings.service';
 import { mockPrismaService } from '../test/mock.utils';
 import { RAG_CONFIG } from '../config/rag.config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 const mockEmbeddingVersionRegistry = {
     getActiveVersionConfig: jest.fn().mockResolvedValue({ version: 'v3s', dimension: 1536, provider: 'openai', model: 'text-embedding-3-small' }),
@@ -28,6 +29,10 @@ describe('FaqService - Knowledge Base CRUD', () => {
     const mockAiService = {
         reformat: jest.fn(),
         embed: jest.fn(),
+    };
+
+    const mockEventEmitter = {
+        emitAsync: jest.fn().mockResolvedValue([]),
     };
 
     const localMockPrismaService = {
@@ -61,6 +66,7 @@ describe('FaqService - Knowledge Base CRUD', () => {
                 { provide: EmbeddingService, useValue: { indexPoolContent: jest.fn(), embedText: jest.fn() } },
                 { provide: EmbeddingVersionRegistry, useValue: mockEmbeddingVersionRegistry },
                 { provide: SettingsService, useValue: mockSettingsService },
+                { provide: EventEmitter2, useValue: mockEventEmitter },
             ],
         }).compile();
 
@@ -183,6 +189,24 @@ describe('FaqService - Knowledge Base CRUD', () => {
                 skipDuplicates: true,
             });
         });
+
+        it('emits a cache invalidation event when a FAQ is auto-published', async () => {
+            localMockPrismaService.faqEntry.findFirst.mockResolvedValue(null);
+            localMockPrismaService.$queryRaw.mockResolvedValue([]);
+            (service as any).embeddingService.embedText.mockResolvedValue(null);
+
+            await service.processPatterns([{
+                question: 'How do I repair this model?',
+                answer: 'Follow the verified repair steps.',
+                confidenceScore: 1,
+                sourceType: 'ticket',
+                sourceId: '55555555-5555-4555-8555-555555555555',
+                tags: ['model'],
+                language: 'en',
+            }]);
+
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('faq.changed');
+        });
     });
 
     describe('findAll', () => {
@@ -284,6 +308,7 @@ describe('FaqService - Knowledge Base CRUD', () => {
             });
             expect(mockAiService.embed).toHaveBeenCalledWith('Q1');
             expect(localMockPrismaService.$executeRaw).toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('faq.changed', { faqId: 'faq-1' });
         });
     });
 
@@ -329,6 +354,7 @@ describe('FaqService - Knowledge Base CRUD', () => {
             });
             expect(mockAiService.embed).toHaveBeenCalledWith('Updated Q');
             expect(localMockPrismaService.$executeRaw).toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('faq.changed', { faqId: 'faq-1' });
         });
 
         it.each([
@@ -350,6 +376,7 @@ describe('FaqService - Knowledge Base CRUD', () => {
                 where: { id: 'faq-1', deletedAt: null },
                 data: { status: 'DISMISSED' },
             });
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('faq.changed', { faqId: 'faq-1' });
         });
     });
 
@@ -366,6 +393,7 @@ describe('FaqService - Knowledge Base CRUD', () => {
                 where: { id: 'faq-1' },
                 data: { deletedAt: expect.any(Date) }
             });
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('faq.changed', { faqId: 'faq-1' });
         });
     });
 });
