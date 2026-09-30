@@ -82,6 +82,73 @@ describe('FaqService - Knowledge Base CRUD', () => {
     });
 
     describe('FAQ provenance', () => {
+        it('extracts only highly-rated tickets with a public agent solution', async () => {
+            localMockPrismaService.ticket = { findMany: jest.fn().mockResolvedValue([{
+                id: 'ticket-solution', userId: 'customer-1', subject: 'License issue', tags: ['license'],
+                satisfactionScore: 5,
+                messages: [
+                    { senderId: 'customer-1', message: 'Cannot activate', isInternal: false, deletedAt: null },
+                    { senderId: 'agent-1', sender: { role: { name: 'SUPPORT_AGENT' } }, message: 'Open License Manager and activate.', isInternal: false, deletedAt: null },
+                ],
+            }]) };
+            mockAiService.reformat.mockResolvedValue({ response: JSON.stringify({ question: 'How to activate?', answer: 'Open License Manager and activate.' }) });
+
+            const patterns = await service.extractFromTickets();
+
+            expect(localMockPrismaService.ticket.findMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({ satisfactionScore: { gte: 4 }, deletedAt: null }),
+            }));
+            expect(patterns).toEqual([expect.objectContaining({
+                sourceId: 'ticket-solution',
+                answer: 'Open License Manager and activate.',
+                confidenceScore: expect.any(Number),
+            })]);
+        });
+
+        it('does not extract a candidate without a public agent solution', async () => {
+            localMockPrismaService.ticket = { findMany: jest.fn().mockResolvedValue([{
+                id: 'ticket-unresolved', userId: 'customer-1', subject: 'Still broken', tags: [], satisfactionScore: 5,
+                messages: [
+                    { senderId: 'customer-1', message: 'Still broken', isInternal: false, deletedAt: null },
+                    { senderId: 'agent-1', sender: { role: { name: 'SUPPORT_AGENT' } }, message: 'INTERNAL INVESTIGATION NOTE', isInternal: true, deletedAt: null },
+                ],
+            }]) };
+
+            await expect(service.extractFromTickets()).resolves.toEqual([]);
+            expect(mockAiService.reformat).not.toHaveBeenCalled();
+        });
+
+        it('does not treat another customer message as a verified support solution', async () => {
+            localMockPrismaService.ticket = { findMany: jest.fn().mockResolvedValue([{
+                id: 'ticket-customer-cc', userId: 'customer-1', subject: 'Still broken', tags: [], satisfactionScore: 5,
+                messages: [
+                    { senderId: 'customer-1', sender: { role: { name: 'CUSTOMER' } }, message: 'Still broken', isInternal: false, deletedAt: null },
+                    { senderId: 'customer-2', sender: { role: { name: 'CUSTOMER' } }, message: 'Try restarting', isInternal: false, deletedAt: null },
+                ],
+            }]) };
+
+            await expect(service.extractFromTickets()).resolves.toEqual([]);
+            expect(mockAiService.reformat).not.toHaveBeenCalled();
+        });
+
+        it('masks PII in fallback candidates when the formatter response is unusable', async () => {
+            localMockPrismaService.ticket = { findMany: jest.fn().mockResolvedValue([{
+                id: 'ticket-pii', userId: 'customer-1', subject: 'Activate AB12CD34EF56 for user@example.com', tags: [], satisfactionScore: 5,
+                messages: [
+                    { senderId: 'customer-1', sender: { role: { name: 'CUSTOMER' } }, message: 'Please help', isInternal: false, deletedAt: null },
+                    { senderId: 'agent-1', sender: { role: { name: 'SUPPORT_AGENT' } }, message: 'Use key AB12CD34EF56 and email user@example.com', isInternal: false, deletedAt: null },
+                ],
+            }]) };
+            mockAiService.reformat.mockResolvedValue({ response: 'not-json' });
+
+            const [pattern] = await service.extractFromTickets();
+
+            expect(pattern.question).not.toContain('user@example.com');
+            expect(pattern.answer).not.toContain('user@example.com');
+            expect(pattern.question).not.toContain('AB12CD34EF56');
+            expect(pattern.answer).not.toContain('AB12CD34EF56');
+        });
+
         it('persists the source ticket for a ticket-derived candidate', async () => {
             localMockPrismaService.faqEntry.findFirst.mockResolvedValue(null);
             localMockPrismaService.$queryRaw.mockResolvedValue([]);
