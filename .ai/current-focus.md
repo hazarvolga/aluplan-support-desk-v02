@@ -6,6 +6,13 @@
 - İki hedefli suite 28/28, backend typecheck ve `git diff --check` geçti; bağımsız kod ve güvenlik incelemeleri APPROVE verdi. Regex maskeleme tam anonimleştirme değildir; serbest metin PII residual olarak kayıtlıdır. Geçmiş kayıtlar, canlı DB/sağlayıcı, migration, push/deploy yok; `apps/frontend/next-env.d.ts` korunuyor.
 - Sıradaki planlı görev **CWL-01**: crawler/pool queue failure'da SYNCING durumunu fail-closed düzeltmek ve yeniden indekslemede eski çalışan vektörleri korumak.
 
+## 30 Eylül — CWL-01 tamamlandı; sıradaki görev CWL-02 (yerel)
+
+- Queue enqueue hatası kaynak durumunu FAILED yapıyor; özgün hata korunuyor. Aynı source için BullMQ `jobId` dedup var. Boş URL içeriği processor'da başarısız akışa gidiyor; eski vektörler korunuyor.
+- Pool embedding'leri sağlayıcı çağrıları tamamlanmadan mevcut kayıtları silmiyor. Kısa advisory-lock replacement transaction'ı atomik delete/insert yapıyor; 30 saniye timeout ve 5 saniye maxWait ile bounded. 4 hedefli suite 47/47, backend typecheck ve diff kontrolü geçti; bağımsız code/security review APPROVE verdi.
+- Residual: doğrudan eşzamanlı `indexPoolContent` caller'ları için generation/version guard yok; BullMQ production akışı job dedup ile sınırlandırıldı. Geçmiş vektörler, canlı DB/Redis/sağlayıcı, migration, push/deploy yok; `apps/frontend/next-env.d.ts` korunuyor.
+- Sıradaki planlı görev **CWL-02**: tek temsili public URL için yerel crawl -> chunk -> embedding -> semantic search zinciri doğrulaması.
+
 - SSS özeti, ticket embedding'i, otomatik taslak/öneri geçmişi ve sentiment girdilerinde iç notlar ile soft-delete edilmiş mesajlar DB sorgusu ve bellek içi savunmayla dışlanıyor. Soft-delete edilmiş bilet event'leri üç handler'da da yan etkisiz reddediliyor.
 - Müşteri-personel metinleri kamuya açık kabul edilmiyor; konu/açıklama/mesaj/sentiment girdileri temel PII maskelemesinden geçiyor. `privacySafeContext`, kullanıcı kimliğini auth/kota/cache sahipliği için korurken PromptContextBuilder'a profil, yakın bilet ve ham Hotinfo aktarmıyor; normal ve privacy-safe cache kapsamları ayrıldı.
 - Dört hedefli suite 110/110, backend typecheck ve `git diff --check` geçti. Bağımsız kod ve güvenlik incelemeleri blocker bulmadı. Regex maskeleme tam anonimlik iddiası değildir; isim/adres/lisans anahtarı ve alternatif AI yolları takip riski olarak kayıtlıdır.

@@ -39,7 +39,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 3.2 | **CACHE-01**| Röntgen Bölüm 10 | Redis ve Semantic Cache Tutarsızlığı / İptal (Invalidation) Olayları | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; odaklı test ve typecheck geçti) |
 | 3.3 | **PRIV-01** | PRIV-01 | SSS Özetlerinde ve Bilet Vektörlerinde İç Notların Ayrıştırılması ve Gizlilik | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 3.4 | **LRN-01** | Röntgen Bölüm 8.2 / 8.3 | Çözüm Temelli SSS Çıkarımı, Puanlama Ayrımı ve Yaşam Döngüsü Açıklığı | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
-| 4.1 | **CWL-01** | CRAWL-01 | Crawler / Havuz Kuyruk Hatasında SYNCING Takılması ve Eski İndeks Koruması | Paket B (Ingestion) | **PENDING** |
+| 4.1 | **CWL-01** | CRAWL-01 | Crawler / Havuz Kuyruk Hatasında SYNCING Takılması ve Eski İndeks Koruması | Paket B (Ingestion) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 4.2 | **CWL-02** | Handoff Bölüm 7 (Sıra 4) | Temsilî Tek Public URL Uçtan Uca İçe Aktarma ve Vektörleme Doğrulaması | Paket B (Ingestion) | **PENDING** |
 | 4.3 | **MOD-01** | RAG-02 | Model / Embedding Sürüm Değişimi ve Toplu Reindex Operasyonel Kısıtı | Paket B (Ingestion) | **PENDING** |
 | 5.1 | **UX-01** | Handoff Bölüm 4 | Bölüm 4 Görünür Frontend AI / `ANN_*` Metin ve Etiket Revizyonu | Paket B (Kullanım/UX) | **COMPLETED** (TR/EN/DE; yerel render ve odaklı kontroller geçti) |
@@ -481,7 +481,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 ## Sıra 4: Paket B — Çalışan Ingestion (Tarama ve Kaynak Yönetimi)
 
 ### CWL-01: Havuz Kuyruk Hatasında SYNCING Takılması ve Eski İndeks Koruması
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (yerel; yayın yok)
 - **Rapor ID / Kanıt:** CRAWL-01; Röntgen Bölüm 9.1 (Satır 262), Bölüm 10 (Satır 278); `B/knowledge-pool/knowledge-pool.service.ts:55-91`, `B/ai/embedding.service.ts:638-719`.
 - **Dosya / Modül:** `apps/backend/src/knowledge-pool/knowledge-pool.service.ts`, `apps/backend/src/ai/embedding.service.ts`.
 - **Minimum Değişiklik:** 
@@ -490,9 +490,12 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Kapsam Dışı:** Tüm harici web crawler motorunun baştan yazılması.
 - **Bağımlılık:** Sıra 3 tamamlanmış olmalı.
 - **Kabul Ölçütü:** Kuyruk hatasında kaynak süresiz `SYNCING` kalmamalı; sağlayıcı 429/500 verdiğinde mevcut çalışan vektörler silinip kaynak 0 vektörlü kalmamalı.
-- **Dar Doğrulama:** `pnpm --filter @aluplan/backend test -- src/knowledge-pool/knowledge-pool.service.spec.ts`.
+- **Dar Doğrulama:** `pnpm --filter @aluplan/backend test -- src/knowledge-pool/knowledge-pool-job.spec.ts src/knowledge-pool/knowledge-pool.processor.spec.ts src/ai/embedding.service.spec.ts src/ai/embedding.service.pbt.spec.ts --runInBand` (47/47 PASS); backend typecheck ve `git diff --check` PASS.
 - **Veri / Migration Etkisi:** Sıfır şema değişikliği.
-- **Açık Kullanıcı Kararı:** Başarısız sync sonrası eski vektörlerle yayına devam edilsin mi, yoksa kaynak geçici olarak DEGRADED mi işaretlensin?
+- **Uygulama:** BullMQ enqueue başarısızlığında kaynak SYNCING'de bırakılmadan FAILED işaretlenir; durum güncellemesi başarısız olsa bile özgün queue hatası korunur. Aynı kaynak için `jobId` dedup kullanılır. URL crawler boş içerik üretirse processor FAILED akışına girer ve eski vektörler korunur. Pool embedding'leri önce bellekte hazırlanır; yalnız başarıyla tamamlanmış set kısa, advisory-lock'lu transaction'da atomik replace edilir. Provider hatası/429 veya transaction hatası mevcut çalışan vektörleri silmez. Replacement transaction `{maxWait:5000, timeout:30000}` ile bounded'dır.
+- **Kalan Operasyonel Sınır:** Doğrudan eşzamanlı `indexPoolContent` çağrılarında generation/version guard yoktur; mevcut üretim BullMQ job dedup akışı bunu sınırlar. İleride yeni caller eklenirse generation guard/concurrency regression testi gerekir.
+- **Açık Kullanıcı Kararı:** Çözüldü. Başarısız sync sonrası eski çalışan vektörlerle devam edilir; kaynak FAILED olarak görünür. Tarihsel veri veya canlı servis mutasyonu yapılmadı.
+- **Veri / Dış Etki:** Sıfır schema/migration; canlı DB/Redis/sağlayıcı, push/deploy kullanılmadı. `apps/frontend/next-env.d.ts` kullanıcı WIP'i korunuyor.
 
 ### CWL-02: Temsilî Tek Public URL Uçtan Uca İçe Aktarma ve Vektörleme Doğrulaması
 - **Durum:** `PENDING`
