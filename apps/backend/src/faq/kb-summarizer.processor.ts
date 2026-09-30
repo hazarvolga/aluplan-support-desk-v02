@@ -4,6 +4,7 @@ import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { FaqService, ExtractedPattern } from './faq.service';
+import { PiiMaskingService } from '../common/services/pii-masking.service';
 
 @Processor('kb-summarizer')
 export class KbSummarizerProcessor extends WorkerHost {
@@ -13,6 +14,7 @@ export class KbSummarizerProcessor extends WorkerHost {
         private readonly prisma: PrismaService,
         private readonly ai: AiService,
         private readonly faqService: FaqService,
+        private readonly piiMaskingService: PiiMaskingService,
     ) {
         super();
     }
@@ -22,9 +24,14 @@ export class KbSummarizerProcessor extends WorkerHost {
         this.logger.log(`🤖 Summarizing ticket ${ticketId} for Self-Learning KB...`);
 
         // 1. Get ticket and messages
-        const ticket = await this.prisma.ticket.findUnique({
-            where: { id: ticketId },
-            include: { messages: { orderBy: { createdAt: 'asc' } } }
+        const ticket = await this.prisma.ticket.findFirst({
+            where: { id: ticketId, deletedAt: null },
+            include: {
+                messages: {
+                    where: { isInternal: false, deletedAt: null },
+                    orderBy: { createdAt: 'asc' },
+                },
+            }
         });
 
         if (!ticket || ticket.messages.length === 0) {
@@ -48,13 +55,24 @@ export class KbSummarizerProcessor extends WorkerHost {
             throw new Error('AI service unavailable');
         }
 
-        // 2. Format conversation
-        const conversation = ticket.messages.map((m: any) =>
-            `${m.isInternal ? '[INTERNAL] ' : ''}${m.senderId === ticket.userId ? 'Customer' : 'Agent'}: ${m.message}`
+        // Defense in depth: keep private staff notes out even if a mocked or
+        // future data adapter does not honor the query-level filter.
+        const publicMessages = ticket.messages.filter(
+            (message: any) => !message.isInternal && !message.deletedAt,
+        );
+        if (publicMessages.length === 0) {
+            this.logger.warn(`Ticket ${ticketId} has no customer-visible messages to summarize.`);
+            return;
+        }
+
+        // 2. Format customer-visible conversation only
+        const conversation = publicMessages.map((m: any) =>
+            `${m.senderId === ticket.userId ? 'Customer' : 'Agent'}: ${this.piiMaskingService.maskSensitiveData(m.message)}`
         ).join('\n---\n');
 
         // 3. Ask AI to summarize
-        const summary = await this.ai.summarizeTicket(ticket.subject, conversation);
+        const maskedSubject = this.piiMaskingService.maskSensitiveData(ticket.subject);
+        const summary = await this.ai.summarizeTicket(maskedSubject, conversation);
 
         if (!summary) {
             this.logger.error(`Ollama failed to return a summary for ticket ${ticketId}`);
@@ -62,7 +80,7 @@ export class KbSummarizerProcessor extends WorkerHost {
         }
 
         // Simple split for Q and A if AI followed format
-        let question = ticket.subject;
+        let question = maskedSubject;
         let answer = summary;
 
         if (summary.includes('Cevap:')) {

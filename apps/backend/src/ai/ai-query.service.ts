@@ -44,6 +44,12 @@ export interface AiQueryOptions {
     strictLanguage?: boolean;
     productId?: string | null;
     wait?: boolean;
+    /**
+     * Keeps the authenticated user id for authorization, quota, and ownership,
+     * while preventing profile, recent-ticket, and raw Hotinfo enrichment from
+     * entering the model prompt.
+     */
+    privacySafeContext?: boolean;
 }
 
 export interface AiQueryResult {
@@ -566,11 +572,11 @@ export class AiQueryService {
             });
 
             const contextPrompt = await this.promptContextBuilder.buildContext({
-                userId: userId ?? undefined,
+                userId: options.privacySafeContext ? undefined : (userId ?? undefined),
                 userQuery,
                 kbContent: results.slice(0, 10).map(r => r.content).join('\n\n---\n\n'),
                 visualEvidence,
-                hotinfoSnapshot: hotinfoContext,
+                hotinfoSnapshot: options.privacySafeContext ? undefined : hotinfoContext,
                 messages: options.history,
                 diagnosis,
             });
@@ -1822,6 +1828,7 @@ If context contains usable procedural evidence, synthesize the answer instead of
                 history: options.history ?? [],
                 hotinfoContext: options.hotinfoContext ?? null,
                 strictLanguage: options.strictLanguage ?? false,
+                privacySafeContext: options.privacySafeContext ?? false,
             }))
             .digest('hex');
 
@@ -2523,11 +2530,11 @@ If context contains usable procedural evidence, synthesize the answer instead of
 
 
             const contextPrompt = await this.promptContextBuilder.buildContext({
-                userId: userId ?? undefined,
+                userId: options.privacySafeContext ? undefined : (userId ?? undefined),
                 userQuery,
                 kbContent: results.slice(0, 10).map(r => r.content).join('\n\n---\n\n'),
                 visualEvidence: streamVisualEvidence,
-                hotinfoSnapshot: hotinfoContext,
+                hotinfoSnapshot: options.privacySafeContext ? undefined : hotinfoContext,
                 messages: options.history?.map(h => ({ role: h.role, content: h.content })),
                 diagnosis
             });
@@ -3493,10 +3500,10 @@ SADECE en uygun kategori adını yaz.Hiçbiri uymuyorsa "GENEL" yaz.`;
         const diagnosis = await this.diagnosisService.analyze(userQuery, historyTexts, productId);
 
         const context = await this.promptContextBuilder.buildContext({
-            userId: userId || undefined,
+            userId: options.privacySafeContext ? undefined : (userId || undefined),
             userQuery,
             kbContent,
-            hotinfoSnapshot: hotinfoContext,
+            hotinfoSnapshot: options.privacySafeContext ? undefined : hotinfoContext,
             messages: history,
             diagnosis
         });

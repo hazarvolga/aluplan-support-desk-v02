@@ -6,6 +6,7 @@ import { AiService } from './ai.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
 import { SettingsService } from '../settings/settings.service';
+import { PiiMaskingService } from '../common/services/pii-masking.service';
 
 @Injectable()
 export class AiAutoResolverService {
@@ -17,6 +18,7 @@ export class AiAutoResolverService {
         private readonly prisma: PrismaService,
         private readonly embeddingService: EmbeddingService,
         private readonly settings: SettingsService,
+        private readonly piiMaskingService: PiiMaskingService,
     ) { }
 
     private async isFeatureEnabled(key: string, defaultValue = false): Promise<boolean> {
@@ -27,23 +29,29 @@ export class AiAutoResolverService {
 
     @OnEvent('ticket.created', { async: true, promisify: true })
     async handleTicketCreated(ticket: Ticket) {
+        if (ticket.deletedAt) return;
+
         // Skip if already has interaction or if it's not a NEW ticket
         if (ticket.interactionId || ticket.status !== TicketStatus.NEW) {
             return;
         }
 
         try {
-            const queryText = `${ticket.subject}\n\n${ticket.description || ''}`;
+            const queryText = this.piiMaskingService.maskSensitiveData(
+                `${ticket.subject}\n\n${ticket.description || ''}`,
+            );
             this.logger.log(`🤖 Attempting auto-resolution for ticket ${ticket.ticketNumber}`);
 
             const messages = await this.prisma.ticketMessage.findMany({
-                where: { ticketId: ticket.id },
+                where: { ticketId: ticket.id, isInternal: false, deletedAt: null },
                 orderBy: { createdAt: 'asc' },
-                select: { senderId: true, message: true, isInternal: true }
+                select: { senderId: true, message: true, isInternal: true, deletedAt: true }
             });
-            const history = messages.map(m => ({
-                role: (m.senderId === ticket.userId ? 'user' : 'assistant') as 'user' | 'assistant',
-                content: m.message
+            const history = messages.filter(
+                historyMessage => !historyMessage.isInternal && !historyMessage.deletedAt,
+            ).map(historyMessage => ({
+                role: (historyMessage.senderId === ticket.userId ? 'user' : 'assistant') as 'user' | 'assistant',
+                content: this.piiMaskingService.maskSensitiveData(historyMessage.message),
             }));
 
             const channelStr: any = ticket.channel || 'WEB';
@@ -52,7 +60,8 @@ export class AiAutoResolverService {
                 userId: ticket.userId ?? undefined,
                 channel: channelStr,
                 hotinfoContext: ticket.hotinfoSnapshot,
-                history
+                history,
+                privacySafeContext: true,
             });
 
             if (result.confidence === 'HIGH' && result.answer) {
@@ -94,12 +103,16 @@ export class AiAutoResolverService {
     @OnEvent('ticket.message_added', { async: true })
     async handleMessageAdded(event: { ticket: Ticket; message: TicketMessage }) {
         const { ticket, message } = event;
+        if (ticket.deletedAt) return;
+
         // Ignore internal messages and messages from someone who isn't the ticket creator (agents)
         if (message.isInternal || message.senderId !== ticket.userId) return;
 
         try {
             if (await this.isFeatureEnabled('ai.auto_sentiment.enabled')) {
-                const sentiment = await this.aiService.analyzeSentiment(message.message);
+                const sentiment = await this.aiService.analyzeSentiment(
+                    this.piiMaskingService.maskSensitiveData(message.message),
+                );
                 if (sentiment) {
                     await this.prisma.ticketMessage.update({
                         where: { id: message.id },
@@ -123,23 +136,26 @@ export class AiAutoResolverService {
             const activeStates: TicketStatus[] = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS, TicketStatus.PENDING_CUSTOMER];
             if (activeStates.includes(ticket.status) && await this.isFeatureEnabled('ai.auto_context_suggestion.enabled')) {
                 const messages = await this.prisma.ticketMessage.findMany({
-                    where: { ticketId: ticket.id },
+                    where: { ticketId: ticket.id, isInternal: false, deletedAt: null },
                     orderBy: { createdAt: 'asc' },
                     take: 20,
-                    select: { senderId: true, message: true, isInternal: true }
+                    select: { senderId: true, message: true, isInternal: true, deletedAt: true }
                 });
 
-                const history = messages.map(m => ({
-                    role: (m.senderId === ticket.userId ? 'user' : 'assistant') as 'user' | 'assistant',
-                    content: m.message
+                const history = messages.filter(
+                    historyMessage => !historyMessage.isInternal && !historyMessage.deletedAt,
+                ).map(historyMessage => ({
+                    role: (historyMessage.senderId === ticket.userId ? 'user' : 'assistant') as 'user' | 'assistant',
+                    content: this.piiMaskingService.maskSensitiveData(historyMessage.message),
                 }));
 
                 const result = await this.aiQueryService.query({
-                    userQuery: message.message,
+                    userQuery: this.piiMaskingService.maskSensitiveData(message.message),
                     userId: ticket.userId ?? undefined,
                     channel: (ticket.channel as CommunicationChannel) || CommunicationChannel.WEB,
                     hotinfoContext: ticket.hotinfoSnapshot,
-                    history
+                    history,
+                    privacySafeContext: true,
                 });
 
                 if (result.answer) {
@@ -170,6 +186,7 @@ export class AiAutoResolverService {
      */
     @OnEvent('ticket.kb_summarize', { async: true })
     async handleTicketSummarize(ticket: Ticket) {
+        if (ticket.deletedAt) return;
         if (!ticket.satisfactionScore || ticket.satisfactionScore < 4) return;
 
         try {
@@ -177,15 +194,24 @@ export class AiAutoResolverService {
 
             // Get all messages from this ticket
             const messages = await this.prisma.ticketMessage.findMany({
-                where: { ticketId: ticket.id },
+                where: { ticketId: ticket.id, isInternal: false, deletedAt: null },
                 orderBy: { createdAt: 'asc' }
             });
 
-            if (messages.length === 0) return;
+            // Defense in depth for alternate/mocked data adapters: internal
+            // notes must never reach the external embedding provider.
+            const publicMessages = messages.filter(
+                message => !message.isInternal && !message.deletedAt,
+            );
+            if (publicMessages.length === 0) return;
 
             // Simple concatenation for now (subject + description + messages)
-            const conversation = messages.map(m => `[${m.isInternal ? 'Admin' : 'Customer'}]: ${m.message}`).join('\n\n');
-            const totalContent = `TICKET: ${ticket.subject}\nISSUE: ${ticket.description || ''}\n\nCONVERSATION:\n${conversation}`;
+            const conversation = publicMessages
+                .map(message => `[Customer-visible message]: ${this.piiMaskingService.maskSensitiveData(message.message)}`)
+                .join('\n\n');
+            const subject = this.piiMaskingService.maskSensitiveData(ticket.subject);
+            const description = this.piiMaskingService.maskSensitiveData(ticket.description || '');
+            const totalContent = `TICKET: ${subject}\nISSUE: ${description}\n\nCONVERSATION:\n${conversation}`;
 
             // Pass this context to the embedding service to index.
             // knowledgeBaseAdded flag'ini KbSummarizerProcessor setler — burada setlersek FaqService'in
