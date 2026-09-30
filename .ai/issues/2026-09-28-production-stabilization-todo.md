@@ -34,7 +34,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 1.4 | **SEC-04** | SEC-04 | WhatsApp Webhook Tanınmayan Göndericide Güvenli Ret / Karantina İzolasyonu | Paket A (Erişim/Oturum) | **COMPLETED** (dar kapsam kabul) |
 | 1.5 | **SEC-05** | Röntgen Bölüm 5.3 / 13 | Genel / Bulk Bilet Güncellemelerinde Yetki ve Durum Geçiş Sınırları | Paket A (Erişim/Oturum) | **COMPLETED** (Bağımsız kabul) |
 | 2.1 | **REL-01** | Handoff Bölüm 7 (Sıra 2) | Paket A Sonrası Tip Kontrolü, Derleme ve Odaklı Testler (Ara Yayın Yok) | Paket A (Kalite Kontrolü) | **COMPLETED** (Bağımsız kabul; tarayıcı kapsam sınırı kayıtlı) |
-| 2.2 | **REL-02** | Handoff Bölüm 5 (P1) | Erişilebilir High Bağımlılık Denetimi ve Quality Gate CI/E2E Analizi | Paket A (Yayın Hazırlığı) | **IN_PROGRESS** (yerel düzeltmeler ve bağımsız inceleme tamam; izole seed runtime smoke, mevcut DB kimlik doğrulaması nedeniyle bekliyor) |
+| 2.2 | **REL-02** | Handoff Bölüm 5 (P1) | Erişilebilir High Bağımlılık Denetimi ve Quality Gate CI/E2E Analizi | Paket A (Yayın Hazırlığı) | **COMPLETED** (yerel audit/CI düzeltmeleri, izole seed smoke ve bağımsız inceleme geçti; hosted CI çalıştırılmadı) |
 | 3.1 | **RAG-01** | RAG-01 | Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi | Paket B (Güvenilir Bilgi) | **PENDING** |
 | 3.2 | **CACHE-01**| Röntgen Bölüm 10 | Redis ve Semantic Cache Tutarsızlığı / İptal (Invalidation) Olayları | Paket B (Güvenilir Bilgi) | **PENDING** |
 | 3.3 | **PRIV-01** | PRIV-01 | SSS Özetlerinde ve Bilet Vektörlerinde İç Notların Ayrıştırılması ve Gizlilik | Paket B (Güvenilir Bilgi) | **PENDING** |
@@ -366,7 +366,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Açık Kullanıcı Kararı (Kesinleşen):** Kullanıcının kesin kararı doğrultusunda Paket A sonrası ara yayın önerisi kaldırılmıştır. Tüm işler (Paket A ve B) bitip bağımsız olarak incelenene kadar yayın gündeme alınmayacaktır; yalnızca yerel derleme/test doğrulaması ve yerel checkpoint commit'i işletilir.
 
 ### REL-02: Erişilebilir High Bağımlılık Denetimi ve Quality Gate CI/E2E Analizi
-- **Durum:** `IN_PROGRESS` (30 Eylül 2026; kullanıcı kalan işleri bu ajan üzerinden sırayla yürütmemi onayladı. Yerel dependency/CI düzeltmeleri, hedefli regresyonlar ve bağımsız inceleme tamamlandı; yalnız ayrılmış E2E veritabanında seed runtime smoke doğrulaması açık.)
+- **Durum:** `COMPLETED` (30 Eylül 2026; yerel dependency/CI düzeltmeleri, hedefli testler, taze boş DB migration+seed smoke ve bağımsız inceleme geçti. Hosted GitHub E2E koşusu iddia edilmiyor.)
 - **Rapor ID / Kanıt:** Handoff Bölüm 5 (P1); Röntgen Bölüm 15.
 - **Dosya / Modül:** `package.json`, `pnpm-lock.yaml`, CI workflow dosyaları.
 - **Uygulanan Dar Değişiklikler:**
@@ -376,7 +376,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
   - Seed aracı varsayılan olarak kapalıdır; açık `E2E_SEED_ALLOWED=true`, `NODE_ENV !== production`, PostgreSQL URL'i, loopback IP host'u ve `_e2e` veritabanı adı ister. Bunları güvenceleyen hedefli testler eklendi; kullanıcı verisine veya preview DB'lerine yönelme engellenir.
 - **Kapsam Dışı:** Kullanıcının kirli WIP dosyalarını onay almadan ezmek veya stage etmek; geniş sürüm yükseltmeleri; CI kapılarını bastırmak (`suppress`).
 - **Bağımlılık:** Yok; kullanıcı REL-02 dahil kalan işleri sırayla bu ajana devretti. `apps/frontend/next-env.d.ts` dışındaki kapsam bu görev için düzenlenmiştir; `next-env.d.ts` kullanıcı WIP'i korunur ve bu görevin staging kapsamına girmez.
-- **Kabul Ölçütü:** 7 High güvenlik bulgusu için risk/erişilebilirlik matrisi hazırlanmalı; CI E2E zaman aşımı kök nedeni belgelenmeli. Yerel düzeltmelerin hızlı testleri ve bağımsız incelemesi geçmeli. Runtime seed smoke tamamlanmadan bu görevin uygulama doğrulaması tamamlanmış sayılmaz; GitHub-hosted E2E başarısı ise push yapılmadığı için iddia edilmez.
+- **Kabul Ölçütü:** 7 High güvenlik bulgusu için risk/erişilebilirlik matrisi ve CI E2E timeout kök nedeni belgeli; seçili dependency düzeltmeleri/regression testleri ile izole runtime seed smoke geçmiştir. GitHub-hosted E2E başarısı push yapılmadığı için bu yerel görevin kanıtı değildir ve iddia edilmez.
 - **Dar Doğrulama:** Sabit pnpm 9.15.4 ile `audit --prod --audit-level high` (High sayısının sıfır olması; diğer seviyeler rapor edilir), dependency regresyon testleri, CI/E2E contract testleri, frozen install, backend typecheck ve ayrılmış DB seed smoke.
 - **Veri / Migration Etkisi:** Sıfır.
 - **Açık Kullanıcı Kararı:** Yok. Kullanıcı yerel düzeltmeleri yürütme yetkisi verdi; remote push/tag/deploy hâlâ ayrı açık onay gerektirir.
@@ -392,7 +392,8 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **WIP / Lockfile Güvenliği:** Korunan `aluplan-release-candidate-20260919` değiştirilmedi. Stabilizasyon lockfile'ında XLSX CDN tarball `integrity` değeri başlangıç Git sürümünden doğrulanıp korundu; temiz kurulum frozen modda geçti. Ayrı kullanıcı WIP'i `apps/frontend/next-env.d.ts` değiştirilmedi ve staging kapsamı dışındadır.
 - **Quality Gate E2E Kök Neden (başlangıç kanıtı ve uygulanan düzeltme):** Kaynak GitHub CI koşusu `36416406236`, SHA `64d71aeccbffa092482faad550131a17744d364c` (28 Eylül) `End-to-End Tests` işinde `Error: Timed out waiting 300000ms from config.webServer` ile sonlandı. Log, Playwright testlerinin çalıştığına değil webServer hazır olamadığına kanıttı. `playwright.config.ts` backend health URL'sini beklerken ayrı E2E job'ında Postgres/`DATABASE_URL` ve zorunlu secrets yoktu; job'lar arasında servis paylaşılmaz. `auth.setup.ts` ayrıca migrate/seed edilmiş sentetik hesap bekliyordu. Uygulanan yerel CI değişikliği yalnız job'a ait health-checked Postgres/Redis, sentetik job secrets, migration ve guarded seed adımlarını ekledi; bu workflow henüz GitHub'da çalıştırılmadı (push izni yok), dolayısıyla kök neden düzeltmesinin hosted koşu başarısı doğrulanmış değildir.
 - **Güncel Yerel Doğrulama (30 Eylül):** Sabit pnpm 9.15.4 `audit --prod --audit-level high` exit 0; rapor 30 bulgu (7 Low, 23 Moderate, 0 High). Bu yaşayan advisory verisinin anlık görüntüsüdür, kalıcı temiz audit garantisi değildir. `test:security:dependencies` 263/263; odaklı dependency/lock/MJML/seed sözleşme testleri 24/24; backend typecheck, pnpm frozen install ve `git diff --check` geçti. Bağımsız son inceleme uygulanabilir bulgu vermedi. Lokal `Playwright --list`/contract testleri GitHub-hosted gerçek E2E koşusu yerine geçmez.
-- **Kalan Tek Yerel Kanıt:** Tek kullanımlık, adı açıkça `aluplan-rel02-e2e-db-20260929` olan ayrılmış test PostgreSQL container'ında tekrar seed smoke denendi; bağlantı kimlik doğrulaması P1000 ile başarısız oldu ve seed DB'ye bağlanamadığından yazma yapılmadı. Kullanıcı izni olmadan parolayı sıfırlamadım, volume silmedim veya başka DB/container açmadım. Denemeden sonra yalnız bu container durduruldu; volume korundu. `aluplan-stab-preview-*` container'larına erişilmedi/değişiklik yapılmadı. Yeni izinli DB bağlantısı veya geçerli mevcut auth bilgisi olmadan runtime seed doğrulaması kapatılamaz.
+- **İzole Runtime Kanıtı (30 Eylül):** Yeni, boş, loopback'e bağlı ve geçici tmpfs Postgres `pgvector/pgvector:pg17` container'ında 57 Prisma migration ve `NODE_ENV=test E2E_SEED_ALLOWED=true` seed komutu başarıyla geçti; üç sentetik rol (`ADMIN`, `SUPPORT_AGENT`, `CUSTOMER`) üretildi. Geçici container otomatik kaldırıldı; DB verisi RAM'deydi, kalıcı volume oluşturulmadı. Önceki P1000'li ayrılmış container'a/volume'üne dokunulmadı; `aluplan-stab-preview-*` container'ları çalışır durumda ve değiştirilmedi.
+- **Kapsam Sınırı:** Local seed proof ve testler bu uygulama düzeltmesini doğrular; GitHub-hosted E2E job'ı çalıştırılmadı, çünkü push yetkisi yok. Yayın/push/deploy kapısı aynen geçerlidir.
 
 ---
 
@@ -528,7 +529,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Veri / Migration Etkisi:** Sıfır.
 - **Doğrulama:** `pnpm --dir apps/frontend run i18n:check` üç locale için geçti; üç JSON parse edildi; `git diff --check` geçti; eski ham anahtar etiketleri `rg` ile tarandı ve bulunmadı. Yerel Next render'ında talep detayı ve yeni talep ekranı TR/EN/DE görüntülendi; API yanıtları yalnız sentetik Playwright fixture'larıydı, DB/müşteri verisi ve AI üretimi kullanılmadı. Görsel kanıtlar `/tmp/aluplan-ux01-{tr,en,de}.png` ve `/tmp/aluplan-ux01-new-{tr,en,de}.png` altında. Bağımsız metin incelemesi bloklayıcı bulgu vermedi.
 - **Dış Etki / Sınır:** Gerçek servis, müşteri verisi, bilet gönderimi, e-posta, push veya deploy kullanılmadı. `apps/frontend/next-env.d.ts` içindeki yerel değişiklik kullanıcı WIP'i olarak korunur ve bu görevin commit'ine alınmaz.
-- **Kalan Kullanıcı Kararı:** Yok; terimler kullanıcı tarafından onaylandı. Sıradaki planlı görev REL-02'dir.
+- **Kalan Kullanıcı Kararı:** Yok; terimler kullanıcı tarafından onaylandı. UX-01 ve REL-02 tamamlandı; sıradaki planlı görev RAG-01'dir.
 
 ### UX-02: Yardım Ekranı (`/tr/help`) Çeviri Anahtarları ve Gerçek Personel Rol Menüsü
 - **Durum:** `PENDING`

@@ -1,14 +1,15 @@
 # Current Focus
 
-## 30 Eylül — REL-02 durumu (yerel; seed runtime smoke açık)
+## 30 Eylül — REL-02 tamamlandı; sıradaki görev RAG-01 (yerel)
 
 - Kullanıcı kalan işleri Antigravity yerine bu ajan üzerinden sıralı tamamlamayı devretti. UX-01'in TR/EN/DE ticket etiketleri tamamlandı; TODO'daki `apps/frontend/next-env.d.ts` kullanıcı değişikliği korunuyor ve stage edilmeyecek.
 - REL-02'nin risk matrisi ve CI E2E 300 sn timeout kök nedeni belgelendi; E2E job'ı izole Postgres/Redis, sentetik geçici sırlar, migration ve seed ile düzeltildi. Seed aracı açık opt-in, non-production, loopback IP ve `_e2e` database guard'larıyla fail-closed. High advisories için dar MJML graph patch'i ve ilgili dependency override'ları uygulandı; XLSX CDN `integrity` hash'i Git başlangıcından doğrulanıp lockfile'da korundu.
 - Sabit pnpm 9.15.4 audit: 0 High / 23 Moderate / 7 Low (30 toplam); bu yaşayan advisory verisinin o anki sonucudur. Dependency security suite 263/263, odaklı regression 24/24, frozen install, backend typecheck ve diff whitespace check geçti. Bağımsız final review uygulanabilir bulgu bulmadı. Hosted GitHub E2E çalışması push yapılmadığı için doğrulanmadı.
-- Tek eksik yerel runtime kanıtı: yalnız `aluplan-rel02-e2e-db-20260929` üzerinde seed smoke denemesi P1000 parola doğrulama hatasında durdu; DB'ye bağlanamadığı için seed yazısı olmadı. Mevcut DB kimlik doğrulaması değiştirilmedi; container durduruldu, volume tutuldu. `aluplan-stab-preview-*` kullanılmadı. Yeni bir DB veya credential onarımı için ayrıca açık kullanıcı izni gerekir; mevcut sınır içinde seed smoke tamamlanamazsa REL-02'yi tamamlandı diye işaretleme.
-- Sıradaki: yetkisiz DB müdahalesi yapmadan izinli doğrulama yolunun olup olmadığını değerlendirmek; yoksa engeli TODO'da koruyup kullanıcıdan yalnız gerekli DB test yetkisini istemek. Henüz REL-02 commit edilmedi; bu görev tamamlanana kadar RAG-01'e atlama.
+- Son kanıt: başarısız P1000 tekrarından sonra kullanıcı onayıyla yeni, boş, loopback-only, tmpfs ve geçici Postgres container'ı açıldı; 57 migration ve `NODE_ENV=test E2E_SEED_ALLOWED=true` ile seed smoke geçti. Geçici container otomatik kaldırıldı ve durumu doğrulandı; kalıcı volume yoktu. Önceki P1000'li container/volume değiştirilmedi; preview stack çalışır durumda ve dokunulmamış.
+- REL-02, audit/CI regresyonları + 263/263 dependency test, 24/24 odaklı test, frozen install, backend typecheck, pinned audit 0 High, bağımsız review ve izole runtime seed kanıtıyla yerel tamamlandı. Hosted GitHub E2E çalıştırılmadı; push/deploy yapılmadı. Local commits `70ee21d4`, `c2f277ab`, `003221ce`, `fe7305b5`.
+- Sıradaki planlı görev **RAG-01**: knowledge article raw SQL search soft-delete ve current-version filtreleri. Önce RAG/Graphify bağlamını, mevcut query/testleri ve GitNexus durumunu kontrol et; mevcut article/embedding verisine yazma veya destructive işlem yok.
 
-## 29 Eylül — mevcut devir ve sıradaki iş
+## 29 Eylül — tarihsel devir notu (REL-02 kapsam kararı artık geçerli değil)
 
 Kullanıcı kalan TODO görevlerinin Antigravity'siz bu ajan tarafından, sırayla ve atlanmadan yürütülmesini istedi. UX-01 tamamlandı ve ayrı yerel checkpoint'lere kaydedildi: `d1cafcf1` (çeviriler), `b31c3ee3` (durum kaydı). REL-02'de 29 Eylül salt-okunur audit High sayısını 7, mevcut kaynak-checkout WIP'li audit'i 4 olarak buldu. WIP, picomatch/linkify-it düzeltmelerinin yanı sıra SheetJS tarball integrity hash'inin kaldırılmasını da içerdiğinden olduğu gibi birleştirilmeyecek; kullanıcı kapsam kararı bekleniyor. Aynı REL-02 analizinde E2E CI job'ında backend webServer için gerekli Postgres/DATABASE_URL/secrets yokluğu 300 sn timeout'ın kök nedenidir; migration/seed de eklenmeli. CI dosyası/dependency paketleri henüz değiştirilmedi. `apps/frontend/next-env.d.ts` kullanıcı WIP'i dışarıda ve korunuyor. Ara yayın yok; push/deploy ayrıca açık kullanıcı onayı gerektirir.
 
