@@ -463,7 +463,7 @@ describe('EmbeddingService', () => {
                     return String(arg);
                 })
                 .filter((sql: string) => sql.includes('DELETE FROM knowledge_pool_embeddings'));
-            expect(deleteCalls).toHaveLength(2);
+            expect(deleteCalls).toHaveLength(0);
         });
 
         it('should execute raw insert when embed succeeds', async () => {
@@ -474,6 +474,7 @@ describe('EmbeddingService', () => {
             await service.indexPoolContent('src-1', 'content', { type: 'parent' });
 
             // Assert
+            expect(mockPrismaService.$transaction).toHaveBeenCalledWith(expect.any(Function), { maxWait: 5_000, timeout: 30_000 });
             expect(mockPrismaService.$executeRaw).toHaveBeenCalled();
             const insertCalls = mockPrismaService.$executeRaw.mock.calls
                 .map((call: unknown[]) => {
@@ -486,7 +487,7 @@ describe('EmbeddingService', () => {
             expect(insertCalls.every((sql: string) => !sql.includes('model_name'))).toBe(true);
         });
 
-        it('should clean up partial pool embeddings when indexing fails mid-run', async () => {
+        it('should preserve existing pool embeddings when indexing fails mid-run', async () => {
             mockAiService.embed
                 .mockResolvedValueOnce(mockEmbedResult)
                 .mockRejectedValueOnce(new Error('429 rate limit'));
@@ -501,7 +502,7 @@ describe('EmbeddingService', () => {
                     return String(arg);
                 })
                 .filter((sql: string) => sql.includes('DELETE FROM knowledge_pool_embeddings'));
-            expect(deleteCalls).toHaveLength(2);
+            expect(deleteCalls).toHaveLength(0);
         });
 
         it('should reject mismatched embedding dimensions before writing pool vectors', async () => {
@@ -532,7 +533,7 @@ describe('EmbeddingService', () => {
                     return String(arg);
                 })
                 .filter((sql: string) => sql.includes('DELETE FROM knowledge_pool_embeddings'));
-            expect(deleteCalls).toHaveLength(2);
+            expect(deleteCalls).toHaveLength(0);
         });
 
         it('should reject same-dimension embeddings from a different model space', async () => {

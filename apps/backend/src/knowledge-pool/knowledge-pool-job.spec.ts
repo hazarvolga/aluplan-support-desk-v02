@@ -103,6 +103,20 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
                 process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS = original;
             }
         });
+
+        it('marks the source FAILED when queue enqueue fails after SYNCING transition', async () => {
+            const source = { id: 'source-queue-failure', name: 'Queue Failure', status: KnowledgeSourceStatus.ACTIVE };
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue({ ...source, status: KnowledgeSourceStatus.SYNCING });
+            mockQueue.add.mockRejectedValueOnce(new Error('redis unavailable'));
+
+            await expect(service.triggerSync(source.id)).rejects.toThrow('redis unavailable');
+
+            expect(localMockPrismaService.knowledgeSource.update).toHaveBeenLastCalledWith({
+                where: { id: source.id },
+                data: { status: KnowledgeSourceStatus.FAILED },
+            });
+        });
     });
 
     describe('createSource', () => {

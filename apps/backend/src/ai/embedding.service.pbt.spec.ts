@@ -47,6 +47,7 @@ describe('EmbeddingService — Property-Based Tests', () => {
             }),
             $executeRawUnsafe: jest.fn().mockResolvedValue(1),
             $queryRaw: jest.fn().mockResolvedValue([]),
+            $transaction: jest.fn().mockImplementation((callback: (tx: any) => unknown) => callback(mockPrisma)),
             knowledgePoolEmbedding: { findFirst: jest.fn() },
         };
 
