@@ -261,14 +261,35 @@ export class KnowledgePoolService {
         const source = await this.prisma.knowledgeSource.findUnique({ where: { id } });
         if (!source) throw new NotFoundException('Source not found');
 
-        const isBulkSafe = (source.metadata as Record<string, unknown> | null)?.ingestionMode === 'bulk-safe';
+        const existingMetadata = (source.metadata as Record<string, unknown> | null) ?? null;
+        const classificationPath = source.filePath && source.fileName
+            ? path.join(source.filePath, source.fileName)
+            : null;
+        const classification = classificationPath ? classifyDatasetFile(classificationPath) : null;
+        const shouldRefreshLicenseMetadata = Boolean(
+            classification &&
+            classification.versionFamily !== 'unknown' &&
+            (
+                existingMetadata?.categorySlug !== classification.categorySlug ||
+                existingMetadata?.versionFamily !== classification.versionFamily ||
+                existingMetadata?.licenseEra !== classification.licenseEra ||
+                existingMetadata?.versionRange !== classification.versionRange
+            ),
+        );
+        const metadata = shouldRefreshLicenseMetadata && classification
+            ? buildDatasetMetadata(classification, existingMetadata)
+            : undefined;
+        const isBulkSafe = existingMetadata?.ingestionMode === 'bulk-safe';
         const delay = isBulkSafe
             ? parseJobDelay(process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS, 15000)
             : 0;
 
         await this.prisma.knowledgeSource.update({
             where: { id },
-            data: { status: KnowledgeSourceStatus.SYNCING },
+            data: {
+                status: KnowledgeSourceStatus.SYNCING,
+                ...(metadata ? { metadata } : {}),
+            },
         });
 
         try {
