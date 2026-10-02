@@ -1,5 +1,11 @@
 # Current Focus
 
+## 2 Ekim — Kullanıcı onaylı bilet kategori görünürlüğü tamamlandı; sıradaki görev UX-02 (yerel)
+
+- Destek talepleri listesinde `Kategori` sütunu ve kısa başlıklar (`ID`, `Konu`, `Öncelik`, `Oluşturma`) eklendi. Liste ve detay endpoint'leri departman adını seçiyor; **Lisans ve Aktivasyon** etiketi ve AI aday kategorileri için güvenli fallback gösterimi var.
+- Bilet detayında kategori hem başlık metadata satırında hem de sağ bilgi kartında görünür. Frontend bilet testi 14/14, backend TicketsService testi 35/35, iki frontend/backend typecheck ve TR/EN/DE i18n kontrolü geçti; canlı veri, migration, push/deploy yok.
+- Sıradaki planlı görev **UX-02**: `/tr/help` çeviri anahtarları ve gerçek personel rol menüsü.
+
 ## 30 Eylül — MOD-01 tamamlandı; sıradaki görev UX-02 (yerel)
 
 - Embedding model/provider değişimi, event kaynaklı migration ve `/ai/reindex` varsayılan olarak `EMBEDDING_MIGRATION_APPROVED=true` olmadan engelleniyor. Açık onayda deterministic job ID kullanılıyor; `dryRun` tek batch ile sınırlı ve provider hatasında ilerleme yoksa migration duruyor.

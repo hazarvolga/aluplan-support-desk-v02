@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-10-02 — Kullanıcı onaylı bilet kategori görünürlüğü tamamlandı; sıradaki UX-02
+
+Destek talepleri listesine kategori sütunu eklendi; **Lisans ve Aktivasyon**, departman adı ve AI aday kategorileri güvenli öncelik sırasıyla gösteriliyor. Başlıklar `ID`, `Konu`, `Kategori`, `Öncelik`, `Oluşturma` gibi kısa etiketlere çevrildi. Bilet detayında kategori başlık metadata satırında ve sağ bilgi kartında görünür. Liste ve detay API sorguları yalnız `department.name` ilişkisini seçiyor; şema/migration, canlı veri yazımı, push/deploy yok. Frontend bilet testi 14/14, backend TicketsService testi 35/35, frontend/backend typecheck ve TR/EN/DE i18n kontrolü geçti. `apps/frontend/next-env.d.ts` kullanıcı WIP'i korunuyor. Bağımsız kod incelemesi bekleniyor; ardından ürün kodu ve test/docs commitleri AGENTS kurallarına göre ayrılacak. Sıradaki planlı görev UX-02.
+
 ## 2026-09-30 — Yerel MOD-01 tamamlandı; sıradaki UX-02
 
 MOD-01 ile embedding model/provider ayar değişimleri, event kaynaklı migration ve `/ai/reindex` operatör onayı olmadan çalışmıyor. `EMBEDDING_MIGRATION_APPROVED=true` varsayılan kapalı guard olarak kullanılıyor; açık onayda deterministic migration job ID var. Dry-run her kaynakta tek batch ile sonlanıyor; provider hatasında batch ilerlemesi yoksa sonsuz tekrar kesiliyor. Hedefli üç suite / 50 test PASS, backend typecheck ve diff kontrolü PASS; bağımsız kod/güvenlik incelemeleri APPROVE verdi. Gerçek provider, canlı DB, migration, push/deploy yok; `apps/frontend/next-env.d.ts` korunuyor. Sıradaki görev UX-02.

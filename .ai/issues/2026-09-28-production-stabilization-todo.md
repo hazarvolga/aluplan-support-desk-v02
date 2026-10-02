@@ -21,6 +21,13 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Veri / dış etki:** Şema/migration yok; gerçek müşteri verisi, SMTP, dış servis, push veya deploy kullanılmadı.
 - **Release kapısı:** Bu ek düzeltme, aşağıdaki Paket A/B işlerinin tamamlanıp incelenmesi şartını değiştirmez; ara yayın yoktur.
 
+### Kullanıcı Onaylı Ek Düzeltme — Bilet Kategori Görünürlüğü ve Kısa Liste Başlıkları (2 Ekim 2026)
+
+- **Durum:** `DONE` (yerel hedefli testler, typecheck, i18n kontrolü ve bağımsız kod incelemesi tamamlanacak; canlıya alınmadı)
+- **Kapsam:** Destek talepleri listesine kategori sütunu eklendi. **Lisans ve Aktivasyon** etiketi, departman adı ve mevcutsa AI kategori adayları güvenli öncelik sırasıyla gösteriliyor. Liste başlıkları `ID`, `Konu`, `Kategori`, `Öncelik`, `Oluşturma` gibi kısa karşılıklara çekildi. Bilet detayında kategori, başlık metadata satırında ve sağ bilgi kartında görünür.
+- **Veri sınırı:** Liste ve detay sorguları yalnız kategori adı/ürün adı ilişkilerini seçiyor; müşteri mesajları veya iç notlar genişletilmedi. Şema/migration, gerçek veri yazımı, push ve deploy yok.
+- **Release kapısı:** Bu ek düzeltme, aşağıdaki Paket A/B işlerinin tamamlanıp incelenmesi şartını değiştirmez; ara yayın yoktur.
+
 ---
 
 ## Durum Özeti Tablosu
