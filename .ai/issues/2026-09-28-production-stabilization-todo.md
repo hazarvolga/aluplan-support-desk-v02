@@ -46,7 +46,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 3.2 | **CACHE-01**| Röntgen Bölüm 10 | Redis ve Semantic Cache Tutarsızlığı / İptal (Invalidation) Olayları | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; odaklı test ve typecheck geçti) |
 | 3.3 | **PRIV-01** | PRIV-01 | SSS Özetlerinde ve Bilet Vektörlerinde İç Notların Ayrıştırılması ve Gizlilik | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 3.4 | **LRN-01** | Röntgen Bölüm 8.2 / 8.3 | Çözüm Temelli SSS Çıkarımı, Puanlama Ayrımı ve Yaşam Döngüsü Açıklığı | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
-| 3.5 | **RAG-LIC-01** | Firma onaylı ALLPLAN lisans paketi | Sürüm ailesi metadata'sı, HOTINFO güvenli sürüm sinyali ve sınırlı lisans dönemi arama önceliği | Paket B (Güvenilir Bilgi) | **IN REVIEW** (yerel hedefli kontroller geçti; bağımsız inceleme bekliyor) |
+| 3.5 | **RAG-LIC-01** | Firma onaylı ALLPLAN lisans paketi | Sürüm ailesi metadata'sı, HOTINFO güvenli sürüm sinyali ve sınırlı lisans dönemi arama önceliği | Paket B (Güvenilir Bilgi) | **IN REVIEW** (kod incelemesi geçti; bilgi bankası ingest/indeks kanıtı bekliyor) |
 | 4.1 | **CWL-01** | CRAWL-01 | Crawler / Havuz Kuyruk Hatasında SYNCING Takılması ve Eski İndeks Koruması | Paket B (Ingestion) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 4.2 | **CWL-02** | Handoff Bölüm 7 (Sıra 4) | Temsilî Tek Public URL Uçtan Uca İçe Aktarma ve Vektörleme Doğrulaması | Paket B (Ingestion) | **COMPLETED** (yerel izole smoke; bağımsız kod/güvenlik incelemesi geçti) |
 | 4.3 | **MOD-01** | RAG-02 | Model / Embedding Sürüm Değişimi ve Toplu Reindex Operasyonel Kısıtı | Paket B (Ingestion) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
@@ -408,7 +408,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 ## Sıra 3: Paket B — Güvenilir Bilgi ve Öğrenme Döngüsü
 
 ### RAG-LIC-01: Firma Onaylı ALLPLAN Lisans Bilgi Paketi ve HOTINFO Sürüm Yönlendirmesi
-- **Durum:** `IN REVIEW` (yerel hedefli kontroller geçti; bağımsız inceleme bekliyor)
+- **Durum:** `IN REVIEW` (kod incelemesi geçti; bilgi bankası ingest/indeks kanıtı bekliyor)
 - **Kapsam:** Onaylı 2015 ve öncesi, 2016–2023 CodeMeter, 2024–2024-2 ALLPLAN ID/bulut, 2025 Connect 2.0 ve 2026 Connect 2.0 yönetim rehberleri için sürüm ailesi metadata'sı eklendi. `licenseEra`, `versionRange`, yöntem, senaryo ve insan incelemesi gereksinimi bilgi kaynağı metadata'sında tutulur.
 - **HOTINFO sınırı:** AI akışı korunur; Allplan sürümü, hotfix/build ve lisans alanının varlığı güvenli sinyal olarak kullanılabilir. Ham `.hxl`, `_SEC.NSE`, Product Key/lisans numarası veya ham trace embedding/aramanın içine taşınmaz. Tanınan yöntem adları dışındaki lisans değerleri prompt bağlamında maskelenir.
 - **Arama davranışı:** Lisans niyeti ve tanınan sürüm ailesi varsa aynı `licenseEra` kaynaklarına sınırlı `1.12` öncelik verilir; sürüm bilinmiyorsa veya talep lisans dışıysa ek dönem önceliği uygulanmaz. Mevcut Copilot düğmesi, insan onayı ve diğer kategori akışları korunur.
@@ -416,6 +416,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Dar doğrulama:** Backend classifier/prompt/embedding hedefli testleri ve typecheck geçti. Frontend UX-02 kontrolleri de geçti. Gerçek müşteri Hotinfo'su, canlı veritabanı, migration, push veya deploy kullanılmadı.
 - **Kalan iş:** Firma onaylı beş Markdown rehberinin yerel `dataset/` veya bilgi havuzu yükleme akışı üzerinden açıkça içe alınması; ignored `docs/` klasöründeki inceleme kopyaları otomatik olarak bilgi bankasına aktarılmaz.
 - **Kullanıcı bildirimi:** Firma onaylı rehberlerin canlı bilgi bankasına yüklendiği bildirildi; bu oturumda canlı DB veya indeks durumu doğrulanmadı. Yayın kanıtı olarak yükleme/indeks kayıtları ayrıca saklanmalıdır.
+- **Yerel içerik parmak izleri:** `01-legacy-2015-ve-oncesi.md` `5f7c0d9d…4228be`; `02-2016-2023-codemeter-product-key.md` `2ecebc46…239444a5`; `03-2024-allplan-id-cloud.md` `845c08ac…6f92b0b`; `04-2025-connect-2.md` `43075aee…b71e8eb`; `05-2026-connect-2-management.md` `3fa23f59…02ba8cce`.
 
 ### RAG-01: Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi
 - **Durum:** `COMPLETED` (yerel)
