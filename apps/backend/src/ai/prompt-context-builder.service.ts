@@ -229,12 +229,13 @@ export class PromptContextBuilderService {
     }
 
     private buildLicenseContext(hotinfo: any, userQuery: string): string {
-        const licenseType = hotinfo?.licenseType || hotinfo?.hotinfoLicense || hotinfo?.licenseNumber;
+        const rawLicenseTelemetry = hotinfo?.licenseType || hotinfo?.hotinfoLicense || hotinfo?.licenseNumber;
+        const licenseType = this.safeLicenseMethod(rawLicenseTelemetry);
         const allplanVersion = hotinfo?.allplanVersion ? String(hotinfo.allplanVersion).trim() : '';
         const parsedVersion = parseInt(allplanVersion);
         const isModern = allplanVersion && (allplanVersion.includes('2024') || allplanVersion.includes('2025') || allplanVersion.includes('2026') || (!isNaN(parsedVersion) && parsedVersion >= 2024));
 
-        if (!this.isLegacyUnreadableLicenseSignal(licenseType)) {
+        if (!this.isLegacyUnreadableLicenseSignal(rawLicenseTelemetry)) {
             return `Lisans Tipi: ${licenseType || 'Bilinmiyor'}`;
         }
 
@@ -252,13 +253,33 @@ export class PromptContextBuilderService {
         }
     }
 
+    private safeLicenseMethod(value: unknown): string {
+        const normalized = String(value || '').trim();
+        if (!normalized) return '';
+        const knownMethods = ['codemeter', 'nemslock', 'softlock', 'hardlock', 'allplan id', 'allplan connect'];
+        const match = knownMethods.find((method) => normalized.toLowerCase().includes(method));
+        if (match) return match === 'codemeter' ? 'CodeMeter' : match === 'nemslock' ? 'NemSLock' : match === 'softlock' ? 'Softlock' : match === 'hardlock' ? 'Hardlock' : match === 'allplan id' ? 'ALLPLAN ID' : 'ALLPLAN Connect';
+        return 'Lisans telemetrisi mevcut (yöntem ayrıntısı gizlendi)';
+    }
+
     private sanitizeHotinfoTrace(trace: unknown, userQuery: string): string {
         const value = String(trace || '');
         if (!value.trim()) return '';
-        if (this.isLegacyUnreadableLicenseSignal(value) && !this.isLicenseIntent(userQuery)) {
-            return 'Legacy yerel lisans trace sinyali mevcut; talep lisans odaklı olmadığı için kök neden olarak kullanılmamalı.';
+        if (this.isLegacyUnreadableLicenseSignal(value)) {
+            const qualifier = this.isLicenseIntent(userQuery) ? 'lisans talebi için' : 'lisans dışı talepte';
+            return `Legacy yerel lisans trace sinyali mevcut; ${qualifier} kök neden olarak kullanılmamalı.`;
         }
-        return value;
+
+        const safeCode = value.match(/\b((?:ERR|ERROR|E|0X)[-_]?[0-9A-F]{2,12})\b/i)?.[1];
+        if (safeCode) {
+            return `Hotinfo hata kodu: ${safeCode}; ham trace ayrıntısı gizlendi.`;
+        }
+
+        if (value.trim()) {
+            return 'Hotinfo hata trace sinyali mevcut; ham trace ayrıntısı gizlendi.';
+        }
+
+        return '';
     }
 
     private isLegacyUnreadableLicenseSignal(value: unknown): boolean {

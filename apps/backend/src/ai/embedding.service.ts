@@ -19,6 +19,7 @@ export interface SearchResult {
     confidence: 'HIGH' | 'MEDIUM' | 'LOW';
     language?: string;
     category?: string | null;
+    licenseEra?: string | null;
     updatedAt?: Date;
     visualSummaries?: Array<{
         url: string;
@@ -129,6 +130,9 @@ const calculateIntentCategoryMultiplier = (query: string, category: string | nul
 
     return 1;
 };
+
+export const calculateLicenseEraMultiplier = (queryEra: string, sourceEra: string | null | undefined): number =>
+    queryEra !== 'unknown' && sourceEra === queryEra ? 1.12 : 1.0;
 
 const calculateIntentSourceMultiplier = (
     query: string,
@@ -397,6 +401,7 @@ export class EmbeddingService {
                 trust_score: number;
                 language: string;
                 category: string | null;
+                license_era: string | null;
                 updated_at: Date;
                 visual_summaries: unknown;
             }>
@@ -463,6 +468,7 @@ export class EmbeddingService {
             ka.trust_score,
             ka.language,
             NULL::text AS category,
+            NULL::text AS license_era,
             ka.updated_at,
             NULL::jsonb AS visual_summaries
         FROM knowledge_embeddings ke
@@ -499,6 +505,7 @@ export class EmbeddingService {
             ks.trust_score,
             ks.language,
             ks.metadata->>'category' AS category,
+            ks.metadata->>'licenseEra' AS license_era,
             ks.updated_at,
             ks.metadata->'visualSummaries' AS visual_summaries
         FROM knowledge_pool_embeddings kpe
@@ -530,6 +537,7 @@ export class EmbeddingService {
             LEAST((fe.trust_score * fe.feedback_weight)::float, 1.2) AS trust_score,
             fe.language,
             NULL::text AS category,
+            NULL::text AS license_era,
             fe.updated_at,
             NULL::jsonb AS visual_summaries
         FROM faq_entries fe
@@ -558,6 +566,10 @@ export class EmbeddingService {
             WHEN category IS NULL THEN 1.0
             ELSE 0.98
           END
+        * CASE
+            WHEN ${queryClassification.licenseEra} <> 'unknown' AND license_era = ${queryClassification.licenseEra} THEN 1.12
+            ELSE 1.0
+          END
       ) DESC
       LIMIT ${candidateLimit} -- Fetch enough candidates for intent-aware re-ranking
     `;
@@ -567,13 +579,14 @@ export class EmbeddingService {
                 const rawSimilarity = Number(row.similarity);
                 const languageMultiplier = row.language === queryLanguage ? 1.14 : row.language && ['tr', 'en', 'de'].includes(row.language) ? 0.97 : 1.0;
                 const categoryMultiplier = row.category === queryCategory ? 1.18 : row.category ? 0.98 : 1.0;
+                const licenseEraMultiplier = calculateLicenseEraMultiplier(queryClassification.licenseEra, row.license_era);
                 const intentCategoryMultiplier = calculateIntentCategoryMultiplier(query, row.category);
                 const intentSourceMultiplier = calculateIntentSourceMultiplier(query, row.category, row.title);
                 const titleBoost = calculateTitleTokenBoost(queryTokens, row.title);
                 const contentSignalBoost = calculateContentSignalBoost(query, row.title, row.content);
                 const sourceQualityMultiplier = calculateSourceQualityMultiplier(row.title);
                 const applicabilityMultiplier = calculateApplicabilityMultiplier(query, row.title, row.content, row.category);
-                const rankScore = rawSimilarity * languageMultiplier * categoryMultiplier * intentCategoryMultiplier * intentSourceMultiplier * titleBoost * contentSignalBoost * sourceQualityMultiplier * applicabilityMultiplier;
+                const rankScore = rawSimilarity * languageMultiplier * categoryMultiplier * licenseEraMultiplier * intentCategoryMultiplier * intentSourceMultiplier * titleBoost * contentSignalBoost * sourceQualityMultiplier * applicabilityMultiplier;
                 const adjustedSimilarity = Math.min(rankScore, 1);
 
                 return {
@@ -585,6 +598,7 @@ export class EmbeddingService {
                     confidence: getConfidenceBand(adjustedSimilarity),
                     language: row.language,
                     category: row.category,
+                    licenseEra: row.license_era,
                     updatedAt: row.updated_at,
                     visualSummaries: this.normalizeVisualSummaries(row.visual_summaries),
                     rankScore,

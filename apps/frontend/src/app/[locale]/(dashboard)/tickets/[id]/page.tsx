@@ -721,6 +721,9 @@ function TicketDetail({ id }: { id: string }) {
                                             <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-tighter">
                                                 {t('review_pending_desc')}
                                             </p>
+                                            <p className="mt-2 max-w-md text-[10px] normal-case tracking-normal text-muted-foreground/80">
+                                                {t('feedback_disclaimer')}
+                                            </p>
                                         </div>
 
                                         <div className="flex items-center gap-1 py-1">

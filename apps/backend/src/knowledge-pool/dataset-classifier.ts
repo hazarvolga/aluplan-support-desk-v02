@@ -17,6 +17,13 @@ export const DATASET_CATEGORY_BY_SLUG = {
 
 export type DatasetCategory = typeof DATASET_CATEGORY_BY_SLUG[keyof typeof DATASET_CATEGORY_BY_SLUG];
 export type DatasetSourceClass = 'support' | 'manual' | 'review';
+export type LicenseVersionFamily =
+    | 'legacy_pre_2016'
+    | 'codemeter_2016_2023'
+    | 'cloud_2024'
+    | 'connect_2025'
+    | 'connect_2026'
+    | 'unknown';
 
 export interface DatasetFileClassification {
     language: 'tr' | 'en' | 'de';
@@ -25,6 +32,12 @@ export interface DatasetFileClassification {
     sourceClass: DatasetSourceClass;
     canonicalSource: string;
     importBatch: string;
+    versionFamily: LicenseVersionFamily;
+    licenseEra: LicenseVersionFamily;
+    versionRange: string;
+    licenseMethods: string[];
+    scenarios: string[];
+    requiresHumanReview: boolean;
 }
 
 const TURKISH_CHARS = /[çğıöşüİÇĞÖŞÜ]/;
@@ -169,10 +182,85 @@ const inferImportBatch = (filePath: string): string => {
     return explicitBatch ?? 'dataset-local';
 };
 
+const inferLicenseProfile = (
+    filePath: string,
+    fileName: string,
+    categorySlug: keyof typeof DATASET_CATEGORY_BY_SLUG,
+): Pick<DatasetFileClassification, 'versionFamily' | 'versionRange' | 'licenseMethods' | 'scenarios' | 'requiresHumanReview'> => {
+    const segments = normalizedPathSegments(filePath);
+    const rootIndex = segments.findIndex((segment) => segment === 'dataset' || segment === 'knowledge-pool');
+    const relativePath = rootIndex >= 0 ? segments.slice(rootIndex).join(' ') : fileName;
+    const lower = `${relativePath} ${fileName}`.toLowerCase();
+    const isLicenseContent = categorySlug === 'license-activation' || categorySlug === 'license-server-codemeter';
+    if (!isLicenseContent) {
+        return {
+            versionFamily: 'unknown',
+            versionRange: 'unknown',
+            licenseMethods: [],
+            scenarios: [],
+            requiresHumanReview: false,
+        };
+    }
+
+    if (hasAny(lower, ['2026', 'connect-2-management', 'reservation', 'reservierung'])) {
+        return {
+            versionFamily: 'connect_2026',
+            versionRange: '2026+',
+            licenseMethods: ['ALLPLAN Connect 2.0', 'user and group management', 'seat reservation'],
+            scenarios: ['user invitation', 'group assignment', 'seat reservation'],
+            requiresHumanReview: true,
+        };
+    }
+    if (hasAny(lower, ['2025', 'connect-2', 'connect 2'])) {
+        return {
+            versionFamily: 'connect_2025',
+            versionRange: '2025',
+            licenseMethods: ['ALLPLAN Connect 2.0', 'organization invitation', 'seat management'],
+            scenarios: ['organization invite', 'seat assignment'],
+            requiresHumanReview: true,
+        };
+    }
+    if (hasAny(lower, ['2024', 'allplan-id', 'allplan id', 'cloud'])) {
+        return {
+            versionFamily: 'cloud_2024',
+            versionRange: '2024-2024-2',
+            licenseMethods: ['ALLPLAN ID', 'cloud licensing', 'offline activation'],
+            scenarios: ['cloud sign-in', 'offline activation', 'license migration'],
+            requiresHumanReview: true,
+        };
+    }
+    if (hasAny(lower, ['2016', '2023', 'codemeter', 'product-key', 'product key', 'license-server'])) {
+        return {
+            versionFamily: 'codemeter_2016_2023',
+            versionRange: '2016-2023',
+            licenseMethods: ['CodeMeter', 'Product Key', 'license server'],
+            scenarios: ['activation', 'server setup', 'license return or borrow'],
+            requiresHumanReview: true,
+        };
+    }
+    if (hasAny(lower, ['2015', 'legacy', 'nemslock', 'softlock', 'hardlock', 'client-id', 'client id', 'cd-key', 'cd key'])) {
+        return {
+            versionFamily: 'legacy_pre_2016',
+            versionRange: '<=2015',
+            licenseMethods: ['NemSLock', 'Softlock', 'Hardlock', 'Client ID or CD Key'],
+            scenarios: ['activation', 'license transfer'],
+            requiresHumanReview: true,
+        };
+    }
+    return {
+        versionFamily: 'unknown',
+        versionRange: 'unknown',
+        licenseMethods: [],
+        scenarios: ['license support'],
+        requiresHumanReview: true,
+    };
+};
+
 export const classifyDatasetFile = (filePath: string): DatasetFileClassification => {
     const fileName = path.basename(filePath);
     const categorySlug = inferCategorySlug(filePath, fileName);
     const ext = path.extname(fileName).replace('.', '').toLowerCase() || 'unknown';
+    const licenseProfile = inferLicenseProfile(filePath, fileName, categorySlug);
 
     return {
         language: inferLanguage(filePath, fileName),
@@ -181,5 +269,7 @@ export const classifyDatasetFile = (filePath: string): DatasetFileClassification
         sourceClass: inferSourceClass(categorySlug),
         canonicalSource: ext,
         importBatch: inferImportBatch(filePath),
+        ...licenseProfile,
+        licenseEra: licenseProfile.versionFamily,
     };
 };

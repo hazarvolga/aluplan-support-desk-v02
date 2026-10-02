@@ -40,6 +40,12 @@ const buildDatasetMetadata = (
     sourceClass: classification.sourceClass,
     canonicalSource: classification.canonicalSource,
     importBatch: classification.importBatch,
+    versionFamily: classification.versionFamily,
+    licenseEra: classification.licenseEra,
+    versionRange: classification.versionRange,
+    licenseMethods: classification.licenseMethods,
+    scenarios: classification.scenarios,
+    requiresHumanReview: classification.requiresHumanReview,
 });
 
 @Injectable()
@@ -351,7 +357,13 @@ export class KnowledgePoolService {
                         existingMetadata?.categorySlug !== classification.categorySlug ||
                         existingMetadata?.sourceClass !== classification.sourceClass ||
                         existingMetadata?.canonicalSource !== classification.canonicalSource ||
-                        existingMetadata?.importBatch !== classification.importBatch
+                        existingMetadata?.importBatch !== classification.importBatch ||
+                        existingMetadata?.versionFamily !== classification.versionFamily ||
+                        existingMetadata?.licenseEra !== classification.licenseEra ||
+                        existingMetadata?.versionRange !== classification.versionRange ||
+                        JSON.stringify(existingMetadata?.licenseMethods ?? []) !== JSON.stringify(classification.licenseMethods) ||
+                        JSON.stringify(existingMetadata?.scenarios ?? []) !== JSON.stringify(classification.scenarios) ||
+                        existingMetadata?.requiresHumanReview !== classification.requiresHumanReview
                     ) {
                         await this.prisma.knowledgeSource.update({
                             where: { id: existing.id },

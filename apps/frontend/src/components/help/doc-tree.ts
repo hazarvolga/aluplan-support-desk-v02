@@ -343,7 +343,16 @@ export function getBreadcrumbPath(
 export function isAdminOrAgent(user: { role?: string; roles?: string[] } | null): boolean {
   if (!user) return false;
 
-  const STAFF_ROLES = ['admin', 'agent'];
+  const STAFF_ROLES = [
+    'admin',
+    'agent',
+    'super_admin',
+    'support_agent',
+    'senior_agent',
+    'team_lead',
+    'department_manager',
+    'manager',
+  ];
 
   // Check the primary `role` field
   const primaryRole = (user.role ?? '').toLowerCase();

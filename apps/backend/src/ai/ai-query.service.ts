@@ -2279,6 +2279,18 @@ If context contains usable procedural evidence, synthesize the answer instead of
         return 'Lisans telemetrisi: Hotinfo lisans alani mevcut; birincil dogrulama License Manager veya BIMPLUS portalinda yapilmali.';
     }
 
+    private safeHotinfoLicenseLabel(value: unknown): string {
+        const normalized = this.normalizeSearchText(String(value ?? ''));
+        if (!normalized) return 'telemetri mevcut';
+        if (normalized.includes('codemeter')) return 'CodeMeter';
+        if (normalized.includes('nemslock')) return 'NemSLock';
+        if (normalized.includes('softlock')) return 'Softlock';
+        if (normalized.includes('hardlock')) return 'Hardlock';
+        if (normalized.includes('allplan id')) return 'ALLPLAN ID';
+        if (normalized.includes('allplan connect')) return 'ALLPLAN Connect';
+        return 'telemetri mevcut (yöntem ayrıntısı gizlendi)';
+    }
+
     private normalizeSearchText(value: string): string {
         return value
             .toLowerCase()
@@ -3114,7 +3126,10 @@ ${conversation}
                 contextStr += `\n - RAM: ${h.ram}${h.vram ? ` | VRAM: ${h.vram}` : ''} `;
                 if (h.screenResolution) contextStr += `\n - Çözünürlük: ${h.screenResolution} `;
                 if (h.diskInfo) contextStr += `\n - Disk: ${h.diskInfo} `;
-                if (h.licenseType) contextStr += `\n - Lisans: ${h.licenseType} `;
+                if (h.licenseType) {
+                    const safeLicense = this.safeHotinfoLicenseLabel(h.licenseType);
+                    contextStr += `\n - Lisans: ${safeLicense} `;
+                }
                 if (h.dotnetVersion) contextStr += `\n - .NET: ${h.dotnetVersion} `;
                 if (h.installedModules?.length) contextStr += `\n - Modüller: ${h.installedModules.join(', ')} `;
                 contextStr += '\n';

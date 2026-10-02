@@ -757,15 +757,15 @@
       "ticket_id": "Request #{id}",
       "started_by": "Created by: {name}",
       "timestamp": "Date: {date}",
-      "finish_resolution": "FINISH RESOLUTION",
+      "finish_resolution": "START CUSTOMER REVIEW",
       "reopen_ticket": "Reopen Ticket",
       "reopening": "Reopening…",
       "reopen_success": "Ticket reopened",
-      "close_ticket": "CLOSE TICKET",
+      "close_ticket": "REVIEW SOLUTION",
       "summarizing": "Preparing summary…",
       "ai_summary_btn": "AI Summary",
       "drafting": "Preparing draft response…",
-      "ai_draft_btn": "Draft Response",
+      "ai_draft_btn": "AI Draft Reply",
       "load_error": "An error occurred while loading request data",
       "live_request_success": "Live support request sent",
       "live_start_success": "Live support session started",
@@ -826,7 +826,8 @@
       "review_pending_desc": "PLEASE RATE THE PROVIDED SOLUTION",
       "feedback_placeholder": "Your feedback (optional)...",
       "saving": "SAVING...",
-      "save_and_close": "SAVE AND CLOSE",
+      "save_and_close": "SUBMIT REVIEW & CLOSE TICKET",
+      "feedback_disclaimer": "This review closes the ticket; it is not technical-accuracy validation or direct publication approval. Eligible candidates go to human review.",
       "customer_verification_pending": "AWAITING CUSTOMER VERIFICATION",
       "auto_sync_active": "AUTO-SYNC ACTIVE",
       "debug_reject": "DEBUG_REJECT",
@@ -1887,6 +1888,11 @@
     }
   },
   "help": {
+    "title": "Help Center",
+    "badge": "HELP & SUPPORT",
+    "nav": {
+      "back": "Back to Help"
+    },
     "common": {
       "welcome_title": "Welcome to the Help Center",
       "welcome_desc": "Select a topic from the left menu to browse the documentation.",

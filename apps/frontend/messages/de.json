@@ -757,15 +757,15 @@
       "ticket_id": "Anfrage #{id}",
       "started_by": "Erstellt von: {name}",
       "timestamp": "Datum: {date}",
-      "finish_resolution": "LÖSUNG ABSCHLIESSEN",
+      "finish_resolution": "KUNDENBEWERTUNG STARTEN",
       "reopen_ticket": "Ticket wieder öffnen",
       "reopening": "Wird wieder geöffnet…",
       "reopen_success": "Ticket wurde wieder geöffnet",
-      "close_ticket": "TICKET SCHLIESSEN",
+      "close_ticket": "LÖSUNG BEWERTEN",
       "summarizing": "Zusammenfassung wird erstellt…",
       "ai_summary_btn": "KI-Zusammenfassung",
       "drafting": "Antwortentwurf wird vorbereitet…",
-      "ai_draft_btn": "Antwortentwurf",
+      "ai_draft_btn": "KI-Antwortentwurf",
       "load_error": "Fehler beim Laden der Anfragedaten",
       "live_request_success": "Live-Support-Anfrage gesendet",
       "live_start_success": "Live-Support-Sitzung gestartet",
@@ -826,7 +826,8 @@
       "review_pending_desc": "BITTE BEWERTEN SIE DIE BEREITGESTELLTE LÖSUNG",
       "feedback_placeholder": "Ihr Feedback (optional)...",
       "saving": "SPEICHERN...",
-      "save_and_close": "SPEICHERN UND SCHLIESSEN",
+      "save_and_close": "BEWERTUNG SENDEN UND TICKET SCHLIESSEN",
+      "feedback_disclaimer": "Diese Bewertung schließt das Ticket; sie ist keine technische Richtigkeitsprüfung und keine direkte Veröffentlichungsfreigabe. Geeignete Kandidaten werden von Menschen geprüft.",
       "customer_verification_pending": "WARTE AUF KUNDENVERIFIZIERUNG",
       "auto_sync_active": "AUTO-SYNC AKTIV",
       "debug_reject": "FEHLER_ABLEHNEN",
@@ -1887,6 +1888,11 @@
     }
   },
   "help": {
+    "title": "Hilfe-Center",
+    "badge": "HILFE & SUPPORT",
+    "nav": {
+      "back": "Zurück zur Hilfe"
+    },
     "common": {
       "welcome_title": "Willkommen im Hilfe-Center",
       "welcome_desc": "Wählen Sie ein Thema aus dem linken Menü, um die Dokumentation zu durchsuchen.",

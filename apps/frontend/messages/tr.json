@@ -781,15 +781,15 @@
       "ticket_id": "Talep #{id}",
       "started_by": "Oluşturan: {name}",
       "timestamp": "Tarih: {date}",
-      "finish_resolution": "ÇÖZÜMÜ ONAYLA",
+      "finish_resolution": "MÜŞTERİ DEĞERLENDİRMESİNİ BAŞLAT",
       "reopen_ticket": "Yeniden Aç",
       "reopening": "Yeniden açılıyor…",
       "reopen_success": "Bilet yeniden açıldı",
-      "close_ticket": "BİLETİ KAPAT",
+      "close_ticket": "ÇÖZÜMÜ DEĞERLENDİR",
       "summarizing": "Özet hazırlanıyor…",
       "ai_summary_btn": "Yapay Zeka Özeti",
       "drafting": "Taslak yanıt hazırlanıyor…",
-      "ai_draft_btn": "Taslak Yanıt",
+      "ai_draft_btn": "AI Yanıt Taslağı",
       "load_error": "Talep verileri yüklenirken hata oluştu",
       "live_request_success": "Canlı destek talebi gönderildi",
       "live_start_success": "Canlı destek oturumu başlatıldı",
@@ -850,7 +850,8 @@
       "review_pending_desc": "SUNULAN ÇÖZÜMÜ LÜTFEN DEĞERLENDİRİN",
       "feedback_placeholder": "Geri bildiriminiz (opsiyonel)...",
       "saving": "KAYDEDİLİYOR...",
-      "save_and_close": "KAYDET VE KAPAT",
+      "save_and_close": "DEĞERLENDİRMEYİ GÖNDER VE BİLETİ KAPAT",
+      "feedback_disclaimer": "Bu değerlendirme bileti kapatır; teknik doğruluk veya bilgi bankasına doğrudan yayın onayı değildir. Uygun adaylar insan incelemesine gider.",
       "customer_verification_pending": "MÜŞTERİ DOĞRULAMASI BEKLENİYOR",
       "auto_sync_active": "OTOMATİK SENKRONİZASYON AKTİF",
       "debug_reject": "HATA_REDDET",
@@ -1911,6 +1912,11 @@
     }
   },
   "help": {
+    "title": "Yardım Merkezi",
+    "badge": "YARDIM VE DESTEK",
+    "nav": {
+      "back": "Yardıma Dön"
+    },
     "common": {
       "welcome_title": "Yardım Merkezine Hoş Geldiniz",
       "welcome_desc": "Sol menüden bir konu seçerek dokümantasyona göz atın.",
