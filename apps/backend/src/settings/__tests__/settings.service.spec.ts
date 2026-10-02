@@ -106,21 +106,34 @@ describe('SettingsService', () => {
             prisma.setting.upsert.mockImplementation((args: any) => Promise.resolve(args));
             prisma.$transaction.mockImplementation((operations: Array<Promise<unknown>>) => Promise.all(operations));
 
-            await service.bulkUpsert({
-                settings: [
-                    { key: 'ai.chat_provider', value: 'gemini', isSecret: false },
-                    { key: 'ai.active_provider', value: 'openai', isSecret: false },
-                    { key: 'ai.gemini.api_key', value: 'gemini-key', isSecret: true },
-                    { key: 'ai.gemini.chat_model', value: 'gemini-2.5-flash', isSecret: false },
-                    { key: 'ai.gemini.embed_model', value: 'gemini-embedding-2', isSecret: false },
-                ],
-            });
+            const previousApproval = process.env.EMBEDDING_MIGRATION_APPROVED;
+            process.env.EMBEDDING_MIGRATION_APPROVED = 'true';
+            try {
+                await service.bulkUpsert({
+                    settings: [
+                        { key: 'ai.chat_provider', value: 'gemini', isSecret: false },
+                        { key: 'ai.active_provider', value: 'openai', isSecret: false },
+                        { key: 'ai.gemini.api_key', value: 'gemini-key', isSecret: true },
+                        { key: 'ai.gemini.chat_model', value: 'gemini-2.5-flash', isSecret: false },
+                        { key: 'ai.gemini.embed_model', value: 'gemini-embedding-2', isSecret: false },
+                    ],
+                });
+            } finally {
+                if (previousApproval === undefined) delete process.env.EMBEDDING_MIGRATION_APPROVED;
+                else process.env.EMBEDDING_MIGRATION_APPROVED = previousApproval;
+            }
 
             expect(prisma.setting.upsert).toHaveBeenCalledWith(expect.objectContaining({
                 where: { key: 'ai.active_provider' },
                 update: expect.objectContaining({ value: 'gemini' }),
                 create: expect.objectContaining({ value: 'gemini' }),
             }));
+        });
+
+        it('blocks embedding model changes without explicit operator approval', async () => {
+            await expect(service.upsert({ key: 'ai.gemini.embed_model', value: 'gemini-embedding-2', isSecret: false }))
+                .rejects.toThrow('operator approval');
+            expect(prisma.setting.upsert).not.toHaveBeenCalled();
         });
 
         it('should force API keys to be stored as encrypted secrets', async () => {

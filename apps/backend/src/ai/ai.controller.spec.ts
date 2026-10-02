@@ -249,3 +249,23 @@ describe('AiController — Property 4: Job State → Status Enum Mapping', () =>
         },
     );
 });
+
+describe('AiController — reindex stabilization guard', () => {
+    let controller: AiController;
+
+    beforeEach(async () => {
+        delete process.env.EMBEDDING_MIGRATION_APPROVED;
+        const module = await buildModule();
+        controller = module.get<AiController>(AiController);
+        jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+        delete process.env.EMBEDDING_MIGRATION_APPROVED;
+    });
+
+    it('rejects bulk reindex without explicit operator approval', () => {
+        expect(() => controller.reindex()).toThrow('operator approval');
+        expect(mockEmbeddingService.reindexAll).not.toHaveBeenCalled();
+    });
+});
