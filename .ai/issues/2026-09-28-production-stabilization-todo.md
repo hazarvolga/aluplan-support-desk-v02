@@ -51,7 +51,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 4.2 | **CWL-02** | Handoff Bölüm 7 (Sıra 4) | Temsilî Tek Public URL Uçtan Uca İçe Aktarma ve Vektörleme Doğrulaması | Paket B (Ingestion) | **COMPLETED** (yerel izole smoke; bağımsız kod/güvenlik incelemesi geçti) |
 | 4.3 | **MOD-01** | RAG-02 | Model / Embedding Sürüm Değişimi ve Toplu Reindex Operasyonel Kısıtı | Paket B (Ingestion) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 5.1 | **UX-01** | Handoff Bölüm 4 | Bölüm 4 Görünür Frontend AI / `ANN_*` Metin ve Etiket Revizyonu | Paket B (Kullanım/UX) | **COMPLETED** (TR/EN/DE; yerel render ve odaklı kontroller geçti) |
-| 5.2 | **UX-02** | Röntgen Bölüm 12 | Yardım Ekranı (`/tr/help`) Çeviri Anahtarları ve Gerçek Personel Rol Menüsü | Paket B (Kullanım/UX) | **PENDING** |
+| 5.2 | **UX-02** | Röntgen Bölüm 12 | Yardım Ekranı (`/tr/help`) Çeviri Anahtarları ve Gerçek Personel Rol Menüsü | Paket B (Kullanım/UX) | **COMPLETED** (yerel; frontend unit, i18n ve typecheck geçti) |
 | 5.3 | **UX-03** | Röntgen Bölüm 12 | Öğrenme, Değerlendirme Anketi ve Aday Durumlarının Arayüzde Şeffaf Ayrımı | Paket B (Kullanım/UX) | **COMPLETED** (yerel; frontend unit, i18n ve typecheck geçti) |
 | 6.1 | **DEF-01** | Handoff Bölüm 5 (P1) | Depo Geneli Kapsamlı Lint Borcunun Kademeli Temizliği | Ertelenen İşler | **DEFERRED** |
 | 6.2 | **DEF-02** | Handoff Bölüm 5 (P2) | Eski 500 `knowledge-sync` Başarısız Kuyruk Kaydının Ayrı Analizi | Ertelenen İşler | **DEFERRED** |
@@ -415,6 +415,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Dosyalar:** `apps/backend/src/knowledge-pool/dataset-classifier.ts`, `apps/backend/src/knowledge-pool/knowledge-pool.service.ts`, `apps/backend/src/ai/embedding.service.ts`, `apps/backend/src/ai/prompt-context-builder.service.ts`, `apps/backend/src/ai/ai-query.service.ts`.
 - **Dar doğrulama:** Backend classifier/prompt/embedding hedefli testleri ve typecheck geçti. Frontend UX-02 kontrolleri de geçti. Gerçek müşteri Hotinfo'su, canlı veritabanı, migration, push veya deploy kullanılmadı.
 - **Kalan iş:** Firma onaylı beş Markdown rehberinin yerel `dataset/` veya bilgi havuzu yükleme akışı üzerinden açıkça içe alınması; ignored `docs/` klasöründeki inceleme kopyaları otomatik olarak bilgi bankasına aktarılmaz.
+- **Kullanıcı bildirimi:** Firma onaylı rehberlerin canlı bilgi bankasına yüklendiği bildirildi; bu oturumda canlı DB veya indeks durumu doğrulanmadı. Yayın kanıtı olarak yükleme/indeks kayıtları ayrıca saklanmalıdır.
 
 ### RAG-01: Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi
 - **Durum:** `COMPLETED` (yerel)
