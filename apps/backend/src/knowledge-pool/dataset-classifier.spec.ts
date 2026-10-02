@@ -77,6 +77,28 @@ describe('classifyDatasetFile', () => {
         }));
     });
 
+    it.each([
+        ['01-legacy-2015-ve-oncesi.md', 'legacy_pre_2016', '<=2015'],
+        ['03-2024-allplan-id-cloud.md', 'cloud_2024', '2024-2024-2'],
+        ['04-2025-connect-2.md', 'connect_2025', '2025'],
+        ['05-2026-connect-2-management.md', 'connect_2026', '2026+'],
+    ])(
+        'classifies category-folderless UI upload %s with license version metadata',
+        (fileName, versionFamily, versionRange) => {
+            const result = classifyDatasetFile(`knowledge-pool/550e8400-e29b-41d4-a716-446655440000/${fileName}`);
+
+            expect(result).toEqual(expect.objectContaining({
+                category: 'License & Activation',
+                categorySlug: 'license-activation',
+                importBatch: 'ui-upload',
+                versionFamily,
+                licenseEra: versionFamily,
+                versionRange,
+                requiresHumanReview: true,
+            }));
+        },
+    );
+
     it('detects German support questions without explicit locale markers', () => {
         const result = classifyDatasetFile('Was tun wenn der Echtzeit-Scanner Allplan-Daten blockiert.pdf');
 
