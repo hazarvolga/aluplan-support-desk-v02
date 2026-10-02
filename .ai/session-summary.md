@@ -1,5 +1,9 @@
 # Session Summary - 2026-05-13
 
+## 2026-09-30 — Yerel MOD-01 tamamlandı; sıradaki UX-02
+
+MOD-01 ile embedding model/provider ayar değişimleri, event kaynaklı migration ve `/ai/reindex` operatör onayı olmadan çalışmıyor. `EMBEDDING_MIGRATION_APPROVED=true` varsayılan kapalı guard olarak kullanılıyor; açık onayda deterministic migration job ID var. Dry-run her kaynakta tek batch ile sonlanıyor; provider hatasında batch ilerlemesi yoksa sonsuz tekrar kesiliyor. Hedefli üç suite / 50 test PASS, backend typecheck ve diff kontrolü PASS; bağımsız kod/güvenlik incelemeleri APPROVE verdi. Gerçek provider, canlı DB, migration, push/deploy yok; `apps/frontend/next-env.d.ts` korunuyor. Sıradaki görev UX-02.
+
 ## 2026-09-30 — Yerel CWL-02 tamamlandı; sıradaki MOD-01
 
 CWL-02 için sentetik `https://example.com/help` fixture'ı kullanılarak gerçek `KnowledgePoolProcessor.handleUrlSync`, `EmbeddingService.indexPoolContent` ve `EmbeddingService.search` zinciri doğrulandı. `$executeRaw` INSERT interpolasyonundan yakalanan içerik aynı fake repository'ye kaydedildi ve `$queryRaw` aynı indekslenmiş içerikten döndü; arama sonucu sabit mock satırına bağlı değil. Kaynak ACTIVE oldu, lisans aktivasyonu içeriği semantic search'te bulundu. Hedefli suite 1/1, backend typecheck ve diff kontrolü geçti; bağımsız kod/güvenlik incelemeleri APPROVE verdi. Gerçek ağ, PostgreSQL/pgvector, embedding sağlayıcısı, canlı veri/credential, migration, push/deploy yok; bu production/provider kabul testi değildir. `apps/frontend/next-env.d.ts` korunuyor. Sıradaki görev MOD-01.

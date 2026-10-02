@@ -41,7 +41,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 3.4 | **LRN-01** | Röntgen Bölüm 8.2 / 8.3 | Çözüm Temelli SSS Çıkarımı, Puanlama Ayrımı ve Yaşam Döngüsü Açıklığı | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 4.1 | **CWL-01** | CRAWL-01 | Crawler / Havuz Kuyruk Hatasında SYNCING Takılması ve Eski İndeks Koruması | Paket B (Ingestion) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 4.2 | **CWL-02** | Handoff Bölüm 7 (Sıra 4) | Temsilî Tek Public URL Uçtan Uca İçe Aktarma ve Vektörleme Doğrulaması | Paket B (Ingestion) | **COMPLETED** (yerel izole smoke; bağımsız kod/güvenlik incelemesi geçti) |
-| 4.3 | **MOD-01** | RAG-02 | Model / Embedding Sürüm Değişimi ve Toplu Reindex Operasyonel Kısıtı | Paket B (Ingestion) | **PENDING** |
+| 4.3 | **MOD-01** | RAG-02 | Model / Embedding Sürüm Değişimi ve Toplu Reindex Operasyonel Kısıtı | Paket B (Ingestion) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 5.1 | **UX-01** | Handoff Bölüm 4 | Bölüm 4 Görünür Frontend AI / `ANN_*` Metin ve Etiket Revizyonu | Paket B (Kullanım/UX) | **COMPLETED** (TR/EN/DE; yerel render ve odaklı kontroller geçti) |
 | 5.2 | **UX-02** | Röntgen Bölüm 12 | Yardım Ekranı (`/tr/help`) Çeviri Anahtarları ve Gerçek Personel Rol Menüsü | Paket B (Kullanım/UX) | **PENDING** |
 | 5.3 | **UX-03** | Röntgen Bölüm 12 | Öğrenme, Değerlendirme Anketi ve Aday Durumlarının Arayüzde Şeffaf Ayrımı | Paket B (Kullanım/UX) | **PENDING** |
@@ -512,7 +512,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Açık Kullanıcı Kararı:** Çözüldü; referans URL test izolasyonu için sentetik tutuldu.
 
 ### MOD-01: Model / Embedding Sürüm Değişimi ve Toplu Reindex Operasyonel Kısıtı
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (yerel; 30 Eylül 2026)
 - **Rapor ID / Kanıt:** RAG-02; Röntgen Bölüm 10 (Satır 278-281), Bölüm 13 (Satır 339); `B/ai/embedding-migration.processor.ts`.
 - **Dosya / Modül:** `apps/backend/src/ai/embedding-migration.processor.ts`, `apps/backend/src/settings`.
 - **Minimum Değişiklik:** 
@@ -523,7 +523,9 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Kabul Ölçütü:** Beklenmedik model değişimleri arka planda kontrolsüz API kotası tüketmemeli; işlem açık bir operatör onayı olmadan başlamamalı.
 - **Dar Doğrulama:** `pnpm --filter @aluplan/backend test -- src/ai/embedding-migration.processor.spec.ts`.
 - **Veri / Migration Etkisi:** Sıfır şema değişikliği.
-- **Açık Kullanıcı Kararı:** Model ayarları admin panelinde stabilizasyon süresince salt-okunur (read-only) kilitli hale getirilsin mi?
+- **Uygulama / Kanıt:** `EMBEDDING_MIGRATION_APPROVED=true` olmadan model/provider ayarı yazımı, event kaynaklı migration ve `/ai/reindex` engellenir. Açık onayda migration job ID deterministiktir (`migrate-{version}`). Her dry-run tek batch ile sonlanır; provider hatasında batch ilerlemiyorsa döngü durur. Hedefli üç suite toplam 50/50 PASS; backend typecheck ve `git diff --check` PASS. Bağımsız kod ve güvenlik incelemeleri APPROVE verdi.
+- **Kapsam Sınırı:** Gerçek model/provider değişimi, canlı veritabanı, migration, push veya deploy yapılmadı. Guard ortam değişkeniyle varsayılan kapalıdır; bu release öncesi operasyonel kilittir.
+- **Açık Kullanıcı Kararı:** Çözüldü; admin model ayarları backend guard ile kilitli tutuldu, UI yeniden tasarımı sonraki UX işine bırakıldı.
 
 ---
 

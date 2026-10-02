@@ -1,5 +1,11 @@
 # Current Focus
 
+## 30 Eylül — MOD-01 tamamlandı; sıradaki görev UX-02 (yerel)
+
+- Embedding model/provider değişimi, event kaynaklı migration ve `/ai/reindex` varsayılan olarak `EMBEDDING_MIGRATION_APPROVED=true` olmadan engelleniyor. Açık onayda deterministic job ID kullanılıyor; `dryRun` tek batch ile sınırlı ve provider hatasında ilerleme yoksa migration duruyor.
+- Hedefli üç suite 50/50, backend typecheck ve `git diff --check` geçti; bağımsız kod ve güvenlik incelemeleri APPROVE verdi. Gerçek model/provider, canlı DB, migration, push/deploy yok; `apps/frontend/next-env.d.ts` korunuyor.
+- Sıradaki planlı görev **UX-02**: `/tr/help` çeviri anahtarları ve gerçek personel rol menüsü.
+
 ## 30 Eylül — CWL-02 tamamlandı; sıradaki görev MOD-01 (yerel)
 
 - CWL-02 için sentetik `https://example.com/help` fixture'ı ile gerçek processor → chunk → embedding → semantic search zinciri çalıştırıldı. `$executeRaw` INSERT değerlerinden alınan indekslenmiş içerik aynı test deposundan `$queryRaw` ile döndürülüyor; sabit arama satırı kullanılmıyor. Kaynak ACTIVE oldu ve lisans aktivasyonu içeriği semantic search'te bulundu.
