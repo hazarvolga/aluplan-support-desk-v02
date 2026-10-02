@@ -417,6 +417,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Kalan iş:** Firma onaylı beş Markdown rehberinin yerel `dataset/` veya bilgi havuzu yükleme akışı üzerinden açıkça içe alınması; ignored `docs/` klasöründeki inceleme kopyaları otomatik olarak bilgi bankasına aktarılmaz.
 - **Kullanıcı bildirimi:** Firma onaylı rehberlerin canlı bilgi bankasına yüklendiği bildirildi; bu oturumda canlı DB veya indeks durumu doğrulanmadı. Yayın kanıtı olarak yükleme/indeks kayıtları ayrıca saklanmalıdır.
 - **Yerel içerik parmak izleri:** `01-legacy-2015-ve-oncesi.md` `5f7c0d9d…4228be`; `02-2016-2023-codemeter-product-key.md` `2ecebc46…239444a5`; `03-2024-allplan-id-cloud.md` `845c08ac…6f92b0b`; `04-2025-connect-2.md` `43075aee…b71e8eb`; `05-2026-connect-2-management.md` `3fa23f59…02ba8cce`.
+- **Yeni UI kanıtı:** Kullanıcının 3 Ekim ekran görüntüsünde beş rehberin tamamı `ACTIVE` ve vektör sayıları mevcut; ancak 01/03/04/05 kayıtlarının bir kısmı `Review Backlog` kategorisinde. UI upload yolu için classifier düzeltmesi (`12a0bb53`) ve yeniden eşitlemede stale lisans metadata onarımı (`5823c67e`) eklendi. Deploy sonrasında bu beş kaydın yeniden eşitlenmesi gerekir; yeniden yükleme veya silme gerekmez.
 
 ### RAG-01: Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi
 - **Durum:** `COMPLETED` (yerel)
