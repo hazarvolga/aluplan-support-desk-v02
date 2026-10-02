@@ -125,6 +125,26 @@ const inferCategorySlug = (filePath: string, fileName: string): keyof typeof DAT
         return 'manuals-tutorials';
     }
 
+    // Approved licensing guides can arrive through the UI upload path without
+    // a dataset category folder. Keep their explicit file-name markers ahead
+    // of generic cloud/review rules so version metadata is not lost.
+    if (hasAny(lower, [
+        'allplan-id',
+        'allplan id',
+        'connect-2',
+        'connect 2',
+        'legacy-2015',
+        'nemslock',
+        'softlock',
+        'hardlock',
+        'client-id',
+        'client id',
+        'cd-key',
+        'cd key',
+    ])) {
+        return 'license-activation';
+    }
+
     if (hasAny(lower, ['license server', 'license_server', 'license-server', 'lizenzserver', 'codemeter', 'licensing service', 'vpn'])) {
         return 'license-server-codemeter';
     }
