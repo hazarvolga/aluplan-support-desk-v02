@@ -50,6 +50,30 @@ describe('TicketsPage', () => {
         expect(ticket).toBeDefined();
     });
 
+    it('shows the short table headers and ticket category', async () => {
+        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+
+        const tickets = [
+            {
+                id: 't-category',
+                ticketNumber: 'SUP-00002',
+                subject: 'License activation',
+                status: 'OPEN',
+                priority: 'HIGH',
+                channel: 'WEB',
+                createdAt: new Date().toISOString(),
+                tags: ['licensing'],
+                department: { name: 'Lisans ve Aktivasyon' },
+            },
+        ];
+
+        render(<TicketsClient initialTickets={tickets} initialTotal={1} />);
+
+        expect(await screen.findByText('Lisans ve Aktivasyon')).toBeDefined();
+        expect(screen.getByText('table.header.category')).toBeDefined();
+        expect(screen.getByText('table.header.subject')).toBeDefined();
+    });
+
     it('shows bulk actions only when tickets are selected (Admin)', async () => {
         (useAuth as any).mockReturnValue({
             user: { role: 'ADMIN', fullName: 'Admin' }

@@ -424,6 +424,9 @@ describe('TicketsService', () => {
                 expect(prisma.ticket.findMany).toHaveBeenCalledWith(
                     expect.objectContaining({
                         where: expect.objectContaining({ status: TicketStatus.OPEN }),
+                        include: expect.objectContaining({
+                            department: { select: { name: true } },
+                        }),
                         skip: 5,
                         take: 5
                     })
