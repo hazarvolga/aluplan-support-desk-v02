@@ -72,6 +72,18 @@ type StatusCounts = Record<string, number>;
 
 const STATUS_ORDER = Object.keys(STATUS_COLORS);
 
+function getTicketCategoryNames(ticket: any, licensingLabel: string): string[] {
+    const categories = [
+        ...(ticket.tags?.includes('licensing') ? [licensingLabel] : []),
+        ...(ticket.department?.name ? [ticket.department.name] : []),
+        ...(!ticket.department?.name && !ticket.tags?.includes('licensing')
+            ? (ticket.suggestedCategories ?? []).slice(0, 2)
+            : []),
+    ];
+
+    return Array.from(new Set(categories.filter(Boolean)));
+}
+
 export default function TicketsClient({ initialTickets, initialTotal }: TicketsClientProps) {
     const t = useTranslations('tickets');
     const tc = useTranslations('common');
@@ -419,7 +431,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('table.empty')}</p>
                         </div>
                     ) : (
-                        <table className="w-full text-left min-w-[1000px]">
+                        <table className="w-full text-left min-w-[1120px]">
                             <thead>
                                 <tr className="border-b border-white/5 bg-white/[0.03] h-12">
                                     <th className="px-6 w-12">
@@ -434,6 +446,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.company')}</th>
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.customer')}</th>
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.subject')}</th>
+                                    <th className="px-4 w-32 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.category')}</th>
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">{t('table.header.status')}</th>
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">{t('table.header.priority')}</th>
                                     <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.assignee')}</th>
@@ -444,6 +457,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                             <tbody className="divide-y divide-white/5">
                                 {tickets.map((ticket) => {
                                     const isSelected = selectedIds.includes(ticket.id);
+                                    const categoryNames = getTicketCategoryNames(ticket, t('category.licensing'));
                                     return (
                                         <tr
                                             key={ticket.id}
@@ -505,6 +519,18 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                                                         <Badge variant="destructive" className="text-[8px] font-bold tracking-widest animate-pulse">
                                                             {t('table.badges.sla_vio')}
                                                         </Badge>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 w-32">
+                                                <div className="flex flex-wrap gap-1 max-w-40" title={categoryNames.join(', ')}>
+                                                    {categoryNames.map((category: string) => (
+                                                        <Badge key={category} variant="outline" className="max-w-full truncate px-1.5 py-0 text-[8px] font-bold tracking-wide bg-primary/5 text-primary border-primary/20">
+                                                            {category}
+                                                        </Badge>
+                                                    ))}
+                                                    {categoryNames.length === 0 && (
+                                                        <span className="text-[10px] text-muted-foreground">—</span>
                                                     )}
                                                 </div>
                                             </td>

@@ -741,14 +741,18 @@
       "load_error": "Destek talepleri yüklenemedi",
       "retry": "Tekrar Dene",
       "header": {
-        "system_id": "Sistem_ID",
+        "system_id": "ID",
         "company": "Şirket",
         "customer": "Müşteri",
-        "subject": "Olay Tanımı",
+        "subject": "Konu",
+        "category": "Kategori",
         "status": "Durum",
-        "priority": "Kritiklik",
+        "priority": "Öncelik",
         "assignee": "Atanan",
-        "timestamp": "Zaman Damgası"
+        "timestamp": "Oluşturma"
+      },
+      "category": {
+        "licensing": "Lisans ve Aktivasyon"
       },
       "badges": {
         "kb_sync": "KB_SENK",
@@ -859,6 +863,8 @@
       "status_label": "Bilet Durumu",
       "channel_label": "Talep Kanalı",
       "priority_label": "Öncelik",
+      "category_label": "Kategori",
+      "category_licensing": "Lisans ve Aktivasyon",
       "open_date": "Oluşturulma Tarihi",
       "assignee_label": "Atanan Uzman",
       "assign_placeholder": "Destek yetkilisi seç",

@@ -77,6 +77,18 @@ const CHANNEL_COLORS: Record<string, string> = {
     API: 'text-purple-400',
 };
 
+function getTicketCategoryNames(ticket: any, licensingLabel: string): string[] {
+    const categories = [
+        ...(ticket.tags?.includes('licensing') ? [licensingLabel] : []),
+        ...(ticket.department?.name ? [ticket.department.name] : []),
+        ...(!ticket.department?.name && !ticket.tags?.includes('licensing')
+            ? (ticket.suggestedCategories ?? []).slice(0, 2)
+            : []),
+    ];
+
+    return Array.from(new Set(categories.filter(Boolean)));
+}
+
 export default function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     return <TicketDetail key={id} id={id} />;
@@ -560,6 +572,8 @@ function TicketDetail({ id }: { id: string }) {
         </div>
     );
 
+    const ticketCategories = getTicketCategoryNames(ticket, t('category_licensing'));
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 w-full py-0">
             {/* Main Conversation Column */}
@@ -586,6 +600,14 @@ function TicketDetail({ id }: { id: string }) {
                                         {t('started_by', { name: ticket.creator?.fullName || tc('system') })}
                                     </span>
                                     <span className="flex items-center gap-1">{t('timestamp', { date: `${new Date(ticket.createdAt).toLocaleDateString(locale)} ${new Date(ticket.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}` })}</span>
+                                </div>
+                                <div className="flex items-center gap-2 pt-2" data-testid="ticket-category">
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70">{t('category_label')}</span>
+                                    {ticketCategories.length > 0 ? ticketCategories.map((category) => (
+                                        <Badge key={category} variant="outline" className="px-1.5 py-0 text-[9px] font-bold tracking-wide bg-primary/5 text-primary border-primary/20">
+                                            {category}
+                                        </Badge>
+                                    )) : <span className="text-[10px] text-muted-foreground">—</span>}
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -996,6 +1018,16 @@ function TicketDetail({ id }: { id: string }) {
                         <div className="space-y-0.5">
                             <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('open_date')}</label>
                             <p className="text-[9px] font-mono font-medium text-foreground truncate">{new Date(ticket.createdAt).toLocaleDateString(locale)} {new Date(ticket.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</p>
+                        </div>
+                        <div className="space-y-0.5 col-span-2">
+                            <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('category_label')}</label>
+                            <div className="flex flex-wrap gap-1">
+                                {ticketCategories.length > 0 ? ticketCategories.map((category) => (
+                                    <Badge key={category} variant="outline" className="px-1.5 py-0 text-[9px] font-bold tracking-wide bg-primary/5 text-primary border-primary/20">
+                                        {category}
+                                    </Badge>
+                                )) : <span className="text-[10px] text-muted-foreground">—</span>}
+                            </div>
                         </div>
                         <div className="space-y-1 col-span-2 pt-2 border-t border-border/20">
                             <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('assignee_label')}</label>

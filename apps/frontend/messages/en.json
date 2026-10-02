@@ -717,14 +717,18 @@
       "load_error": "Support requests could not be loaded",
       "retry": "Retry",
       "header": {
-        "system_id": "System_ID",
+        "system_id": "ID",
         "company": "Company",
         "customer": "Customer",
-        "subject": "Event Definition",
+        "subject": "Subject",
+        "category": "Category",
         "status": "Status",
-        "priority": "Criticality",
+        "priority": "Priority",
         "assignee": "Assignee",
-        "timestamp": "Timestamp"
+        "timestamp": "Created"
+      },
+      "category": {
+        "licensing": "License & Activation"
       },
       "badges": {
         "kb_sync": "KB_SYNC",
@@ -835,6 +839,8 @@
       "status_label": "Ticket Status",
       "channel_label": "Request Channel",
       "priority_label": "Priority",
+      "category_label": "Category",
+      "category_licensing": "License & Activation",
       "open_date": "Created on",
       "assignee_label": "Assigned Agent",
       "assign_placeholder": "Select support expert",

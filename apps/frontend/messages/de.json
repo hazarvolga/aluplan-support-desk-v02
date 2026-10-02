@@ -717,14 +717,18 @@
       "load_error": "Support-Anfragen konnten nicht geladen werden",
       "retry": "Erneut versuchen",
       "header": {
-        "system_id": "System_ID",
+        "system_id": "ID",
         "company": "Unternehmen",
         "customer": "Kunde",
-        "subject": "Ereignisdefinition",
+        "subject": "Thema",
+        "category": "Kategorie",
         "status": "Status",
-        "priority": "Kritikalität",
+        "priority": "Priorität",
         "assignee": "Zugewiesen",
-        "timestamp": "Zeitstempel"
+        "timestamp": "Erstellt"
+      },
+      "category": {
+        "licensing": "Lizenz & Aktivierung"
       },
       "badges": {
         "kb_sync": "KB_SYNC",
@@ -835,6 +839,8 @@
       "status_label": "Ticketstatus",
       "channel_label": "Anfragekanal",
       "priority_label": "Priorität",
+      "category_label": "Kategorie",
+      "category_licensing": "Lizenz & Aktivierung",
       "open_date": "Erstellt am",
       "assignee_label": "Zugewiesen an",
       "assign_placeholder": "Support-Experten auswählen",

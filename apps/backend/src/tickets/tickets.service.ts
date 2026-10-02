@@ -328,6 +328,7 @@ export class TicketsService {
                         },
                     },
                     assignee: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
+                    department: { select: { name: true } },
                     _count: { select: { messages: true } },
                 },
                 orderBy: [{ isSlaBreached: 'desc' }, { priority: 'desc' }, { createdAt: 'desc' }],
@@ -391,6 +392,7 @@ export class TicketsService {
                     },
                 },
                 assignee: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
+                department: { select: { name: true } },
                 messages: {
                     where: isCustomerView ? { isInternal: false } : {},
                     include: {
