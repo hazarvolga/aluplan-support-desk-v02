@@ -46,12 +46,13 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 | 3.2 | **CACHE-01**| Röntgen Bölüm 10 | Redis ve Semantic Cache Tutarsızlığı / İptal (Invalidation) Olayları | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; odaklı test ve typecheck geçti) |
 | 3.3 | **PRIV-01** | PRIV-01 | SSS Özetlerinde ve Bilet Vektörlerinde İç Notların Ayrıştırılması ve Gizlilik | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 3.4 | **LRN-01** | Röntgen Bölüm 8.2 / 8.3 | Çözüm Temelli SSS Çıkarımı, Puanlama Ayrımı ve Yaşam Döngüsü Açıklığı | Paket B (Güvenilir Bilgi) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
+| 3.5 | **RAG-LIC-01** | Firma onaylı ALLPLAN lisans paketi | Sürüm ailesi metadata'sı, HOTINFO güvenli sürüm sinyali ve sınırlı lisans dönemi arama önceliği | Paket B (Güvenilir Bilgi) | **IN REVIEW** (yerel hedefli kontroller geçti; bağımsız inceleme bekliyor) |
 | 4.1 | **CWL-01** | CRAWL-01 | Crawler / Havuz Kuyruk Hatasında SYNCING Takılması ve Eski İndeks Koruması | Paket B (Ingestion) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 4.2 | **CWL-02** | Handoff Bölüm 7 (Sıra 4) | Temsilî Tek Public URL Uçtan Uca İçe Aktarma ve Vektörleme Doğrulaması | Paket B (Ingestion) | **COMPLETED** (yerel izole smoke; bağımsız kod/güvenlik incelemesi geçti) |
 | 4.3 | **MOD-01** | RAG-02 | Model / Embedding Sürüm Değişimi ve Toplu Reindex Operasyonel Kısıtı | Paket B (Ingestion) | **COMPLETED** (yerel; bağımsız kod/güvenlik incelemesi geçti) |
 | 5.1 | **UX-01** | Handoff Bölüm 4 | Bölüm 4 Görünür Frontend AI / `ANN_*` Metin ve Etiket Revizyonu | Paket B (Kullanım/UX) | **COMPLETED** (TR/EN/DE; yerel render ve odaklı kontroller geçti) |
 | 5.2 | **UX-02** | Röntgen Bölüm 12 | Yardım Ekranı (`/tr/help`) Çeviri Anahtarları ve Gerçek Personel Rol Menüsü | Paket B (Kullanım/UX) | **PENDING** |
-| 5.3 | **UX-03** | Röntgen Bölüm 12 | Öğrenme, Değerlendirme Anketi ve Aday Durumlarının Arayüzde Şeffaf Ayrımı | Paket B (Kullanım/UX) | **PENDING** |
+| 5.3 | **UX-03** | Röntgen Bölüm 12 | Öğrenme, Değerlendirme Anketi ve Aday Durumlarının Arayüzde Şeffaf Ayrımı | Paket B (Kullanım/UX) | **COMPLETED** (yerel; frontend unit, i18n ve typecheck geçti) |
 | 6.1 | **DEF-01** | Handoff Bölüm 5 (P1) | Depo Geneli Kapsamlı Lint Borcunun Kademeli Temizliği | Ertelenen İşler | **DEFERRED** |
 | 6.2 | **DEF-02** | Handoff Bölüm 5 (P2) | Eski 500 `knowledge-sync` Başarısız Kuyruk Kaydının Ayrı Analizi | Ertelenen İşler | **DEFERRED** |
 | 6.3 | **DEF-03** | Röntgen Bölüm 14 | Outbound Webhook Wildcard ve Çift Bildirim Riskinin Koşullu Takibi | Ertelenen İşler | **DEFERRED** |
@@ -406,6 +407,15 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 
 ## Sıra 3: Paket B — Güvenilir Bilgi ve Öğrenme Döngüsü
 
+### RAG-LIC-01: Firma Onaylı ALLPLAN Lisans Bilgi Paketi ve HOTINFO Sürüm Yönlendirmesi
+- **Durum:** `IN REVIEW` (yerel hedefli kontroller geçti; bağımsız inceleme bekliyor)
+- **Kapsam:** Onaylı 2015 ve öncesi, 2016–2023 CodeMeter, 2024–2024-2 ALLPLAN ID/bulut, 2025 Connect 2.0 ve 2026 Connect 2.0 yönetim rehberleri için sürüm ailesi metadata'sı eklendi. `licenseEra`, `versionRange`, yöntem, senaryo ve insan incelemesi gereksinimi bilgi kaynağı metadata'sında tutulur.
+- **HOTINFO sınırı:** AI akışı korunur; Allplan sürümü, hotfix/build ve lisans alanının varlığı güvenli sinyal olarak kullanılabilir. Ham `.hxl`, `_SEC.NSE`, Product Key/lisans numarası veya ham trace embedding/aramanın içine taşınmaz. Tanınan yöntem adları dışındaki lisans değerleri prompt bağlamında maskelenir.
+- **Arama davranışı:** Lisans niyeti ve tanınan sürüm ailesi varsa aynı `licenseEra` kaynaklarına sınırlı `1.12` öncelik verilir; sürüm bilinmiyorsa veya talep lisans dışıysa ek dönem önceliği uygulanmaz. Mevcut Copilot düğmesi, insan onayı ve diğer kategori akışları korunur.
+- **Dosyalar:** `apps/backend/src/knowledge-pool/dataset-classifier.ts`, `apps/backend/src/knowledge-pool/knowledge-pool.service.ts`, `apps/backend/src/ai/embedding.service.ts`, `apps/backend/src/ai/prompt-context-builder.service.ts`, `apps/backend/src/ai/ai-query.service.ts`.
+- **Dar doğrulama:** Backend classifier/prompt/embedding hedefli testleri ve typecheck geçti. Frontend UX-02 kontrolleri de geçti. Gerçek müşteri Hotinfo'su, canlı veritabanı, migration, push veya deploy kullanılmadı.
+- **Kalan iş:** Firma onaylı beş Markdown rehberinin yerel `dataset/` veya bilgi havuzu yükleme akışı üzerinden açıkça içe alınması; ignored `docs/` klasöründeki inceleme kopyaları otomatik olarak bilgi bankasına aktarılmaz.
+
 ### RAG-01: Bilgi Bankası Raw SQL Makale Aramasında Silinmeme ve Güncel Sürüm Filtrelemesi
 - **Durum:** `COMPLETED` (yerel)
 - **Rapor ID / Kanıt:** RAG-01; Röntgen Bölüm 10, Bölüm 13 (Satır 338); `B/ai/embedding.service.ts:465-477`, `B/knowledge-base/knowledge-base.service.ts:145-182`.
@@ -560,7 +570,7 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Kalan Kullanıcı Kararı:** Yok; terimler kullanıcı tarafından onaylandı. UX-01 ve REL-02 tamamlandı; sıradaki planlı görev RAG-01'dir.
 
 ### UX-02: Yardım Ekranı (`/tr/help`) Çeviri Anahtarları ve Gerçek Personel Rol Menüsü
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (yerel; frontend unit, i18n ve typecheck geçti)
 - **Rapor ID / Kanıt:** Röntgen Bölüm 12 (Satır 302, 317); `apps/frontend/messages/*.json`, `apps/frontend/src/components/help/doc-tree.ts`.
 - **Dosya / Modül:** `apps/frontend/messages/{tr,en,de}.json`, `apps/frontend/src/components/help/doc-tree.ts`.
 - **Minimum Değişiklik:** 
@@ -571,10 +581,11 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Kabul Ölçütü:** `/tr/help` açıldığında ham `help.title` anahtarı yerine başlık görünmeli; gerçek personel rollerine sahip tüm kullanıcılar yetkili yönetici rehberini görebilmeli.
 - **Dar Doğrulama:** `apps/frontend/src/components/help/doc-tree.spec.ts` birim testi ve yerel render kontrolü.
 - **Veri / Migration Etkisi:** Sıfır.
-- **Açık Kullanıcı Kararı:** Müşteri rolü yardım menüsünde hangi bölümleri görebilmeli?
+- **Uygulama:** `help.title`, `help.badge`, `help.nav.back` anahtarları TR/EN/DE olarak eklendi. Canonical personel rolleri (`ADMIN`, `SUPER_ADMIN`, `SUPPORT_AGENT`, `SENIOR_AGENT`, `TEAM_LEAD`, `DEPARTMENT_MANAGER`, `MANAGER`) yönetici yardım ağacını görür; müşteri/viewer rolleri müşteri ağacında kalır.
+- **Açık Kullanıcı Kararı:** Yok; müşteri görünürlüğü müşteri yardım ağacıyla sınırlı bırakıldı.
 
 ### UX-03: Öğrenme, Değerlendirme Anketi ve Aday Durumlarının Arayüzde Şeffaf Ayrımı
-- **Durum:** `PENDING`
+- **Durum:** `COMPLETED` (yerel; frontend unit, i18n ve typecheck geçti)
 - **Rapor ID / Kanıt:** Röntgen Bölüm 12 (Satır 306-312), Bölüm 8.4; `apps/frontend/src/app/[locale]/(dashboard)/tickets/[id]/page.tsx`.
 - **Dosya / Modül:** `apps/frontend/src/app/[locale]/(dashboard)/tickets/[id]/page.tsx`, `apps/frontend/messages/*.json`.
 - **Minimum Değişiklik:** 
@@ -591,7 +602,8 @@ Bu plan, handoff belgesinin 7. bölümündeki uygulama sırasını, paket sını
 - **Kabul Ölçütü:** Kullanıcı ve temsilci anket açma, değerlendirme gönderme ve kapanma aşamalarını net biçimde ayırt edebilmeli; kanıtlanmamış işlem vaatleri ekranda yer almamalı.
 - **Dar Doğrulama:** Yerel bilet detay render kontrolü.
 - **Veri / Migration Etkisi:** Sıfır.
-- **Açık Kullanıcı Kararı:** "Çözümü Onayla" anket tetikleme butonunun kullanıcıya görünen metni için kullanıcının kesin tercihi nedir?
+- **Uygulama:** Temsilci butonu `MÜŞTERİ DEĞERLENDİRMESİNİ BAŞLAT`, müşteri butonu `ÇÖZÜMÜ DEĞERLENDİR` olarak ayrıştırıldı. Anket ekranında değerlendirmeyi gönderme, biletin kapanması ve uygun adayların insan incelemesine gideceği açıkça belirtiliyor; doğrudan yayın/teknik doğruluk vaadi kaldırıldı.
+- **Açık Kullanıcı Kararı:** Yok; açıklayıcı etiketler proje sağlığı ve mevcut API yan etkileriyle uyumlu seçildi.
 
 ---
 
