@@ -104,6 +104,49 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
             }
         });
 
+        it('reclassifies stale UI-upload license metadata before enqueueing sync', async () => {
+            const source = {
+                id: 'source-upload-license-2026',
+                name: 'Approved ALLPLAN 2026 licensing guide',
+                filePath: 'knowledge-pool/550e8400-e29b-41d4-a716-446655440000/05-2026-connect-2-management.md',
+                fileName: '05-2026-connect-2-management.md',
+                status: KnowledgeSourceStatus.ACTIVE,
+                metadata: {
+                    ingestionMode: 'bulk-safe',
+                    category: 'Review Backlog',
+                    categorySlug: 'review-backlog',
+                    versionFamily: 'unknown',
+                },
+            };
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue({
+                ...source,
+                status: KnowledgeSourceStatus.SYNCING,
+            });
+
+            await service.triggerSync(source.id);
+
+            expect(localMockPrismaService.knowledgeSource.update).toHaveBeenCalledWith({
+                where: { id: source.id },
+                data: expect.objectContaining({
+                    status: KnowledgeSourceStatus.SYNCING,
+                    metadata: expect.objectContaining({
+                        category: 'License & Activation',
+                        categorySlug: 'license-activation',
+                        versionFamily: 'connect_2026',
+                        licenseEra: 'connect_2026',
+                        versionRange: '2026+',
+                        requiresHumanReview: true,
+                    }),
+                }),
+            });
+            expect(mockQueue.add).toHaveBeenCalledWith(
+                'sync-source',
+                { sourceId: source.id },
+                expect.objectContaining({ delay: 15000 }),
+            );
+        });
+
         it('marks the source FAILED when queue enqueue fails after SYNCING transition', async () => {
             const source = { id: 'source-queue-failure', name: 'Queue Failure', status: KnowledgeSourceStatus.ACTIVE };
             localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
