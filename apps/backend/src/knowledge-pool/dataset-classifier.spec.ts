@@ -85,4 +85,43 @@ describe('classifyDatasetFile', () => {
             category: 'Performance & Hardware',
         }));
     });
+
+    it.each([
+        ['01-legacy-2015-ve-oncesi.md', 'legacy_pre_2016', '<=2015'],
+        ['02-2016-2023-codemeter-product-key.md', 'codemeter_2016_2023', '2016-2023'],
+        ['03-2024-allplan-id-cloud.md', 'cloud_2024', '2024-2024-2'],
+        ['04-2025-connect-2.md', 'connect_2025', '2025'],
+        ['05-2026-connect-2-management.md', 'connect_2026', '2026+'],
+    ])('classifies approved licensing guide %s by version family', (fileName, versionFamily, versionRange) => {
+        const result = classifyDatasetFile(`/repo/dataset/tr/license-activation/${fileName}`);
+
+        expect(result).toEqual(expect.objectContaining({
+            categorySlug: 'license-activation',
+            sourceClass: 'support',
+            versionFamily,
+            licenseEra: versionFamily,
+            versionRange,
+            requiresHumanReview: true,
+        }));
+    });
+
+    it('preserves explicit license-server category while adding the CodeMeter era metadata', () => {
+        const result = classifyDatasetFile('/repo/dataset/en/license-server-codemeter/02-2016-2023-codemeter-product-key.md');
+
+        expect(result).toEqual(expect.objectContaining({
+            categorySlug: 'license-server-codemeter',
+            versionFamily: 'codemeter_2016_2023',
+            versionRange: '2016-2023',
+        }));
+    });
+
+    it('does not classify from dates in the absolute worktree path', () => {
+        const result = classifyDatasetFile('/Users/hazarvolgaekiz/dev/studio/aluplan-support-desk-v02/aluplan-stabilization-20260928/dataset/tr/license-activation/01-legacy-2015-ve-oncesi.md');
+
+        expect(result).toEqual(expect.objectContaining({
+            versionFamily: 'legacy_pre_2016',
+            licenseEra: 'legacy_pre_2016',
+            versionRange: '<=2015',
+        }));
+    });
 });

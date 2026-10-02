@@ -114,7 +114,7 @@ describe('PromptContextBuilderService — Property-Based Tests', () => {
         expect(result).toContain('Lisans Tipi: CodeMeter');
         expect(result).toContain('Güvenlik/Antivirüs Servisleri: Windows Defender');
         expect(result).toContain('Olası Çakışmalar: onedrive.exe');
-        expect(result).toContain('Hata Kaydı/Trace: SEC Hata: test trace');
+        expect(result).toContain('Hata Kaydı/Trace: Hotinfo hata trace sinyali mevcut; ham trace ayrıntısı gizlendi.');
     });
 
     it('treats legacy unreadable license Hotinfo signals as low-confidence telemetry for non-license questions', async () => {
@@ -146,6 +146,53 @@ describe('PromptContextBuilderService — Property-Based Tests', () => {
         expect(result).toContain('kök neden olarak kullanma');
         expect(result).not.toContain('- Lisans Tipi: ⚠ Lisans dosyası okunamadı');
         expect(result).not.toContain('C:\\ProgramData\\Nemetschek\\Allplan\\2026\\License\\_SEC.NSE');
+    });
+
+    it('does not expose an opaque Product Key or license number in prompt context', async () => {
+        mockPrisma.user.findUnique.mockResolvedValue({
+            id: 'user-1',
+            fullName: 'Murat Şahin',
+            email: 'murat@example.com',
+            customerProfile: { companyName: 'ENKA', industry: 'AEC', hotinfoData: null },
+        });
+
+        const result = await service.buildContext({
+            userId: 'user-1',
+            userQuery: 'Allplan lisansımı yeni bilgisayara aktarmak istiyorum',
+            kbContent: 'License transfer guidance.',
+            hotinfoSnapshot: {
+                allplanVersion: 'Allplan 2023',
+                licenseType: 'Product Key 1234-5678-9012',
+                hotinfoLicense: '1014361a',
+            },
+        });
+
+        expect(result).toContain('Lisans Tipi: Lisans telemetrisi mevcut (yöntem ayrıntısı gizlendi)');
+        expect(result).not.toContain('1234-5678-9012');
+        expect(result).not.toContain('1014361a');
+    });
+
+    it('summarizes arbitrary Hotinfo traces without exposing raw paths or trace contents', async () => {
+        mockPrisma.user.findUnique.mockResolvedValue({
+            id: 'user-1',
+            fullName: 'Murat Şahin',
+            email: 'murat@example.com',
+            customerProfile: { companyName: 'ENKA', industry: 'AEC', hotinfoData: null },
+        });
+
+        const result = await service.buildContext({
+            userId: 'user-1',
+            userQuery: 'Allplan açılırken hata alıyorum',
+            kbContent: 'Startup guidance.',
+            hotinfoSnapshot: {
+                allplanVersion: 'Allplan 2026',
+                errorTrace: 'Exception: C:\\Users\\murat\\private-project\\trace-SECRET-123.log',
+            },
+        });
+
+        expect(result).toContain('Hotinfo hata trace sinyali mevcut; ham trace ayrıntısı gizlendi.');
+        expect(result).not.toContain('private-project');
+        expect(result).not.toContain('trace-SECRET-123');
     });
 
     // Feature: rag-faq-improvements, Property 1.5: boş kbContent için bölüm eklenmez

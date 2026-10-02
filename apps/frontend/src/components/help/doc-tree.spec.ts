@@ -128,6 +128,10 @@ describe('doc-tree.ts helper functions', () => {
       expect(isAdminOrAgent({ roles: ['ADMIN'] })).toBe(true);
     });
 
+    it.each(['SUPER_ADMIN', 'SUPPORT_AGENT', 'SENIOR_AGENT', 'TEAM_LEAD', 'DEPARTMENT_MANAGER', 'MANAGER'])('recognizes canonical staff role %s', (role) => {
+      expect(isAdminOrAgent({ role })).toBe(true);
+    });
+
     it('returns false for roles array without staff role', () => {
       expect(isAdminOrAgent({ roles: ['customer', 'viewer'] })).toBe(false);
     });

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { EmbeddingService, SearchResponse } from './embedding.service';
+import { EmbeddingService, SearchResponse, calculateLicenseEraMultiplier } from './embedding.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
@@ -16,6 +16,13 @@ describe('EmbeddingService', () => {
     let service: EmbeddingService;
     let mockPrismaService: any;
     let mockAiService: any;
+
+    it('boosts only matching known license eras and leaves unknown eras neutral', () => {
+        expect(calculateLicenseEraMultiplier('connect_2026', 'connect_2026')).toBe(1.12);
+        expect(calculateLicenseEraMultiplier('connect_2026', 'legacy_pre_2016')).toBe(1);
+        expect(calculateLicenseEraMultiplier('unknown', 'connect_2026')).toBe(1);
+        expect(calculateLicenseEraMultiplier('connect_2026', null)).toBe(1);
+    });
 
     const mockEmbedResult = {
         embedding: Array.from({ length: 1536 }, () => Math.random()),
