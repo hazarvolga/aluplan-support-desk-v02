@@ -23,8 +23,11 @@ import { HotinfoGrid } from '@/components/ui/hotinfo-grid';
 import { getDepartmentDisplayName } from '@/lib/department-display';
 import { buildTicketCategoryOptions, getTicketCategoryCreateFields } from '@/lib/ticket-category-options';
 import { AiVisualEvidence, type AiVisualEvidenceItem } from '@/components/ai/AiVisualEvidence';
+import { isTicketDetailsReady } from '@/lib/ticket-intake-visibility';
+import { buildAllplanLicensingDescription } from '@/lib/allplan-licensing-intake';
 
 const MAX_TICKET_SUBJECT_LENGTH = 255;
+const MAX_TICKET_DESCRIPTION_LENGTH = 9000;
 const TICKET_ATTACHMENT_ACCEPT = [
     'image/*',
     'application/pdf',
@@ -42,8 +45,14 @@ const HOTINFO_SERVICE_HELP_URL = 'https://help.allplan.com/Allplan/2024-1/1034/A
 
 const getTicketSchema = (t: any) => z.object({
     subject: z.string().min(5, t('errors.subject_min')).max(MAX_TICKET_SUBJECT_LENGTH, t('errors.subject_max')),
-    description: z.string().min(10, t('errors.description_min')),
+    description: z.string().min(10, t('errors.description_min')).max(MAX_TICKET_DESCRIPTION_LENGTH, t('errors.description_max')),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
+    allplanVersion: z.string().max(64).optional(),
+    licenseTopology: z.enum(['SINGLE_USER', 'LICENSE_SERVER', 'UNKNOWN']).optional(),
+    licenseIssueType: z.enum(['ACTIVATION', 'TRANSFER', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER']).optional(),
+    allplanIdStatus: z.enum(['AVAILABLE', 'UNAVAILABLE', 'UNKNOWN', 'NOT_APPLICABLE']).optional(),
+    organizationInviteStatus: z.enum(['ACCEPTED', 'MISSING', 'UNKNOWN', 'NOT_APPLICABLE']).optional(),
+    seatStatus: z.enum(['ASSIGNED', 'MISSING', 'UNKNOWN', 'NOT_APPLICABLE']).optional(),
 });
 
 type TicketFormValues = z.infer<ReturnType<typeof getTicketSchema>>;
@@ -241,6 +250,12 @@ export default function NewTicketPage() {
             subject: '',
             description: '',
             priority: undefined,
+            allplanVersion: '',
+            licenseTopology: 'UNKNOWN',
+            licenseIssueType: 'OTHER',
+            allplanIdStatus: 'UNKNOWN',
+            organizationInviteStatus: 'UNKNOWN',
+            seatStatus: 'UNKNOWN',
         },
     });
 
@@ -267,6 +282,13 @@ export default function NewTicketPage() {
             clearTimeout(synthesisPanelTimer.current);
         }
     }, []);
+
+    useEffect(() => {
+        if (!selectedCategoryOption?.isLicensing || !isHotinfoConfirmed || !hotinfoData?.allplanVersion) return;
+        if (!form.getValues('allplanVersion')?.trim()) {
+            form.setValue('allplanVersion', String(hotinfoData.allplanVersion), { shouldDirty: true });
+        }
+    }, [form, hotinfoData, isHotinfoConfirmed, selectedCategoryOption?.isLicensing]);
 
     const openSynthesisPanel = () => {
         if (synthesisPanelTimer.current) {
@@ -301,7 +323,7 @@ export default function NewTicketPage() {
                 const user = await api.auth.me();
                 if (user?.customerProfile?.hotinfoData) {
                     setHotinfoData(user.customerProfile.hotinfoData);
-                    setIsHotinfoConfirmed(true); // Auto-confirm if already in profile
+                    setIsHotinfoConfirmed(false);
                     toast.info(t('toasts.hotinfo_loaded'));
                 }
             } catch (error) {
@@ -349,7 +371,8 @@ export default function NewTicketPage() {
     };
 
     const runDiagnosis = async () => {
-        const { subject, description } = form.getValues();
+        const values = form.getValues();
+        const { subject, description } = values;
         if (!(await form.trigger('description'))) {
             toast.error(t('errors.description_min'));
             return;
@@ -381,7 +404,8 @@ export default function NewTicketPage() {
             // Switch to specialized query endpoint for conversational RAG
             // Passing product context to focus search on relevant knowledge base
             const pId = selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId;
-            const resolvedResponse = await api.ai.query(buildDiagnosisQuery(subject, description), context, pId, locale, [], attachments, true, false) as
+            const effectiveDescription = buildTicketDescription(values);
+            const resolvedResponse = await api.ai.query(buildDiagnosisQuery(subject, effectiveDescription), context, pId, locale, [], attachments, true, false, undefined, Boolean(context), values.allplanVersion) as
                 { answer?: string; visuals?: AiVisualEvidenceItem[]; interactionId?: string; answerMode?: 'LLM' | 'FALLBACK'; languageMismatch?: boolean } | null;
 
             if (!resolvedResponse || !resolvedResponse.answer) {
@@ -436,8 +460,19 @@ export default function NewTicketPage() {
     const onSubmit = async (values: TicketFormValues) => {
         setLoading(true);
         try {
+            const effectiveDescription = buildTicketDescription(values);
+            const {
+                allplanVersion: _allplanVersion,
+                licenseTopology: _licenseTopology,
+                licenseIssueType: _licenseIssueType,
+                allplanIdStatus: _allplanIdStatus,
+                organizationInviteStatus: _organizationInviteStatus,
+                seatStatus: _seatStatus,
+                ...ticketValues
+            } = values;
             const ticket = await api.tickets.create({
-                ...values,
+                ...ticketValues,
+                description: effectiveDescription,
                 ...getTicketCategoryCreateFields(selectedCategoryOption),
                 productId: selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId,
                 hotinfoContext: isHotinfoConfirmed && hotinfoData ? hotinfoData : undefined,
@@ -447,7 +482,7 @@ export default function NewTicketPage() {
             let message = null;
             if (!ticket.alreadyCreated) {
                 message = await api.tickets.addMessage(ticket.id, {
-                    message: values.description,
+                    message: effectiveDescription,
                     isInternal: false
                 });
             }
@@ -489,6 +524,10 @@ export default function NewTicketPage() {
             ? departmentLabels.licensing
             : getDepartmentDisplayName(selectedDepartmentDetails, departmentLabels)
         : undefined;
+    const buildTicketDescription = (values: TicketFormValues): string => {
+        if (!selectedCategoryOption?.isLicensing || !isAllplanSelected) return values.description;
+        return buildAllplanLicensingDescription(values.description, values, t);
+    };
     const rainTokens = useMemo(() => buildRainTokens({
         subject: watchedSubject,
         description: watchedDescription,
@@ -567,6 +606,115 @@ export default function NewTicketPage() {
                                 </Select>
                                 <p className="text-[11px] text-muted-foreground/60">{t('fields.product_hint')}</p>
                             </div>
+
+                            {isAllplanSelected && selectedCategoryOption?.isLicensing && (
+                                <div className="space-y-4 rounded-xl border border-brand-500/20 bg-brand-500/5 p-4">
+                                    <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-brand-200">
+                                        <ListChecks className="h-4 w-4" />
+                                        {t('licensing_intake.title')}
+                                    </div>
+                                    <p className="mb-3 text-xs leading-5 text-muted-foreground">
+                                        {t('licensing_intake.description')}
+                                    </p>
+                                    <ul className="space-y-1.5 text-xs leading-5 text-slate-300">
+                                        {(t.raw('licensing_intake.items') as string[]).map(item => (
+                                            <li key={item} className="flex gap-2">
+                                                <span aria-hidden="true" className="text-brand-300">•</span>
+                                                <span>{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <div className="grid gap-4 border-t border-brand-500/15 pt-4 sm:grid-cols-2">
+                                        <FormField
+                                            control={form.control}
+                                            name="allplanVersion"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{t('licensing_intake.version_label')}</FormLabel>
+                                                    <FormControl>
+                                                        <Input {...field} maxLength={64} placeholder={t('licensing_intake.version_placeholder')} className="border-white/10 bg-slate-950/60" />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="licenseTopology"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{t('licensing_intake.topology_label')}</FormLabel>
+                                                    <Select value={field.value} onValueChange={field.onChange}>
+                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            {(['SINGLE_USER', 'LICENSE_SERVER', 'UNKNOWN'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.topology.${value}`)}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="licenseIssueType"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{t('licensing_intake.issue_label')}</FormLabel>
+                                                    <Select value={field.value} onValueChange={field.onChange}>
+                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            {(['ACTIVATION', 'TRANSFER', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.issue.${value}`)}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="allplanIdStatus"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{t('licensing_intake.allplan_id_label')}</FormLabel>
+                                                    <Select value={field.value} onValueChange={field.onChange}>
+                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            {(['AVAILABLE', 'UNAVAILABLE', 'UNKNOWN', 'NOT_APPLICABLE'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.allplan_id.${value}`)}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="organizationInviteStatus"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{t('licensing_intake.invite_label')}</FormLabel>
+                                                    <Select value={field.value} onValueChange={field.onChange}>
+                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            {(['ACCEPTED', 'MISSING', 'UNKNOWN', 'NOT_APPLICABLE'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.invite.${value}`)}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="seatStatus"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{t('licensing_intake.seat_label')}</FormLabel>
+                                                    <Select value={field.value} onValueChange={field.onChange}>
+                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            {(['ASSIGNED', 'MISSING', 'UNKNOWN', 'NOT_APPLICABLE'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.seat.${value}`)}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Allplan Hotinfo Section */}
                             {isAllplanSelected && (
@@ -747,7 +895,7 @@ export default function NewTicketPage() {
                                 </div>
                             )}
 
-                            {selectedDepartmentId !== '' && selectedProductId !== '' && (!isAllplanSelected || isHotinfoConfirmed) && (
+                            {isTicketDetailsReady(selectedDepartmentId, selectedProductId) && (
                                 <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
                                     {/* Priority */}
                                     <FormField
@@ -862,6 +1010,7 @@ export default function NewTicketPage() {
                     <Label className="text-lg">{t('ai.detail_label')}</Label>
                     <Textarea
                         placeholder={t('ai.detail_placeholder')}
+                        maxLength={MAX_TICKET_DESCRIPTION_LENGTH}
                         className="min-h-[120px] bg-slate-950/50 border-white/10 text-lg p-4"
                         value={form.watch('description')}
                         onChange={(e) => form.setValue('description', e.target.value)}
@@ -1087,8 +1236,11 @@ export default function NewTicketPage() {
                             <strong>{t('summary.subject_label')}</strong> {form.getValues('subject')}<br />
                             <strong>{t('summary.department_label')}</strong> {selectedDepartmentName || '-'}<br />
                             <strong>{t('summary.product_label')}</strong> {selectedProductDetails?.name || t('fields.product_general')}<br />
-                            <strong>{t('summary.desc_label')}</strong> {form.getValues('description').slice(0, 100)}...
+                            <strong>{t('summary.desc_label')}</strong> {buildTicketDescription(form.getValues()).slice(0, 500)}...
                         </p>
+                        {selectedCategoryOption?.isLicensing && isAllplanSelected && (
+                            <p className="text-[11px] leading-5 text-muted-foreground">{t('summary.ai_context_notice')}</p>
+                        )}
                     </div>
                 </CardContent>
                 <CardFooter className="justify-between border-t border-white/5 pt-6 mt-6">

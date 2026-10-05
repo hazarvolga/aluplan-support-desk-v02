@@ -1,47 +1,25 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+
+const CREDIT_CARD_REGEX = /\b(?:\d{4}[-\s]?){3}\d{4}\b/g;
+const TCKN_REGEX = /\b[1-9]\d{10}\b/g;
+const PHONE_REGEX = /\+?90\s?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{2}[-.\s]?\d{2}\b/g;
+const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+
+export const maskSensitiveData = (text: string): string => {
+    if (!text) return text;
+    return text
+        .replace(CREDIT_CARD_REGEX, match => `[KREDİ KARTI GİZLENDİ: ****-****-****-${match.slice(-4)}]`)
+        .replace(TCKN_REGEX, match => `[TCKN GİZLENDİ: ${match.substring(0, 2)}*******${match.slice(-2)}]`)
+        .replace(PHONE_REGEX, '[TELEFON GİZLENDİ]')
+        .replace(EMAIL_REGEX, match => {
+            const [local, domain] = match.split('@');
+            return `[E-POSTA GİZLENDİ: ${local.charAt(0)}***@${domain}]`;
+        });
+};
 
 @Injectable()
 export class PiiMaskingService {
-    private readonly logger = new Logger(PiiMaskingService.name);
-
-    // Regex for basic 16-digit credit cards (with optional dashes or spaces)
-    private readonly creditCardRegex = /\b(?:\d{4}[-\s]?){3}\d{4}\b/g;
-    // Regex for 11 digit numbers (TCKN approximation)
-    private readonly tcknRegex = /\b[1-9]\d{10}\b/g;
-    // Basic phone number regex
-    private readonly phoneRegex = /\+?90\s?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{2}[-.\s]?\d{2}\b/g;
-    // Basic email regex
-    private readonly emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-
     maskSensitiveData(text: string): string {
-        if (!text) return text;
-
-        let masked = text;
-
-        // Mask Credit Cards (keep last 4 visible)
-        masked = masked.replace(this.creditCardRegex, (_match) => {
-            const last4 = _match.slice(-4);
-            return `[KREDİ KARTI GİZLENDİ: ****-****-****-${last4}]`;
-        });
-
-        // Mask TCKN (Keep first 2 and last 2 visible)
-        masked = masked.replace(this.tcknRegex, (_match) => {
-            const first2 = _match.substring(0, 2);
-            const last2 = _match.substring(_match.length - 2);
-            return `[TCKN GİZLENDİ: ${first2}*******${last2}]`;
-        });
-
-        // Mask Phone Numbers
-        masked = masked.replace(this.phoneRegex, () => {
-            return `[TELEFON GİZLENDİ]`;
-        });
-
-        // Mask Emails
-        masked = masked.replace(this.emailRegex, (_match) => {
-            const [local, domain] = _match.split('@');
-            return `[E-POSTA GİZLENDİ: ${local.charAt(0)}***@${domain}]`;
-        });
-
-        return masked;
+        return maskSensitiveData(text);
     }
 }

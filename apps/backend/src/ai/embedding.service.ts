@@ -132,7 +132,15 @@ const calculateIntentCategoryMultiplier = (query: string, category: string | nul
 };
 
 export const calculateLicenseEraMultiplier = (queryEra: string, sourceEra: string | null | undefined): number =>
-    queryEra !== 'unknown' && sourceEra === queryEra ? 1.12 : 1.0;
+    queryEra === 'unknown' || !sourceEra
+        ? 1.0
+        : sourceEra === queryEra
+            ? 1.12
+            : queryEra === 'codemeter_2016_2024_1_10' && sourceEra === 'codemeter_2016_2023'
+                ? 1.08
+                : queryEra === 'cloud_2024_2_plus' && ['connect_2025', 'connect_2026'].includes(sourceEra)
+                    ? 1.04
+                    : 1.0;
 
 const calculateIntentSourceMultiplier = (
     query: string,

@@ -1,4 +1,8 @@
 import * as path from 'path';
+import {
+    AllplanLicenseEra,
+    classifyAllplanLicenseRelease,
+} from '../common/utils/allplan-license-era';
 
 export const DATASET_CATEGORY_BY_SLUG = {
     'license-activation': 'License & Activation',
@@ -18,12 +22,12 @@ export const DATASET_CATEGORY_BY_SLUG = {
 export type DatasetCategory = typeof DATASET_CATEGORY_BY_SLUG[keyof typeof DATASET_CATEGORY_BY_SLUG];
 export type DatasetSourceClass = 'support' | 'manual' | 'review';
 export type LicenseVersionFamily =
-    | 'legacy_pre_2016'
+    | AllplanLicenseEra
+    // Backward-compatible values can still exist in already indexed sources.
     | 'codemeter_2016_2023'
     | 'cloud_2024'
     | 'connect_2025'
-    | 'connect_2026'
-    | 'unknown';
+    | 'connect_2026';
 
 export interface DatasetFileClassification {
     language: 'tr' | 'en' | 'de';
@@ -133,6 +137,8 @@ const inferCategorySlug = (filePath: string, fileName: string): keyof typeof DAT
         'allplan id',
         'connect-2',
         'connect 2',
+        'connect-user',
+        'connect user',
         'legacy-2015',
         'nemslock',
         'softlock',
@@ -222,42 +228,67 @@ const inferLicenseProfile = (
         };
     }
 
-    if (hasAny(lower, ['2026', 'connect-2-management', 'reservation', 'reservierung'])) {
+    const release = classifyAllplanLicenseRelease(fileName.toLowerCase());
+    const isConnectAdministration = hasAny(lower, [
+        'connect-2',
+        'connect 2',
+        'connect-user',
+        'connect user',
+        'organization',
+        'organisation',
+        'seat-management',
+        'seat management',
+        'reservation',
+        'reservierung',
+    ]);
+
+    if (isConnectAdministration && (release.year === null || release.year >= 2025)) {
         return {
-            versionFamily: 'connect_2026',
-            versionRange: '2026+',
-            licenseMethods: ['ALLPLAN Connect 2.0', 'user and group management', 'seat reservation'],
-            scenarios: ['user invitation', 'group assignment', 'seat reservation'],
+            versionFamily: 'cloud_2024_2_plus',
+            versionRange: '>=2024-2-0',
+            licenseMethods: ['ALLPLAN ID', 'cloud licensing', 'Connect administration'],
+            scenarios: ['user invitation', 'organization invitation', 'group assignment', 'seat assignment', 'seat reservation'],
             requiresHumanReview: true,
         };
     }
-    if (hasAny(lower, ['2025', 'connect-2', 'connect 2'])) {
+
+    if (release.era === 'legacy_pre_2016') {
         return {
-            versionFamily: 'connect_2025',
-            versionRange: '2025',
-            licenseMethods: ['ALLPLAN Connect 2.0', 'organization invitation', 'seat management'],
-            scenarios: ['organization invite', 'seat assignment'],
+            versionFamily: release.era,
+            versionRange: release.versionRange,
+            licenseMethods: ['NemSLock', 'Softlock', 'Hardlock', 'Client ID or CD Key'],
+            scenarios: ['activation', 'license transfer'],
             requiresHumanReview: true,
         };
     }
-    if (hasAny(lower, ['2024', 'allplan-id', 'allplan id', 'cloud'])) {
+
+    if (release.era === 'cloud_2024_2_plus' || (release.era === 'unknown' && hasAny(lower, ['allplan-id', 'allplan id', 'cloud']))) {
         return {
-            versionFamily: 'cloud_2024',
-            versionRange: '2024-2024-2',
-            licenseMethods: ['ALLPLAN ID', 'cloud licensing', 'offline activation'],
-            scenarios: ['cloud sign-in', 'offline activation', 'license migration'],
+            versionFamily: 'cloud_2024_2_plus',
+            versionRange: '>=2024-2-0',
+            licenseMethods: ['ALLPLAN ID', 'cloud licensing'],
+            scenarios: ['cloud sign-in', 'organization invitation', 'seat assignment', 'license migration'],
             requiresHumanReview: true,
         };
     }
-    if (hasAny(lower, ['2016', '2023', 'codemeter', 'product-key', 'product key', 'license-server'])) {
+
+    if (release.era === 'codemeter_2016_2024_1_10' || hasAny(lower, ['codemeter', 'wibu', 'product-key', 'product key', 'license-server'])) {
+        const isServer = categorySlug === 'license-server-codemeter' || hasAny(lower, ['license-server', 'license server', 'floating', 'network license']);
+        const isSingleUser = hasAny(lower, ['single-user', 'single user', 'single workstation', 'einzelplatz', 'tek kullanici', 'tek kullanıcı']);
         return {
-            versionFamily: 'codemeter_2016_2023',
-            versionRange: '2016-2023',
-            licenseMethods: ['CodeMeter', 'Product Key', 'license server'],
-            scenarios: ['activation', 'server setup', 'license return or borrow'],
+            versionFamily: 'codemeter_2016_2024_1_10',
+            versionRange: '2016-2024-1-10',
+            licenseMethods: [
+                'CodeMeter',
+                'Product Key',
+                ...(isSingleUser ? ['single user'] : []),
+                ...(isServer ? ['license server'] : []),
+            ],
+            scenarios: ['activation', ...(isServer ? ['server setup'] : []), 'license return or borrow'],
             requiresHumanReview: true,
         };
     }
+
     if (hasAny(lower, ['2015', 'legacy', 'nemslock', 'softlock', 'hardlock', 'client-id', 'client id', 'cd-key', 'cd key'])) {
         return {
             versionFamily: 'legacy_pre_2016',

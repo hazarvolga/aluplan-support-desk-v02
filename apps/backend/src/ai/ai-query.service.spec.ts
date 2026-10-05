@@ -306,7 +306,7 @@ describe('AiQueryService', () => {
             );
         });
 
-        it('omits profile and raw Hotinfo inputs from prompt context in privacy-safe mode', async () => {
+        it('omits personal profile while preserving an explicitly consented Hotinfo snapshot in privacy-safe mode', async () => {
             mockPrismaService.user.findUnique.mockResolvedValue(null);
             mockEmbeddingService.search.mockResolvedValue({
                 results: [{
@@ -319,14 +319,17 @@ describe('AiQueryService', () => {
             await (service as any).prepareQueryContext({
                 userQuery: 'License issue',
                 userId: 'customer-1',
-                hotinfoContext: { rawSecret: 'PRIVATE HOTINFO' },
+                hotinfoContext: { allplanVersion: '2026' },
                 privacySafeContext: true,
+                skipHotinfoProfile: false,
                 history: [{ role: 'user', content: 'Public masked history' }],
             });
 
             expect(mockPromptContextBuilder.buildContext).toHaveBeenCalledWith(expect.objectContaining({
-                userId: undefined,
-                hotinfoSnapshot: undefined,
+                userId: 'customer-1',
+                hotinfoSnapshot: { allplanVersion: '2026' },
+                skipHotinfoProfile: false,
+                skipPersonalProfile: true,
             }));
         });
 
@@ -399,6 +402,21 @@ describe('AiQueryService', () => {
                     }),
                 }),
             });
+        });
+
+        it('does not read the customer profile for privacy-safe URL-only input', async () => {
+            const profileLanguageSpy = jest.spyOn(service as any, 'getUserProfileLanguage');
+
+            await service.query({
+                userQuery: 'https://allplan.net.tr/en/tickets/new',
+                userId: 'customer-1',
+                language: 'en',
+                strictLanguage: true,
+                privacySafeContext: true,
+                wait: true,
+            });
+
+            expect(profileLanguageSpy).not.toHaveBeenCalled();
         });
 
         it('still allows support questions that include a URL as context', async () => {

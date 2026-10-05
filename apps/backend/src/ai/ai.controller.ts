@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsInt, Min, Max, IsOptional, MinLength, IsBoolean, IsUUID, IsArray } from 'class-validator';
+import { IsString, IsInt, Min, Max, IsOptional, MinLength, MaxLength, IsBoolean, IsUUID, IsArray, IsObject } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
@@ -26,17 +26,31 @@ import { Roles } from '../rbac/decorators/rbac.decorators';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { assertEmbeddingMigrationApproved } from './embedding-migration.guard';
+import { sanitizeHotinfoContext, sanitizeHotinfoString } from '../common/utils/hotinfo-context';
 
 
 export class AiQueryDto {
     @ApiProperty({ example: 'Şifremi nasıl sıfırlarım?' })
     @IsString()
     @MinLength(3)
+    @MaxLength(20000)
     query: string;
+
+    @ApiPropertyOptional({ description: 'User-confirmed ALLPLAN release/build from the licensing intake' })
+    @IsOptional()
+    @IsString()
+    @MaxLength(64)
+    allplanVersion?: string;
 
     @ApiPropertyOptional()
     @IsOptional()
+    @IsObject()
     hotinfoContext?: Record<string, unknown>;
+
+    @ApiPropertyOptional({ description: 'Explicit consent to use stored or request Hotinfo data in AI context' })
+    @IsOptional()
+    @IsBoolean()
+    useHotinfo?: boolean;
 
     @ApiPropertyOptional({ type: 'array', items: { type: 'object' } })
     @IsOptional()
@@ -125,16 +139,20 @@ export class AiController {
     @ApiQuery({ name: 'wait', required: false, type: Boolean, description: 'Wait for full response instead of background job' })
     @HttpCode(HttpStatus.OK)
     query(@Body() dto: AiQueryDto, @Request() req: any /* GAP-06: Next step properly type ReqUser */, @Query('wait') wait?: string) {
+        const useHotinfo = dto.useHotinfo === true;
         return this.aiQueryService.query({
             userQuery: dto.query,
+            allplanVersion: sanitizeHotinfoString(dto.allplanVersion, 64),
             userId: req.user.sub,
             channel: 'WEB',
-            hotinfoContext: dto.hotinfoContext,
+            hotinfoContext: useHotinfo ? sanitizeHotinfoContext(dto.hotinfoContext) : undefined,
+            skipHotinfoProfile: !useHotinfo,
             attachments: dto.attachments,
             productId: dto.productId,
             language: dto.language,
             routeLocale: dto.routeLocale,
             strictLanguage: dto.strictLanguage,
+            privacySafeContext: true,
             history: dto.history,
             wait: wait !== undefined ? wait === 'true' : false, // Default to async for WEB (non-blocking)
         });

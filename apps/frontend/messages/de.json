@@ -898,8 +898,8 @@
       "sections": {
         "basic_info": "Basisinformationen",
         "basic_info_desc": "Geben Sie Informationen zu Ihrer Anfrage an. Durch Auswahl eines Produkts erhalten Sie gezieltere Unterstützung.",
-        "system_info": "Systeminformationen (Erforderlich)",
-        "hotinfo_needed": "Für Allplan-Fehler wird eine Hotinfo-Datei benötigt.",
+        "system_info": "Systeminformationen (Optional)",
+        "hotinfo_needed": "Laden Sie Hotinfo hoch, falls vorhanden; dies beschleunigt die Diagnose. Sie können ohne Datei fortfahren.",
         "confirm_hotinfo": "Systeminformationen bestätigen",
         "hotinfo_check": "Sind diese Informationen aktuell? Bestätigen Sie oder laden Sie eine neue Datei hoch.",
         "hotinfo_added": "Systeminformationen (Hotinfo) hinzugefügt",
@@ -926,6 +926,57 @@
         "crash_desc": "Fügen Sie möglichst auch einen Screenshot, den sichtbaren Fehlertext und vorhandene Crash-Dump-Dateien zur Anfrage hinzu.",
         "official_create": "Offizielle Hotinfo-Hilfe öffnen",
         "official_service": "Service-Menü-Hilfe öffnen"
+      },
+      "licensing_intake": {
+        "title": "Für die richtige Lizenzanleitung",
+        "description": "Die Lizenzierung hängt von der Version ab. Geben Sie möglichst folgende Angaben in der Beschreibung an:",
+        "context_title": "ALLPLAN LIZENZINFORMATIONEN",
+        "unknown": "Unbekannt",
+        "version_label": "Exakte ALLPLAN-Version / Build",
+        "version_placeholder": "Beispiel: 2024-1-10; leer lassen, wenn unbekannt",
+        "topology_label": "Lizenznutzungsmodell",
+        "issue_label": "Gewünschter Vorgang / Problem",
+        "allplan_id_label": "Zugriff auf ALLPLAN ID",
+        "invite_label": "Organisationseinladung",
+        "seat_label": "Arbeitsplatzzuweisung",
+        "topology": {
+          "SINGLE_USER": "Einzelplatz",
+          "LICENSE_SERVER": "Lizenzserver / Netzwerklizenz",
+          "UNKNOWN": "Ich weiß es nicht"
+        },
+        "issue": {
+          "ACTIVATION": "Aktivierung",
+          "TRANSFER": "Neuer Rechner / Übertragung",
+          "LOGIN": "Anmeldung / Sitzung",
+          "INVITATION": "Organisationseinladung",
+          "SEAT": "Lizenz / Arbeitsplatz nicht sichtbar",
+          "OFFLINE": "Offline-Nutzung / Ausleihen",
+          "OTHER": "Andere / unbekannt"
+        },
+        "allplan_id": {
+          "AVAILABLE": "Zugriff möglich",
+          "UNAVAILABLE": "Kein Zugriff / kein Konto",
+          "UNKNOWN": "Ich weiß es nicht",
+          "NOT_APPLICABLE": "Nicht zutreffend"
+        },
+        "invite": {
+          "ACCEPTED": "Angenommen",
+          "MISSING": "Fehlt / nicht angenommen",
+          "UNKNOWN": "Ich weiß es nicht",
+          "NOT_APPLICABLE": "Nicht zutreffend"
+        },
+        "seat": {
+          "ASSIGNED": "Als zugewiesen sichtbar",
+          "MISSING": "Fehlt / nicht sichtbar",
+          "UNKNOWN": "Ich weiß es nicht",
+          "NOT_APPLICABLE": "Nicht zutreffend"
+        },
+        "items": [
+          "Exakte ALLPLAN-Version und Build (zum Beispiel 2024-1-10 oder 2024-2-0)",
+          "Einzelplatzlizenz oder Lizenzserver/Netzwerklizenz",
+          "Sichtbare Fehlermeldung und gewünschter Vorgang",
+          "Ab 2024-2-0: ALLPLAN ID, Organisationseinladung und Arbeitsplatzstatus"
+        ]
       },
       "departments": {
         "technical_support": "Technischer Support",
@@ -1038,12 +1089,14 @@
         "subject_label": "Thema:",
         "department_label": "Kategorie:",
         "product_label": "Produkt:",
-        "desc_label": "Beschreibung:"
+        "desc_label": "Beschreibung:",
+        "ai_context_notice": "Diese Lizenzinformationen werden an das Support-Team übermittelt und für die KI-Antwort zur richtigen Version verwendet."
       },
       "errors": {
         "subject_min": "Thema muss mindestens 5 Zeichen lang sein",
         "subject_max": "Das Thema darf maximal 255 Zeichen lang sein. Bitte schreiben Sie Details in das Beschreibungsfeld.",
-        "description_min": "Beschreibung muss mindestens 10 Zeichen lang sein"
+        "description_min": "Beschreibung muss mindestens 10 Zeichen lang sein",
+        "description_max": "Die Beschreibung darf maximal 9000 Zeichen lang sein"
       },
       "toasts": {
         "departments_load_error": "Fehler beim Laden der Support-Kategorien",

@@ -69,7 +69,9 @@ describe('TicketsPage', () => {
 
         render(<TicketsClient initialTickets={tickets} initialTotal={1} />);
 
-        expect(await screen.findByText('Lisans ve Aktivasyon')).toBeDefined();
+        // The shared next-intl test mock returns translation keys. The display
+        // helper's localized value is covered separately in its focused tests.
+        expect(await screen.findByText('departments.licensing')).toBeDefined();
         expect(screen.getByText('table.header.category')).toBeDefined();
         expect(screen.getByText('table.header.subject')).toBeDefined();
     });

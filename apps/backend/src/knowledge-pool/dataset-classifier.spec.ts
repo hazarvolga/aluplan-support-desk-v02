@@ -79,9 +79,9 @@ describe('classifyDatasetFile', () => {
 
     it.each([
         ['01-legacy-2015-ve-oncesi.md', 'legacy_pre_2016', '<=2015'],
-        ['03-2024-allplan-id-cloud.md', 'cloud_2024', '2024-2024-2'],
-        ['04-2025-connect-2.md', 'connect_2025', '2025'],
-        ['05-2026-connect-2-management.md', 'connect_2026', '2026+'],
+        ['03-2024-allplan-id-cloud.md', 'cloud_2024_2_plus', '>=2024-2-0'],
+        ['04-2025-connect-2.md', 'cloud_2024_2_plus', '>=2024-2-0'],
+        ['05-2026-connect-2-management.md', 'cloud_2024_2_plus', '>=2024-2-0'],
     ])(
         'classifies category-folderless UI upload %s with license version metadata',
         (fileName, versionFamily, versionRange) => {
@@ -110,10 +110,10 @@ describe('classifyDatasetFile', () => {
 
     it.each([
         ['01-legacy-2015-ve-oncesi.md', 'legacy_pre_2016', '<=2015'],
-        ['02-2016-2023-codemeter-product-key.md', 'codemeter_2016_2023', '2016-2023'],
-        ['03-2024-allplan-id-cloud.md', 'cloud_2024', '2024-2024-2'],
-        ['04-2025-connect-2.md', 'connect_2025', '2025'],
-        ['05-2026-connect-2-management.md', 'connect_2026', '2026+'],
+        ['02-2016-2023-codemeter-product-key.md', 'codemeter_2016_2024_1_10', '2016-2024-1-10'],
+        ['03-2024-allplan-id-cloud.md', 'cloud_2024_2_plus', '>=2024-2-0'],
+        ['04-2025-connect-2.md', 'cloud_2024_2_plus', '>=2024-2-0'],
+        ['05-2026-connect-2-management.md', 'cloud_2024_2_plus', '>=2024-2-0'],
     ])('classifies approved licensing guide %s by version family', (fileName, versionFamily, versionRange) => {
         const result = classifyDatasetFile(`/repo/dataset/tr/license-activation/${fileName}`);
 
@@ -132,8 +132,8 @@ describe('classifyDatasetFile', () => {
 
         expect(result).toEqual(expect.objectContaining({
             categorySlug: 'license-server-codemeter',
-            versionFamily: 'codemeter_2016_2023',
-            versionRange: '2016-2023',
+            versionFamily: 'codemeter_2016_2024_1_10',
+            versionRange: '2016-2024-1-10',
         }));
     });
 
@@ -145,5 +145,89 @@ describe('classifyDatasetFile', () => {
             licenseEra: 'legacy_pre_2016',
             versionRange: '<=2015',
         }));
+    });
+
+    it('does not let a dated import batch override the release in the file name', () => {
+        const result = classifyDatasetFile('/repo/dataset/batch-2026-09-28/en/license-activation/Allplan-2023-WIBU-activation.md');
+
+        expect(result).toEqual(expect.objectContaining({
+            versionFamily: 'codemeter_2016_2024_1_10',
+            versionRange: '2016-2024-1-10',
+        }));
+    });
+
+    describe('revised ALLPLAN licensing release boundaries', () => {
+        it.each([
+            ['Allplan-2016-WIBU-single-user-activation.md', 'single user'],
+            ['Allplan-2024-1-10-WIBU-single-user-activation.md', 'single user'],
+        ])(
+            'keeps %s in the CodeMeter era and preserves the %s procedure',
+            (fileName, licenseMethod) => {
+                const result = classifyDatasetFile(`/repo/dataset/en/license-activation/${fileName}`);
+
+                expect(result).toEqual(expect.objectContaining({
+                    versionFamily: 'codemeter_2016_2024_1_10',
+                    licenseEra: 'codemeter_2016_2024_1_10',
+                    versionRange: '2016-2024-1-10',
+                    requiresHumanReview: true,
+                }));
+                expect(result.licenseMethods).toEqual(expect.arrayContaining(['CodeMeter', licenseMethod]));
+                expect(result.licenseMethods).not.toContain('ALLPLAN Connect 2.0');
+            },
+        );
+
+        it('keeps the 2024-1-10 license-server procedure in the CodeMeter era', () => {
+            const result = classifyDatasetFile(
+                '/repo/dataset/en/license-server-codemeter/Allplan-2024-1-10-WIBU-license-server.md',
+            );
+
+            expect(result).toEqual(expect.objectContaining({
+                categorySlug: 'license-server-codemeter',
+                versionFamily: 'codemeter_2016_2024_1_10',
+                licenseEra: 'codemeter_2016_2024_1_10',
+                versionRange: '2016-2024-1-10',
+            }));
+            expect(result.licenseMethods).toEqual(expect.arrayContaining(['CodeMeter', 'license server']));
+            expect(result.scenarios).toEqual(expect.arrayContaining(['server setup']));
+        });
+
+        it.each([
+            'Allplan-2024-2-0-ALLPLAN-ID-cloud-licensing.md',
+            'Allplan-2027-ALLPLAN-ID-cloud-licensing.md',
+        ])('classifies %s in the cloud era beginning at 2024-2-0', (fileName) => {
+            const result = classifyDatasetFile(`/repo/dataset/en/license-activation/${fileName}`);
+
+            expect(result).toEqual(expect.objectContaining({
+                versionFamily: 'cloud_2024_2_plus',
+                licenseEra: 'cloud_2024_2_plus',
+                versionRange: '>=2024-2-0',
+                requiresHumanReview: true,
+            }));
+            expect(result.licenseMethods).toEqual(expect.arrayContaining(['ALLPLAN ID', 'cloud licensing']));
+        });
+
+        it.each([
+            'Allplan-2025-Connect-user-organization-seat-management.md',
+            'Allplan-2026-Connect-2-user-group-seat-reservation-management.md',
+            'Allplan-2027-Connect-2-user-organization-seat-management.md',
+        ])('treats %s as cloud-license administration rather than a separate license technology', (fileName) => {
+            const result = classifyDatasetFile(`knowledge-pool/licensing/${fileName}`);
+
+            expect(result).toEqual(expect.objectContaining({
+                categorySlug: 'license-activation',
+                versionFamily: 'cloud_2024_2_plus',
+                licenseEra: 'cloud_2024_2_plus',
+                versionRange: '>=2024-2-0',
+            }));
+            expect(result.licenseMethods).toEqual(expect.arrayContaining([
+                'ALLPLAN ID',
+                'cloud licensing',
+                'Connect administration',
+            ]));
+            expect(result.scenarios).toEqual(expect.arrayContaining([
+                'organization invitation',
+                'seat assignment',
+            ]));
+        });
     });
 });

@@ -898,8 +898,8 @@
       "sections": {
         "basic_info": "Basic Information",
         "basic_info_desc": "Provide information about your request. You can get more targeted support by selecting a product.",
-        "system_info": "System Information (Required)",
-        "hotinfo_needed": "Hotinfo file is required for Allplan errors.",
+        "system_info": "System Information (Optional)",
+        "hotinfo_needed": "Upload Hotinfo if you have it; it speeds up diagnosis. You can continue without the file.",
         "confirm_hotinfo": "Confirm System Information",
         "hotinfo_check": "Is this information up to date? Confirm or upload a new file.",
         "hotinfo_added": "System Information (Hotinfo) Added",
@@ -926,6 +926,57 @@
         "crash_desc": "If possible, also attach a screenshot, the visible error text, and any available crash dump files to the request.",
         "official_create": "Open official Hotinfo help",
         "official_service": "Open Service menu help"
+      },
+      "licensing_intake": {
+        "title": "For accurate licensing guidance",
+        "description": "Licensing technology depends on the release. If possible, include these details in your description:",
+        "context_title": "ALLPLAN LICENSING INFORMATION",
+        "unknown": "Unknown",
+        "version_label": "Exact ALLPLAN release / build",
+        "version_placeholder": "Example: 2024-1-10; leave blank if unknown",
+        "topology_label": "License usage model",
+        "issue_label": "Requested action / issue",
+        "allplan_id_label": "ALLPLAN ID access",
+        "invite_label": "Organization invitation",
+        "seat_label": "Seat assignment",
+        "topology": {
+          "SINGLE_USER": "Single user",
+          "LICENSE_SERVER": "License server / network license",
+          "UNKNOWN": "I don't know"
+        },
+        "issue": {
+          "ACTIVATION": "Activation",
+          "TRANSFER": "New computer / transfer",
+          "LOGIN": "Sign-in / session issue",
+          "INVITATION": "Organization invitation",
+          "SEAT": "License / seat is not visible",
+          "OFFLINE": "Offline use / borrowing",
+          "OTHER": "Other / I don't know"
+        },
+        "allplan_id": {
+          "AVAILABLE": "I can access it",
+          "UNAVAILABLE": "No access / no account",
+          "UNKNOWN": "I don't know",
+          "NOT_APPLICABLE": "Not applicable"
+        },
+        "invite": {
+          "ACCEPTED": "Accepted",
+          "MISSING": "Missing / not accepted",
+          "UNKNOWN": "I don't know",
+          "NOT_APPLICABLE": "Not applicable"
+        },
+        "seat": {
+          "ASSIGNED": "Appears assigned",
+          "MISSING": "Missing / not visible",
+          "UNKNOWN": "I don't know",
+          "NOT_APPLICABLE": "Not applicable"
+        },
+        "items": [
+          "Exact ALLPLAN release and build (for example 2024-1-10 or 2024-2-0)",
+          "Single-user license or license server/network license",
+          "The visible error and the action you are trying to perform",
+          "For 2024-2-0 and later: ALLPLAN ID, organization invitation, and seat status"
+        ]
       },
       "departments": {
         "technical_support": "Technical Support",
@@ -1038,12 +1089,14 @@
         "subject_label": "Subject:",
         "department_label": "Category:",
         "product_label": "Product:",
-        "desc_label": "Description:"
+        "desc_label": "Description:",
+        "ai_context_notice": "This licensing information is shared with the support team and used to prepare the AI response for the correct release."
       },
       "errors": {
         "subject_min": "Subject must be at least 5 characters",
         "subject_max": "Subject must be 255 characters or fewer. Please put details in the description field.",
-        "description_min": "Description must be at least 10 characters"
+        "description_min": "Description must be at least 10 characters",
+        "description_max": "Description must be 9000 characters or fewer"
       },
       "toasts": {
         "departments_load_error": "Error loading support categories",

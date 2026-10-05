@@ -922,8 +922,8 @@
       "sections": {
         "basic_info": "Temel Bilgiler",
         "basic_info_desc": "Talebiniz hakkında bilgi verin. Ürün seçerek daha hedefli destek alabilirsiniz.",
-        "system_info": "Sistem Bilgileri (Zorunlu)",
-        "hotinfo_needed": "Allplan hataları için Hotinfo dosyası gereklidir.",
+        "system_info": "Sistem Bilgileri (İsteğe Bağlı)",
+        "hotinfo_needed": "Hotinfo dosyanız varsa yükleyin; teknik teşhisi hızlandırır. Dosyanız yoksa talebinize devam edebilirsiniz.",
         "confirm_hotinfo": "Sistem Bilgilerini Onaylayın",
         "hotinfo_check": "Bu bilgiler güncel mi? Onaylayın veya yeni dosya yükleyin.",
         "hotinfo_added": "Sistem Bilgileri (Hotinfo) Eklendi",
@@ -950,6 +950,57 @@
         "crash_desc": "Mümkünse ekran görüntüsü, görünen hata metni ve varsa çökme dökümü dosyalarını da talebe ekleyin.",
         "official_create": "Hotinfo resmi yardımını aç",
         "official_service": "Service menüsü yardımını aç"
+      },
+      "licensing_intake": {
+        "title": "Doğru lisans yönlendirmesi için",
+        "description": "Lisans yöntemi sürüme göre değişir. Açıklamanızda mümkünse şu bilgileri belirtin:",
+        "context_title": "ALLPLAN LİSANSLAMA BİLGİLERİ",
+        "unknown": "Bilinmiyor",
+        "version_label": "Tam ALLPLAN sürümü / build",
+        "version_placeholder": "Örn. 2024-1-10; bilmiyorsanız boş bırakın",
+        "topology_label": "Lisans kullanım biçimi",
+        "issue_label": "Yapmak istediğiniz işlem / sorun",
+        "allplan_id_label": "ALLPLAN ID erişimi",
+        "invite_label": "Kuruluş daveti",
+        "seat_label": "Koltuk ataması",
+        "topology": {
+          "SINGLE_USER": "Tek kullanıcı",
+          "LICENSE_SERVER": "Lisans sunucusu / ağ lisansı",
+          "UNKNOWN": "Bilmiyorum"
+        },
+        "issue": {
+          "ACTIVATION": "Aktivasyon",
+          "TRANSFER": "Yeni bilgisayara geçiş / aktarım",
+          "LOGIN": "Giriş / oturum sorunu",
+          "INVITATION": "Kuruluş daveti",
+          "SEAT": "Lisans / koltuk görünmüyor",
+          "OFFLINE": "Offline kullanım / ödünç alma",
+          "OTHER": "Diğer / bilmiyorum"
+        },
+        "allplan_id": {
+          "AVAILABLE": "Erişebiliyorum",
+          "UNAVAILABLE": "Erişemiyorum / hesabım yok",
+          "UNKNOWN": "Bilmiyorum",
+          "NOT_APPLICABLE": "Uygulanamaz"
+        },
+        "invite": {
+          "ACCEPTED": "Kabul edildi",
+          "MISSING": "Gelmedi / kabul edilmedi",
+          "UNKNOWN": "Bilmiyorum",
+          "NOT_APPLICABLE": "Uygulanamaz"
+        },
+        "seat": {
+          "ASSIGNED": "Atanmış görünüyor",
+          "MISSING": "Atanmamış / görünmüyor",
+          "UNKNOWN": "Bilmiyorum",
+          "NOT_APPLICABLE": "Uygulanamaz"
+        },
+        "items": [
+          "Tam ALLPLAN sürümü ve build (ör. 2024-1-10 veya 2024-2-0)",
+          "Tek kullanıcı lisansı mı, lisans sunucusu/ağ lisansı mı?",
+          "Görünen hata mesajı ve yapmak istediğiniz işlem",
+          "2024-2-0 ve sonrası için ALLPLAN ID, kuruluş daveti ve koltuk durumu"
+        ]
       },
       "departments": {
         "technical_support": "Teknik Destek",
@@ -1062,12 +1113,14 @@
         "subject_label": "Konu:",
         "department_label": "Kategori:",
         "product_label": "Ürün:",
-        "desc_label": "Açıklama:"
+        "desc_label": "Açıklama:",
+        "ai_context_notice": "Bu lisanslama bilgileri destek ekibine iletilir ve Yapay Zeka yanıtını doğru sürüme göre hazırlamak için kullanılır."
       },
       "errors": {
         "subject_min": "Konu en az 5 karakter olmalıdır",
         "subject_max": "Konu en fazla 255 karakter olmalıdır. Detayları açıklama alanına yazabilirsiniz.",
-        "description_min": "Açıklama en az 10 karakter olmalıdır"
+        "description_min": "Açıklama en az 10 karakter olmalıdır",
+        "description_max": "Açıklama en fazla 9000 karakter olmalıdır"
       },
       "toasts": {
         "departments_load_error": "Destek kategorileri yüklenirken hata oluştu",

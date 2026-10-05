@@ -26,6 +26,7 @@ import { isRichTextEffectivelyEmpty, sanitizeRichTextHtml } from '../common/util
 import { TicketAccessService } from '../common/services/ticket-access.service';
 import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 import { ResolutionDecisionDto } from './dto/ticket-lifecycle.dto';
+import { sanitizeHotinfoContext } from '../common/utils/hotinfo-context';
 
 const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
     NEW: [TicketStatus.OPEN, TicketStatus.DRAFT, TicketStatus.PENDING_CUSTOMER_REVIEW],
@@ -99,6 +100,7 @@ export class TicketsService {
         }
 
         const priority = dto.priority ?? TicketPriority.MEDIUM;
+        const hotinfoContext = sanitizeHotinfoContext(dto.hotinfoContext);
         const [ticketNumber, slaDeadlines] = await Promise.all([
             this.generateTicketNumber(),
             this.slaService.calculateDeadlines(priority, dto.departmentId),
@@ -117,7 +119,7 @@ export class TicketsService {
                     userId: createdByUserId,
                     interactionId: dto.interactionId,
                     productId: dto.productId,
-                    hotinfoSnapshot: dto.hotinfoContext || undefined,
+                    hotinfoSnapshot: hotinfoContext as Prisma.InputJsonValue | undefined,
                     slaResponseDue: slaDeadlines.slaResponseDue,
                     slaResolveDue: slaDeadlines.slaResolveDue,
                     channel: dto.channel || 'WEB',
@@ -146,7 +148,7 @@ export class TicketsService {
         // Option A + C Logic: If the user provided a productId, do auto-tagging
         if (dto.productId) {
             // we run this async so that the frontend feels "zero friction" fast response
-            this.startCreationBackground('ticket.auto-tag', () => this.runAutoTaggingAsync(ticket.id, dto.productId!, `${dto.subject}\n\n${dto.description || ''}`, dto.hotinfoContext));
+            this.startCreationBackground('ticket.auto-tag', () => this.runAutoTaggingAsync(ticket.id, dto.productId!, `${dto.subject}\n\n${dto.description || ''}`, hotinfoContext));
         }
 
         // Emit event for Autonomous Resolution Engine

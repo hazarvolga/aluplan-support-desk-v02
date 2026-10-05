@@ -43,7 +43,7 @@ export class CreateTicketDto {
     @ApiPropertyOptional({ description: 'System information from Hotinfo for AI context' })
     @IsObject()
     @IsOptional()
-    hotinfoContext?: any;
+    hotinfoContext?: Record<string, unknown>;
 
     @ApiPropertyOptional({ enum: CommunicationChannel, default: CommunicationChannel.WEB })
     @IsEnum(CommunicationChannel)

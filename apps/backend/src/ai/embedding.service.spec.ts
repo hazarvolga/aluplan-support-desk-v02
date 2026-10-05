@@ -390,6 +390,121 @@ describe('EmbeddingService', () => {
             expect(results[0].similarity).toBeGreaterThan(0.80);
         });
 
+        it('should prefer WIBU/CodeMeter guidance at the exact 2024-1-10 cutoff', async () => {
+            mockAiService.embed.mockResolvedValue(mockEmbedResult);
+            mockPrismaService.$queryRaw.mockResolvedValue([
+                {
+                    article_id: 'wibu-2024-1-10',
+                    source_type: 'DOCUMENT',
+                    title: 'ALLPLAN licensing procedure',
+                    content: 'Approved licensing procedure.',
+                    similarity: 0.80,
+                    trust_score: 0.85,
+                    language: 'en',
+                    category: 'License & Activation',
+                    license_era: 'codemeter_2016_2024_1_10',
+                },
+                {
+                    article_id: 'cloud-2024-2-plus',
+                    source_type: 'DOCUMENT',
+                    title: 'ALLPLAN licensing procedure',
+                    content: 'Approved licensing procedure.',
+                    similarity: 0.80,
+                    trust_score: 0.85,
+                    language: 'en',
+                    category: 'License & Activation',
+                    // Simulates already-indexed metadata while the revised era names roll out.
+                    license_era: 'cloud_2024',
+                },
+            ]);
+
+            const { results } = await service.search(
+                'ALLPLAN 2024-1-10 license activation on a new computer',
+                2,
+            );
+
+            expect(results.map((result) => result.articleId)).toEqual([
+                'wibu-2024-1-10',
+                'cloud-2024-2-plus',
+            ]);
+        });
+
+        it('should prefer ALLPLAN ID cloud guidance beginning at exact release 2024-2-0', async () => {
+            mockAiService.embed.mockResolvedValue(mockEmbedResult);
+            mockPrismaService.$queryRaw.mockResolvedValue([
+                {
+                    article_id: 'wibu-2024-1-10',
+                    source_type: 'DOCUMENT',
+                    title: 'ALLPLAN licensing procedure',
+                    content: 'Approved licensing procedure.',
+                    similarity: 0.80,
+                    trust_score: 0.85,
+                    language: 'en',
+                    category: 'License & Activation',
+                    license_era: 'codemeter_2016_2024_1_10',
+                },
+                {
+                    article_id: 'cloud-2024-2-plus',
+                    source_type: 'DOCUMENT',
+                    title: 'ALLPLAN licensing procedure',
+                    content: 'Approved licensing procedure.',
+                    similarity: 0.80,
+                    trust_score: 0.85,
+                    language: 'en',
+                    category: 'License & Activation',
+                    license_era: 'cloud_2024_2_plus',
+                },
+            ]);
+
+            const { results } = await service.search(
+                '[CONFIRMED ALLPLAN VERSION]\n2024-2-0\nI upgraded from ALLPLAN 2023 and need license activation on a new computer',
+                2,
+            );
+
+            expect(results.map((result) => result.articleId)).toEqual([
+                'cloud-2024-2-plus',
+                'wibu-2024-1-10',
+            ]);
+        });
+
+        it('should not treat 2025-2027 Connect administration as a separate activation technology', async () => {
+            mockAiService.embed.mockResolvedValue(mockEmbedResult);
+            mockPrismaService.$queryRaw.mockResolvedValue([
+                {
+                    article_id: 'connect-admin',
+                    source_type: 'DOCUMENT',
+                    title: 'ALLPLAN licensing procedure',
+                    content: 'Approved licensing procedure.',
+                    similarity: 0.80,
+                    trust_score: 0.85,
+                    language: 'en',
+                    category: 'License & Activation',
+                    license_era: 'connect_2026',
+                },
+                {
+                    article_id: 'cloud-activation',
+                    source_type: 'DOCUMENT',
+                    title: 'ALLPLAN licensing procedure',
+                    content: 'Approved licensing procedure.',
+                    similarity: 0.80,
+                    trust_score: 0.85,
+                    language: 'en',
+                    category: 'License & Activation',
+                    license_era: 'cloud_2024_2_plus',
+                },
+            ]);
+
+            const { results } = await service.search(
+                'ALLPLAN 2026 license activation on a new computer',
+                2,
+            );
+
+            expect(results.map((result) => result.articleId)).toEqual([
+                'cloud-activation',
+                'connect-admin',
+            ]);
+        });
+
         it('should demote license sources when the query explicitly says it is not a license issue', async () => {
             mockAiService.embed.mockResolvedValue(mockEmbedResult);
             mockPrismaService.$queryRaw.mockResolvedValue([
