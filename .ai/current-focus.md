@@ -1,5 +1,12 @@
 # Current Focus
 
+## 5 Ekim — Bilet kapanış / yeniden açma / hizmet değerlendirmesi
+
+- Kullanıcı onaylı yaşam döngüsü uygulanıyor: müşteri çözüm onayı ve desteğe devam etme; personel gerekçeli kapatma; müşteri yeniden açma isteği; bağımsız ve isteğe bağlı hizmet puanı.
+- Aynı bilette geçmiş puan korunur; yeniden açılmış talepte eski puan yeni çözümün öğrenilmesine izin vermez. İmzalı değerlendirme bağlantısı çözüm dönemine bağlanır.
+- Yerel doğrulama tamamlandı: backend yaşam döngüsü/token/HTTP 153 test, öğrenme/otomasyon/e-posta 82 test; frontend 73 test ve 5 gerçek Chromium arayüz senaryosu geçti. Mobil Almanca düğme taşması düzeltildi; typecheck/i18n/diff kontrolleri geçti. Push/deploy yapılmadı. Önceden var olan `apps/backend/openapi.json`, `apps/frontend/next-env.d.ts` ve rapor scripti değişiklikleri bu işten ayrıdır.
+- Ayrıntılı karar: ADR-024. Mevcut kategori, sıralama, lisans ve e-posta iyileştirmeleri korunarak çalışılıyor.
+
 ## 2 Ekim — Kullanıcı onaylı bilet kategori görünürlüğü tamamlandı; sıradaki görev UX-02 (yerel)
 
 - Destek talepleri listesinde `Kategori` sütunu ve kısa başlıklar (`ID`, `Konu`, `Öncelik`, `Oluşturma`) eklendi. Liste ve detay endpoint'leri departman adını seçiyor; **Lisans ve Aktivasyon** etiketi ve AI aday kategorileri için güvenli fallback gösterimi var.
