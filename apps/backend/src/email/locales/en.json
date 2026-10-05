@@ -30,6 +30,12 @@
         "rate_experience": "Rate Your Experience",
         "submit_feedback": "Submit your feedback",
         "feedback_footer": "This link is valid for 7 days. Your feedback helps us improve our support service.",
+        "feedback_description": "is ready for your optional feedback about the support experience.",
+        "review_title": "Solution awaiting your confirmation",
+        "feedback_optional": "Rating is optional and does not close your request. If the problem continues, return to the request page for support.",
+        "review_instructions": "Confirm the solution to close your request, or select ‘My problem continues’ to continue support. Requests close automatically after five days without a reply. Rating the service is optional.",
+        "review_reminder": "One day remains in the five-day response period. Please confirm the solution or tell us the problem continues.",
+        "auto_closed_description": "Your request closed automatically after five days without a reply. If the problem continues, request reopening from the ticket page. This closure does not mean you confirmed the solution.",
         "link_expires_in": "Link validity period:"
     },
     "ticket_created": {

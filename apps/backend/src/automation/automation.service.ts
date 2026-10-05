@@ -19,7 +19,7 @@ export class AutomationService {
     ) { }
 
     @OnEvent('ticket.status_changed')
-    async handleStatusChange(payload: { ticketId: string; oldStatus: TicketStatus; newStatus: TicketStatus; actorId?: string; resolution?: string }) {
+    async handleStatusChange(payload: { ticketId: string; oldStatus: TicketStatus; newStatus: TicketStatus; actorId?: string; resolution?: string; closureReason?: string }) {
         this.logger.log(`🤖 Automation: Processing status change for ticket ${payload.ticketId} (${payload.oldStatus} -> ${payload.newStatus})`);
 
         const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
@@ -41,20 +41,28 @@ export class AutomationService {
         });
 
         if (ticket?.creator?.email) {
+            if (ticket.status && ticket.status !== payload.newStatus) return;
+            const locale = ticket.creator.language === 'en' ? 'en' : 'tr';
+            const ticketUrl = `${frontendUrl}/${locale}/tickets/${ticket.id}`;
             await this.emailService.sendTicketStatusChanged({
+                locale,
                 customerEmail: ticket.creator.email,
                 customerName: ticket.creator.fullName || 'Değerli Müşterimiz',
                 ticketNumber: ticket.ticketNumber,
                 ticketId: ticket.id,
                 oldStatus: payload.oldStatus,
                 newStatus: payload.newStatus,
-                ticketUrl: `${frontendUrl}/tickets/${ticket.id}`
+                ticketUrl,
+                isReviewPending: payload.newStatus === TicketStatus.PENDING_CUSTOMER_REVIEW || payload.newStatus === TicketStatus.RESOLVED,
+                isAutoClosed: payload.closureReason === 'NO_CUSTOMER_RESPONSE',
             }).catch(err => this.logger.error(`Failed to send status change email: ${err.message}`));
 
-            // If RESOLVED or PENDING_CUSTOMER_REVIEW, send closed/survey email
-            if (payload.newStatus === TicketStatus.RESOLVED || payload.newStatus === TicketStatus.PENDING_CUSTOMER_REVIEW) {
+            // Proposed resolutions explain confirmation; optional surveys are sent after closure.
+            if (payload.newStatus === TicketStatus.RESOLVED || payload.newStatus === TicketStatus.PENDING_CUSTOMER_REVIEW || payload.newStatus === TicketStatus.CLOSED) {
                 if (payload.newStatus === TicketStatus.RESOLVED) {
                     await this.emailService.sendTicketResolved({
+                        locale,
+                        isReviewPending: true,
                         customerEmail: ticket.creator.email,
                         customerName: ticket.creator.fullName || 'Değerli Müşterimiz',
                         ticketNumber: ticket.ticketNumber,
@@ -64,17 +72,19 @@ export class AutomationService {
                         ticketPriorityLow: ticket.priority?.toLowerCase() || 'low',
                         closedAt: new Date().toLocaleString(),
                         resolution: payload.resolution || 'Bilet çözümlendi',
-                        ticketUrl: `${frontendUrl}/tickets/${ticket.id}`
+                        ticketUrl,
                     }).catch(() => this.logger.error('Failed to enqueue ticket resolution email'));
                 }
 
-                if (ticket.satisfactionScore == null) {
+                if (payload.newStatus === TicketStatus.CLOSED && ticket.satisfactionScore == null) {
                     await this.emailService.sendCsatSurvey({
+                        locale,
                         customerEmail: ticket.creator.email,
                         customerName: ticket.creator.fullName,
                         ticketNumber: ticket.ticketNumber,
                         ticketId: ticket.id,
-                        surveyUrl: this.createCsatFeedbackUrl(frontendUrl, ticket.id)
+                        ticketUrl,
+                        surveyUrl: this.createCsatFeedbackUrl(frontendUrl, ticket.id, locale, ticket.resolvedAt?.getTime() ?? 0)
                     }).catch(() => this.logger.error('Failed to enqueue customer survey email'));
                 }
             }
@@ -82,6 +92,20 @@ export class AutomationService {
 
         // Rule Evaluation logic will go here
         await this.evaluateRules(payload.ticketId, 'STATUS_CHANGE', payload);
+    }
+
+    @OnEvent('ticket.review_reminder')
+    async handleReviewReminder(payload: { ticketId: string }) {
+        const ticket = await this.prisma.ticket.findUnique({ where: { id: payload.ticketId }, include: { creator: true } });
+        if (!ticket?.creator?.email || ticket.deletedAt || ![TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW].includes(ticket.status as any)) return;
+        const locale = ticket.creator.language === 'en' ? 'en' : 'tr';
+        const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
+        await this.emailService.sendTicketStatusChanged({
+            customerEmail: ticket.creator.email, customerName: ticket.creator.fullName,
+            ticketNumber: ticket.ticketNumber, ticketId: ticket.id, locale,
+            oldStatus: ticket.status, newStatus: ticket.status, isReviewReminder: true,
+            ticketUrl: `${frontendUrl}/${locale}/tickets/${ticket.id}`,
+        }).catch(() => this.logger.error('Failed to enqueue resolution reminder email'));
     }
 
     @OnEvent('ticket.message_added')
@@ -189,11 +213,11 @@ export class AutomationService {
         await this.evaluateRules(ticket.id, 'TICKET_CREATED', ticket);
     }
 
-    private createCsatFeedbackUrl(frontendUrl: string, ticketId: string): string {
+    private createCsatFeedbackUrl(frontendUrl: string, ticketId: string, locale = 'tr', cycleEpoch = 0): string {
         const expiresAt = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
         const secret = this.config.getOrThrow<string>('AUTH_ACTION_JWT_SECRET');
-        const token = generateCsatFeedbackToken(ticketId, expiresAt, secret);
-        return new URL(`/tr/feedback/${token}`, frontendUrl).toString();
+        const token = generateCsatFeedbackToken(ticketId, expiresAt, secret, cycleEpoch);
+        return new URL(`/${locale}/feedback/${token}`, frontendUrl).toString();
     }
 
     @OnEvent('user.created')

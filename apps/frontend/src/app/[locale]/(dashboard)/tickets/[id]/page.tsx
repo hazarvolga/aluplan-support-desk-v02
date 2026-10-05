@@ -2,20 +2,18 @@
 
 export const dynamic = "force-dynamic";
 import { useState, useEffect, use, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import { subscribeTicketRoom } from '@/lib/socket-room';
 import {
     Ticket, Clock, Shield, User as UserIcon, Send,
-    Paperclip, Download, MoreVertical, CheckCircle2,
-    AlertTriangle, MessageSquare, Loader2, Bot, Star, X,
+    Paperclip, Download, MoreVertical,
+    AlertTriangle, MessageSquare, Loader2, Bot, X,
     MessageCircle, Mail, Globe, Cpu, ExternalLink, User
 } from 'lucide-react';
 import { HotinfoGrid } from "@/components/ui/hotinfo-grid";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +44,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { ContentSanitizer } from '@/lib/content-sanitizer';
 import { markdownToHtml } from '@/lib/markdown-to-html';
 import { getTicketSupportCategoryNames, type TicketSupportCategoryLabels } from '@/lib/ticket-category-display';
+import { TicketLifecycle } from './ticket-lifecycle';
 
 const STATUS_COLORS: Record<string, string> = {
     NEW: 'border-blue-900/50 text-blue-400 bg-blue-400/5',
@@ -90,7 +89,6 @@ function TicketDetail({ id }: { id: string }) {
     const tp = useTranslations('tickets.priority');
     const tc = useTranslations('common');
     const locale = useLocale();
-    const router = useRouter();
     const [ticket, setTicket] = useState<any>(null);
     const [user, setUser] = useState<any>(null);
     const [reply, setReply] = useState('');
@@ -110,11 +108,6 @@ function TicketDetail({ id }: { id: string }) {
     const [aiTrace, setAiTrace] = useState<any>(null);
     const [agents, setAgents] = useState<any[]>([]);
     const [assigning, setAssigning] = useState(false);
-
-    // CSAT States
-    const [csatScore, setCsatScore] = useState<number>(0);
-    const [csatHover, setCsatHover] = useState<number>(0);
-    const [csatComment, setCsatComment] = useState('');
 
     // Live chat states
     const [isTyping, setIsTyping] = useState(false);
@@ -306,7 +299,7 @@ function TicketDetail({ id }: { id: string }) {
     const isReopenStaff = ['ADMIN', 'SUPER_ADMIN', 'SUPERUSER', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'SENIOR_AGENT', 'AGENT', 'SUPPORT_AGENT', 'SUPPORT_MANAGER'].includes(normalizedRole || '');
     const canReopen = Boolean(user?.id) && isReopenStaff && ['ticket:update', '*', 'admin'].some(permission => user?.permissions?.includes(permission));
     const isReplyEffectivelyEmpty = ContentSanitizer.isEffectivelyEmpty(reply);
-    const isComposerDisabled = ['CLOSED', 'RESOLVED', 'PENDING_CUSTOMER_REVIEW'].includes(ticket?.status);
+    const isComposerDisabled = ticket?.status === 'CLOSED';
     const isLiveChatEligible = !isCustomer || Boolean(ticket?.creator?.customerProfile?.isVip);
     const aiTraceVisuals = (aiTrace?.interaction?.userContext?.visuals ?? []) as AiVisualEvidenceItem[];
 
@@ -500,48 +493,6 @@ function TicketDetail({ id }: { id: string }) {
         }
     };
 
-    const handleTransitionToReview = async () => {
-        if (!ticket) return;
-        try {
-            await api.tickets.updateStatus(ticket.id, 'PENDING_CUSTOMER_REVIEW');
-            toast.success(t('review_success'));
-            load(); // reload ticket
-        } catch (error) {
-            toast.error(t('status_update_error'));
-        }
-    };
-
-    const handleSimulateCsat = async (score: number) => {
-        if (!ticket) return;
-        try {
-            await api.post(`/tickets/${ticket.id}/feedback`, {
-                score,
-                comment: score >= 4 ? t('resolved_comment') : t('pending_comment')
-            });
-            toast.success(t('feedback_sent', { score }));
-            load(); // reload ticket
-        } catch (error) {
-            toast.error(t('feedback_error'));
-        }
-    };
-
-    const handleSubmitCsat = async () => {
-        if (!ticket || csatScore === 0) return;
-        setSending(true);
-        try {
-            await api.post(`/tickets/${ticket.id}/feedback`, {
-                score: csatScore,
-                comment: csatComment
-            });
-            toast.success(t('csat_success', { score: csatScore }));
-            router.push(`/${locale}/my-tickets`); // Redirect out or they stay on a closed ticket view.
-        } catch (error) {
-            toast.error(t('csat_error'));
-        } finally {
-            setSending(false);
-        }
-    };
-
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             setFiles([...files, ...Array.from(e.target.files)]);
@@ -622,27 +573,6 @@ function TicketDetail({ id }: { id: string }) {
                                         {updating ? t('reopening') : t('reopen_ticket')}
                                     </Button>
                                 )}
-                                {!isCustomer && ticket.status !== 'CLOSED' && ticket.status !== 'RESOLVED' && ticket.status !== 'PENDING_CUSTOMER_REVIEW' && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleTransitionToReview}
-                                        className="h-7 border-emerald-500/30 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
-                                    >
-                                        {t('finish_resolution')}
-                                    </Button>
-                                )}
-                                {isCustomer && ticket.status !== 'CLOSED' && ticket.status !== 'RESOLVED' && ticket.status !== 'PENDING_CUSTOMER_REVIEW' && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleTransitionToReview}
-                                        className="h-7 border-emerald-500/30 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 gap-1.5 text-[10px] uppercase font-bold tracking-widest"
-                                    >
-                                        <CheckCircle2 className="h-3 w-3" />
-                                        {t('close_ticket')}
-                                    </Button>
-                                )}
                                 {!isCustomer && (
                                     <Button
                                         variant="outline"
@@ -712,71 +642,10 @@ function TicketDetail({ id }: { id: string }) {
                             </div>
                         )}
 
-                        {ticket.status === 'PENDING_CUSTOMER_REVIEW' && (
-                            <div className="mt-2 p-4 border border-orange-500/30 bg-orange-500/5">
-                                {isCustomer ? (
-                                    <div className="flex flex-col items-center justify-center text-center space-y-3">
-                                        <div className="flex flex-col items-center">
-                                            <h4 className="text-[12px] font-bold text-orange-400 uppercase tracking-[0.2em] mb-1">{t('review_pending_title')}</h4>
-                                            <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-tighter">
-                                                {t('review_pending_desc')}
-                                            </p>
-                                            <p className="mt-2 max-w-md text-[10px] normal-case tracking-normal text-muted-foreground/80">
-                                                {t('feedback_disclaimer')}
-                                            </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-1 py-1">
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                <button
-                                                    key={star}
-                                                    type="button"
-                                                    onClick={() => setCsatScore(star)}
-                                                    onMouseEnter={() => setCsatHover(star)}
-                                                    onMouseLeave={() => setCsatHover(0)}
-                                                    className={`p-1 transition-all duration-200 ${(csatHover || csatScore) >= star ? 'text-orange-500 scale-110 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]' : 'text-zinc-500 hover:text-orange-400/60 hover:scale-105'}`}
-                                                >
-                                                    <Star className={`h-8 w-8 transition-all ${(csatHover || csatScore) >= star ? 'fill-orange-500' : 'stroke-[1.5px]'}`} />
-                                                </button>
-                                            ))}
-                                        </div>
-
-                                        {csatScore > 0 && (
-                                            <div className="w-full max-w-sm space-y-2">
-                                                <Textarea
-                                                    placeholder={t('feedback_placeholder')}
-                                                    className="bg-black/40 border-border/50 text-[11px] h-16 uppercase tracking-tight"
-                                                    value={csatComment}
-                                                    onChange={(e) => setCsatComment(e.target.value)}
-                                                />
-                                                <Button
-                                                    onClick={handleSubmitCsat}
-                                                    disabled={sending}
-                                                    className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-none h-8 text-[10px] uppercase font-bold tracking-widest"
-                                                >
-                                                    {sending ? t('saving') : t('save_and_close')}
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-between gap-4">
-                                        <div>
-                                            <h4 className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">{t('customer_verification_pending')}</h4>
-                                            <p className="text-[9px] text-muted-foreground font-mono uppercase mt-1">{t('auto_sync_active')}</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(2)} className="h-6 px-2 border-red-900/50 text-red-500 bg-red-500/5 text-[9px] uppercase font-bold tracking-wider">
-                                                {t('debug_reject')}
-                                            </Button>
-                                            <Button variant="outline" size="sm" onClick={() => handleSimulateCsat(5)} className="h-6 px-2 border-emerald-900/50 text-emerald-500 bg-emerald-500/5 text-[9px] uppercase font-bold tracking-wider">
-                                                {t('debug_approve')}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                        <TicketLifecycle ticket={ticket} user={user} onUpdated={updated => {
+                            setTicket((previous: any) => ({ ...previous, ...updated }));
+                            void load();
+                        }} />
 
                         {summary && (
                             <div className="mt-2 p-3 border border-primary/20 bg-primary/5">

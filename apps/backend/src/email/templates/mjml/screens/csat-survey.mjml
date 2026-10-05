@@ -5,7 +5,7 @@
       {{t.common.rate_experience}}
     </mj-text>
     <mj-text font-size="16px" color="#555555" align="center">
-      <strong>#{{ticketId}}</strong> {{t.ticket_closed.description}}
+      <strong>#{{ticketId}}</strong> {{t.common.feedback_description}}
     </mj-text>
   </mj-column>
 </mj-section>
@@ -19,5 +19,7 @@
     <mj-text align="center" font-size="13px" color="#94a3b8" padding-top="16px">
       {{t.common.feedback_footer}}
     </mj-text>
+    <mj-text align="center" font-size="14px">{{t.common.feedback_optional}}</mj-text>
+    {{#if ticketUrl}}<mj-button href="{{ticketUrl}}">{{t.common.view_ticket}}</mj-button>{{/if}}
   </mj-column>
 </mj-section>

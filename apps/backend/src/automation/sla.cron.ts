@@ -105,7 +105,7 @@ export class SlaCronService implements OnApplicationBootstrap {
             const resolutionRiskTickets = await this.prisma.ticket.findMany({
                 where: {
                     status: {
-                        notIn: [TicketStatus.RESOLVED, TicketStatus.CLOSED]
+                        notIn: [TicketStatus.RESOLVED, TicketStatus.CLOSED, TicketStatus.PENDING_CUSTOMER_REVIEW]
                     },
                     slaResolveDue: {
                         gt: now,
@@ -153,7 +153,7 @@ export class SlaCronService implements OnApplicationBootstrap {
             const breached = await this.prisma.ticket.findMany({
                 where: {
                     isSlaBreached: false,
-                    status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] },
+                    status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW] },
                     OR: [
                         { slaResolveDue: { lt: now } },
                         { slaResponseDue: { lt: now }, slaRespondedAt: null },
@@ -186,7 +186,7 @@ export class SlaCronService implements OnApplicationBootstrap {
             const nearing = await this.prisma.ticket.findMany({
                 where: {
                     isSlaBreached: false,
-                    status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED] },
+                    status: { notIn: [TicketStatus.CLOSED, TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW] },
                     slaResponseDue: { lt: warningThreshold, gt: now },
                     slaRespondedAt: null,
                 }
@@ -206,24 +206,85 @@ export class SlaCronService implements OnApplicationBootstrap {
 
     async autoCloseResolvedTickets() {
         try {
-            const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
-
-            const { count } = await this.prisma.ticket.updateMany({
+            const now = new Date();
+            const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+            await this.sendReviewReminders(fiveDaysAgo, now);
+            const tickets = await this.prisma.ticket.findMany({
                 where: {
-                    status: TicketStatus.RESOLVED,
-                    resolvedAt: { lt: fiveDaysAgo },
+                    deletedAt: null,
+                    status: { in: [TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW] },
+                    resolvedAt: { lte: fiveDaysAgo },
                 },
-                data: {
-                    status: TicketStatus.CLOSED,
-                    closedAt: new Date(),
-                },
+                orderBy: { updatedAt: 'asc' },
+                take: 100,
             });
-
-            if (count > 0) {
-                this.logger.log(`🔒 Auto-closed ${count} resolved ticket(s)`);
+            for (const ticket of tickets) {
+                if (!ticket.resolvedAt) continue;
+                try {
+                    const updated = await this.prisma.ticket.update({
+                        where: { id: ticket.id, status: ticket.status, resolvedAt: ticket.resolvedAt,
+                            updatedAt: ticket.updatedAt, deletedAt: null },
+                        data: {
+                            status: TicketStatus.CLOSED,
+                            closedAt: now,
+                            messages: { create: {
+                                message: 'Ticket closed after five days without customer confirmation.',
+                                isInternal: true,
+                                metadata: { action: 'AUTO_CLOSED_NO_RESPONSE',
+                                    resolutionProposedAt: ticket.resolvedAt?.toISOString() ?? null },
+                            } },
+                        },
+                    });
+                    await this.eventEmitter.emitAsync('ticket.status_changed', {
+                        ticketId: ticket.id, oldStatus: ticket.status, newStatus: TicketStatus.CLOSED,
+                        closureReason: 'NO_CUSTOMER_RESPONSE',
+                    });
+                    await this.notificationsGateway.emitTicketUpdated(updated);
+                } catch (error) {
+                    if (error?.code === 'P2025') continue;
+                    this.logger.error('Error completing automatic ticket closure', error);
+                }
             }
         } catch (error) {
             this.logger.error('Error during SLA Cron auto close resolved tickets', error);
+        }
+    }
+
+    private async sendReviewReminders(fiveDaysAgo: Date, now: Date) {
+        const fourDaysAgo = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000);
+        const tickets = await this.prisma.ticket.findMany({
+            where: {
+                deletedAt: null,
+                status: { in: [TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW] },
+                resolvedAt: { gt: fiveDaysAgo, lte: fourDaysAgo },
+            },
+            // Recording a reminder advances updatedAt so later batches are not starved.
+            orderBy: { updatedAt: 'asc' },
+            take: 100,
+        });
+        for (const ticket of tickets) {
+            if (!ticket.resolvedAt) continue;
+            const metadata = { action: 'TICKET_REVIEW_REMINDER', resolutionProposedAt: ticket.resolvedAt.toISOString() };
+            const previousReminder = await this.prisma.ticketMessage.findFirst({
+                where: { ticketId: ticket.id, isInternal: true, deletedAt: null,
+                    metadata: { equals: metadata } },
+                select: { id: true },
+            });
+            if (previousReminder) continue;
+            try {
+                await this.prisma.ticket.update({
+                    where: { id: ticket.id, status: ticket.status, resolvedAt: ticket.resolvedAt,
+                        updatedAt: ticket.updatedAt, deletedAt: null },
+                    data: { messages: { create: {
+                        message: 'Customer confirmation reminder scheduled before automatic closure.',
+                        isInternal: true, metadata,
+                    } } },
+                });
+                await this.eventEmitter.emitAsync('ticket.review_reminder', { ticketId: ticket.id });
+            } catch (error) {
+                if (error?.code === 'P2025') continue;
+                this.logger.error('Error scheduling customer confirmation reminder', error);
+            }
         }
     }
 }

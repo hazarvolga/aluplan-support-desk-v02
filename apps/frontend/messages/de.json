@@ -758,6 +758,36 @@
       "ticket_id": "Anfrage #{id}",
       "started_by": "Erstellt von: {name}",
       "timestamp": "Datum: {date}",
+      "lifecycle": {
+        "section_label": "Ticketaktionen",
+        "confirm_resolution": "Mein Problem ist gelöst — Ticket schließen",
+        "continue_support": "Mein Problem besteht weiterhin",
+        "request_reopen": "Das Problem ist erneut aufgetreten",
+        "send_resolution": "Lösung zur Bestätigung an den Kunden senden",
+        "staff_close": "Ticket mit Begründung schließen",
+        "review_owner": "Bestätigen Sie die Lösung, um das Ticket zu schließen, oder setzen Sie den Support bei weiterhin bestehendem Problem fort.",
+        "review_staff": "Die Lösungsbestätigung des Kunden steht aus. Eine Kundenantwort setzt den Support fort.",
+        "reopen_request_pending": "Die Anfrage zur Wiedereröffnung wurde an den Support gesendet. Das Ticket bleibt bis zur Prüfung geschlossen.",
+        "previous_rating": "Bisherige Bewertung: {score}/5. Diese Bewertung kann nicht geändert werden.",
+        "rating_title": "Bewerten Sie Ihre Support-Erfahrung (optional)",
+        "rating_description": "Ihre Bewertung schließt das Ticket nicht und öffnet es nicht erneut. Besteht das Problem weiterhin, verwenden Sie die passende Aktion oben.",
+        "rating_label": "Zufriedenheitsbewertung",
+        "rating_option": "{score} Sterne",
+        "rating_comment": "Kommentar zur Bewertung (optional)",
+        "submit_rating": "Bewertung senden",
+        "close_description": "Die Begründung wird protokolliert. Es wird keine Zufriedenheitsbewertung im Namen des Kunden abgegeben.",
+        "continue_description": "Beschreiben Sie das weiterhin bestehende Problem. Ihre Nachricht öffnet das Ticket erneut.",
+        "request_description": "Beschreiben Sie das wiederkehrende Problem. Der Support prüft Ihre Anfrage und kann dasselbe Ticket erneut öffnen.",
+        "action_comment": "Erläuterung (erforderlich)",
+        "submit_action": "Senden",
+        "saving": "Wird gespeichert…",
+        "action_error": "Die Aktion konnte nicht abgeschlossen werden. Laden Sie das Ticket neu und versuchen Sie es erneut.",
+        "closed": "Ticket geschlossen. Eine Zufriedenheitsbewertung ist optional.",
+        "continued": "Ticket erneut geöffnet. Das Supportteam wurde benachrichtigt.",
+        "request_sent": "Ihre Anfrage zur Wiedereröffnung wurde an den Support gesendet.",
+        "review_sent": "Lösung zur Bestätigung an den Kunden gesendet.",
+        "rating_saved": "Ihre Bewertung wurde gespeichert. Der Ticketstatus bleibt unverändert."
+      },
       "finish_resolution": "KUNDENBEWERTUNG STARTEN",
       "reopen_ticket": "Ticket wieder öffnen",
       "reopening": "Wird wieder geöffnet…",
@@ -5263,6 +5293,7 @@
     }
   },
   "public_feedback": {
+    "status_disclaimer": "Diese Bewertung schließt Ihr Ticket nicht und öffnet es nicht erneut. Besteht Ihr Problem weiterhin, informieren Sie den Support über Ihre Ticketseite.",
     "loading": "Der Bewertungslink wird geprüft…",
     "invalid_title": "Dieser Bewertungslink ist nicht verfügbar",
     "invalid_description": "Der Link ist möglicherweise abgelaufen, bereits verwendet worden oder nicht mehr gültig. Bei Fragen hilft Ihnen unser Support-Team.",
@@ -5277,7 +5308,7 @@
     "submitting": "Wird gesendet…",
     "submit_error": "Ihr Feedback konnte nicht gesendet werden. Der Link ist möglicherweise nicht mehr gültig; bitte wenden Sie sich an unser Support-Team.",
     "success_title": "Vielen Dank für Ihr Feedback",
-    "success_description": "Ihre Bewertung wurde an unser Team übermittelt. Dieser Link kann nicht erneut verwendet werden."
+    "success_description": "Ihre Bewertung wurde an unser Team übermittelt. Der Ticketstatus bleibt unverändert. Dieser Link kann nicht erneut verwendet werden."
   },
   "system_topology": {
     "title": "Sistem Kaynak Topolojisi",

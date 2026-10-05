@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmbeddingService } from './embedding.service';
 import { SettingsService } from '../settings/settings.service';
 import { PiiMaskingService } from '../common/services/pii-masking.service';
+import { getTicketLearningEligibility } from '../common/utils/ticket-learning-eligibility';
 
 @Injectable()
 export class AiAutoResolverService {
@@ -190,6 +191,8 @@ export class AiAutoResolverService {
         if (!ticket.satisfactionScore || ticket.satisfactionScore < 4) return;
 
         try {
+            const learningEligibility = await getTicketLearningEligibility(this.prisma, ticket.id);
+            if (!learningEligibility.eligible) return;
             this.logger.log(`🤖 Reading high-rated ticket ${ticket.ticketNumber} for RAG AI...`);
 
             // Get all messages from this ticket

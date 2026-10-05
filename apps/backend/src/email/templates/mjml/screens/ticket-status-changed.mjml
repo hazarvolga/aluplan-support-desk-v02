@@ -7,6 +7,9 @@
     <mj-text font-size="16px" color="#555555" align="center">
       <strong>#{{ticketId}}</strong> {{t.ticket_status.changed_to}}
     </mj-text>
+    {{#if isReviewPending}}<mj-text align="center">{{t.common.review_instructions}}</mj-text>{{/if}}
+    {{#if isReviewReminder}}<mj-text align="center">{{t.common.review_reminder}}</mj-text>{{/if}}
+    {{#if isAutoClosed}}<mj-text align="center">{{t.common.auto_closed_description}}</mj-text>{{/if}}
   </mj-column>
 </mj-section>
 

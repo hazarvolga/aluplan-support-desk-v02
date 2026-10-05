@@ -30,6 +30,12 @@
         "rate_experience": "Deneyiminizi Değerlendirin",
         "submit_feedback": "Değerlendirmenizi gönderin",
         "feedback_footer": "Bağlantı 7 gün boyunca geçerlidir. Geri bildiriminiz destek hizmetimizi geliştirmemize yardımcı olur.",
+        "feedback_description": "numaralı talebiniz için destek deneyiminizi paylaşabilirsiniz.",
+        "review_title": "Çözüm onayınızı bekliyor",
+        "feedback_optional": "Puan vermek isteğe bağlıdır; talebinizi kapatmaz. Sorununuz sürüyorsa talep sayfasından desteğe devam edin.",
+        "review_instructions": "Çözümü onaylayarak talebinizi kapatın veya ‘Sorunum devam ediyor’ seçeneğiyle desteğe devam edin. Beş gün yanıt gelmezse talep otomatik kapatılır. Hizmet puanı isteğe bağlıdır.",
+        "review_reminder": "Beş günlük yanıt süresinin dolmasına bir gün kaldı. Lütfen çözümü onaylayın veya sorununuzun devam ettiğini bildirin.",
+        "auto_closed_description": "Beş gün boyunca yanıt alınamadığı için talebiniz otomatik kapatıldı. Sorun sürüyorsa talep sayfasından yeniden açma isteği gönderebilirsiniz. Bu kapanış, çözümü onayladığınız anlamına gelmez.",
         "link_expires_in": "Bağlantı geçerlilik süresi:"
     },
     "ticket_created": {

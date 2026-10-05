@@ -782,6 +782,36 @@
       "ticket_id": "Talep #{id}",
       "started_by": "Oluşturan: {name}",
       "timestamp": "Tarih: {date}",
+      "lifecycle": {
+        "section_label": "Talep işlemleri",
+        "confirm_resolution": "Sorunum çözüldü — Talebi kapat",
+        "continue_support": "Sorunum devam ediyor",
+        "request_reopen": "Sorun tekrar oluştu",
+        "send_resolution": "Çözümü müşterinin onayına gönder",
+        "staff_close": "Gerekçe ile talebi kapat",
+        "review_owner": "Çözümü onaylayarak talebi kapatabilir veya sorun devam ediyorsa destek almaya devam edebilirsiniz.",
+        "review_staff": "Müşterinin çözüm onayı bekleniyor. Müşteri yanıt verdiğinde destek süreci devam eder.",
+        "reopen_request_pending": "Yeniden açma isteği destek ekibine iletildi. Talep, ekip inceleyene kadar kapalı kalır.",
+        "previous_rating": "Önceki değerlendirmeniz: {score}/5. Bu puan değiştirilmez.",
+        "rating_title": "Destek deneyiminizi değerlendirin (isteğe bağlı)",
+        "rating_description": "Puanınız talebi kapatmaz veya yeniden açmaz. Sorun devam ediyorsa yukarıdaki ilgili işlemi kullanın.",
+        "rating_label": "Memnuniyet puanı",
+        "rating_option": "{score} yıldız",
+        "rating_comment": "Değerlendirme notu (isteğe bağlı)",
+        "submit_rating": "Değerlendirmeyi gönder",
+        "close_description": "Kapatma gerekçesi kayıt altına alınır. Müşteri adına memnuniyet puanı verilmez.",
+        "continue_description": "Devam eden sorunu açıklayın. Mesajınızla birlikte talep yeniden açık duruma alınır.",
+        "request_description": "Tekrarlayan sorunu açıklayın. Destek ekibi isteğinizi inceleyerek aynı talebi yeniden açabilir.",
+        "action_comment": "Açıklama (zorunlu)",
+        "submit_action": "Gönder",
+        "saving": "Kaydediliyor…",
+        "action_error": "İşlem tamamlanamadı. Talebi yenileyip tekrar deneyin.",
+        "closed": "Talep kapatıldı. Memnuniyet değerlendirmesi isteğe bağlıdır.",
+        "continued": "Talep yeniden açıldı. Destek ekibi bilgilendirildi.",
+        "request_sent": "Yeniden açma isteğiniz destek ekibine iletildi.",
+        "review_sent": "Çözüm müşteri onayına gönderildi.",
+        "rating_saved": "Değerlendirmeniz kaydedildi. Talebin durumu değişmedi."
+      },
       "finish_resolution": "MÜŞTERİ DEĞERLENDİRMESİNİ BAŞLAT",
       "reopen_ticket": "Yeniden Aç",
       "reopening": "Yeniden açılıyor…",
@@ -5287,6 +5317,7 @@
     }
   },
   "public_feedback": {
+    "status_disclaimer": "Bu değerlendirme talebi kapatmaz veya yeniden açmaz. Sorununuz devam ediyorsa talep sayfanızdan destek ekibine bildirin.",
     "loading": "Değerlendirme bağlantısı kontrol ediliyor…",
     "invalid_title": "Değerlendirme bağlantısı kullanılamıyor",
     "invalid_description": "Bu bağlantının süresi dolmuş, daha önce kullanılmış veya artık geçerli değil. Yardım için destek ekibimizle iletişime geçebilirsiniz.",
@@ -5301,7 +5332,7 @@
     "submitting": "Gönderiliyor…",
     "submit_error": "Değerlendirmeniz gönderilemedi. Bağlantı artık geçerli olmayabilir; lütfen destek ekibimizle iletişime geçin.",
     "success_title": "Geri bildiriminiz için teşekkürler",
-    "success_description": "Değerlendirmeniz ekibimize ulaştı. Bu bağlantı artık yeniden kullanılamaz."
+    "success_description": "Değerlendirmeniz ekibimize ulaştı. Talebin durumu değişmedi. Bu bağlantı artık yeniden kullanılamaz."
   },
   "system_topology": {
     "title": "Sistem Kaynak Topolojisi",

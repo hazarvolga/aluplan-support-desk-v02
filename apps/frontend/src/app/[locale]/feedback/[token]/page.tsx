@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Loader2, Star } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
@@ -21,6 +21,7 @@ export default function PublicFeedbackPage({ params }: { params: Promise<{ token
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState(false);
+    const submissionRef = useRef(false);
 
     useEffect(() => {
         let active = true;
@@ -32,13 +33,15 @@ export default function PublicFeedbackPage({ params }: { params: Promise<{ token
     }, [token]);
 
     const submit = async () => {
-        if (rating === null || submitting || submitted) return;
+        if (rating === null || submissionRef.current || submitted) return;
+        submissionRef.current = true;
         setSubmitting(true);
         setSubmitError(false);
         try {
             await api.tickets.submitCsatFeedback(token, rating, comment.trim() || undefined);
             setSubmitted(true);
         } catch {
+            submissionRef.current = false;
             setSubmitError(true);
         } finally {
             setSubmitting(false);
@@ -73,6 +76,7 @@ export default function PublicFeedbackPage({ params }: { params: Promise<{ token
                         <CardHeader className="items-center border-0 bg-transparent px-6 pb-1 pt-8 text-center">
                             <CardTitle className="text-xl font-semibold tracking-normal text-foreground">{t('title')}</CardTitle>
                             <p className="pt-2 text-sm text-muted-foreground">{t('description')}</p>
+                            <p className="pt-2 text-sm text-muted-foreground">{t('status_disclaimer')}</p>
                             <p className="pt-3 text-xs font-medium text-muted-foreground">{t('ticket_reference')} {survey.ticketNumber}</p>
                         </CardHeader>
                         <CardContent className="space-y-6 px-6 pb-8 pt-5">

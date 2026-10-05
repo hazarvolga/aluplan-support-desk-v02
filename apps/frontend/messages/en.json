@@ -758,6 +758,36 @@
       "ticket_id": "Request #{id}",
       "started_by": "Created by: {name}",
       "timestamp": "Date: {date}",
+      "lifecycle": {
+        "section_label": "Ticket actions",
+        "confirm_resolution": "My issue is resolved — Close ticket",
+        "continue_support": "My issue continues",
+        "request_reopen": "The issue has returned",
+        "send_resolution": "Send resolution for customer confirmation",
+        "staff_close": "Close ticket with a reason",
+        "review_owner": "Confirm the solution to close this ticket, or continue support if the issue remains.",
+        "review_staff": "Waiting for the customer's resolution confirmation. A customer reply resumes support.",
+        "reopen_request_pending": "The reopen request has been sent to support. The ticket stays closed until the team reviews it.",
+        "previous_rating": "Previous rating: {score}/5. This rating cannot be changed.",
+        "rating_title": "Rate your support experience (optional)",
+        "rating_description": "Your rating does not close or reopen the ticket. If the issue continues, use the relevant action above.",
+        "rating_label": "Satisfaction rating",
+        "rating_option": "{score} stars",
+        "rating_comment": "Feedback comment (optional)",
+        "submit_rating": "Submit rating",
+        "close_description": "The reason for closing is recorded. No satisfaction score is submitted on the customer's behalf.",
+        "continue_description": "Explain what is still wrong. Your message will reopen the ticket for support.",
+        "request_description": "Describe the recurring issue. Support will review your request and can reopen this same ticket.",
+        "action_comment": "Explanation (required)",
+        "submit_action": "Submit",
+        "saving": "Saving…",
+        "action_error": "The action could not be completed. Refresh the ticket and try again.",
+        "closed": "Ticket closed. A satisfaction rating is optional.",
+        "continued": "Ticket reopened. The support team has been notified.",
+        "request_sent": "Your reopen request has been sent to support.",
+        "review_sent": "Resolution sent for customer confirmation.",
+        "rating_saved": "Your rating was saved. The ticket status has not changed."
+      },
       "finish_resolution": "START CUSTOMER REVIEW",
       "reopen_ticket": "Reopen Ticket",
       "reopening": "Reopening…",
@@ -5263,6 +5293,7 @@
     }
   },
   "public_feedback": {
+    "status_disclaimer": "This rating does not close or reopen your ticket. If your issue continues, let support know through your ticket page.",
     "loading": "Checking your feedback link…",
     "invalid_title": "This feedback link is unavailable",
     "invalid_description": "The link may have expired, already been used, or no longer be valid. Contact our support team if you need help.",
@@ -5277,7 +5308,7 @@
     "submitting": "Submitting…",
     "submit_error": "We could not submit your feedback. The link may no longer be valid; please contact our support team.",
     "success_title": "Thank you for your feedback",
-    "success_description": "Your rating has been shared with our team. This link cannot be used again."
+    "success_description": "Your rating has been shared with our team. The ticket status has not changed. This link cannot be used again."
   },
   "system_topology": {
     "title": "Sistem Kaynak Topolojisi",

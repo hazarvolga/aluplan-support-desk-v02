@@ -9,6 +9,7 @@ import { AiService } from '../ai/ai.service';
 import { EmbeddingVersionRegistry } from '../ai/embedding-version.registry';
 import { SettingsService } from '../settings/settings.service';
 import { RAG_CONFIG } from '../config/rag.config';
+import { getTicketLearningEligibility } from '../common/utils/ticket-learning-eligibility';
 
 export interface ExtractedPattern {
     question: string;
@@ -89,6 +90,8 @@ export class FaqService {
         const patterns: ExtractedPattern[] = [];
 
         for (const ticket of tickets) {
+            const learningEligibility = await getTicketLearningEligibility(this.prisma, ticket.id);
+            if (!learningEligibility.eligible) continue;
             if (ticket.messages.length < 2) continue; // Need at least Q + A
 
             const answerMsg = ticket.messages.find((m: any) =>

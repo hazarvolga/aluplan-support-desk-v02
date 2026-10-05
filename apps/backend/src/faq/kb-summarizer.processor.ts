@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { FaqService, ExtractedPattern } from './faq.service';
 import { PiiMaskingService } from '../common/services/pii-masking.service';
+import { getTicketLearningEligibility } from '../common/utils/ticket-learning-eligibility';
 
 @Processor('kb-summarizer')
 export class KbSummarizerProcessor extends WorkerHost {
@@ -45,6 +46,12 @@ export class KbSummarizerProcessor extends WorkerHost {
         // Bu processor knowledgeBaseAdded'i en sonda setler; idempotency tek savunma noktası.
         if (ticket.knowledgeBaseAdded) {
             this.logger.log(`⏭️ Ticket ${ticketId} already in KB, skipping processor.`);
+            return;
+        }
+
+        const learningEligibility = await getTicketLearningEligibility(this.prisma, ticketId);
+        if (!learningEligibility.eligible) {
+            this.logger.log(`⏭️ Ticket ${ticketId} is not eligible for current-cycle KB learning.`);
             return;
         }
 

@@ -526,6 +526,14 @@ export const api = {
         create: (body: any) => request<any>('/tickets', { method: 'POST', body: JSON.stringify(body) }),
         updateStatus: (id: string, status: string) =>
             request<any>(`/tickets/${id}/status/${status}`, { method: 'PATCH' }),
+        resolution: (id: string, decision: 'CONFIRM' | 'CONTINUE', comment?: string) =>
+            request<any>(`/tickets/${id}/resolution`, { method: 'POST', body: JSON.stringify({ decision, comment }) }),
+        close: (id: string, reason: string) =>
+            request<any>(`/tickets/${id}/close`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
+        requestReopen: (id: string, comment: string) =>
+            request<any>(`/tickets/${id}/reopen-request`, { method: 'POST', body: JSON.stringify({ comment }) }),
+        feedback: (id: string, score: number, comment?: string) =>
+            request<any>(`/tickets/${id}/feedback`, { method: 'POST', body: JSON.stringify({ score, comment }) }),
         assign: (id: string, userId: string) =>
             request<any>(`/tickets/${id}/assign/${userId}`, { method: 'PATCH' }),
         addMessage: (id: string, body: any) =>

@@ -10,6 +10,7 @@ import { BulkUpdateTicketDto } from './dto/bulk-update-ticket.dto';
 import { AddMessageDto } from './dto/add-message.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { SubmitFeedbackDto } from './dto/submit-feedback.dto';
+import { CloseTicketDto, ReopenRequestDto, ResolutionDecisionDto } from './dto/ticket-lifecycle.dto';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { RequirePermissions, Roles } from '../rbac/decorators/rbac.decorators';
 import { ChatStatus, TicketStatus, TicketPriority } from '@aluplan/database';
@@ -18,7 +19,7 @@ import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/decorators/public.decorator';
-import { verifyCsatFeedbackToken } from './csat-feedback-token';
+import { verifyCsatFeedbackScope } from './csat-feedback-token';
 
 const CHAT_STATUSES = new Set<string>(Object.values(ChatStatus));
 
@@ -74,8 +75,8 @@ export class TicketsController {
     @Throttle({ default: { limit: 20, ttl: 60_000 } })
     @ApiOperation({ summary: 'Read minimal ticket details for a signed CSAT link' })
     async getPublicCsatSurvey(@Param('token') token: string) {
-        const ticketId = this.resolveCsatTicketId(token);
-        return this.ticketsService.getPublicCsatSurvey(ticketId);
+        const scope = this.resolveCsatTicketScope(token);
+        return this.ticketsService.getPublicCsatSurvey(scope.ticketId, scope.resolutionEpoch);
     }
 
     @Public()
@@ -84,16 +85,16 @@ export class TicketsController {
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Submit customer feedback with a signed CSAT link' })
     async submitPublicCsatFeedback(@Param('token') token: string, @Body() dto: SubmitFeedbackDto) {
-        const ticketId = this.resolveCsatTicketId(token);
-        await this.ticketsService.submitEmailCsatFeedback(ticketId, dto.score, dto.comment);
+        const scope = this.resolveCsatTicketScope(token);
+        await this.ticketsService.submitEmailCsatFeedback(scope.ticketId, dto.score, dto.comment, scope.resolutionEpoch);
         return { submitted: true };
     }
 
-    private resolveCsatTicketId(token: string): string {
+    private resolveCsatTicketScope(token: string): { ticketId: string; resolutionEpoch?: number } {
         const secret = this.config.getOrThrow<string>('AUTH_ACTION_JWT_SECRET');
-        const ticketId = verifyCsatFeedbackToken(token, secret);
-        if (!ticketId) throw new NotFoundException('Feedback link is invalid or expired.');
-        return ticketId;
+        const scope = verifyCsatFeedbackScope(token, secret);
+        if (!scope) throw new NotFoundException('Feedback link is invalid or expired.');
+        return scope;
     }
 
     // ─── CREATE ─────────────────────────────────
@@ -282,8 +283,26 @@ export class TicketsController {
     @RequirePermissions('ticket:close')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Close a resolved ticket' })
-    async close(@Param('id') id: string, @Request() req: any) {
-        return this.ticketsService.transition(id, TicketStatus.CLOSED, req.user);
+    async close(@Param('id') id: string, @Body() dto: CloseTicketDto, @Request() req: any) {
+        const updated = await this.ticketsService.closeWithReason(id, dto.reason, req.user);
+        this.notificationsGateway.emitTicketUpdated(updated);
+        return updated;
+    }
+
+    @Post(':id/resolution')
+    @RequirePermissions('ticket:read')
+    async decideResolution(@Param('id') id: string, @Body() dto: ResolutionDecisionDto, @Request() req: any) {
+        const updated = await this.ticketsService.decideResolution(id, dto, req.user);
+        this.notificationsGateway.emitTicketUpdated(updated);
+        return updated;
+    }
+
+    @Post(':id/reopen-request')
+    @RequirePermissions('ticket:read')
+    async requestReopen(@Param('id') id: string, @Body() dto: ReopenRequestDto, @Request() req: any) {
+        const updated = await this.ticketsService.requestReopen(id, dto.comment, req.user);
+        this.notificationsGateway.emitTicketUpdated(updated);
+        return updated;
     }
 
     // ─── CSAT FEEDBACK ──────────────────────────

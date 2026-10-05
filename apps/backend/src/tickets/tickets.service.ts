@@ -25,6 +25,7 @@ import { MessageContentFormat } from './dto/add-message.dto';
 import { isRichTextEffectivelyEmpty, sanitizeRichTextHtml } from '../common/utils/rich-text-sanitizer';
 import { TicketAccessService } from '../common/services/ticket-access.service';
 import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
+import { ResolutionDecisionDto } from './dto/ticket-lifecycle.dto';
 
 const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
     NEW: [TicketStatus.OPEN, TicketStatus.DRAFT, TicketStatus.PENDING_CUSTOMER_REVIEW],
@@ -503,13 +504,15 @@ export class TicketsService {
 
         // ── Status Transition Pre-validation ─────────────────────────────
         const hasStatusChange = dto.status !== undefined && dto.status !== ticket.status;
+        const closeReason = hasStatusChange && dto.status === TicketStatus.CLOSED
+            ? this.authorizedCloseReason(dto.closeReason, requester) : undefined;
         if (hasStatusChange) {
             const allowedAccess = await this.ticketAccess.canManageTicket(requester, id);
             if (!allowedAccess) {
                 throw new ForbiddenException('Ticket status management is available to authorized support staff only');
             }
             const allowedTransitions = ALLOWED_TRANSITIONS[ticket.status] ?? [];
-            if (!allowedTransitions.includes(dto.status!)) {
+            if (dto.status !== TicketStatus.CLOSED && !allowedTransitions.includes(dto.status!)) {
                 throw new BadRequestException(
                     `Cannot transition from ${ticket.status} to ${dto.status}. Allowed: ${allowedTransitions.join(', ')}`,
                 );
@@ -592,12 +595,22 @@ export class TicketsService {
             if (targetStatus === TicketStatus.IN_PROGRESS && !ticket.slaRespondedAt) {
                 updateData.slaRespondedAt = now;
             }
-            if (targetStatus === TicketStatus.RESOLVED) {
+            if (targetStatus === TicketStatus.RESOLVED || targetStatus === TicketStatus.PENDING_CUSTOMER_REVIEW) {
                 updateData.resolvedAt = now;
                 updateData.slaSolvedAt = now;
+                updateData.messages = { create: { sender: { connect: { id: actorId } }, isInternal: true,
+                    message: 'Support proposed a resolution for customer confirmation.',
+                    metadata: { action: 'TICKET_RESOLUTION_PROPOSED', previousResolvedAt: ticket.resolvedAt?.toISOString() ?? null,
+                        previousSatisfactionScore: ticket.satisfactionScore ?? null } } };
             }
             if (targetStatus === TicketStatus.CLOSED) {
                 updateData.closedAt = now;
+                if (![TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW].includes(ticket.status as any)) {
+                    updateData.resolvedAt = now;
+                }
+                updateData.messages = { create: { sender: { connect: { id: actorId } }, isInternal: true,
+                    message: closeReason, metadata: { action: 'TICKET_CLOSED_BY_STAFF', previousStatus: ticket.status,
+                        previousResolvedAt: ticket.resolvedAt?.toISOString() ?? null } } };
             }
             if (isReopening) {
                 updateData.closedAt = null;
@@ -634,6 +647,7 @@ export class TicketsService {
             id: ticket.id,
             status: ticket.status,
             deletedAt: null,
+            updatedAt: ticket.updatedAt,
             ...(ticket.status === TicketStatus.CLOSED ? { closedAt: ticket.closedAt } : {}),
         };
 
@@ -973,13 +987,10 @@ export class TicketsService {
     // STATE MACHINE — TRANSITION
     // =============================================
     async transition(id: string, toStatus: TicketStatus, requester: { sub: string; role: string }) {
-        // The existing customer close button requests review, not arbitrary status control.
-        const customerReview = typeof requester?.role === 'string'
-            && requester.role.trim().toUpperCase() === 'CUSTOMER'
-            && toStatus === TicketStatus.PENDING_CUSTOMER_REVIEW;
-        const allowedAccess = customerReview
-            ? await this.ticketAccess.canAccessTicket(requester, id)
-            : await this.ticketAccess.canManageTicket(requester, id);
+        if (toStatus === TicketStatus.CLOSED) {
+            throw new BadRequestException('Use the close action with a closure reason');
+        }
+        const allowedAccess = await this.ticketAccess.canManageTicket(requester, id);
         if (!allowedAccess) {
             throw new ForbiddenException('Ticket status management is available to authorized support staff only');
         }
@@ -1002,13 +1013,16 @@ export class TicketsService {
             updateData.slaRespondedAt = new Date();
         }
 
-        if (toStatus === TicketStatus.RESOLVED) {
+        if (toStatus === TicketStatus.RESOLVED || toStatus === TicketStatus.PENDING_CUSTOMER_REVIEW) {
             updateData.resolvedAt = new Date();
             updateData.slaSolvedAt = new Date();
-        }
-
-        if (toStatus === TicketStatus.CLOSED) {
-            updateData.closedAt = new Date();
+            updateData.messages = { create: {
+                message: 'Support proposed a resolution for customer confirmation.', isInternal: true,
+                sender: { connect: { id: requester.sub } },
+                metadata: { action: 'TICKET_RESOLUTION_PROPOSED',
+                    previousResolvedAt: ticket.resolvedAt?.toISOString() ?? null,
+                    previousSatisfactionScore: ticket.satisfactionScore ?? null },
+            } };
         }
 
         const reopening = ticket.status === TicketStatus.CLOSED && toStatus === TicketStatus.OPEN;
@@ -1027,7 +1041,8 @@ export class TicketsService {
             } };
         }
         const updated = await this.prisma.ticket.update({
-            where: reopening ? { id, status: TicketStatus.CLOSED, deletedAt: null, closedAt: ticket.closedAt } : { id },
+            where: { id, status: ticket.status, deletedAt: null, updatedAt: ticket.updatedAt,
+                ...(reopening ? { closedAt: ticket.closedAt } : {}) },
             data: updateData,
         }).catch((error: unknown) => {
             if (reopening && typeof error === 'object' && error !== null
@@ -1053,6 +1068,138 @@ export class TicketsService {
         );
 
         return updated;
+    }
+
+    private async ownerLifecycleTicket(id: string, requester: { sub: string; role: string }) {
+        if (requester?.role?.trim().toUpperCase() !== 'CUSTOMER' || !requester.sub) {
+            throw new ForbiddenException('Only the customer who created the ticket can decide its resolution');
+        }
+        const ticket = await this.prisma.ticket.findFirst({
+            where: { id, deletedAt: null }, include: { assignee: true, creator: true },
+        });
+        if (!ticket) throw new NotFoundException('Ticket not found');
+        if (ticket.userId !== requester.sub) throw new ForbiddenException('Only the ticket creator can perform this action');
+        return ticket;
+    }
+
+    private lifecycleComment(value: string | undefined, required = false) {
+        if (value !== undefined && (typeof value !== 'string' || value.length > 2000)) {
+            throw new BadRequestException('Comment must be text up to 2000 characters');
+        }
+        const comment = sanitizeRichTextHtml(this.piiMaskingService.maskSensitiveData(value?.trim() || ''));
+        if (required && isRichTextEffectivelyEmpty(comment)) throw new BadRequestException('An explanation is required');
+        return comment;
+    }
+
+    private authorizedCloseReason(reason: string | undefined, requester: { permissions?: string[] }) {
+        if (!['ticket:close', '*', 'admin'].some(permission => requester?.permissions?.includes(permission))) {
+            throw new ForbiddenException('Closing a ticket requires ticket:close permission');
+        }
+        return this.lifecycleComment(reason, true);
+    }
+
+    private lifecycleConflict(error: unknown): never {
+        if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2025') {
+            throw new ConflictException('Ticket changed; refresh before continuing');
+        }
+        throw error;
+    }
+
+    private emitLifecycleStatus(ticket: { id: string; status: TicketStatus }, oldStatus: TicketStatus, actorId: string) {
+        this.eventEmitter.emit('ticket.status_changed', { ticketId: ticket.id, oldStatus, newStatus: ticket.status, actorId });
+    }
+
+    private async ownerReplyRecipients(ticket: { assignee?: { email: string; fullName: string | null } | null; departmentId: string | null }) {
+        if (ticket.assignee?.email) return { recipientEmail: ticket.assignee.email, userName: ticket.assignee.fullName || 'Destek Ekibi' };
+        const agents = ticket.departmentId ? await this.prisma.user.findMany({
+            where: { deletedAt: null, status: 'ACTIVE',
+                teamMembers: { some: { team: { departmentId: ticket.departmentId, isArchived: false, deletedAt: null } } },
+                role: { name: { in: ['ADMIN', 'SUPER_ADMIN', 'SUPERUSER', 'DEPARTMENT_MANAGER', 'TEAM_LEAD', 'SENIOR_AGENT', 'AGENT', 'SUPPORT_AGENT', 'SUPPORT_MANAGER'] } } },
+            select: { email: true },
+        }) : [];
+        return { recipientEmail: agents.map(agent => agent.email).join(',') || undefined, userName: 'Destek Ekibi' };
+    }
+
+    async decideResolution(id: string, dto: ResolutionDecisionDto, requester: { sub: string; role: string }) {
+        const ticket = await this.ownerLifecycleTicket(id, requester);
+        if (!['CONFIRM', 'CONTINUE'].includes(dto.decision)) throw new BadRequestException('Invalid resolution decision');
+        const continuing = dto.decision === 'CONTINUE';
+        if (ticket.status === TicketStatus.DRAFT || ticket.status === TicketStatus.CLOSED
+            || (continuing && ![TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED].includes(ticket.status as any))) {
+            throw new BadRequestException('This resolution action is unavailable for the current ticket status');
+        }
+        const comment = this.lifecycleComment(dto.comment, continuing);
+        const recipients = continuing ? await this.ownerReplyRecipients(ticket) : undefined;
+        const now = new Date();
+        const result = await this.prisma.$transaction(async tx => {
+            const updated = await tx.ticket.update({
+                where: { id, userId: requester.sub, deletedAt: null, status: ticket.status, updatedAt: ticket.updatedAt },
+                data: { status: continuing ? TicketStatus.OPEN : TicketStatus.CLOSED,
+                    closedAt: continuing ? null : now,
+                    ...(!continuing && (!ticket.resolvedAt || ![TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW].includes(ticket.status as any))
+                        ? { resolvedAt: now, slaSolvedAt: now } : {}) },
+            });
+            await tx.ticketMessage.create({ data: { ticketId: id, senderId: requester.sub, isInternal: true,
+                message: continuing ? 'Customer reported that the issue remains unresolved.' : 'Customer confirmed the resolution.',
+                metadata: { action: continuing ? 'TICKET_RESOLUTION_CONTINUED' : 'TICKET_RESOLUTION_CONFIRMED',
+                    previousStatus: ticket.status, resolvedAt: updated.resolvedAt?.toISOString() ?? null,
+                    previousResolvedAt: ticket.resolvedAt?.toISOString() ?? null,
+                    previousClosedAt: ticket.closedAt?.toISOString() ?? null } } });
+            const message = continuing ? await tx.ticketMessage.create({ data: {
+                ticketId: id, senderId: requester.sub, message: comment, isInternal: false, channel: 'WEB',
+            }, include: { sender: { select: { id: true, fullName: true, avatarUrl: true } } } }) : undefined;
+            return { updated, message };
+        }).catch(error => this.lifecycleConflict(error));
+        this.emitLifecycleStatus(result.updated, ticket.status, requester.sub);
+        if (result.message) this.eventEmitter.emit('ticket.message_added', { ticket: result.updated, message: result.message, ...recipients });
+        if (!continuing && ticket.satisfactionScore !== null && ticket.satisfactionScore >= 4) {
+            this.eventEmitter.emit('ticket.kb_summarize', result.updated);
+        }
+        return result.updated;
+    }
+
+    async closeWithReason(id: string, reason: string, requester: { sub: string; role: string }) {
+        if (!await this.ticketAccess.canManageTicket(requester, id)) throw new ForbiddenException('Authorized support staff only');
+        const safeReason = this.lifecycleComment(reason, true);
+        const ticket = await this.prisma.ticket.findFirst({ where: { id, deletedAt: null } });
+        if (!ticket) throw new NotFoundException('Ticket not found');
+        if (ticket.status === TicketStatus.CLOSED) throw new BadRequestException('Ticket is already closed');
+        const updated = await this.prisma.ticket.update({
+            where: { id, deletedAt: null, status: ticket.status, updatedAt: ticket.updatedAt },
+            data: { status: TicketStatus.CLOSED, closedAt: new Date(),
+                ...(![TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW].includes(ticket.status as any)
+                    ? { resolvedAt: new Date() } : {}), messages: { create: {
+                sender: { connect: { id: requester.sub } }, isInternal: true, message: safeReason,
+                metadata: { action: 'TICKET_CLOSED_BY_STAFF', previousStatus: ticket.status,
+                    previousResolvedAt: ticket.resolvedAt?.toISOString() ?? null },
+            } } },
+        }).catch(error => this.lifecycleConflict(error));
+        this.emitLifecycleStatus(updated, ticket.status, requester.sub);
+        return updated;
+    }
+
+    async requestReopen(id: string, comment: string, requester: { sub: string; role: string }) {
+        const ticket = await this.ownerLifecycleTicket(id, requester);
+        if (ticket.status !== TicketStatus.CLOSED) throw new BadRequestException('Only a closed ticket can receive a reopen request');
+        const safeComment = this.lifecycleComment(comment, true);
+        const previousClosedAt = ticket.closedAt?.toISOString() ?? null;
+        const requestWhere = { ticketId: id, senderId: requester.sub, isInternal: false,
+            AND: [{ metadata: { path: ['action'], equals: 'TICKET_REOPEN_REQUESTED' } },
+                { metadata: { path: ['previousClosedAt'], equals: previousClosedAt ?? Prisma.JsonNull } }] };
+        const existing = await this.prisma.ticketMessage.findFirst({ where: requestWhere });
+        if (existing) return this.findOne(id, { id: requester.sub, role: requester.role });
+        const recipients = await this.ownerReplyRecipients(ticket);
+        const message = await this.prisma.$transaction(async tx => {
+            // Serialize competing request submissions against this closure revision.
+            await tx.ticket.update({ where: { id, userId: requester.sub, deletedAt: null,
+                status: TicketStatus.CLOSED, closedAt: ticket.closedAt, updatedAt: ticket.updatedAt }, data: { updatedAt: new Date() } });
+            return tx.ticketMessage.create({ data: { ticketId: id, senderId: requester.sub,
+                message: safeComment, isInternal: false, channel: 'WEB',
+                metadata: { action: 'TICKET_REOPEN_REQUESTED', previousClosedAt },
+            }, include: { sender: { select: { id: true, fullName: true, avatarUrl: true } } } });
+        }).catch(error => this.lifecycleConflict(error));
+        this.eventEmitter.emit('ticket.message_added', { ticket, message, ...recipients });
+        return this.findOne(id, { id: requester.sub, role: requester.role });
     }
 
     // =============================================
@@ -1251,7 +1398,13 @@ export class TicketsService {
         }
 
         // Keep the reply and its required ticket updates atomic. No external effects in tx.
+        const ownerContinues = ticket.userId === senderId && dto.isInternal !== true
+            && [TicketStatus.PENDING_CUSTOMER, TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED].includes(ticket.status as any);
         const message = await this.prisma.$transaction(async (tx) => {
+            // Claim the open lifecycle before writing a reply, so concurrent closure rolls back the reply.
+            await tx.ticket.update({ where: { id: ticketId, deletedAt: null, status: ticket.status,
+                updatedAt: ticket.updatedAt }, data: { updatedAt: new Date(),
+                    ...(ownerContinues ? { status: TicketStatus.OPEN, closedAt: null } : {}) } });
             const created = await tx.ticketMessage.create({
                 data: {
                     ticketId,
@@ -1263,13 +1416,11 @@ export class TicketsService {
                 include: { sender: { select: { id: true, fullName: true, avatarUrl: true } } },
             });
 
-            if (ticket.status === TicketStatus.PENDING_CUSTOMER && ticket.userId === senderId) {
-                // Another customer reply may already have opened it; never reopen CLOSED/deleted.
-                await tx.ticket.update({
-                    where: { id: ticketId, status: { in: [TicketStatus.PENDING_CUSTOMER, TicketStatus.OPEN] },
-                        userId: senderId, deletedAt: null },
-                    data: { status: TicketStatus.OPEN },
-                });
+            if (ownerContinues && ticket.status !== TicketStatus.PENDING_CUSTOMER) {
+                await tx.ticketMessage.create({ data: { ticketId, senderId, isInternal: true,
+                    message: 'Customer continued support after a proposed resolution.',
+                    metadata: { action: 'TICKET_RESOLUTION_CONTINUED', previousStatus: ticket.status,
+                        resolvedAt: ticket.resolvedAt?.toISOString() ?? null } } });
             }
 
             if (ticket.userId !== senderId && !ticket.slaRespondedAt) {
@@ -1280,7 +1431,9 @@ export class TicketsService {
                 });
             }
             return created;
-        });
+        }).catch(error => this.lifecycleConflict(error));
+
+        if (ownerContinues) this.emitLifecycleStatus({ id: ticketId, status: TicketStatus.OPEN }, ticket.status, senderId);
 
         this.eventEmitter.emit('ticket.message_added', {
             ticket,
@@ -1295,41 +1448,62 @@ export class TicketsService {
     // =============================================
     // SUBMIT FEEDBACK (Self-Learning KB Trigger)
     // =============================================
-    async getPublicCsatSurvey(id: string): Promise<{ ticketNumber: string }> {
+    private async assertEmailFeedbackCycle(id: string, resolvedAt: Date | null | undefined, resolutionEpoch?: number) {
+        if (resolutionEpoch !== undefined) {
+            if ((resolvedAt?.getTime() ?? 0) !== resolutionEpoch) throw new NotFoundException('Feedback link belongs to an earlier resolution');
+            const newerBoundary = await this.prisma.ticketMessage.findFirst({ where: { ticketId: id, isInternal: true,
+                deletedAt: null, createdAt: { gt: new Date(resolutionEpoch) },
+                OR: ['TICKET_REOPENED', 'TICKET_RESOLUTION_CONTINUED'].map(action => ({ metadata: { path: ['action'], equals: action } })),
+            }, select: { id: true } });
+            if (newerBoundary) throw new NotFoundException('Feedback link belongs to an earlier resolution');
+            return;
+        }
+        const reopened = await this.prisma.ticketMessage.findFirst({ where: { ticketId: id, isInternal: true,
+            deletedAt: null, OR: ['TICKET_REOPENED', 'TICKET_RESOLUTION_CONTINUED', 'TICKET_RESOLUTION_PROPOSED'].map(action => ({
+                metadata: { path: ['action'], equals: action },
+            })) }, select: { id: true } });
+        if (reopened) throw new NotFoundException('Feedback link belongs to an earlier resolution');
+    }
+
+    async getPublicCsatSurvey(id: string, resolutionEpoch?: number): Promise<{ ticketNumber: string }> {
         const ticket = await this.prisma.ticket.findFirst({
             where: {
                 id,
                 deletedAt: null,
-                status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED, TicketStatus.CLOSED] },
                 satisfactionScore: null,
             },
-            select: { ticketNumber: true },
+            select: { ticketNumber: true, resolvedAt: true },
         });
 
         if (!ticket) throw new NotFoundException('Feedback link is invalid, expired, or no longer available.');
+        await this.assertEmailFeedbackCycle(id, ticket.resolvedAt, resolutionEpoch);
         return { ticketNumber: ticket.ticketNumber };
     }
 
-    async submitEmailCsatFeedback(id: string, score: number, comment?: string): Promise<{ submitted: true }> {
+    async submitEmailCsatFeedback(id: string, score: number, comment?: string, resolutionEpoch?: number): Promise<{ submitted: true }> {
         const eligibleTicket = await this.prisma.ticket.findFirst({
             where: {
                 id,
                 deletedAt: null,
-                status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED, TicketStatus.CLOSED] },
                 satisfactionScore: null,
             },
-            select: { userId: true },
+            select: { userId: true, resolvedAt: true, updatedAt: true },
         });
 
         if (!eligibleTicket?.userId) {
             throw new NotFoundException('Feedback link is invalid, expired, or no longer available.');
         }
 
-        await this.submitFeedback(id, score, comment, eligibleTicket.userId);
+        await this.assertEmailFeedbackCycle(id, eligibleTicket.resolvedAt, resolutionEpoch);
+        await this.submitFeedback(id, score, comment, eligibleTicket.userId,
+            { updatedAt: eligibleTicket.updatedAt, resolvedAt: eligibleTicket.resolvedAt });
         return { submitted: true };
     }
 
-    async submitFeedback(id: string, score: number, comment?: string, customerId?: string) {
+    async submitFeedback(id: string, score: number, comment?: string, customerId?: string,
+        expectedCycle?: { updatedAt: Date; resolvedAt: Date | null }) {
         if (!customerId || !customerId.trim()) {
             throw new UnauthorizedException('Authentication required to submit feedback.');
         }
@@ -1342,6 +1516,11 @@ export class TicketsService {
             throw new NotFoundException('Ticket not found.');
         }
 
+        if (expectedCycle && (ticket.updatedAt?.getTime() !== expectedCycle.updatedAt?.getTime()
+            || ticket.resolvedAt?.getTime() !== expectedCycle.resolvedAt?.getTime())) {
+            throw new ConflictException('Ticket resolution changed; use the current feedback link');
+        }
+
         if (!ticket.userId || ticket.userId !== customerId) {
             throw new ForbiddenException('Only the ticket creator can submit feedback.');
         }
@@ -1350,7 +1529,7 @@ export class TicketsService {
             throw new BadRequestException('Feedback has already been submitted for this ticket.');
         }
 
-        if (ticket.status !== TicketStatus.PENDING_CUSTOMER_REVIEW && ticket.status !== TicketStatus.RESOLVED) {
+        if (![TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED, TicketStatus.CLOSED].includes(ticket.status as any)) {
             throw new BadRequestException('Feedback can only be submitted for tickets pending review or recently resolved.');
         }
 
@@ -1361,14 +1540,20 @@ export class TicketsService {
                     id,
                     userId: customerId,
                     deletedAt: null,
-                    status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                    status: ticket.status,
+                    updatedAt: ticket.updatedAt,
                     satisfactionScore: null,
                 },
                 data: {
                     satisfactionScore: score,
-                    satisfactionComment: comment || null,
-                    status: TicketStatus.CLOSED, // Auto-close upon feedback
-                    closedAt: new Date(),
+                    satisfactionComment: comment ? this.lifecycleComment(comment) : null,
+                    messages: { create: { sender: { connect: { id: customerId } }, isInternal: true,
+                        message: 'Customer submitted a support service rating.',
+                        metadata: { action: 'TICKET_FEEDBACK_SUBMITTED', score,
+                            resolvedAt: ticket.resolvedAt?.toISOString() ?? null,
+                            closedAt: ticket.closedAt?.toISOString() ?? null,
+                            submittedAt: new Date().toISOString() },
+                    } },
                 },
             });
         } catch (error) {
@@ -1381,7 +1566,7 @@ export class TicketsService {
         this.logger.log(`⭐ Ticket ${ticket.ticketNumber || updated.ticketNumber} received feedback: ${score}/5`);
 
         // Option C Core: If it's a solved issue and the user agrees (score 4 or 5)
-        if (score >= 4) {
+        if (score >= 4 && [TicketStatus.RESOLVED, TicketStatus.CLOSED].includes(ticket.status as any)) {
             this.eventEmitter.emit('ticket.kb_summarize', updated);
         }
 
@@ -1442,8 +1627,9 @@ export class TicketsService {
     // =============================================
     // BULK UPDATE
     // =============================================
-    async bulkUpdate(dto: BulkUpdateTicketDto, requester: { sub: string; role: string }) {
+    async bulkUpdate(dto: BulkUpdateTicketDto, requester: { sub: string; role: string; permissions?: string[] }) {
         const { ticketIds, status, priority, assignedTo } = dto;
+        const closeReason = status === TicketStatus.CLOSED ? this.authorizedCloseReason(dto.closeReason, requester) : undefined;
         if (!(await this.ticketAccess.canManageTickets(requester, ticketIds))) {
             throw new ForbiddenException('Bulk ticket management is available to authorized support staff only');
         }
@@ -1462,6 +1648,9 @@ export class TicketsService {
                 closedAt: true,
                 departmentId: true,
                 slaRespondedAt: true,
+                resolvedAt: true,
+                satisfactionScore: true,
+                updatedAt: true,
             },
         });
 
@@ -1474,7 +1663,7 @@ export class TicketsService {
             for (const ticket of tickets) {
                 if (ticket.status !== status) {
                     const allowed: TicketStatus[] = ALLOWED_TRANSITIONS[ticket.status] ?? [];
-                    if (!allowed.includes(status)) {
+                    if (status !== TicketStatus.CLOSED && !allowed.includes(status)) {
                         throw new BadRequestException(
                             `Cannot transition from ${ticket.status} to ${status}. Allowed: ${allowed.join(', ')}`,
                         );
@@ -1559,12 +1748,20 @@ export class TicketsService {
                     if (targetStatus === TicketStatus.IN_PROGRESS && !ticket.slaRespondedAt) {
                         data.slaRespondedAt = now;
                     }
-                    if (targetStatus === TicketStatus.RESOLVED) {
+                    if (targetStatus === TicketStatus.RESOLVED || targetStatus === TicketStatus.PENDING_CUSTOMER_REVIEW) {
                         data.resolvedAt = now;
                         data.slaSolvedAt = now;
+                        data.messages = { create: { sender: { connect: { id: actorId } }, isInternal: true,
+                            message: 'Support proposed a resolution for customer confirmation.',
+                            metadata: { action: 'TICKET_RESOLUTION_PROPOSED', previousResolvedAt: ticket.resolvedAt?.toISOString() ?? null,
+                                previousSatisfactionScore: ticket.satisfactionScore ?? null } } };
                     }
                     if (targetStatus === TicketStatus.CLOSED) {
                         data.closedAt = now;
+                        if (![TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW].includes(ticket.status as any)) data.resolvedAt = now;
+                        data.messages = { create: { sender: { connect: { id: actorId } }, isInternal: true,
+                            message: closeReason, metadata: { action: 'TICKET_CLOSED_BY_STAFF', previousStatus: ticket.status,
+                                previousResolvedAt: ticket.resolvedAt?.toISOString() ?? null } } };
                     }
                     if (ticket.status === TicketStatus.CLOSED && targetStatus === TicketStatus.OPEN) {
                         isReopening = true;
@@ -1607,6 +1804,7 @@ export class TicketsService {
                     id: ticket.id,
                     status: ticket.status,
                     deletedAt: null,
+                    updatedAt: ticket.updatedAt,
                 };
                 if (ticket.status === TicketStatus.CLOSED) {
                     whereClause.closedAt = ticket.closedAt;

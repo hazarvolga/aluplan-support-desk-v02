@@ -5,6 +5,7 @@ import { EmbeddingService } from './embedding.service';
 import { FaqService } from '../faq/faq.service';
 import { Cron } from '@nestjs/schedule';
 import { RAG_CONFIG } from '../config/rag.config';
+import { getTicketLearningEligibility } from '../common/utils/ticket-learning-eligibility';
 
 @Injectable()
 export class TicketClusteringService {
@@ -51,7 +52,13 @@ export class TicketClusteringService {
             }
         });
 
-        const eligibleTickets = tickets.filter(ticket => this.findVerifiedSolution(ticket));
+        const eligibleTickets = (await Promise.all(
+            tickets.map(async ticket => {
+                if (!this.findVerifiedSolution(ticket)) return null;
+                const eligibility = await getTicketLearningEligibility(this.prisma, ticket.id);
+                return eligibility.eligible ? ticket : null;
+            }),
+        )).filter(Boolean) as typeof tickets;
         if (eligibleTickets.length < this.MIN_CLUSTER_SIZE) {
             this.logger.log('💤 Not enough tickets to cluster.');
             return;
@@ -127,13 +134,19 @@ export class TicketClusteringService {
             }
         });
 
-        const verifiedSolutions = tickets.map(ticket => this.findVerifiedSolution(ticket));
-        if (tickets.length !== ticketIds.length || verifiedSolutions.some(solution => !solution)) {
+        const eligibleTickets = (await Promise.all(
+            tickets.map(async ticket => {
+                const eligibility = await getTicketLearningEligibility(this.prisma, ticket.id);
+                return eligibility.eligible ? ticket : null;
+            }),
+        )).filter(Boolean) as typeof tickets;
+        const verifiedSolutions = eligibleTickets.map(ticket => this.findVerifiedSolution(ticket));
+        if (eligibleTickets.length !== ticketIds.length || verifiedSolutions.some(solution => !solution)) {
             this.logger.warn('⏭️ Skipping cluster FAQ without a verified public solution for every ticket.');
             return;
         }
 
-        const context = tickets.map(t =>
+        const context = eligibleTickets.map(t =>
             `Subject: ${this.maskCustomerPii(t.subject)}\nProblem: ${this.maskCustomerPii(t.description?.substring(0, 200) || '')}...\nSolution: ${this.maskCustomerPii(this.findVerifiedSolution(t)!.message)}`
         ).join('\n---\n');
 
@@ -158,14 +171,14 @@ Görevin:
                     this.logger.warn('⏭️ Skipping cluster FAQ because the model returned an empty question or answer.');
                     return;
                 }
-                const avgCsat = tickets.reduce(
+                const avgCsat = eligibleTickets.reduce(
                     (sum, t) => sum + ((t.satisfactionScore as number) ?? 3), 0
                 ) / tickets.length;
                 await this.faqService.createFromCluster({
                     question: this.maskCustomerPii(parsed.question),
                     answer: this.maskCustomerPii(parsed.answer),
                     tags: parsed.tags || [],
-                    ticketCount: tickets.length,
+                    ticketCount: eligibleTickets.length,
                     avgCsat,
                     consistencyRatio: 1.0, // All members passed configured similarity threshold
                     ticketIds,

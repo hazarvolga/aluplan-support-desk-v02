@@ -2,10 +2,10 @@
 <mj-section background-color="#FFFFFF" padding="25px 20px">
   <mj-column>
     <mj-text font-size="22px" font-weight="700" color="{{#if brand.primary_color}}{{brand.primary_color}}{{else}}#0D47A1{{/if}}" align="center">
-      {{t.ticket_closed.title}}
+      {{#if isReviewPending}}{{t.common.review_title}}{{else}}{{t.ticket_closed.title}}{{/if}}
     </mj-text>
     <mj-text font-size="16px" color="#555555" align="center">
-      {{t.ticket_closed.description}}
+      {{#if isReviewPending}}{{t.common.review_instructions}}{{else}}{{t.ticket_closed.description}}{{/if}}
     </mj-text>
   </mj-column>
 </mj-section>
@@ -23,8 +23,8 @@
 
     <mj-text css-class="ticket-card">
       • {{t.common.priority}}: <span class="status-{{ticketPriorityLow}}">{{ticketPriority}}</span><br/>
-      • {{t.common.status}}: <strong>{{t.common.closed}}</strong><br/>
-      • {{t.common.closed_at}}: {{closedAt}}
+      • {{t.common.status}}: <strong>{{#if isReviewPending}}{{t.common.review_title}}{{else}}{{t.common.closed}}{{/if}}</strong><br/>
+      {{#unless isReviewPending}}• {{t.common.closed_at}}: {{closedAt}}{{/unless}}
     </mj-text>
 
     {{#if resolution}}
@@ -48,7 +48,7 @@
 <mj-section background-color="#E3F2FD" padding="15px 20px" border-radius="8px">
   <mj-column>
     <mj-text font-size="13px" color="#0D47A1">
-      {{t.ticket_closed.closing_note}}
+      {{#if isReviewPending}}{{t.common.feedback_optional}}{{else}}{{t.ticket_closed.closing_note}}{{/if}}
     </mj-text>
   </mj-column>
 </mj-section>
