@@ -21,12 +21,12 @@ describe('CSAT transactional email template', () => {
             locale: 'tr',
             ticketNumber: 'SUP-SYNTHETIC',
             ticketSubject: 'Synthetic licensing question',
-            ticketCategory: 'Lisanslama',
+            ticketCategory: 'Lisans ve Aktivasyon',
             ticketType: undefined,
             dynamicSubject: 'Synthetic ticket',
         });
 
-        expect(compiled.html).toContain('Lisanslama');
+        expect(compiled.html).toContain('Lisans ve Aktivasyon');
         expect(compiled.html).not.toContain('Kategori: -');
         expect(compiled.html).not.toContain('Tür: -');
     });
@@ -36,13 +36,13 @@ describe('CSAT transactional email template', () => {
             locale: 'tr',
             ticketNumber: 'SUP-SYNTHETIC',
             ticketSubject: 'Synthetic licensing question',
-            ticketCategory: 'Lisanslama',
+            ticketCategory: 'Lisans ve Aktivasyon',
             ticketType: undefined,
             ticketId: 'synthetic-id',
             dynamicSubject: 'Synthetic ticket',
         });
 
-        expect(compiled.html).toContain('Lisanslama');
+        expect(compiled.html).toContain('Lisans ve Aktivasyon');
         expect(compiled.html).not.toContain('Kategori: -');
         expect(compiled.html).not.toContain('Tür: -');
     });

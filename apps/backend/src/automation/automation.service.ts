@@ -141,7 +141,7 @@ export class AutomationService {
                 ticketPriorityLow: ticket.priority?.toLowerCase() || 'low',
                 ticketStatus: ticket.status,
                 ticketCategory: ticket.tags?.includes('licensing')
-                    ? 'Lisanslama'
+                    ? 'Lisans ve Aktivasyon'
                     : ticket.department?.name || undefined,
                 ticketType: undefined,
                 createdAt: new Date(ticket.createdAt).toLocaleString(),
@@ -172,7 +172,7 @@ export class AutomationService {
                     ticketPriorityLow: ticket.priority?.toLowerCase() || 'low',
                     ticketStatus: ticket.status,
                     ticketCategory: ticket.tags?.includes('licensing')
-                        ? 'Lisanslama'
+                        ? 'Lisans ve Aktivasyon'
                         : ticket.department?.name || undefined,
                     ticketType: undefined,
                     customerName: ticket.creator?.fullName || 'Müşteri',

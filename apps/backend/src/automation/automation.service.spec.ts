@@ -104,11 +104,11 @@ describe('AutomationService message notification visibility', () => {
         });
 
         expect(sendTicketCreated).toHaveBeenCalledWith(expect.objectContaining({
-            ticketCategory: 'Lisanslama',
+            ticketCategory: 'Lisans ve Aktivasyon',
             ticketType: undefined,
         }));
         expect(sendNewTicketToStaff).toHaveBeenCalledWith('support@example.test', expect.objectContaining({
-            ticketCategory: 'Lisanslama',
+            ticketCategory: 'Lisans ve Aktivasyon',
             ticketType: undefined,
         }));
     });
