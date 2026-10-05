@@ -26,6 +26,18 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
     fail 'DATABASE_URL is required and must be supplied through the process environment.'
 fi
 
+# The application uses Cloudflare R2's STORAGE_* names while the AWS CLI
+# uses its conventional AWS_* names. Only dedicated backup variables may be
+# mapped; ordinary application-storage credentials and buckets must never be
+# reused for database backups. Values remain process-local and are never
+# printed or persisted by this script.
+export AWS_S3_BACKUP_BUCKET="${AWS_S3_BACKUP_BUCKET:-${R2_BACKUP_BUCKET:-${STORAGE_BACKUP_BUCKET:-}}}"
+export AWS_S3_ENDPOINT_URL="${AWS_S3_ENDPOINT_URL:-${R2_BACKUP_ENDPOINT:-${STORAGE_BACKUP_ENDPOINT:-}}}"
+export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-${R2_BACKUP_ACCESS_KEY_ID:-${STORAGE_BACKUP_ACCESS_KEY:-}}}"
+export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-${R2_BACKUP_SECRET_ACCESS_KEY:-${STORAGE_BACKUP_SECRET_KEY:-}}}"
+export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-${R2_BACKUP_REGION:-${STORAGE_BACKUP_REGION:-auto}}}"
+export AWS_EC2_METADATA_DISABLED='true'
+
 external_mode=1
 if [[ "${ALLOW_LOCAL_ONLY_BACKUP:-}" == '1' ]]; then
     external_mode=0

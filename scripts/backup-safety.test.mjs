@@ -313,6 +313,41 @@ test("external backup is required unless local-only mode is explicitly acknowled
   await assert.rejects(readFile(harness.commandLog, "utf8"));
 });
 
+test("external backup maps only dedicated Cloudflare R2 backup variables", async () => {
+  const harness = await createHarness();
+  const ordinaryStorageResult = runBackup(rootBackupScript, harness, {
+    ALLOW_DATABASE_BACKUP: "1",
+    DATABASE_URL: "postgresql://example.invalid/aluplan",
+    R2_BUCKET: "application-storage",
+    R2_ENDPOINT: "https://example.r2.cloudflarestorage.com",
+    R2_ACCESS_KEY_ID: "application-access-key",
+    R2_SECRET_ACCESS_KEY: "application-secret-key",
+  });
+  assert.notEqual(ordinaryStorageResult.status, 0);
+  assert.match(
+    `${ordinaryStorageResult.stdout}\n${ordinaryStorageResult.stderr}`,
+    /External S3 backup is required/,
+  );
+
+  const result = runBackup(rootBackupScript, harness, {
+    ALLOW_DATABASE_BACKUP: "1",
+    DATABASE_URL: "postgresql://example.invalid/aluplan",
+    R2_BACKUP_BUCKET: "r2-backups",
+    R2_BACKUP_ENDPOINT: "https://example.r2.cloudflarestorage.com",
+    R2_BACKUP_ACCESS_KEY_ID: "r2-backup-access-key",
+    R2_BACKUP_SECRET_ACCESS_KEY: "r2-backup-secret-key",
+    R2_BACKUP_REGION: "auto",
+    AWS_S3_BACKUP_PREFIX: "database",
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /External backup committed with READY manifest/);
+  assert.match(
+    await readFile(harness.commandLog, "utf8"),
+    /--bucket r2-backups --key database\//,
+  );
+});
+
 test("local publish uses one ready-marked artifact directory", async () => {
   const harness = await createHarness();
   const result = runBackup(rootBackupScript, harness, {
