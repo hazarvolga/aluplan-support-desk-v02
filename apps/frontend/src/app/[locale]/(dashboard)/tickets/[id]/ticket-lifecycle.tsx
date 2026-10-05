@@ -64,11 +64,11 @@ export function TicketLifecycle({ ticket, user, onUpdated }: {
 
     function submitAction() {
         const text = comment.trim();
-        if (!text || !action) return;
+        if (!action || (action !== 'CLOSE' && !text)) return;
         if (action === 'CONTINUE' && isOwner && reviewing) {
             void run(() => api.tickets.resolution(ticket.id, 'CONTINUE', text), 'continued');
         } else if (action === 'CLOSE' && isStaff && permitted('ticket:close') && ticket.status !== 'CLOSED') {
-            void run(() => api.tickets.close(ticket.id, text), 'closed');
+            void run(() => api.tickets.close(ticket.id, text || undefined), 'closed');
         } else if (action === 'REQUEST' && isOwner && ticket.status === 'CLOSED' && !pendingRequest) {
             void run(() => api.tickets.requestReopen(ticket.id, text), 'request_sent');
         }
@@ -125,9 +125,9 @@ export function TicketLifecycle({ ticket, user, onUpdated }: {
             <Dialog open={action !== null} onOpenChange={open => { if (!open && !pending) setAction(null); }}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>{t(actionTitle)}</DialogTitle><DialogDescription>{t(action === 'CLOSE' ? 'close_description' : action === 'CONTINUE' ? 'continue_description' : 'request_description')}</DialogDescription></DialogHeader>
-                    <label htmlFor="ticket-action-comment" className="text-sm font-medium">{t('action_comment')}</label>
+                    <label htmlFor="ticket-action-comment" className="text-sm font-medium">{t(action === 'CLOSE' ? 'close_comment' : 'action_comment')}</label>
                     <Textarea id="ticket-action-comment" maxLength={2000} value={comment} onChange={event => setComment(event.target.value)} disabled={pending} />
-                    <Button disabled={pending || !comment.trim()} onClick={submitAction}>{t(pending ? 'saving' : 'submit_action')}</Button>
+                    <Button disabled={pending || (action !== 'CLOSE' && !comment.trim())} onClick={submitAction}>{t(pending ? 'saving' : 'submit_action')}</Button>
                 </DialogContent>
             </Dialog>
         </section>

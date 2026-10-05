@@ -528,7 +528,7 @@ export const api = {
             request<any>(`/tickets/${id}/status/${status}`, { method: 'PATCH' }),
         resolution: (id: string, decision: 'CONFIRM' | 'CONTINUE', comment?: string) =>
             request<any>(`/tickets/${id}/resolution`, { method: 'POST', body: JSON.stringify({ decision, comment }) }),
-        close: (id: string, reason: string) =>
+        close: (id: string, reason?: string) =>
             request<any>(`/tickets/${id}/close`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
         requestReopen: (id: string, comment: string) =>
             request<any>(`/tickets/${id}/reopen-request`, { method: 'POST', body: JSON.stringify({ comment }) }),

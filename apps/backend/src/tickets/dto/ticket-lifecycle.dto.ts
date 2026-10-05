@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class ResolutionDecisionDto {
@@ -16,12 +16,12 @@ export class ResolutionDecisionDto {
 }
 
 export class CloseTicketDto {
-    @ApiProperty({ maxLength: 2000 })
+    @ApiPropertyOptional({ maxLength: 2000 })
     @Transform(({ obj, value }) => obj && 'reason' in obj ? obj.reason : value)
+    @ValidateIf((_object, value) => value !== undefined)
     @IsString()
-    @Matches(/\S/, { message: 'A closure reason is required' })
     @MaxLength(2000)
-    reason: string;
+    reason?: string;
 }
 
 export class ReopenRequestDto {

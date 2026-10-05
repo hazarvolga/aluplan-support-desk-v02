@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsUUID, MaxLength, Matches } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsUUID, MaxLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { TicketPriority, ChatStatus, TicketStatus } from '@aluplan/database';
 import { Transform } from 'class-transformer';
@@ -8,7 +8,6 @@ export class UpdateTicketDto {
     @Transform(({ obj, value }) => obj && 'closeReason' in obj ? obj.closeReason : value)
     @IsOptional()
     @IsString()
-    @Matches(/\S/)
     @MaxLength(2000)
     closeReason?: string;
     @ApiPropertyOptional()

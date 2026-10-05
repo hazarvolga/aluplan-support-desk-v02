@@ -1095,7 +1095,12 @@ export class TicketsService {
         if (!['ticket:close', '*', 'admin'].some(permission => requester?.permissions?.includes(permission))) {
             throw new ForbiddenException('Closing a ticket requires ticket:close permission');
         }
-        return this.lifecycleComment(reason, true);
+        return this.staffCloseDescription(reason);
+    }
+
+    private staffCloseDescription(reason: string | undefined) {
+        const description = this.lifecycleComment(reason);
+        return isRichTextEffectivelyEmpty(description) ? 'Ticket closed by authorized support staff.' : description;
     }
 
     private lifecycleConflict(error: unknown): never {
@@ -1158,9 +1163,9 @@ export class TicketsService {
         return result.updated;
     }
 
-    async closeWithReason(id: string, reason: string, requester: { sub: string; role: string }) {
+    async closeWithReason(id: string, reason: string | undefined, requester: { sub: string; role: string }) {
         if (!await this.ticketAccess.canManageTicket(requester, id)) throw new ForbiddenException('Authorized support staff only');
-        const safeReason = this.lifecycleComment(reason, true);
+        const safeReason = this.staffCloseDescription(reason);
         const ticket = await this.prisma.ticket.findFirst({ where: { id, deletedAt: null } });
         if (!ticket) throw new NotFoundException('Ticket not found');
         if (ticket.status === TicketStatus.CLOSED) throw new BadRequestException('Ticket is already closed');
