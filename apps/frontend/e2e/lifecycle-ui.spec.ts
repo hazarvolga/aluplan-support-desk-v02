@@ -80,12 +80,13 @@ test('unresolved customer continues support without rating', async ({ page }, te
     await page.screenshot({ path: testInfo.outputPath('customer-continued.png'), fullPage: true });
 });
 
-test('staff closes with reason and reopens the same ticket', async ({ page }, testInfo) => {
+test('staff closes with an optional explanation and reopens the same ticket', async ({ page }, testInfo) => {
     const state = await setup(page, 'AGENT');
     await page.goto('/tr/tickets/synthetic-lifecycle');
     await expect(page.getByRole('radio')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Gerekçe ile talebi kapat' }).click();
-    await page.getByLabel('Açıklama (zorunlu)').fill('Synthetic duplicate request');
+    await page.getByRole('button', { name: 'Talebi kapat', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Gönder', exact: true })).toBeEnabled();
+    await page.getByLabel('Açıklama (isteğe bağlı)').fill('Synthetic duplicate request');
     await page.screenshot({ path: testInfo.outputPath('staff-close-dialog.png'), fullPage: true });
     await page.getByRole('button', { name: 'Gönder', exact: true }).click();
     await page.getByRole('button', { name: /Yeniden aç/i }).click();
@@ -93,6 +94,18 @@ test('staff closes with reason and reopens the same ticket', async ({ page }, te
     expect(state.getTicket().status).toBe('OPEN');
     expect(state.writes).toContainEqual({ path: '/tickets/synthetic-lifecycle/close', body: { reason: 'Synthetic duplicate request' } });
     await page.screenshot({ path: testInfo.outputPath('staff-reopened.png'), fullPage: true });
+});
+
+test('staff closes without an explanation or customer rating', async ({ page }, testInfo) => {
+    const state = await setup(page, 'AGENT');
+    await page.goto('/tr/tickets/synthetic-lifecycle');
+    await page.getByRole('button', { name: 'Talebi kapat', exact: true }).click();
+    await expect(page.getByLabel('Açıklama (isteğe bağlı)')).toHaveValue('');
+    await page.screenshot({ path: testInfo.outputPath('staff-close-optional.png'), fullPage: true });
+    await page.getByRole('button', { name: 'Gönder', exact: true }).click();
+    await expect(page.getByRole('button', { name: /Yeniden aç/i })).toBeVisible();
+    expect(state.getTicket()).toMatchObject({ status: 'CLOSED', satisfactionScore: null });
+    expect(state.writes).toEqual([{ path: '/tickets/synthetic-lifecycle/close', body: {} }]);
 });
 
 test('public feedback explicitly keeps ticket status unchanged', async ({ page }, testInfo) => {

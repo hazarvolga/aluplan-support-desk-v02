@@ -16,7 +16,8 @@ describe('Ticket lifecycle decisions', () => {
         prisma.$transaction = jest.fn((fn) => fn(prisma));
         events = { emit: jest.fn() };
         service = new TicketsService(prisma, {} as any, { maskSensitiveData: (v) => v } as any,
-            events, {} as any, {} as any, { canManageTicket: jest.fn().mockResolvedValue(true) } as any, {} as any);
+            events, {} as any, {} as any, { canManageTicket: jest.fn().mockResolvedValue(true),
+                canManageTickets: jest.fn().mockResolvedValue(true) } as any, {} as any);
         const ticket = { id: 'ticket', userId: 'owner', status: TicketStatus.PENDING_CUSTOMER_REVIEW,
             satisfactionScore: null, updatedAt: new Date(), resolvedAt: new Date(), closedAt: null };
         prisma.ticket.findFirst.mockResolvedValue(ticket);
@@ -100,6 +101,32 @@ describe('Ticket lifecycle decisions', () => {
         const data = prisma.ticket.update.mock.calls[0][0].data;
         expect(data.messages.create.metadata.action).toBe('TICKET_CLOSED_BY_STAFF');
         expect(data).not.toHaveProperty('satisfactionScore');
+    });
+    it.each([undefined, '', '   '])('allows staff closure with optional explanation %p and records only the actual staff action', async reason => {
+        await service.closeWithReason('ticket', reason, { sub: 'agent', role: 'AGENT' });
+        const data = prisma.ticket.update.mock.calls[0][0].data;
+        expect(data.messages.create.message).toBe('Ticket closed by authorized support staff.');
+        expect(data.messages.create.metadata.action).toBe('TICKET_CLOSED_BY_STAFF');
+        expect(data).not.toHaveProperty('satisfactionScore');
+    });
+    it.each([undefined, '', '  '])('generic authorized close succeeds with optional reason %p while preserving close permission', async closeReason => {
+        jest.spyOn(service, 'findOne').mockResolvedValue({ id: 'ticket', status: 'OPEN' } as any);
+        await service.update('ticket', { status: TicketStatus.CLOSED, closeReason }, { sub: 'agent', role: 'AGENT', permissions: ['ticket:close'] });
+        expect(prisma.ticket.update.mock.calls[0][0].data.messages.create.message).toBe('Ticket closed by authorized support staff.');
+        prisma.ticket.update.mockClear();
+        await expect(service.update('ticket', { status: TicketStatus.CLOSED }, { sub: 'agent', role: 'AGENT', permissions: [] }))
+            .rejects.toBeInstanceOf(ForbiddenException);
+        expect(prisma.ticket.update).not.toHaveBeenCalled();
+    });
+    it.each([undefined, '', '  '])('bulk authorized close succeeds with optional reason %p while preserving close permission', async closeReason => {
+        prisma.ticket.findMany = jest.fn().mockResolvedValue([{ id: 'ticket', status: 'OPEN' }]);
+        await service.bulkUpdate({ ticketIds: ['ticket'], status: TicketStatus.CLOSED, closeReason },
+            { sub: 'agent', role: 'AGENT', permissions: ['ticket:close'] });
+        expect(prisma.ticket.update.mock.calls[0][0].data.messages.create.message).toBe('Ticket closed by authorized support staff.');
+        prisma.ticket.update.mockClear();
+        await expect(service.bulkUpdate({ ticketIds: ['ticket'], status: TicketStatus.CLOSED },
+            { sub: 'agent', role: 'AGENT', permissions: [] })).rejects.toBeInstanceOf(ForbiddenException);
+        expect(prisma.ticket.update).not.toHaveBeenCalled();
     });
     it('cannot bypass reason through generic status transition', async () => {
         await expect(service.transition('ticket', TicketStatus.CLOSED, { sub: 'agent', role: 'AGENT' }))

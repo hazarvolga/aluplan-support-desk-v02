@@ -88,6 +88,18 @@ describe('Ticket management HTTP authorization', () => {
         expect(update).toHaveBeenCalledTimes(1);
     });
 
+    it.each(['staff', 'admin'])('%s may close without an explanation', async actor => {
+        await request(app.getHttpServer()).patch('/tickets/own/close').set('x-test-principal', actor)
+            .send({}).expect(200);
+        expect(update.mock.calls[0][0].data.messages.create.message).toBe('Ticket closed by authorized support staff.');
+    });
+
+    it.each(['customer', 'revoked'])('optional reason does not bypass close permissions for %s', async actor => {
+        await request(app.getHttpServer()).patch('/tickets/own/close').set('x-test-principal', actor)
+            .send({}).expect(403);
+        expect(update).not.toHaveBeenCalled();
+    });
+
     it.each([
         ['patch', '/tickets/other/status/PENDING_CUSTOMER_REVIEW'],
         ['patch', '/tickets/own/status/RESOLVED'],

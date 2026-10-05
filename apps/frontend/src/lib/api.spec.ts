@@ -166,6 +166,7 @@ describe('api.ts', () => {
             { path: '/resolution', method: 'POST', body: { decision: 'CONFIRM' }, invoke: () => api.tickets.resolution('t1', 'CONFIRM') },
             { path: '/resolution', method: 'POST', body: { decision: 'CONTINUE', comment: 'Still broken' }, invoke: () => api.tickets.resolution('t1', 'CONTINUE', 'Still broken') },
             { path: '/close', method: 'PATCH', body: { reason: 'Duplicate' }, invoke: () => api.tickets.close('t1', 'Duplicate') },
+            { path: '/close', method: 'PATCH', body: {}, invoke: () => api.tickets.close('t1') },
             { path: '/reopen-request', method: 'POST', body: { comment: 'Issue returned' }, invoke: () => api.tickets.requestReopen('t1', 'Issue returned') },
             { path: '/feedback', method: 'POST', body: { score: 1 }, invoke: () => api.tickets.feedback('t1', 1) },
         ])('uses the separate lifecycle endpoint $method $path with its own payload', async ({ path, method, body, invoke }) => {

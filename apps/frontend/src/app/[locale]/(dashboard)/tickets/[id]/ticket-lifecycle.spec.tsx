@@ -67,16 +67,35 @@ describe('ticket resolution and independent customer feedback', () => {
         expect(screen.getByRole('status')).toHaveTextContent('reopen_request_pending');
         expect(screen.queryByRole('button', { name: 'request_reopen' })).not.toBeInTheDocument();
     });
-    it('requires staff close permission and a reason, without simulated customer ratings', async () => {
+    it('requires staff close permission and preserves an optional explanation without simulated customer ratings', async () => {
         const staff = { id: 'staff', role: 'AGENT', permissions: ['ticket:update', 'ticket:close'] };
         mocks.close.mockResolvedValue({ ...fixture, status: 'CLOSED' });
         mount(fixture, staff);
         expect(screen.queryByRole('radio')).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'staff_close' }));
-        fireEvent.change(screen.getByLabelText('action_comment'), { target: { value: 'Duplicate request' } });
+        fireEvent.change(screen.getByLabelText('close_comment'), { target: { value: 'Duplicate request' } });
         fireEvent.click(screen.getByRole('button', { name: 'submit_action' }));
         await waitFor(() => expect(mocks.close).toHaveBeenCalledWith('ticket', 'Duplicate request'));
         expect(mocks.feedback).not.toHaveBeenCalled();
+    });
+    it.each(['', '   '])('allows staff to close without a meaningful explanation (%j)', async (comment) => {
+        mocks.close.mockResolvedValue({ ...fixture, status: 'CLOSED' });
+        mount(fixture, { id: 'staff', role: 'AGENT', permissions: ['ticket:close'] });
+        fireEvent.click(screen.getByRole('button', { name: 'staff_close' }));
+        fireEvent.change(screen.getByLabelText('close_comment'), { target: { value: comment } });
+        expect(screen.getByRole('button', { name: 'submit_action' })).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', { name: 'submit_action' }));
+        await waitFor(() => expect(mocks.close).toHaveBeenCalledWith('ticket', undefined));
+        expect(onUpdated).toHaveBeenCalledWith(expect.objectContaining({ status: 'CLOSED' }));
+        expect(mocks.feedback).not.toHaveBeenCalled();
+    });
+    it.each(['CONTINUE', 'REQUEST'])('keeps the explanation mandatory for %s', (action) => {
+        mount({ ...fixture, status: action === 'REQUEST' ? 'CLOSED' : 'PENDING_CUSTOMER_REVIEW' });
+        fireEvent.click(screen.getByRole('button', { name: action === 'REQUEST' ? 'request_reopen' : 'continue_support' }));
+        fireEvent.change(screen.getByLabelText('action_comment'), { target: { value: '   ' } });
+        expect(screen.getByRole('button', { name: 'submit_action' })).toBeDisabled();
+        expect(mocks.resolution).not.toHaveBeenCalled();
+        expect(mocks.requestReopen).not.toHaveBeenCalled();
     });
     it('hides staff actions for a staff role without permissions', () => {
         mount({ ...fixture, status: 'OPEN' }, { id: 'staff', role: 'AGENT', permissions: [] });
