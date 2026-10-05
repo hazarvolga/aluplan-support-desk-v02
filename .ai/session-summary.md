@@ -1,5 +1,11 @@
 # Session Summary - 2026-05-13
 
+## 2026-10-05 — Optional staff closure explanation (local follow-up)
+
+Owner requested that the staff closure explanation no longer be mandatory. Dedicated, generic and bulk closure accept omitted, empty or whitespace reasons, retaining permission/scope checks and a factual default audit entry. Provided explanations are preserved and validated. Continue-support and customer reopen explanations remain required; closing does not create a customer rating. TR/EN/DE dialogs now describe the optional explanation and use a plain close-request action label.
+
+Verification: backend five suites 119 tests plus nine DTO checks; frontend 38 focused tests and six synthetic local browser journeys; both typechecks, frontend i18n and diff-check passed. Pre-release rerun: three backend suites, 69 tests passed. Product commit 65e65d74 and test commit 871fda5d are on main; owner authorized production publication. Deployment verification is pending at this checkpoint. No schema or migration changes. Unrelated openapi.json, next-env.d.ts and report-script changes remain untouched.
+
 ## 2026-10-05 — Ticket lifecycle and optional service feedback (local)
 
 Implemented ADR-024 on `main`: owner-only confirm/continue commands, staff reasoned close with `ticket:close`, public deduplicated customer reopen requests and preserved staff reopening. Rating is optional and does not close a request; historical rating is immutable. Conditional ticket updates and atomic audit/message writes protect against concurrent replies and closure. Customer replies resume review/resolved requests. Existing category/AI UI changes remain in place.

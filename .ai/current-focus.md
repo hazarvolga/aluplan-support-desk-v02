@@ -2,7 +2,7 @@
 
 ## 5 Ekim — Bilet kapanış / yeniden açma / hizmet değerlendirmesi
 
-- Kullanıcı onaylı yaşam döngüsü uygulanıyor: müşteri çözüm onayı ve desteğe devam etme; personel gerekçeli kapatma; müşteri yeniden açma isteği; bağımsız ve isteğe bağlı hizmet puanı.
+- Kullanıcı onaylı yaşam döngüsü: müşteri çözüm onayı ve desteğe devam etme; personel kapatma (2026-10-05 açıklama isteğe bağlı talebi); müşteri yeniden açma isteği; bağımsız ve isteğe bağlı hizmet puanı. Önceki yaşam döngüsü 4d454def ile yayınlandı. İsteğe bağlı açıklama için 65e65d74/871fda5d hazır; kullanıcı yayını onayladı. Aynı release SHA ile frontend/backend yayını ve sağlık doğrulaması sıradaki adımdır.
 - Aynı bilette geçmiş puan korunur; yeniden açılmış talepte eski puan yeni çözümün öğrenilmesine izin vermez. İmzalı değerlendirme bağlantısı çözüm dönemine bağlanır.
 - Yerel doğrulama tamamlandı: backend yaşam döngüsü/token/HTTP 153 test, öğrenme/otomasyon/e-posta 82 test; frontend 73 test ve 5 gerçek Chromium arayüz senaryosu geçti. Mobil Almanca düğme taşması düzeltildi; typecheck/i18n/diff kontrolleri geçti. Push/deploy yapılmadı. Önceden var olan `apps/backend/openapi.json`, `apps/frontend/next-env.d.ts` ve rapor scripti değişiklikleri bu işten ayrıdır.
 - Ayrıntılı karar: ADR-024. Mevcut kategori, sıralama, lisans ve e-posta iyileştirmeleri korunarak çalışılıyor.
