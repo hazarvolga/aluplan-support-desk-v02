@@ -425,7 +425,7 @@ describe('TicketsService', () => {
                     expect.objectContaining({
                         where: expect.objectContaining({ status: TicketStatus.OPEN }),
                         include: expect.objectContaining({
-                            department: { select: { name: true } },
+                            department: { select: { name: true, slug: true } },
                         }),
                         skip: 5,
                         take: 5

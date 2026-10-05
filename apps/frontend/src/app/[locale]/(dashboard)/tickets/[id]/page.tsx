@@ -45,6 +45,7 @@ import { AiAnswerContent } from '@/components/ai/ai-answer-content';
 import { useTranslations, useLocale } from 'next-intl';
 import { ContentSanitizer } from '@/lib/content-sanitizer';
 import { markdownToHtml } from '@/lib/markdown-to-html';
+import { getTicketSupportCategoryNames, type TicketSupportCategoryLabels } from '@/lib/ticket-category-display';
 
 const STATUS_COLORS: Record<string, string> = {
     NEW: 'border-blue-900/50 text-blue-400 bg-blue-400/5',
@@ -77,18 +78,6 @@ const CHANNEL_COLORS: Record<string, string> = {
     API: 'text-purple-400',
 };
 
-function getTicketCategoryNames(ticket: any, licensingLabel: string): string[] {
-    const categories = [
-        ...(ticket.tags?.includes('licensing') ? [licensingLabel] : []),
-        ...(ticket.department?.name ? [ticket.department.name] : []),
-        ...(!ticket.department?.name && !ticket.tags?.includes('licensing')
-            ? (ticket.suggestedCategories ?? []).slice(0, 2)
-            : []),
-    ];
-
-    return Array.from(new Set(categories.filter(Boolean)));
-}
-
 export default function TicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     return <TicketDetail key={id} id={id} />;
@@ -96,6 +85,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
 function TicketDetail({ id }: { id: string }) {
     const t = useTranslations('tickets.detail');
+    const tickets = useTranslations('tickets');
     const ts = useTranslations('tickets.status');
     const tp = useTranslations('tickets.priority');
     const tc = useTranslations('common');
@@ -572,7 +562,17 @@ function TicketDetail({ id }: { id: string }) {
         </div>
     );
 
-    const ticketCategories = getTicketCategoryNames(ticket, t('category_licensing'));
+    const supportCategoryLabels: TicketSupportCategoryLabels = {
+        technical_support: tickets('departments.technical_support'),
+        billing_payments: tickets('departments.billing_payments'),
+        sales_pre_sales: tickets('departments.sales_pre_sales'),
+        general_support: tickets('departments.general_support'),
+        licensing: t('category_licensing'),
+        customer_success: tickets('departments.customer_success'),
+        general_inquiries: tickets('departments.general_inquiries'),
+        security_compliance: tickets('departments.security_compliance'),
+    };
+    const ticketCategories = getTicketSupportCategoryNames(ticket, supportCategoryLabels);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 w-full py-0">

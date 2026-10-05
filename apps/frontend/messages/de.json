@@ -712,6 +712,7 @@
       "error": "SYSTEM_BEFEHL_FEHLER: {message}"
     },
     "table": {
+      "sort": "Sortieren",
       "loading": "Warten auf Datenprotokoll",
       "empty": "Warteschlange leer",
       "load_error": "Support-Anfragen konnten nicht geladen werden",

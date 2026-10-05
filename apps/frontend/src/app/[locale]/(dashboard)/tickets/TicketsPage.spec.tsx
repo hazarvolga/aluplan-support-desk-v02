@@ -74,6 +74,34 @@ describe('TicketsPage', () => {
         expect(screen.getByText('table.header.subject')).toBeDefined();
     });
 
+    it('sorts the current ticket page by category when the category header is clicked', async () => {
+        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+
+        const tickets = [
+            {
+                id: 't-b', ticketNumber: 'SUP-00003', subject: 'Beta', status: 'OPEN', priority: 'LOW', channel: 'WEB',
+                createdAt: '2026-10-02T10:00:00.000Z', department: { name: 'technical_support' },
+            },
+            {
+                id: 't-a', ticketNumber: 'SUP-00004', subject: 'Alpha', status: 'OPEN', priority: 'LOW', channel: 'WEB',
+                createdAt: '2026-10-01T10:00:00.000Z', department: { name: 'TICKETS.CATEGORY.LICENSING' },
+            },
+        ];
+
+        render(<TicketsClient initialTickets={tickets} initialTotal={2} />);
+
+        const sortCategory = await screen.findByTestId('sort-category');
+        fireEvent.click(sortCategory);
+
+        const rows = screen.getAllByRole('row');
+        expect(rows[1]).toHaveTextContent('departments.licensing');
+        expect(rows[2]).toHaveTextContent('departments.technical_support');
+
+        fireEvent.click(sortCategory);
+        const reversedRows = screen.getAllByRole('row');
+        expect(reversedRows[1]).toHaveTextContent('departments.technical_support');
+    });
+
     it('shows bulk actions only when tickets are selected (Admin)', async () => {
         (useAuth as any).mockReturnValue({
             user: { role: 'ADMIN', fullName: 'Admin' }

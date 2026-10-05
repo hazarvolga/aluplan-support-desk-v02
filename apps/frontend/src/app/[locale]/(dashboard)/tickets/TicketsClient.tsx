@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { api } from '@/lib/api';
 import {
     Ticket,
@@ -18,7 +18,10 @@ import {
     Globe,
     Cpu,
     User,
-    Trash2
+    Trash2,
+    ArrowDown,
+    ArrowUp,
+    ArrowUpDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -29,6 +32,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/components/auth/role-guard';
 import { useSearchParams } from 'next/navigation';
 import { getTicketQueueDeepLink } from '@/components/review-center/deep-link-filters';
+import { getTicketSupportCategoryNames, type TicketSupportCategoryLabels } from '@/lib/ticket-category-display';
 
 const STATUS_COLORS: Record<string, string> = {
     NEW: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -69,20 +73,10 @@ interface TicketsClientProps {
 
 type TicketScope = 'mine' | 'all';
 type StatusCounts = Record<string, number>;
+type SortKey = 'system_id' | 'company' | 'customer' | 'subject' | 'category' | 'status' | 'priority' | 'assignee' | 'timestamp';
+type SortDirection = 'asc' | 'desc';
 
 const STATUS_ORDER = Object.keys(STATUS_COLORS);
-
-function getTicketCategoryNames(ticket: any, licensingLabel: string): string[] {
-    const categories = [
-        ...(ticket.tags?.includes('licensing') ? [licensingLabel] : []),
-        ...(ticket.department?.name ? [ticket.department.name] : []),
-        ...(!ticket.department?.name && !ticket.tags?.includes('licensing')
-            ? (ticket.suggestedCategories ?? []).slice(0, 2)
-            : []),
-    ];
-
-    return Array.from(new Set(categories.filter(Boolean)));
-}
 
 export default function TicketsClient({ initialTickets, initialTotal }: TicketsClientProps) {
     const t = useTranslations('tickets');
@@ -98,6 +92,8 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const [statusCounts, setStatusCounts] = useState<StatusCounts | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [bulkLoading, setBulkLoading] = useState(false);
+    const [sortKey, setSortKey] = useState<SortKey>('timestamp');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const queueDeepLink = getTicketQueueDeepLink(searchParams);
@@ -113,6 +109,74 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const isCustomer = roleStr === 'CUSTOMER' || roleStr === 'VIEWER';
     const isAdmin = roleStr === 'ADMIN' || roleStr === 'DEPARTMENT_MANAGER' || roleStr === 'TEAM_LEAD' || roleStr === 'SENIOR_AGENT';
     const canScopeTickets = Boolean(user && !isCustomer);
+    const supportCategoryLabels: TicketSupportCategoryLabels = {
+        technical_support: t('departments.technical_support'),
+        billing_payments: t('departments.billing_payments'),
+        sales_pre_sales: t('departments.sales_pre_sales'),
+        general_support: t('departments.general_support'),
+        licensing: t('departments.licensing'),
+        customer_success: t('departments.customer_success'),
+        general_inquiries: t('departments.general_inquiries'),
+        security_compliance: t('departments.security_compliance'),
+    };
+
+    const toggleSort = (nextKey: SortKey) => {
+        if (sortKey === nextKey) {
+            setSortDirection((current) => current === 'asc' ? 'desc' : 'asc');
+            return;
+        }
+
+        setSortKey(nextKey);
+        setSortDirection(nextKey === 'timestamp' ? 'desc' : 'asc');
+    };
+
+    const sortedTickets = useMemo(() => {
+        const getValue = (ticket: any): string | number => {
+            switch (sortKey) {
+                case 'system_id': return ticket.ticketNumber ?? '';
+                case 'company': return ticket.creator?.customerProfile?.companyName ?? '';
+                case 'customer': return ticket.creator?.fullName ?? '';
+                case 'subject': return ticket.subject ?? '';
+                case 'category': return getTicketSupportCategoryNames(ticket, supportCategoryLabels).join(' ');
+                case 'status': return t(`status.${ticket.status}`);
+                case 'priority': return t(`priority.${ticket.priority}`);
+                case 'assignee': return ticket.assignee?.fullName ?? '';
+                case 'timestamp': return Date.parse(ticket.createdAt ?? '') || 0;
+            }
+        };
+
+        return [...tickets].sort((left, right) => {
+            const leftValue = getValue(left);
+            const rightValue = getValue(right);
+            const comparison = typeof leftValue === 'number' && typeof rightValue === 'number'
+                ? leftValue - rightValue
+                : String(leftValue).localeCompare(String(rightValue), locale, { sensitivity: 'base' });
+
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+    }, [locale, sortDirection, sortKey, supportCategoryLabels, t, tickets]);
+
+    const sortableHeader = (key: SortKey, label: string, className = '') => {
+        const isActive = sortKey === key;
+        const icon = !isActive ? <ArrowUpDown className="h-3 w-3 opacity-40" /> : sortDirection === 'asc'
+            ? <ArrowUp className="h-3 w-3" />
+            : <ArrowDown className="h-3 w-3" />;
+
+        return (
+            <th aria-sort={isActive ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'} className={`px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest ${className}`}>
+                <button
+                    type="button"
+                    data-testid={`sort-${key}`}
+                    aria-label={`${t('table.sort')}: ${label}`}
+                    onClick={() => toggleSort(key)}
+                    className="inline-flex items-center gap-1.5 hover:text-primary transition-colors"
+                >
+                    {label}
+                    {icon}
+                </button>
+            </th>
+        );
+    };
 
     const load = useCallback(async (
         statusFilter: string = filter,
@@ -442,22 +506,22 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                                             }
                                         </button>
                                     </th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.system_id')}</th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.company')}</th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.customer')}</th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.subject')}</th>
-                                    <th className="px-4 w-32 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.category')}</th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">{t('table.header.status')}</th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-center">{t('table.header.priority')}</th>
-                                    <th className="px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">{t('table.header.assignee')}</th>
-                                    <th className="px-6 font-bold text-[10px] text-muted-foreground uppercase tracking-widest text-right">{t('table.header.timestamp')}</th>
+                                    {sortableHeader('system_id', t('table.header.system_id'))}
+                                    {sortableHeader('company', t('table.header.company'))}
+                                    {sortableHeader('customer', t('table.header.customer'))}
+                                    {sortableHeader('subject', t('table.header.subject'))}
+                                    {sortableHeader('category', t('table.header.category'), 'w-32')}
+                                    {sortableHeader('status', t('table.header.status'), 'text-center')}
+                                    {sortableHeader('priority', t('table.header.priority'), 'text-center')}
+                                    {sortableHeader('assignee', t('table.header.assignee'))}
+                                    {sortableHeader('timestamp', t('table.header.timestamp'), 'text-right')}
                                     {isAdmin && <th className="px-6 w-12"></th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {tickets.map((ticket) => {
+                                {sortedTickets.map((ticket) => {
                                     const isSelected = selectedIds.includes(ticket.id);
-                                    const categoryNames = getTicketCategoryNames(ticket, t('category.licensing'));
+                                    const categoryNames = getTicketSupportCategoryNames(ticket, supportCategoryLabels);
                                     return (
                                         <tr
                                             key={ticket.id}

@@ -712,6 +712,7 @@
       "error": "SYSTEM_COMMAND_ERROR: {message}"
     },
     "table": {
+      "sort": "Sort",
       "loading": "Waiting_for_Data_Logs",
       "empty": "Queue_Empty",
       "load_error": "Support requests could not be loaded",

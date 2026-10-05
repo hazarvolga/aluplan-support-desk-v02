@@ -736,6 +736,7 @@
       "error": "SİSTEM_KOMUTU_HATASI: {message}"
     },
     "table": {
+      "sort": "Sırala",
       "loading": "Veri Günlükleri Bekleniyor",
       "empty": "Kuyruk Boş",
       "load_error": "Destek talepleri yüklenemedi",
