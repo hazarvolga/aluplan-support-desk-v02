@@ -69,7 +69,9 @@ export const getTicketSupportCategoryNames = (ticket: any, labels: TicketSupport
         : getTicketCategoryDisplayName(ticket.department?.name || departmentValue, labels);
     const categories = [
         ...(ticket.tags?.includes('licensing') && labels.licensing ? [labels.licensing] : []),
-        ...(departmentCategory ? [departmentCategory] : []),
+        // Licensing is a support category, while the department is only the
+        // routing destination. Do not expose both as duplicate categories.
+        ...(!ticket.tags?.includes('licensing') && departmentCategory ? [departmentCategory] : []),
     ];
 
     return Array.from(new Set(categories.filter(Boolean)));

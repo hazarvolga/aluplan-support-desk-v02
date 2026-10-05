@@ -19,7 +19,14 @@ describe('ticket support category display', () => {
             tags: ['licensing'],
             department: { name: 'Teknik Destek' },
             suggestedCategories: ['modelleme', 'çökme'],
-        }, labels)).toEqual(['Lisans ve Aktivasyon', 'Teknik Destek']);
+        }, labels)).toEqual(['Lisans ve Aktivasyon']);
+    });
+
+    it('does not combine the licensing tag with the routing department', () => {
+        expect(getTicketSupportCategoryNames({
+            tags: ['licensing', 'KB_SENK', 'SLA_İHL'],
+            department: { name: 'Billing & Payments', slug: 'billing-payments' },
+        }, { ...labels, billing_payments: 'Fatura ve Ödemeler' })).toEqual(['Lisans ve Aktivasyon']);
     });
 
     it('uses the stable department slug when the stored name is legacy', () => {
