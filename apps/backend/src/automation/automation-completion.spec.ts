@@ -18,6 +18,41 @@ jest.mock('../email/email.service', () => ({ EmailService: class {} }));
 
 // Direct handler completion only; EventEmitter dispatch and shutdown are not joined here.
 describe('Automation email child completion', () => {
+    it('does not send an outdated closure survey after the ticket has reopened', async () => {
+        const email = { sendTicketStatusChanged: jest.fn(), sendCsatSurvey: jest.fn() };
+        const service = new AutomationService(
+            { ticket: { findUnique: async () => ({ id: 'synthetic', status: TicketStatus.OPEN, creator: { email: 'customer@example.invalid' } }) } } as unknown as PrismaService,
+            { log: async () => undefined } as unknown as AuditService, email as unknown as EmailService, testConfig,
+        );
+        await service.handleStatusChange({ ticketId: 'synthetic', oldStatus: TicketStatus.RESOLVED, newStatus: TicketStatus.CLOSED });
+        expect(email.sendTicketStatusChanged).not.toHaveBeenCalled();
+        expect(email.sendCsatSurvey).not.toHaveBeenCalled();
+    });
+
+    it.each([TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW])('does not send a survey before confirmation at %s', async (status) => {
+        const email = { sendTicketStatusChanged: jest.fn().mockResolvedValue(undefined), sendTicketResolved: jest.fn().mockResolvedValue(undefined), sendCsatSurvey: jest.fn() };
+        const service = new AutomationService(
+            { ticket: { findUnique: async () => ({ id: 'synthetic', status, creator: { email: 'customer@example.invalid' } }) } } as unknown as PrismaService,
+            { log: async () => undefined } as unknown as AuditService, email as unknown as EmailService, testConfig,
+        );
+        await service.handleStatusChange({ ticketId: 'synthetic', oldStatus: TicketStatus.OPEN, newStatus: status });
+        expect(email.sendCsatSurvey).not.toHaveBeenCalled();
+        expect(email.sendTicketStatusChanged).toHaveBeenCalledWith(expect.objectContaining({ isReviewPending: true }));
+    });
+
+    it('invites optional feedback after closure and explains no-response closure', async () => {
+        const email = { sendTicketStatusChanged: jest.fn().mockResolvedValue(undefined), sendCsatSurvey: jest.fn().mockResolvedValue(undefined) };
+        const ticket = { id: 'bfaa5692-5b7d-40fb-94fd-b6ac12abaaff', creator: { email: 'customer@example.invalid', language: 'en' } };
+        const service = new AutomationService(
+            { ticket: { findUnique: async () => ticket } } as unknown as PrismaService,
+            { log: async () => undefined } as unknown as AuditService, email as unknown as EmailService, testConfig,
+        );
+        await service.handleStatusChange({ ticketId: ticket.id, oldStatus: TicketStatus.PENDING_CUSTOMER_REVIEW,
+            newStatus: TicketStatus.CLOSED, closureReason: 'NO_CUSTOMER_RESPONSE' });
+        expect(email.sendTicketStatusChanged).toHaveBeenCalledWith(expect.objectContaining({ isAutoClosed: true, locale: 'en' }));
+        expect(email.sendCsatSurvey).toHaveBeenCalledWith(expect.objectContaining({ ticketUrl: `https://example.invalid/en/tickets/${ticket.id}` }));
+    });
+
     const methods = ['sendNewMessage', 'sendTicketCreated', 'sendNewTicketToStaff',
         'sendTicketStatusChanged', 'sendTicketResolved', 'sendCsatSurvey',
         'sendWelcomeCustomer', 'sendSecurityAlert', 'sendTwoFactorAuth', 'sendSlaBreachWarning'] as const;
@@ -56,10 +91,9 @@ describe('Automation email child completion', () => {
             );
             try {
                 await expect(service.handleStatusChange({ ticketId, oldStatus: TicketStatus.NEW,
-                    newStatus: TicketStatus.RESOLVED })).resolves.toBeUndefined();
+                    newStatus: failed === 'sendCsatSurvey' ? TicketStatus.CLOSED : TicketStatus.RESOLVED })).resolves.toBeUndefined();
                 expect(email.sendTicketStatusChanged).toHaveBeenCalledTimes(1);
-                expect(email.sendTicketResolved).toHaveBeenCalledTimes(1);
-                expect(email.sendCsatSurvey).toHaveBeenCalledTimes(1);
+                expect(email[failed]).toHaveBeenCalledTimes(1);
                 expect(errorLog).toHaveBeenCalledTimes(1);
                 expect(JSON.stringify(errorLog.mock.calls)).not.toContain('synthetic-sensitive-error');
             } finally { errorLog.mockRestore(); }
@@ -84,7 +118,7 @@ describe('Automation email child completion', () => {
             sendNewTicketToStaff: () => service.handleTicketCreated(ticket),
             sendTicketStatusChanged: () => service.handleStatusChange({ ticketId: ticket.id, oldStatus: TicketStatus.NEW, newStatus: TicketStatus.RESOLVED }),
             sendTicketResolved: () => service.handleStatusChange({ ticketId: ticket.id, oldStatus: TicketStatus.NEW, newStatus: TicketStatus.RESOLVED }),
-            sendCsatSurvey: () => service.handleStatusChange({ ticketId: ticket.id, oldStatus: TicketStatus.NEW, newStatus: TicketStatus.RESOLVED }),
+            sendCsatSurvey: () => service.handleStatusChange({ ticketId: ticket.id, oldStatus: TicketStatus.RESOLVED, newStatus: TicketStatus.CLOSED }),
             sendWelcomeCustomer: () => service.handleUserCreated(ticket.creator),
             sendSecurityAlert: () => service.handleSecurityAlert({ email: 'customer@example.invalid', location: 'Synthetic', ipValue: '127.0.0.1' }),
             sendTwoFactorAuth: () => service.handle2faRequested({ email: 'customer@example.invalid', code: 'synthetic-only' }),
@@ -123,15 +157,15 @@ describe('Automation email child completion', () => {
             testConfig,
         );
 
-        await service.handleStatusChange({ ticketId: ticket.id, oldStatus: TicketStatus.NEW, newStatus: TicketStatus.RESOLVED });
+        await service.handleStatusChange({ ticketId: ticket.id, oldStatus: TicketStatus.RESOLVED, newStatus: TicketStatus.CLOSED });
 
         const emailSurveyUrl = email.sendCsatSurvey.mock.calls[0][0].surveyUrl as string;
         const parsedUrl = new URL(emailSurveyUrl);
         const token = parsedUrl.pathname.split('/').at(-1)!;
         expect(parsedUrl.origin).toBe('https://example.invalid');
-        expect(parsedUrl.pathname).toMatch(/^\/tr\/feedback\/v1\./);
+        expect(parsedUrl.pathname).toMatch(/^\/tr\/feedback\/v2\./);
         expect(verifyCsatFeedbackToken(token, 'synthetic-csat-secret')).toBe(ticket.id);
-        expect(email.sendTicketResolved.mock.calls[0][0]).not.toHaveProperty('surveyUrl');
+        expect(email.sendTicketResolved).not.toHaveBeenCalled();
     });
 
     it('does not send a second survey after a ticket has already been rated and reopened', async () => {

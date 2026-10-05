@@ -30,6 +30,8 @@ describe('KbSummarizerProcessor privacy', () => {
             userId: 'customer-1',
             subject: 'License issue',
             tags: [],
+            status: 'CLOSED',
+            satisfactionScore: 5,
             knowledgeBaseAdded: false,
             messages: [
                 { senderId: 'customer-1', message: 'Public customer issue user@example.com', isInternal: false, deletedAt: null },
@@ -67,6 +69,8 @@ describe('KbSummarizerProcessor privacy', () => {
             userId: 'customer-1',
             subject: 'License issue',
             tags: [],
+            status: 'CLOSED',
+            satisfactionScore: 5,
             knowledgeBaseAdded: false,
             messages: [
                 { senderId: 'agent-1', message: 'PRIVATE COMMERCIAL NOTE', isInternal: true },
@@ -95,6 +99,8 @@ describe('KbSummarizerProcessor privacy', () => {
             userId: 'customer-1',
             subject: 'Contact user@example.com about licensing',
             tags: [],
+            status: 'CLOSED',
+            satisfactionScore: 5,
             knowledgeBaseAdded: false,
             messages: [
                 { senderId: 'customer-1', message: 'Public issue', isInternal: false, deletedAt: null },

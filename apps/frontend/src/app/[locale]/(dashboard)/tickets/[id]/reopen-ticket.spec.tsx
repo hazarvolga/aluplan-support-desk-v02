@@ -59,6 +59,7 @@ describe('closed ticket reopening', () => {
         mocks.get.mockResolvedValue({ ...ticket, status });
         await mount();
         expect(screen.queryByRole('button', { name: 'reopen_ticket' })).not.toBeInTheDocument();
+        expect(screen.getByLabelText('Reply fixture')).toBeEnabled();
     });
     it('allows the explicit staff wildcard contract', async () => {
         mocks.me.mockResolvedValue({ ...staff, role: 'super-admin', permissions: ['*'] });

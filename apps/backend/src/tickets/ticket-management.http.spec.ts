@@ -7,6 +7,7 @@ import { MaintenanceWorkService } from '../common/services/maintenance-work.serv
 import { TicketAccessService } from '../common/services/ticket-access.service';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
+import { ConfigService } from '@nestjs/config';
 
 // Real controller, RBAC and services; synthetic authenticated principals and storage.
 // JWT/cookie/CSRF validation is covered separately, not claimed by this suite.
@@ -39,14 +40,15 @@ describe('Ticket management HTTP authorization', () => {
                 updateMany: update,
                 update,
             },
-            ticketMessage: { createMany: messages },
+            ticketMessage: { createMany: messages, create: jest.fn(async ({ data }) => ({ id: 'message', ...data })) },
             $transaction: jest.fn(async (cb: any) => typeof cb === 'function' ? cb(prisma) : Promise.all(cb)),
         };
-        const service = new TicketsService(prisma as any, {} as any, {} as any, { emit: jest.fn() } as any,
+        const service = new TicketsService(prisma as any, {} as any, { maskSensitiveData: (value: string) => value } as any, { emit: jest.fn() } as any,
             {} as any, {} as any, new TicketAccessService(prisma as any), new MaintenanceWorkService());
         const module = await Test.createTestingModule({
             controllers: [TicketsController],
             providers: [RbacGuard, { provide: TicketsService, useValue: service },
+                { provide: ConfigService, useValue: {} },
                 { provide: NotificationsGateway, useValue: { emitTicketUpdated: jest.fn(), emitBulkUpdate: jest.fn() } }],
         }).compile();
         app = module.createNestApplication({ logger: false });
@@ -59,9 +61,30 @@ describe('Ticket management HTTP authorization', () => {
 
     afterEach(async () => { await app?.close(); });
 
-    it('preserves the customer close/review button on their own ticket', async () => {
+    it('customer resolution confirmation closes their own active ticket through the explicit action', async () => {
+        await request(app.getHttpServer()).post('/tickets/own/resolution')
+            .set('x-test-principal', 'customer').send({ decision: 'CONFIRM' }).expect(201);
+        expect(update).toHaveBeenCalledTimes(1);
+        expect(update.mock.calls[0][0].data).not.toHaveProperty('satisfactionScore');
+    });
+
+    it('customer cannot propose arbitrary lifecycle transitions through the old review route', async () => {
         await request(app.getHttpServer()).patch('/tickets/own/status/PENDING_CUSTOMER_REVIEW')
-            .set('x-test-principal', 'customer').expect(200);
+            .set('x-test-principal', 'customer').expect(403);
+        expect(update).not.toHaveBeenCalled();
+    });
+
+    it('customer cannot confirm another customer ticket', async () => {
+        await request(app.getHttpServer()).post('/tickets/other/resolution')
+            .set('x-test-principal', 'customer').send({ decision: 'CONFIRM' }).expect(403);
+        expect(update).not.toHaveBeenCalled();
+    });
+
+    it.each(['staff', 'admin'])('%s may close with a reason but cannot submit an owner resolution decision', async actor => {
+        await request(app.getHttpServer()).patch('/tickets/own/close').set('x-test-principal', actor)
+            .send({ reason: 'Duplicate issue' }).expect(200);
+        await request(app.getHttpServer()).post('/tickets/own/resolution').set('x-test-principal', actor)
+            .send({ decision: 'CONFIRM' }).expect(403);
         expect(update).toHaveBeenCalledTimes(1);
     });
 

@@ -19,12 +19,14 @@ describe('SlaCronService', () => {
                 update: jest.fn().mockResolvedValue({}),
                 updateMany: jest.fn().mockResolvedValue({ count: 0 }),
             },
+            ticketMessage: { findFirst: jest.fn().mockResolvedValue(null) },
         };
         const mockEventEmitter = {
             emitAsync: jest.fn().mockResolvedValue([]),
         };
         const mockNotificationsGateway = {
             emitSlaBreached: jest.fn(),
+            emitTicketUpdated: jest.fn().mockResolvedValue(undefined),
         };
         mockQueue = {
             add: jest.fn(),
@@ -127,20 +129,68 @@ describe('SlaCronService', () => {
         expect(notificationsGateway.emitSlaBreached).toHaveBeenCalledWith(mockBreachedTicket);
     });
 
-    it('should auto-close tickets that have been resolved for 5+ days', async () => {
-        jest.spyOn(prismaService.ticket, 'updateMany').mockResolvedValue({ count: 3 } as any);
-
+    it.each(['RESOLVED', 'PENDING_CUSTOMER_REVIEW'])('closes overdue %s with an audit trail and lifecycle notifications', async (status) => {
+        const ticket = { id: 'overdue', status, updatedAt: new Date('2026-01-01'), resolvedAt: new Date('2026-01-01') };
+        jest.spyOn(prismaService.ticket, 'findMany').mockResolvedValueOnce([]).mockResolvedValueOnce([ticket] as any);
+        jest.spyOn(prismaService.ticket, 'update').mockResolvedValue({ ...ticket, status: 'CLOSED' } as any);
         await service.autoCloseResolvedTickets();
+        expect(prismaService.ticket.findMany).toHaveBeenLastCalledWith(expect.objectContaining({
+            where: expect.objectContaining({ deletedAt: null, status: { in: ['RESOLVED', 'PENDING_CUSTOMER_REVIEW'] } }),
+            take: 100,
+        }));
+        expect(prismaService.ticket.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: expect.objectContaining({ id: ticket.id, status, deletedAt: null, updatedAt: ticket.updatedAt }),
+            data: expect.objectContaining({
+                status: 'CLOSED', closedAt: expect.any(Date),
+                messages: { create: expect.objectContaining({ isInternal: true, metadata: expect.objectContaining({ action: 'AUTO_CLOSED_NO_RESPONSE' }) }) },
+            }),
+        }));
+        expect(eventEmitter.emitAsync).toHaveBeenCalledWith('ticket.status_changed', expect.objectContaining({
+            ticketId: ticket.id, oldStatus: status, newStatus: 'CLOSED', closureReason: 'NO_CUSTOMER_RESPONSE',
+        }));
+        expect(notificationsGateway.emitTicketUpdated).toHaveBeenCalledWith(expect.objectContaining({ id: ticket.id, status: 'CLOSED' }));
+    });
 
-        expect(prismaService.ticket.updateMany).toHaveBeenCalledWith({
-            where: {
-                status: 'RESOLVED',
-                resolvedAt: { lt: expect.any(Date) }
-            },
-            data: {
-                status: 'CLOSED',
-                closedAt: expect.any(Date)
-            }
-        });
+    it('does not close or notify when a customer reply wins the conditional update', async () => {
+        jest.spyOn(prismaService.ticket, 'findMany').mockResolvedValueOnce([]).mockResolvedValueOnce([
+            { id: 'reply-won', status: 'RESOLVED', updatedAt: new Date(0), resolvedAt: new Date(0) },
+        ] as any);
+        jest.spyOn(prismaService.ticket, 'update').mockRejectedValue({ code: 'P2025' });
+        await service.autoCloseResolvedTickets();
+        expect(eventEmitter.emitAsync).not.toHaveBeenCalled();
+        expect(notificationsGateway.emitTicketUpdated).not.toHaveBeenCalled();
+    });
+
+    it('does not infer a resolution date from an old update timestamp', async () => {
+        jest.spyOn(prismaService.ticket, 'findMany').mockResolvedValueOnce([]).mockResolvedValueOnce([
+            { id: 'legacy-review', status: 'PENDING_CUSTOMER_REVIEW', resolvedAt: null, updatedAt: new Date(0) },
+        ] as any);
+        await service.autoCloseResolvedTickets();
+        expect(prismaService.ticket.update).not.toHaveBeenCalled();
+        expect(eventEmitter.emitAsync).not.toHaveBeenCalled();
+    });
+
+    it('sends one reminder per resolution proposal before the five-day deadline', async () => {
+        const ticket = { id: 'review', status: 'PENDING_CUSTOMER_REVIEW', updatedAt: new Date(0), resolvedAt: new Date(0) };
+        jest.spyOn(prismaService.ticket, 'findMany').mockResolvedValueOnce([ticket] as any).mockResolvedValueOnce([]);
+        await service.autoCloseResolvedTickets();
+        expect(prismaService.ticket.update).toHaveBeenCalledWith(expect.objectContaining({
+            data: { messages: { create: expect.objectContaining({
+                isInternal: true,
+                metadata: { action: 'TICKET_REVIEW_REMINDER', resolutionProposedAt: ticket.resolvedAt.toISOString() },
+            }) } },
+        }));
+        expect(eventEmitter.emitAsync).toHaveBeenCalledWith('ticket.review_reminder', { ticketId: ticket.id });
+        expect(notificationsGateway.emitTicketUpdated).not.toHaveBeenCalled();
+    });
+
+    it('does not repeat an already recorded reminder for the same proposal', async () => {
+        jest.spyOn(prismaService.ticket, 'findMany').mockResolvedValueOnce([
+            { id: 'review', status: 'RESOLVED', resolvedAt: new Date(0), updatedAt: new Date(0) },
+        ] as any).mockResolvedValueOnce([]);
+        (prismaService as any).ticketMessage.findFirst.mockResolvedValue({ id: 'sent-reminder' });
+        await service.autoCloseResolvedTickets();
+        expect(prismaService.ticket.update).not.toHaveBeenCalled();
+        expect(eventEmitter.emitAsync).not.toHaveBeenCalled();
     });
 });

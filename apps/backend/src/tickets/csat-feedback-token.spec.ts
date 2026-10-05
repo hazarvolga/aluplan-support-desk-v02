@@ -1,6 +1,13 @@
-import { generateCsatFeedbackToken, verifyCsatFeedbackToken } from './csat-feedback-token';
+import { generateCsatFeedbackToken, verifyCsatFeedbackScope, verifyCsatFeedbackToken } from './csat-feedback-token';
 
 describe('CSAT feedback link tokens', () => {
+    it('binds a v2 token to the exact resolution epoch and authenticates that epoch', () => {
+        const ticketId = 'bfaa5692-5b7d-40fb-94fd-b6ac12abaaff';
+        const token = generateCsatFeedbackToken(ticketId, 1_800_000_000, 'synthetic-secret', 1_700_000_000_000);
+        expect(verifyCsatFeedbackScope(token, 'synthetic-secret', 1_700_000_000)).toEqual({ ticketId, resolutionEpoch: 1_700_000_000_000 });
+        expect(verifyCsatFeedbackScope(token.replace('1700000000000', '1700000000001'), 'synthetic-secret', 1_700_000_000)).toBeNull();
+        expect(verifyCsatFeedbackScope(token, 'synthetic-secret', 1_800_000_000)).toBeNull();
+    });
     it('round-trips a ticket-scoped token before its expiry', () => {
         const ticketId = 'bfaa5692-5b7d-40fb-94fd-b6ac12abaaff';
         const secret = 'synthetic-purpose-specific-secret';

@@ -29,6 +29,7 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
             update: jest.fn(),
             updateMany: jest.fn(),
         },
+        ticketMessage: { findFirst: jest.fn().mockResolvedValue(null) },
         $transaction: jest.fn((cb: any) => cb(mockPrisma)),
     };
 
@@ -103,10 +104,10 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
                 where: {
                     id: validTicketId,
                     deletedAt: null,
-                    status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                    status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED, TicketStatus.CLOSED] },
                     satisfactionScore: null,
                 },
-                select: { ticketNumber: true },
+                select: { ticketNumber: true, resolvedAt: true },
             });
         });
 
@@ -126,12 +127,13 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
                 where: {
                     id: validTicketId,
                     deletedAt: null,
-                    status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                    status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED, TicketStatus.CLOSED] },
                     satisfactionScore: null,
                 },
-                select: { userId: true },
+                select: { userId: true, resolvedAt: true, updatedAt: true },
             });
-            expect(submit).toHaveBeenCalledWith(validTicketId, 4, 'Synthetic feedback', ownerUserId);
+            expect(submit).toHaveBeenCalledWith(validTicketId, 4, 'Synthetic feedback', ownerUserId,
+                { resolvedAt: undefined, updatedAt: undefined });
         });
 
         it('does not expose or accept a survey for a previously rated ticket after reopening', async () => {
@@ -170,7 +172,7 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
                 id: validTicketId,
                 ticketNumber: 'SUP-00100',
                 userId: ownerUserId,
-                status: TicketStatus.CLOSED,
+                status: TicketStatus.RESOLVED,
                 satisfactionScore: 5,
                 satisfactionComment: 'Mükemmel destek, teşekkürler',
                 closedAt: new Date(),
@@ -179,21 +181,23 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
 
             const result = await service.submitFeedback(validTicketId, 5, 'Mükemmel destek, teşekkürler', ownerUserId);
 
-            expect(result.status).toBe(TicketStatus.CLOSED);
+            expect(result.status).toBe(TicketStatus.RESOLVED);
             expect(result.satisfactionScore).toBe(5);
             expect(prisma.ticket.update).toHaveBeenCalledWith({
                 where: {
                     id: validTicketId,
                     userId: ownerUserId,
                     deletedAt: null,
-                    status: { in: [TicketStatus.PENDING_CUSTOMER_REVIEW, TicketStatus.RESOLVED] },
+                    status: TicketStatus.RESOLVED,
+                    updatedAt: undefined,
                     satisfactionScore: null,
                 },
                 data: {
                     satisfactionScore: 5,
                     satisfactionComment: 'Mükemmel destek, teşekkürler',
-                    status: TicketStatus.CLOSED,
-                    closedAt: expect.any(Date),
+                    messages: { create: expect.objectContaining({ isInternal: true,
+                        metadata: expect.objectContaining({ action: 'TICKET_FEEDBACK_SUBMITTED', score: 5 }),
+                    }) },
                 },
             });
             // Score >= 4 triggers self-learning KB summarize
@@ -215,7 +219,7 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
                 id: validTicketId,
                 ticketNumber: 'SUP-00101',
                 userId: ownerUserId,
-                status: TicketStatus.CLOSED,
+                status: TicketStatus.PENDING_CUSTOMER_REVIEW,
                 satisfactionScore: 3,
                 satisfactionComment: null,
                 closedAt: new Date(),
@@ -224,7 +228,7 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
 
             const result = await service.submitFeedback(validTicketId, 3, undefined, ownerUserId);
 
-            expect(result.status).toBe(TicketStatus.CLOSED);
+            expect(result.status).toBe(TicketStatus.PENDING_CUSTOMER_REVIEW);
             expect(result.satisfactionScore).toBe(3);
             // Score < 4 must NOT trigger kb_summarize
             expect(eventEmitter.emit).not.toHaveBeenCalledWith('ticket.kb_summarize', expect.anything());
@@ -340,7 +344,7 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
             expect(eventEmitter.emit).not.toHaveBeenCalled();
         });
 
-        it('should REJECT with BadRequestException when ticket status is ineligible (e.g. OPEN or CLOSED)', async () => {
+        it('rejects active tickets but accepts closed tickets for independent feedback', async () => {
             const openTicket = {
                 id: validTicketId,
                 ticketNumber: 'SUP-00105',
@@ -360,13 +364,9 @@ describe('SEC-01: CSAT Feedback Security & Ownership', () => {
                 status: TicketStatus.CLOSED,
             };
             prisma.ticket.findFirst.mockResolvedValue(closedTicket);
-
-            await expect(
-                service.submitFeedback(validTicketId, 5, 'Already closed', ownerUserId)
-            ).rejects.toThrow(BadRequestException);
-
-            expect(prisma.ticket.update).not.toHaveBeenCalled();
-            expect(eventEmitter.emit).not.toHaveBeenCalled();
+            prisma.ticket.update.mockResolvedValue({ ...closedTicket, satisfactionScore: 5 });
+            await expect(service.submitFeedback(validTicketId, 5, 'Already closed', ownerUserId)).resolves.toMatchObject({ status: 'CLOSED' });
+            expect(prisma.ticket.update.mock.calls[0][0].data).not.toHaveProperty('status');
         });
 
         it('should handle P2025 race/ineligibility error and rethrow as BadRequestException', async () => {

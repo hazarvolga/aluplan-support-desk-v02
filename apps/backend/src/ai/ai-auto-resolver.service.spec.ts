@@ -31,6 +31,12 @@ describe('AiAutoResolverService - Auto Learning', () => {
 
     beforeEach(async () => {
         mockPrismaService.ticketMessage.update ??= jest.fn();
+        mockPrismaService.ticket.findFirst.mockResolvedValue({
+            status: 'CLOSED',
+            satisfactionScore: 5,
+            deletedAt: null,
+            messages: [],
+        });
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [

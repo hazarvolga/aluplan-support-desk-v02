@@ -83,7 +83,7 @@ describe('FaqService - Knowledge Base CRUD', () => {
 
     describe('FAQ provenance', () => {
         it('extracts only highly-rated tickets with a public agent solution', async () => {
-            localMockPrismaService.ticket = { findMany: jest.fn().mockResolvedValue([{
+            localMockPrismaService.ticket = { findFirst: jest.fn().mockResolvedValue({ status: 'CLOSED', satisfactionScore: 5, deletedAt: null, messages: [] }), findMany: jest.fn().mockResolvedValue([{
                 id: 'ticket-solution', userId: 'customer-1', subject: 'License issue', tags: ['license'],
                 satisfactionScore: 5,
                 messages: [
@@ -106,7 +106,7 @@ describe('FaqService - Knowledge Base CRUD', () => {
         });
 
         it('does not extract a candidate without a public agent solution', async () => {
-            localMockPrismaService.ticket = { findMany: jest.fn().mockResolvedValue([{
+            localMockPrismaService.ticket = { findFirst: jest.fn().mockResolvedValue({ status: 'CLOSED', satisfactionScore: 5, deletedAt: null, messages: [] }), findMany: jest.fn().mockResolvedValue([{
                 id: 'ticket-unresolved', userId: 'customer-1', subject: 'Still broken', tags: [], satisfactionScore: 5,
                 messages: [
                     { senderId: 'customer-1', message: 'Still broken', isInternal: false, deletedAt: null },
@@ -119,7 +119,7 @@ describe('FaqService - Knowledge Base CRUD', () => {
         });
 
         it('does not treat another customer message as a verified support solution', async () => {
-            localMockPrismaService.ticket = { findMany: jest.fn().mockResolvedValue([{
+            localMockPrismaService.ticket = { findFirst: jest.fn().mockResolvedValue({ status: 'CLOSED', satisfactionScore: 5, deletedAt: null, messages: [] }), findMany: jest.fn().mockResolvedValue([{
                 id: 'ticket-customer-cc', userId: 'customer-1', subject: 'Still broken', tags: [], satisfactionScore: 5,
                 messages: [
                     { senderId: 'customer-1', sender: { role: { name: 'CUSTOMER' } }, message: 'Still broken', isInternal: false, deletedAt: null },
@@ -132,7 +132,7 @@ describe('FaqService - Knowledge Base CRUD', () => {
         });
 
         it('masks PII in fallback candidates when the formatter response is unusable', async () => {
-            localMockPrismaService.ticket = { findMany: jest.fn().mockResolvedValue([{
+            localMockPrismaService.ticket = { findFirst: jest.fn().mockResolvedValue({ status: 'CLOSED', satisfactionScore: 5, deletedAt: null, messages: [] }), findMany: jest.fn().mockResolvedValue([{
                 id: 'ticket-pii', userId: 'customer-1', subject: 'Activate AB12CD34EF56 for user@example.com', tags: [], satisfactionScore: 5,
                 messages: [
                     { senderId: 'customer-1', sender: { role: { name: 'CUSTOMER' } }, message: 'Please help', isInternal: false, deletedAt: null },

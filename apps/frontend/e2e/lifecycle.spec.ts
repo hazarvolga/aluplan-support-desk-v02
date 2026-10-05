@@ -9,8 +9,8 @@ import { TEST_USERS } from './helpers/auth';
  * - API: Customer auth → ticket creation → customer message → admin auth
  *        → admin reply → admin sets PENDING_CUSTOMER_REVIEW
  * - UI:  Customer login → navigate to ticket → verify admin reply visible
- *        → click a star rating → click save_and_close button
- *        → verify redirect to /my-tickets (ticket closed)
+ *        → confirm resolution without rating, remain on ticket
+ *        → optionally submit a rating without changing CLOSED status
  */
 
 const BASE_API = 'http://localhost:4000/api/v1';
@@ -134,34 +134,23 @@ test.describe('Ticket Lifecycle Orchestration', () => {
         }
         console.log('✅ Admin reply confirmed visible');
 
-        // CSAT block should be visible (ticket is PENDING_CUSTOMER_REVIEW)
-        // The block heading from locale says 'Çözüm Değerlendirmeniz' or similar
-        // We just need to click any star (buttons with type="button" containing Star icon)
-        const starButtons = page.locator('button[type="button"]').filter({ has: page.locator('svg') });
-        // More targeted: the star rating buttons near the rating section
-        // The CSAT section has exactly 5 star buttons in a 'flex items-center gap-1 py-1' div
-        const csatStars = page.locator('div.flex.items-center.gap-1.py-1 > button');
-        await expect(csatStars.first()).toBeVisible({ timeout: 20000 });
+        const closure = page.waitForResponse(response => response.url().endsWith(`/tickets/${ticketId}/resolution`) && response.request().method() === 'POST');
+        await page.getByRole('button', { name: /Sorunum çözüldü|My issue is resolved|Mein Problem ist gelöst/ }).click();
+        const closedResponse = await closure;
+        expect(closedResponse.ok()).toBe(true);
+        const closed = await closedResponse.json();
+        expect(closed.status).toBe('CLOSED');
+        expect(closed.satisfactionScore).toBeNull();
+        await expect(page).toHaveURL(new RegExp(`/tickets/${ticketId}$`));
 
-        // Click the 5th star (highest rating)
-        await csatStars.nth(4).click();
-        console.log('✅ Clicked 5-star rating');
-
-        // After clicking a star, the Textarea and submit button appear
-        // The submit button has text from i18n key 'save_and_close'
-        // Look for the orange submit button
-        const submitBtn = page.locator('button.bg-orange-600');
-        await expect(submitBtn).toBeVisible({ timeout: 10000 });
-        await submitBtn.click();
-        console.log('✅ Clicked save_and_close button');
-
-        // Should redirect to /my-tickets after closing
-        await page.waitForURL(/my-tickets/, { timeout: 120000 });
-        console.log('✅ Redirected to /my-tickets after close — Ticket is CLOSED');
-
-        // Final confirmation: the ticket no longer shows as "open"
-        // or we just confirm we're on the my-tickets list page
-        expect(page.url()).toContain('my-tickets');
-        console.log('✅✅ LIFECYCLE COMPLETE: Full Customer→Admin→Customer ticket lifecycle verified!');
+        // Rating is optional and cannot close, reopen, or redirect the ticket.
+        await page.getByRole('radio').nth(4).locator('..').click();
+        const feedback = page.waitForResponse(response => response.url().endsWith(`/tickets/${ticketId}/feedback`) && response.request().method() === 'POST');
+        await page.getByRole('button', { name: /Değerlendirmeyi gönder|Submit rating|Bewertung senden/ }).click();
+        const ratedResponse = await feedback;
+        expect(ratedResponse.ok()).toBe(true);
+        expect(await ratedResponse.json()).toMatchObject({ status: 'CLOSED', satisfactionScore: 5 });
+        await expect(page).toHaveURL(new RegExp(`/tickets/${ticketId}$`));
+        await expect(page.getByRole('radio')).toHaveCount(0);
     });
 });

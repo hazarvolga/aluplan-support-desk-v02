@@ -18,6 +18,7 @@ describe('public email CSAT flow', () => {
         await act(async () => { render(<PublicFeedbackPage params={params} />); });
         expect(await screen.findByText(/SUP-SYNTHETIC/)).toBeInTheDocument();
         expect(mocks.getCsatSurvey).toHaveBeenCalledWith('signed.synthetic.token');
+        expect(screen.getByText('status_disclaimer')).toBeInTheDocument();
 
         const ratingInputs = screen.getAllByRole('radio');
         expect(ratingInputs).toHaveLength(5);
@@ -45,7 +46,8 @@ describe('public email CSAT flow', () => {
         await screen.findByText(/SUP-SYNTHETIC/);
         expect(screen.getByRole('button', { name: 'submit' })).toBeDisabled();
         fireEvent.click(screen.getAllByRole('radio')[2]);
-        fireEvent.click(screen.getByRole('button', { name: 'submit' }));
+        const submit = screen.getByRole('button', { name: 'submit' });
+        act(() => { submit.click(); submit.click(); });
         expect(screen.getByRole('button', { name: 'submitting' })).toBeDisabled();
         await act(async () => resolveSubmit({ submitted: true }));
         expect(await screen.findByRole('heading', { name: 'success_title' })).toBeInTheDocument();

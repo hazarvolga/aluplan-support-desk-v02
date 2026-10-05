@@ -17,6 +17,7 @@ describe('TicketClusteringService', () => {
     it('builds cluster FAQ context from a verified public agent solution only', async () => {
         const prisma = {
             ticket: {
+                findFirst: jest.fn().mockResolvedValue({ status: 'CLOSED', satisfactionScore: 5, deletedAt: null, messages: [] }),
                 updateMany: jest.fn().mockResolvedValue({ count: 1 }),
                 findMany: jest.fn().mockResolvedValue([{
                     id: 'ticket-1',
@@ -50,6 +51,7 @@ describe('TicketClusteringService', () => {
     it('does not create a cluster FAQ when any ticket lacks a verified solution', async () => {
         const prisma = {
             ticket: {
+                findFirst: jest.fn().mockResolvedValue({ status: 'CLOSED', satisfactionScore: 5, deletedAt: null, messages: [] }),
                 findMany: jest.fn().mockResolvedValue([{
                     id: 'ticket-1', userId: 'customer-1', subject: 'Unresolved', description: 'Still broken',
                     satisfactionScore: 5,
@@ -70,6 +72,7 @@ describe('TicketClusteringService', () => {
     it('does not create a candidate when the model omits a usable answer', async () => {
         const prisma = {
             ticket: {
+                findFirst: jest.fn().mockResolvedValue({ status: 'CLOSED', satisfactionScore: 5, deletedAt: null, messages: [] }),
                 findMany: jest.fn().mockResolvedValue([{
                     id: 'ticket-1', userId: 'customer-1', subject: 'License issue', description: 'Activation',
                     satisfactionScore: 5,
@@ -91,6 +94,7 @@ describe('TicketClusteringService', () => {
     it('does not treat another customer message as a verified solution', async () => {
         const prisma = {
             ticket: {
+                findFirst: jest.fn().mockResolvedValue({ status: 'CLOSED', satisfactionScore: 5, deletedAt: null, messages: [] }),
                 findMany: jest.fn().mockResolvedValue([{
                     id: 'ticket-1', userId: 'customer-1', subject: 'License issue', description: 'Activation',
                     satisfactionScore: 5,
@@ -128,6 +132,7 @@ describe('TicketClusteringService', () => {
     it('masks PII echoed by the cluster model before persistence', async () => {
         const prisma = {
             ticket: {
+                findFirst: jest.fn().mockResolvedValue({ status: 'CLOSED', satisfactionScore: 5, deletedAt: null, messages: [] }),
                 findMany: jest.fn().mockResolvedValue([{
                     id: 'ticket-1', userId: 'customer-1', subject: 'License issue', description: 'Activation',
                     satisfactionScore: 5,

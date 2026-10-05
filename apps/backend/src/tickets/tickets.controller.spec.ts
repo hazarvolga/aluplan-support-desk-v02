@@ -79,7 +79,7 @@ describe('TicketsController', () => {
             service.getPublicCsatSurvey.mockResolvedValue({ ticketNumber: 'SUP-SYNTHETIC' });
 
             await expect(controller.getPublicCsatSurvey(token)).resolves.toEqual({ ticketNumber: 'SUP-SYNTHETIC' });
-            expect(service.getPublicCsatSurvey).toHaveBeenCalledWith(ticketId);
+            expect(service.getPublicCsatSurvey).toHaveBeenCalledWith(ticketId, undefined);
         });
     });
 

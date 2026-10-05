@@ -650,7 +650,7 @@ describe('TicketsService', () => {
 
                 // Assert
                 expect(prisma.ticket.update).toHaveBeenCalledWith(
-                    expect.objectContaining({ data: { status: 'OPEN' } })
+                    expect.objectContaining({ data: expect.objectContaining({ status: 'OPEN' }) })
                 );
             });
 
@@ -768,14 +768,14 @@ describe('TicketsService', () => {
         });
 
         describe('transition', () => {
-            it('should set closedAt when transitioning to CLOSED', async () => {
+            it('sets closedAt when authorized staff close with a reason', async () => {
                 // Arrange
                 const ticket = { id: 'tik1', status: 'RESOLVED', ticketNumber: 'SUP-00001' };
                 prisma.ticket.findFirst.mockResolvedValue(ticket);
                 prisma.ticket.update.mockResolvedValue({ ...ticket, status: 'CLOSED' });
 
                 // Act
-                await service.transition('tik1', TicketStatus.CLOSED, { sub: 'agent1', role: 'AGENT' });
+                await service.closeWithReason('tik1', 'Customer cancellation', { sub: 'agent1', role: 'AGENT' });
 
                 // Assert
                 expect(prisma.ticket.update).toHaveBeenCalledWith(
