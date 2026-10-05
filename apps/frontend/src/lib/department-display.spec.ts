@@ -6,7 +6,7 @@ const trLabels = {
     billing_payments: 'Fatura ve Ödemeler',
     sales_pre_sales: 'Satış ve Ön Satış',
     general_support: 'Genel Destek',
-    licensing: 'Lisanslama',
+    licensing: 'Lisans ve Aktivasyon',
     customer_success: 'Müşteri Başarısı',
     general_inquiries: 'Genel Başvurular',
     security_compliance: 'Güvenlik ve Uyumluluk',
