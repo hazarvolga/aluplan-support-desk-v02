@@ -20,6 +20,7 @@ export const APPROVED_QUEUE_NAMES = Object.freeze([
   "embedding-migration",
   "kb-summarizer",
   "knowledge-sync",
+  "learnnow-crawl",
   "proactive-chat",
   "sla-processing",
 ]);
@@ -51,6 +52,10 @@ export const QUEUE_SOURCE_ANCHORS = Object.freeze([
   },
   {
     name: "knowledge-sync",
+    sourceFiles: ["apps/backend/src/knowledge-pool/knowledge-pool.module.ts"],
+  },
+  {
+    name: "learnnow-crawl",
     sourceFiles: ["apps/backend/src/knowledge-pool/knowledge-pool.module.ts"],
   },
   {

@@ -244,7 +244,7 @@ async function listProductionTypeScriptFiles(directory) {
   return files;
 }
 
-test("locks the complete nine-queue production inventory surface", () => {
+test("locks the complete ten-queue production inventory surface", () => {
   assert.deepEqual(APPROVED_QUEUE_NAMES, [
     "ai-query-processing",
     "crm-sync",
@@ -253,6 +253,7 @@ test("locks the complete nine-queue production inventory surface", () => {
     "embedding-migration",
     "kb-summarizer",
     "knowledge-sync",
+    "learnnow-crawl",
     "proactive-chat",
     "sla-processing",
   ]);
@@ -496,7 +497,7 @@ test("preparation plan is explicit about local-only evidence and manual approval
   assert.equal(plan.productionAccessPerformed, false);
   assert.equal(plan.productionGo, false);
   assert.equal(plan.operatorApprovalRequired, true);
-  assert.equal(plan.queues.length, 9);
+  assert.equal(plan.queues.length, 10);
   assert.equal(plan.cronDeclarations.length, 10);
   assert.equal(plan.repeatableJobs.length, 4);
   assert.equal(plan.schemaVersion, 2);
