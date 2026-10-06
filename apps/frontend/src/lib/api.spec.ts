@@ -159,6 +159,16 @@ describe('api.ts', () => {
             expect(list).toEqual([{ id: 1 }]);
             expect((global.fetch as any).mock.calls[0][0]).toContain('/knowledge-pool/sources');
         });
+
+        it('returns null when the latest LearnNow crawl run response has an empty body', async () => {
+            vi.mocked(global.fetch).mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                text: async () => '',
+            } as Response);
+
+            await expect(api.pool.latestLearnNowCrawlRun()).resolves.toBeNull();
+        });
     });
 
     describe('api.tickets', () => {

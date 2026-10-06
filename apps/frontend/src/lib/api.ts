@@ -504,8 +504,14 @@ export const api = {
                 method: 'POST',
                 body: JSON.stringify(body),
             }),
-        latestLearnNowCrawlRun: () =>
-            request<LearnNowCrawlRun | null>('/knowledge-pool/crawl/learnnow/runs/latest'),
+        latestLearnNowCrawlRun: async () => {
+            const run = await request<LearnNowCrawlRun | null | Record<string, never>>(
+                '/knowledge-pool/crawl/learnnow/runs/latest',
+            );
+            return run && typeof run === 'object' && typeof (run as LearnNowCrawlRun).status === 'string'
+                ? run as LearnNowCrawlRun
+                : null;
+        },
         learnNowCrawlRun: (id: string) =>
             request<LearnNowCrawlRun>(`/knowledge-pool/crawl/learnnow/runs/${id}`),
         pauseLearnNowCrawlRun: (id: string) =>

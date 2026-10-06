@@ -90,6 +90,23 @@ describe('KnowledgePoolPage review-center navigation', () => {
         expect(await screen.findByText('crawler.run.status.queued')).toBeInTheDocument();
     });
 
+    it('keeps the crawler queue mounted when no previous LearnNow run exists', async () => {
+        vi.mocked(useSearchParams).mockReturnValue(
+            new URLSearchParams('tab=crawler&status=PENDING_REVIEW') as never,
+        );
+        server.use(
+            http.get(`${API_BASE}/knowledge-pool/crawl/candidates`, () => HttpResponse.json([])),
+            http.get(`${API_BASE}/knowledge-pool/crawl/learnnow/runs/latest`, () => (
+                new HttpResponse(null, { status: 200 })
+            )),
+        );
+
+        render(<KnowledgePoolPage />);
+
+        expect(await screen.findByText('crawler.title')).toBeInTheDocument();
+        expect(screen.getByText('crawler.no_candidates')).toBeInTheDocument();
+    });
+
     it('continues polling when a pause request fails', async () => {
         const user = userEvent.setup();
         vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams('tab=crawler') as never);
