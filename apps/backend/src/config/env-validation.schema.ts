@@ -1,6 +1,15 @@
 import { z } from 'zod';
 
 const optionalUrl = z.string().url().optional();
+const booleanFromEnvironment = (defaultValue: boolean) => z.preprocess(
+    value => {
+        if (typeof value !== 'string') return value;
+        if (value.toLowerCase() === 'true') return true;
+        if (value.toLowerCase() === 'false') return false;
+        return value;
+    },
+    z.boolean(),
+).default(defaultValue);
 const jwtSecret = (name: string) => z.string()
     .min(32, `${name} should be at least 32 characters`)
     .refine(
@@ -106,6 +115,10 @@ export const envSchema = z.object({
     CRAWL4AI_BASE_URL: z.string().url().optional(),
     CRAWL4AI_API_TOKEN: z.string().optional(),
     CRAWL4AI_TIMEOUT_MS: z.coerce.number().int().positive().default(45000),
+    LEARNNOW_CRAWL_ENABLED: booleanFromEnvironment(false),
+    LEARNNOW_CRAWL_PACING_MS: z.coerce.number().int().min(60_000).default(60_000),
+    LEARNNOW_CRAWL_DAILY_CANDIDATE_LIMIT: z.coerce.number().int().min(1).max(10).default(10),
+    LEARNNOW_CRAWL_RUN_CANDIDATE_LIMIT: z.coerce.number().int().min(1).max(5).default(5),
     KNOWLEDGE_URL_VISION_ENABLED: z.coerce.boolean().default(true),
     KNOWLEDGE_URL_VISION_MAX_IMAGES: z.coerce.number().int().positive().default(4),
     KNOWLEDGE_URL_VISION_MAX_IMAGE_BYTES: z.coerce.number().int().positive().default(2 * 1024 * 1024),

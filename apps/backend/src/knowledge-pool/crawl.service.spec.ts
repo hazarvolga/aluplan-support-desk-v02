@@ -5,12 +5,19 @@ jest.mock('axios');
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-const makeService = (env: Record<string, string | boolean | undefined>) => {
-    const config = {
-        get: jest.fn((key: string) => env[key]),
-    };
-
-    return new CrawlService(config as any);
+const makeService = (
+    env: Record<string, string | boolean | undefined>,
+    overrides: { pacer?: any; urlSafety?: any } = {},
+) => {
+    return new CrawlService(
+        { get: jest.fn((key: string) => env[key]) } as any,
+        overrides.pacer ?? { waitForTurn: jest.fn().mockResolvedValue(undefined) },
+        overrides.urlSafety ?? {
+            validateLearnNowUrl: jest.fn().mockResolvedValue({ httpsAgent: {} }),
+            validatePublicHttpsUrl: jest.fn().mockResolvedValue({ httpsAgent: {} }),
+            validateVimeoUrl: jest.fn().mockResolvedValue({ httpsAgent: {} }),
+        },
+    );
 };
 
 describe('CrawlService', () => {
@@ -18,16 +25,18 @@ describe('CrawlService', () => {
 
     afterEach(() => {
         global.fetch = originalFetch;
+        mockedAxios.get.mockReset();
+        mockedAxios.post.mockReset();
         jest.clearAllMocks();
     });
 
-    it('uses Crawl4AI markdown when enabled', async () => {
+    it('delegates validated dynamic crawling to configured Crawl4AI', async () => {
         const service = makeService({
             CRAWL4AI_ENABLED: 'true',
             CRAWL4AI_BASE_URL: 'http://crawl4ai:11235',
             CRAWL4AI_API_TOKEN: 'secret-token',
         });
-        const markdown = '# Allplan Help\n\nThis markdown content is long enough to be accepted by the crawler adapter.';
+        const markdown = '# Allplan Help\n\n' + 'Rendered dynamic content. '.repeat(20);
         const fetchMock = jest.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
@@ -53,28 +62,17 @@ describe('CrawlService', () => {
         expect(result).toMatchObject({
             provider: 'crawl4ai',
             title: 'Allplan Help',
-            content: markdown,
             isDynamic: true,
         });
     });
 
-    it('extracts image references from Crawl4AI markdown', async () => {
-        const service = makeService({
-            CRAWL4AI_ENABLED: 'true',
-            CRAWL4AI_BASE_URL: 'http://crawl4ai:11235',
-        });
-        const markdown = '# Visual Help\n\n![Dialog showing option](https://learnnow.allplan.com/pluginfile.php/123/dialog.png)\n\nThis markdown content is long enough to be accepted by the crawler adapter.';
-        global.fetch = jest.fn().mockResolvedValue({
-            ok: true,
-            json: async () => ({
-                results: [{
-                    url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=8572',
-                    success: true,
-                    metadata: { title: 'Visual Help' },
-                    markdown,
-                }],
-            }),
-        }) as any;
+    it('extracts image references without delegating untrusted URLs to Crawl4AI', async () => {
+        const service = makeService({ CRAWL4AI_ENABLED: 'false' });
+        mockedAxios.get.mockResolvedValue({
+            status: 200,
+            headers: {},
+            data: `<html><head><title>Visual Help</title></head><body><main>${'Safe content '.repeat(100)}<img src="https://learnnow.allplan.com/pluginfile.php/123/dialog.png" alt="Dialog showing option"></main></body></html>`,
+        } as any);
 
         const result = await service.fetch('https://example.com/totara/engage/resources/howto/index.php?id=8572');
 
@@ -130,6 +128,13 @@ describe('CrawlService', () => {
 
         const result = await service.fetch('https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=9093&source=howto');
 
+        const redirectGuard = mockedAxios.get.mock.calls[0][1]?.beforeRedirect;
+        expect(redirectGuard).toBeInstanceOf(Function);
+        expect(() => redirectGuard?.({ protocol: 'https:', hostname: 'learnnow.allplan.com' } as any, {} as any)).not.toThrow();
+        expect(() => redirectGuard?.({ protocol: 'http:', hostname: '127.0.0.1' } as any, {} as any)).toThrow(
+            'Learn Now redirects must remain on the public HTTPS Learn Now host',
+        );
+
         expect(mockedAxios.post).toHaveBeenCalledWith(
             'https://learnnow.allplan.com/totara/webapi/ajax.php?operation=engage_howto_get_howto&lang=en',
             expect.objectContaining({
@@ -167,7 +172,8 @@ describe('CrawlService', () => {
     });
 
     it('extracts Vimeo transcripts for Learn Now explaining videos', async () => {
-        const service = makeService({});
+        const pacer = { waitForTurn: jest.fn().mockResolvedValue(undefined) };
+        const service = makeService({}, { pacer });
         mockedAxios.get
             .mockResolvedValueOnce({
                 data: '<html><title>LEARNNOW Allplan</title></html>',
@@ -240,8 +246,14 @@ describe('CrawlService', () => {
         );
         expect(mockedAxios.get).toHaveBeenCalledWith(
             'https://captions.vimeo.com/captions/115946356.vtt',
-            expect.objectContaining({ headers: expect.objectContaining({ 'User-Agent': expect.any(String) }) }),
+            expect.objectContaining({
+                headers: expect.objectContaining({ 'User-Agent': expect.any(String) }),
+                maxContentLength: expect.any(Number),
+                maxBodyLength: expect.any(Number),
+                maxRedirects: 0,
+            }),
         );
+        expect(pacer.waitForTurn).toHaveBeenCalledTimes(3);
         expect(result.content).toContain('Video Transcript (Deutsch):');
         expect(result.content).toContain('Prüfen Sie die Achsen und Attribute vor dem Import.');
         expect(result.metadata).toEqual({
@@ -254,6 +266,30 @@ describe('CrawlService', () => {
                 vimeoTitle: 'IFC Improvements Infrastructure',
             }),
         });
+    });
+
+    it('revalidates each redirect hop for generic HTTPS crawling and caps the body', async () => {
+        const urlSafety = {
+            validateLearnNowUrl: jest.fn(),
+            validatePublicHttpsUrl: jest.fn().mockResolvedValue({ httpsAgent: {} }),
+            validateVimeoUrl: jest.fn(),
+        };
+        const service = makeService({}, { urlSafety });
+        const html = `<html><main>${'Safe content '.repeat(120)}</main></html>`;
+        mockedAxios.get
+            .mockResolvedValueOnce({ status: 302, headers: { location: 'https://docs.example.com/final' }, data: '' } as any)
+            .mockResolvedValueOnce({ status: 200, headers: {}, data: html } as any);
+
+        await service.fetch('https://docs.example.com/start');
+
+        expect(urlSafety.validatePublicHttpsUrl).toHaveBeenNthCalledWith(1, 'https://docs.example.com/start');
+        expect(urlSafety.validatePublicHttpsUrl).toHaveBeenNthCalledWith(2, 'https://docs.example.com/final');
+        expect(mockedAxios.get).toHaveBeenNthCalledWith(1, 'https://docs.example.com/start', expect.objectContaining({
+            maxRedirects: 0,
+            maxContentLength: expect.any(Number),
+            maxBodyLength: expect.any(Number),
+            httpsAgent: expect.anything(),
+        }));
     });
 
     it('falls back to the basic crawler when Crawl4AI fails', async () => {
@@ -299,12 +335,12 @@ describe('CrawlService', () => {
         ]);
     });
 
-    it('accepts boolean CRAWL4AI_ENABLED values from validated config', async () => {
+    it('honors boolean CRAWL4AI_ENABLED after validating the public URL', async () => {
         const service = makeService({
             CRAWL4AI_ENABLED: true,
             CRAWL4AI_BASE_URL: 'http://crawl4ai:11235',
         });
-        const markdown = '# Boolean Config\n\nCrawler output generated from a boolean validated environment flag.';
+        const markdown = '# Boolean Config\n\n' + 'Rendered dynamic crawler output. '.repeat(20);
         const fetchMock = jest.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
@@ -320,12 +356,30 @@ describe('CrawlService', () => {
 
         const result = await service.fetch('https://example.com/boolean-config');
 
-        expect(fetchMock).toHaveBeenCalledWith(
-            'http://crawl4ai:11235/crawl',
-            expect.objectContaining({ method: 'POST' }),
-        );
+        expect(fetchMock).toHaveBeenCalled();
         expect(result.provider).toBe('crawl4ai');
-        expect(result.content).toBe(markdown);
+        expect(result.content).toContain('Rendered dynamic crawler output');
+    });
+
+    it('keeps Crawl4AI delegation disabled in production even when configured', async () => {
+        const service = makeService({
+            NODE_ENV: 'production',
+            CRAWL4AI_ENABLED: 'true',
+            CRAWL4AI_BASE_URL: 'http://crawl4ai:11235',
+        });
+        const content = 'Bounded production crawler output. '.repeat(50);
+        mockedAxios.get.mockResolvedValue({
+            status: 200,
+            headers: {},
+            data: `<html><head><title>Production Static</title></head><body><main>${content}</main></body></html>`,
+        } as any);
+        const fetchMock = jest.fn();
+        global.fetch = fetchMock as any;
+
+        const result = await service.fetch('https://example.com/production-static');
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(result).toMatchObject({ provider: 'basic', isDynamic: false });
     });
 
     it('extracts normalized links from markdown crawler output', async () => {

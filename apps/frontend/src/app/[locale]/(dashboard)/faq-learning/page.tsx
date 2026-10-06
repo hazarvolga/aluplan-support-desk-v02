@@ -9,19 +9,46 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import {
     Brain,
-    Ticket as TicketIcon,
     Zap,
     CheckCircle2,
     FileText,
-    ArrowRight,
-    ChevronRight,
     RefreshCw,
-    Database,
     LineChart,
+    Eye,
+    Loader2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from "@/components/ui/progress";
 import { useTranslations } from 'next-intl';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Link } from '@/i18n/routing';
+import { AiAnswerContent } from '@/components/ai/ai-answer-content';
+
+type FaqCandidateSource = {
+    id: string;
+    sourceType: string;
+    ticket?: { id: string; ticketNumber: string } | null;
+    interaction?: { id: string; createdAt?: string } | null;
+};
+
+type FaqLearningCandidate = {
+    id: string;
+    question: string;
+    answer: string;
+    confidenceScore: number;
+    frequency: number;
+    tags?: string[];
+    language?: string;
+    sourceTypes?: string[];
+    sources?: FaqCandidateSource[];
+};
 
 export default function FaqLearningPage() {
     const t = useTranslations('admin.faq_learning');
@@ -45,9 +72,11 @@ export default function FaqLearningPage() {
         },
         totalSources: 0
     });
-    const [candidates, setCandidates] = useState<any[]>([]);
+    const [candidates, setCandidates] = useState<FaqLearningCandidate[]>([]);
     const [loading, setLoading] = useState(true);
     const [pipelineInFlight, setPipelineInFlight] = useState(false);
+    const [selectedCandidate, setSelectedCandidate] = useState<FaqLearningCandidate | null>(null);
+    const [reviewAction, setReviewAction] = useState<'approve' | 'dismiss' | null>(null);
     const { toast } = useToast();
 
     const load = async () => {
@@ -87,22 +116,32 @@ export default function FaqLearningPage() {
     };
 
     const handleCommit = async (id: string) => {
+        if (reviewAction) return;
+        setReviewAction('approve');
         try {
             await api.faq.approve(id);
             toast({ title: t('toasts.knowledge_committed'), description: t('toasts.knowledge_committed_desc') });
-            load();
+            setSelectedCandidate(null);
+            await load();
         } catch (error) {
             toast({ title: t('toasts.commit_error'), description: String(error), variant: 'destructive' });
+        } finally {
+            setReviewAction(null);
         }
     };
 
     const handleDismiss = async (id: string) => {
+        if (reviewAction) return;
+        setReviewAction('dismiss');
         try {
             await api.faq.dismiss(id);
             toast({ title: t('toasts.dismissed'), description: t('toasts.dismissed_desc') });
-            load();
+            setSelectedCandidate(null);
+            await load();
         } catch (error) {
             toast({ title: t('toasts.dismiss_error'), description: String(error), variant: 'destructive' });
+        } finally {
+            setReviewAction(null);
         }
     };
 
@@ -300,17 +339,12 @@ export default function FaqLearningPage() {
 
                                         <div className="flex flex-col gap-2 shrink-0">
                                             <Button
-                                                onClick={() => handleCommit(c.id)}
-                                                className="h-8 px-4 text-[10px] uppercase font-bold tracking-widest bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-none"
+                                                variant="outline"
+                                                onClick={() => setSelectedCandidate(c)}
+                                                className="h-8 px-4 text-[10px] uppercase font-bold tracking-widest border-primary/30 text-primary hover:bg-primary/10 rounded-none"
                                             >
-                                                {t('add_to_kb')}
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                onClick={() => handleDismiss(c.id)}
-                                                className="h-8 px-4 text-[10px] uppercase font-bold tracking-widest text-muted-foreground hover:text-red-500 rounded-none"
-                                            >
-                                                {t('dismiss')}
+                                                <Eye className="mr-2 h-3 w-3" />
+                                                {t('review_candidate')}
                                             </Button>
                                         </div>
                                     </div>
@@ -320,6 +354,100 @@ export default function FaqLearningPage() {
                     </div>
                 )}
             </div>
+
+            <Dialog
+                open={Boolean(selectedCandidate)}
+                onOpenChange={(open) => {
+                    if (!open && !reviewAction) setSelectedCandidate(null);
+                }}
+            >
+                <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-4xl flex-col gap-0 overflow-hidden p-0">
+                    <DialogHeader className="m-0 px-6 py-5">
+                        <DialogTitle className="text-sm">{t('candidate_detail')}</DialogTitle>
+                        <DialogDescription>{t('candidate_detail_desc')}</DialogDescription>
+                    </DialogHeader>
+
+                    {selectedCandidate && (
+                        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+                            <div className="mb-5 flex flex-wrap gap-2">
+                                <Badge variant="outline" className="border-orange-500/30 text-orange-400">
+                                    {t('highest_confidence')}: %{Math.round(selectedCandidate.confidenceScore * 100)}
+                                </Badge>
+                                <Badge variant="outline">
+                                    {t('frequency')}: {selectedCandidate.frequency}
+                                </Badge>
+                                {selectedCandidate.language && (
+                                    <Badge variant="outline">{t('language')}: {selectedCandidate.language.toUpperCase()}</Badge>
+                                )}
+                            </div>
+
+                            <section className="space-y-2 border-b border-border/40 pb-5">
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                                    {t('full_question')}
+                                </h3>
+                                <p className="whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-foreground">
+                                    {selectedCandidate.question}
+                                </p>
+                            </section>
+
+                            <section className="space-y-2 border-b border-border/40 py-5">
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                                    {t('full_answer')}
+                                </h3>
+                                <AiAnswerContent
+                                    content={selectedCandidate.answer}
+                                    className="break-words border-l-2 border-primary/40 bg-muted/10 p-4 text-sm leading-7 text-foreground/85"
+                                />
+                            </section>
+
+                            <section className="space-y-3 pt-5">
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                                    {t('source_records')}
+                                </h3>
+                                {selectedCandidate.sources?.length ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedCandidate.sources.map(source => source.ticket ? (
+                                            <Link
+                                                key={source.id}
+                                                href={`/tickets/${source.ticket.id}`}
+                                                className="border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-mono text-primary hover:bg-primary/10"
+                                            >
+                                                {source.ticket.ticketNumber}
+                                            </Link>
+                                        ) : (
+                                            <span key={source.id} className="border border-border/50 px-3 py-2 text-xs font-mono text-muted-foreground">
+                                                {source.sourceType}: {source.interaction?.id ?? source.id}
+                                            </span>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-muted-foreground">{t('no_source_records')}</p>
+                                )}
+                            </section>
+                        </div>
+                    )}
+
+                    <DialogFooter className="m-0 gap-2 bg-card px-6 py-4">
+                        <Button
+                            variant="ghost"
+                            disabled={Boolean(reviewAction)}
+                            onClick={() => selectedCandidate && handleDismiss(selectedCandidate.id)}
+                            className="h-9 rounded-none text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-red-500"
+                        >
+                            {reviewAction === 'dismiss' && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                            {reviewAction === 'dismiss' ? t('dismissing') : t('dismiss')}
+                        </Button>
+                        <Button
+                            disabled={Boolean(reviewAction)}
+                            onClick={() => selectedCandidate && handleCommit(selectedCandidate.id)}
+                            className="h-9 rounded-none border border-emerald-500/20 bg-emerald-500/10 px-5 text-[10px] font-bold uppercase tracking-widest text-emerald-500 hover:bg-emerald-500/20"
+                        >
+                            {reviewAction === 'approve' && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                            {reviewAction === 'approve' ? t('approving') : t('add_to_kb')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

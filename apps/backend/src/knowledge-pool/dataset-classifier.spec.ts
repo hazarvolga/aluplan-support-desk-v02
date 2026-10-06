@@ -99,6 +99,20 @@ describe('classifyDatasetFile', () => {
         },
     );
 
+    it.each([
+        '06-offline-odunc-alma-ve-iade.md',
+        '07-hotinfo-var-yok-teshis-akisi.md',
+    ])('classifies supplemental licensing guide %s as license support', (fileName) => {
+        const result = classifyDatasetFile(`knowledge-pool/550e8400-e29b-41d4-a716-446655440000/${fileName}`);
+
+        expect(result).toEqual(expect.objectContaining({
+            category: 'License & Activation',
+            categorySlug: 'license-activation',
+            importBatch: 'ui-upload',
+            requiresHumanReview: true,
+        }));
+    });
+
     it('detects German support questions without explicit locale markers', () => {
         const result = classifyDatasetFile('Was tun wenn der Echtzeit-Scanner Allplan-Daten blockiert.pdf');
 

@@ -881,6 +881,7 @@ model CrawlCandidate {
   metadata         Json?
   importedSourceId String?              @map("imported_source_id") @db.Uuid
   importedAt       DateTime?            @map("imported_at")
+  importStartedAt  DateTime?            @map("import_started_at")
   crawledAt        DateTime             @default(now()) @map("crawled_at")
   createdAt        DateTime             @default(now()) @map("created_at")
   updatedAt        DateTime             @default(now()) @updatedAt @map("updated_at")
@@ -889,6 +890,43 @@ model CrawlCandidate {
   @@index([format], map: "idx_crawl_candidates_format")
   @@index([contentHash], map: "idx_crawl_candidates_content_hash")
   @@map("crawl_candidates")
+}
+
+model LearnNowCrawlRun {
+  id             String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status         LearnNowCrawlRunStatus @default(QUEUED)
+  activeKey      String?                @unique @map("active_key") @db.VarChar(50)
+  search         String?                @db.VarChar(255)
+  formats        String[]               @default([])
+  maxCandidates  Int                    @default(5) @map("max_candidates")
+  attemptCount   Int                    @default(0) @map("attempt_count")
+  processedCount Int                    @default(0) @map("processed_count")
+  insertedCount  Int                    @default(0) @map("inserted_count")
+  skippedCount   Int                    @default(0) @map("skipped_count")
+  failedCount    Int                    @default(0) @map("failed_count")
+  checkpoint     Json?
+  lastError      String?                @map("last_error")
+  startedAt      DateTime?              @map("started_at")
+  pausedAt       DateTime?              @map("paused_at")
+  completedAt    DateTime?              @map("completed_at")
+  deletedAt      DateTime?              @map("deleted_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  @@index([status, createdAt], map: "idx_learnnow_crawl_runs_status_created")
+  @@index([createdAt(sort: Desc)], map: "idx_learnnow_crawl_runs_created")
+  @@map("learnnow_crawl_runs")
+}
+
+model LearnNowCrawlDailyBudget {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  budgetDate   DateTime  @unique @map("budget_date") @db.Date
+  attemptCount Int       @default(0) @map("attempt_count")
+  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("learnnow_crawl_daily_budgets")
 }
 
 model KnowledgeSourceSyncLog {
@@ -1251,9 +1289,18 @@ enum CrawlCandidateFormat {
 enum CrawlCandidateStatus {
   PENDING_REVIEW
   APPROVED
+  IMPORTING
   IMPORTED
   SKIPPED_DUPLICATE
   REJECTED
+  FAILED
+}
+
+enum LearnNowCrawlRunStatus {
+  QUEUED
+  RUNNING
+  PAUSED
+  COMPLETED
   FAILED
 }
 

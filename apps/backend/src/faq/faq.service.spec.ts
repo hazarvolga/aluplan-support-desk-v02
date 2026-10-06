@@ -9,6 +9,7 @@ import { SettingsService } from '../settings/settings.service';
 import { mockPrismaService } from '../test/mock.utils';
 import { RAG_CONFIG } from '../config/rag.config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 
 const mockEmbeddingVersionRegistry = {
     getActiveVersionConfig: jest.fn().mockResolvedValue({ version: 'v3s', dimension: 1536, provider: 'openai', model: 'text-embedding-3-small' }),
@@ -227,6 +228,7 @@ describe('FaqService - Knowledge Base CRUD', () => {
                 id: 'faq-empty',
                 question: 'Unanswered question',
                 answer: '   ',
+                status: 'PENDING_REVIEW',
             });
 
             await expect(service.approveFaq('faq-empty')).rejects.toThrow('FAQ_ANSWER_REQUIRED');
@@ -346,13 +348,14 @@ describe('FaqService - Knowledge Base CRUD', () => {
     });
 
     describe('approveFaq', () => {
-        it('should update FAQ status to PUBLISHED and isInternal to false', async () => {
+        it('atomically transitions a pending FAQ to PUBLISHED and makes it public', async () => {
             // Arrange
             const updatedFaq = { id: 'faq-1', question: 'Q1', status: 'PUBLISHED', isInternal: false };
             localMockPrismaService.faqEntry.findUnique.mockResolvedValue({
                 id: 'faq-1',
                 question: 'Q1',
                 answer: 'A1',
+                status: 'PENDING_REVIEW',
             });
             localMockPrismaService.faqEntry.update.mockResolvedValue(updatedFaq);
 
@@ -361,21 +364,91 @@ describe('FaqService - Knowledge Base CRUD', () => {
 
             // Assert
             expect(result).toEqual(updatedFaq);
-            expect(localMockPrismaService.faqEntry.findUnique).toHaveBeenCalledWith({
+            expect(localMockPrismaService.faqEntry.findUnique).toHaveBeenNthCalledWith(1, {
                 where: { id: 'faq-1', deletedAt: null },
-                select: { question: true, answer: true },
+                select: { question: true, answer: true, status: true },
             });
             expect(localMockPrismaService.faqEntry.update).toHaveBeenCalledWith({
-                where: { id: 'faq-1', deletedAt: null },
+                where: { id: 'faq-1', deletedAt: null, status: 'PENDING_REVIEW' },
                 data: {
                     status: 'PUBLISHED',
                     publishedAt: expect.any(Date),
-                    isInternal: false
-                }
+                    isInternal: false,
+                },
             });
             expect(mockAiService.embed).toHaveBeenCalledWith('Q1');
             expect(localMockPrismaService.$executeRaw).toHaveBeenCalled();
             expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('faq.changed', { faqId: 'faq-1' });
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledTimes(1);
+        });
+
+        it.each(['PUBLISHED', 'DISMISSED'])('rejects approval from %s without repeating publish side effects', async (status) => {
+            localMockPrismaService.faqEntry.findUnique.mockResolvedValue({
+                id: 'faq-1',
+                question: 'Q1',
+                answer: 'A1',
+                status,
+            });
+
+            await expect(service.approveFaq('faq-1')).rejects.toBeInstanceOf(ConflictException);
+
+            expect(localMockPrismaService.faqEntry.update).not.toHaveBeenCalled();
+            expect(mockAiService.embed).not.toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled();
+        });
+
+        it('rejects a lost concurrent transition without publish side effects', async () => {
+            localMockPrismaService.faqEntry.findUnique.mockResolvedValue({
+                id: 'faq-1',
+                question: 'Q1',
+                answer: 'A1',
+                status: 'PENDING_REVIEW',
+            });
+            localMockPrismaService.faqEntry.update.mockRejectedValue(
+                Object.assign(new Error('Record to update not found'), { code: 'P2025' }),
+            );
+
+            await expect(service.approveFaq('faq-1')).rejects.toBeInstanceOf(ConflictException);
+
+            expect(localMockPrismaService.faqEntry.update).toHaveBeenCalledWith({
+                where: { id: 'faq-1', deletedAt: null, status: 'PENDING_REVIEW' },
+                data: {
+                    status: 'PUBLISHED',
+                    publishedAt: expect.any(Date),
+                    isInternal: false,
+                },
+            });
+            expect(mockAiService.embed).not.toHaveBeenCalled();
+            expect(localMockPrismaService.$executeRaw).not.toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled();
+        });
+
+        it('returns not found for a missing or soft-deleted FAQ', async () => {
+            localMockPrismaService.faqEntry.findUnique.mockResolvedValue(null);
+
+            await expect(service.approveFaq('faq-missing')).rejects.toBeInstanceOf(NotFoundException);
+
+            expect(localMockPrismaService.faqEntry.update).not.toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled();
+        });
+
+        it('returns not found when the FAQ is deleted during approval', async () => {
+            localMockPrismaService.faqEntry.findUnique
+                .mockResolvedValueOnce({
+                    id: 'faq-1',
+                    question: 'Q1',
+                    answer: 'A1',
+                    status: 'PENDING_REVIEW',
+                })
+                .mockResolvedValueOnce(null);
+            localMockPrismaService.faqEntry.update.mockRejectedValue(
+                Object.assign(new Error('Record to update not found'), { code: 'P2025' }),
+            );
+
+            await expect(service.approveFaq('faq-1')).rejects.toBeInstanceOf(NotFoundException);
+
+            expect(mockAiService.embed).not.toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled();
         });
     });
 
@@ -434,16 +507,74 @@ describe('FaqService - Knowledge Base CRUD', () => {
     });
 
     describe('dismissFaq', () => {
-        it('never mutates a soft-deleted FAQ', async () => {
-            localMockPrismaService.faqEntry.update.mockResolvedValue({ id: 'faq-1', status: 'DISMISSED' });
+        it('atomically dismisses only a pending, active FAQ', async () => {
+            const dismissedFaq = { id: 'faq-1', status: 'DISMISSED' };
+            localMockPrismaService.faqEntry.findUnique.mockResolvedValue({ id: 'faq-1', status: 'PENDING_REVIEW' });
+            localMockPrismaService.faqEntry.update.mockResolvedValue(dismissedFaq);
 
-            await service.dismissFaq('faq-1');
+            await expect(service.dismissFaq('faq-1')).resolves.toEqual(dismissedFaq);
 
             expect(localMockPrismaService.faqEntry.update).toHaveBeenCalledWith({
-                where: { id: 'faq-1', deletedAt: null },
+                where: { id: 'faq-1', deletedAt: null, status: 'PENDING_REVIEW' },
                 data: { status: 'DISMISSED' },
             });
             expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('faq.changed', { faqId: 'faq-1' });
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledTimes(1);
+            expect(mockAiService.embed).not.toHaveBeenCalled();
+            expect(localMockPrismaService.$executeRaw).not.toHaveBeenCalled();
+        });
+
+        it.each(['PUBLISHED', 'DISMISSED'])('rejects dismissal from %s before writing', async (status) => {
+            localMockPrismaService.faqEntry.findUnique.mockResolvedValue({ id: 'faq-1', status });
+
+            await expect(service.dismissFaq('faq-1')).rejects.toBeInstanceOf(ConflictException);
+
+            expect(localMockPrismaService.faqEntry.update).not.toHaveBeenCalled();
+            expect(mockAiService.embed).not.toHaveBeenCalled();
+            expect(localMockPrismaService.$executeRaw).not.toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled();
+        });
+
+        it('rejects a lost concurrent dismissal without emitting a change event', async () => {
+            localMockPrismaService.faqEntry.findUnique.mockResolvedValue({
+                id: 'faq-1',
+                status: 'PENDING_REVIEW',
+            });
+            localMockPrismaService.faqEntry.update.mockRejectedValue(
+                Object.assign(new Error('Record to update not found'), { code: 'P2025' }),
+            );
+
+            await expect(service.dismissFaq('faq-1')).rejects.toBeInstanceOf(ConflictException);
+
+            expect(localMockPrismaService.faqEntry.update).toHaveBeenCalledWith({
+                where: { id: 'faq-1', deletedAt: null, status: 'PENDING_REVIEW' },
+                data: { status: 'DISMISSED' },
+            });
+            expect(mockAiService.embed).not.toHaveBeenCalled();
+            expect(localMockPrismaService.$executeRaw).not.toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled();
+        });
+
+        it('returns not found for a missing or soft-deleted FAQ', async () => {
+            localMockPrismaService.faqEntry.findUnique.mockResolvedValue(null);
+
+            await expect(service.dismissFaq('faq-missing')).rejects.toBeInstanceOf(NotFoundException);
+
+            expect(localMockPrismaService.faqEntry.update).not.toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled();
+        });
+
+        it('returns not found when the FAQ is deleted during dismissal', async () => {
+            localMockPrismaService.faqEntry.findUnique
+                .mockResolvedValueOnce({ id: 'faq-1', status: 'PENDING_REVIEW' })
+                .mockResolvedValueOnce(null);
+            localMockPrismaService.faqEntry.update.mockRejectedValue(
+                Object.assign(new Error('Record to update not found'), { code: 'P2025' }),
+            );
+
+            await expect(service.dismissFaq('faq-1')).rejects.toBeInstanceOf(NotFoundException);
+
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled();
         });
     });
 

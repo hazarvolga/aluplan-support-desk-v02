@@ -12,6 +12,7 @@ jest.mock('../auth/guards/jwt-auth.guard', () => ({ JwtAuthGuard: class {} }));
 jest.mock('../knowledge-pool/knowledge-pool.service', () => ({ KnowledgePoolService: class {} }));
 jest.mock('../prisma/prisma.service', () => ({ PrismaService: class {} }));
 jest.mock('../knowledge-pool/learnnow-crawler.service', () => ({ LearnNowCrawlerService: class {} }));
+jest.mock('../knowledge-pool/learnnow-crawl-run.service', () => ({ LearnNowCrawlRunService: class {} }));
 jest.mock('../knowledge-pool/generic-web-crawler.service', () => ({ GenericWebCrawlerService: class {} }));
 jest.mock('../knowledge-pool/allplan-help-crawler.service', () => ({ AllplanHelpCrawlerService: class {} }));
 jest.mock('@aluplan/database', () => ({ KnowledgeSourceType: { FILE_TXT: 'FILE_TXT' } }));
@@ -26,6 +27,7 @@ import { KnowledgePoolController } from '../knowledge-pool/knowledge-pool.contro
 import { KnowledgePoolService } from '../knowledge-pool/knowledge-pool.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LearnNowCrawlerService } from '../knowledge-pool/learnnow-crawler.service';
+import { LearnNowCrawlRunService } from '../knowledge-pool/learnnow-crawl-run.service';
 import { GenericWebCrawlerService } from '../knowledge-pool/generic-web-crawler.service';
 import { AllplanHelpCrawlerService } from '../knowledge-pool/allplan-help-crawler.service';
 import { RbacGuard } from '../rbac/rbac.guard';
@@ -104,7 +106,8 @@ describe('real HTTP upload boundary (isolated loopback test app)', () => {
                 { provide: ConfigService, useValue: { get: () => undefined } },
                 { provide: KnowledgePoolService, useValue: knowledge },
                 { provide: PrismaService, useValue: { knowledgeSource: { findFirst: async () => null, update: async () => ({}) } } },
-                ...[LearnNowCrawlerService, GenericWebCrawlerService, AllplanHelpCrawlerService].map((provide) => ({ provide, useValue: {} })),
+                ...[LearnNowCrawlerService, LearnNowCrawlRunService, GenericWebCrawlerService, AllplanHelpCrawlerService]
+                    .map((provide) => ({ provide, useValue: {} })),
             ],
         }).overrideGuard(RbacGuard).useValue(testGuard).overrideGuard(JwtAuthGuard).useValue(testGuard).compile();
         app = module.createNestApplication({ logger: false });

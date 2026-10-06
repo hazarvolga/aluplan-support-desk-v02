@@ -100,6 +100,7 @@ describe('PromptContextBuilderService — Property-Based Tests', () => {
                 defaultPrinter: 'PDF Printer',
                 errorTrace: 'SEC Hata: test trace',
             },
+            skipHotinfoProfile: false,
         });
 
         expect(result).toContain('[MÜŞTERİ SİSTEM BİLGİLERİ (HOTINFO)]');
@@ -111,7 +112,7 @@ describe('PromptContextBuilderService — Property-Based Tests', () => {
         expect(result).toContain('AMD Radeon(TM) 880M Graphics');
         expect(result).toContain('Sürücü Tarihi: 2026-01-20');
         expect(result).toContain('RAM: 512 MB');
-        expect(result).toContain('Lisans Tipi: CodeMeter');
+        expect(result).toContain('Lisans Telemetrisi: CodeMeter');
         expect(result).toContain('Güvenlik/Antivirüs Servisleri: Windows Defender');
         expect(result).toContain('Olası Çakışmalar: onedrive.exe');
         expect(result).toContain('Hata Kaydı/Trace: Hotinfo hata trace sinyali mevcut; ham trace ayrıntısı gizlendi.');
@@ -139,11 +140,11 @@ describe('PromptContextBuilderService — Property-Based Tests', () => {
                 licenseType: '⚠ Lisans dosyası okunamadı',
                 errorTrace: 'SEC Hata: C:\\ProgramData\\Nemetschek\\Allplan\\2026\\License\\_SEC.NSE',
             },
+            skipHotinfoProfile: false,
         });
 
-        expect(result).toContain('Lisans Telemetrisi: Yerel lisans dosyası okunamadı');
-        expect(result).toContain('modern Cloud/Wibu lisanslarında bu tek başına lisans/abonelik veya BIMPLUS depolama limiti kanıtı değildir');
-        expect(result).toContain('kök neden olarak kullanma');
+        expect(result).toContain('Lisans Telemetrisi: Lisans telemetrisi mevcut (yöntem ayrıntısı gizlendi)');
+        expect(result).toContain('Legacy yerel lisans trace sinyali mevcut; lisans dışı talepte kök neden olarak kullanılmamalı.');
         expect(result).not.toContain('- Lisans Tipi: ⚠ Lisans dosyası okunamadı');
         expect(result).not.toContain('C:\\ProgramData\\Nemetschek\\Allplan\\2026\\License\\_SEC.NSE');
     });
@@ -165,9 +166,10 @@ describe('PromptContextBuilderService — Property-Based Tests', () => {
                 licenseType: 'Product Key 1234-5678-9012',
                 hotinfoLicense: '1014361a',
             },
+            skipHotinfoProfile: false,
         });
 
-        expect(result).toContain('Lisans Tipi: Lisans telemetrisi mevcut (yöntem ayrıntısı gizlendi)');
+        expect(result).toContain('Lisans Telemetrisi: Lisans telemetrisi mevcut (yöntem ayrıntısı gizlendi)');
         expect(result).not.toContain('1234-5678-9012');
         expect(result).not.toContain('1014361a');
     });
@@ -188,6 +190,7 @@ describe('PromptContextBuilderService — Property-Based Tests', () => {
                 allplanVersion: 'Allplan 2026',
                 errorTrace: 'Exception: C:\\Users\\murat\\private-project\\trace-SECRET-123.log',
             },
+            skipHotinfoProfile: false,
         });
 
         expect(result).toContain('Hotinfo hata trace sinyali mevcut; ham trace ayrıntısı gizlendi.');

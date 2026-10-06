@@ -44,6 +44,7 @@ import { PreReimportInspectService } from './pre-reimport-inspect.service';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
 import { AiInteractionHistoryController } from './ai-interaction-history.controller';
 import { AiInteractionHistoryService } from './ai-interaction-history.service';
+import { AllplanLicensingPolicyService } from './allplan-licensing-policy.service';
 
 @Module({
     imports: [
@@ -106,6 +107,7 @@ import { AiInteractionHistoryService } from './ai-interaction-history.service';
         AiHealthEventService,
         PreReimportInspectService,
         AiInteractionHistoryService,
+        AllplanLicensingPolicyService,
     ],
     exports: [
         AiService,

@@ -34,6 +34,8 @@ describe('validateEnv', () => {
             'LLMAPI_EMBED_MODEL', 'GEMINI_CHAT_MODEL', 'GEMINI_EMBED_MODEL',
             'KNOWLEDGE_SYNC_BULK_DELAY_MS', 'SIMILARITY_THRESHOLD',
             'LOW_CONFIDENCE_THRESHOLD',
+            'LEARNNOW_CRAWL_ENABLED', 'LEARNNOW_CRAWL_PACING_MS',
+            'LEARNNOW_CRAWL_DAILY_CANDIDATE_LIMIT', 'LEARNNOW_CRAWL_RUN_CANDIDATE_LIMIT',
         ]) {
             delete process.env[k];
         }
@@ -113,6 +115,33 @@ describe('validateEnv', () => {
             KNOWLEDGE_SYNC_BULK_DELAY_MS: 15000,
             EMBEDDING_DIMENSIONS: 3072,
         });
+    });
+
+    it('keeps Learn Now crawling disabled by default and parses explicit false safely', () => {
+        setEnv(VALID_ENV);
+        expect(validateEnv()).toMatchObject({
+            LEARNNOW_CRAWL_ENABLED: false,
+            LEARNNOW_CRAWL_PACING_MS: 60_000,
+            LEARNNOW_CRAWL_DAILY_CANDIDATE_LIMIT: 10,
+            LEARNNOW_CRAWL_RUN_CANDIDATE_LIMIT: 5,
+        });
+
+        setEnv({ ...VALID_ENV, LEARNNOW_CRAWL_ENABLED: 'false' });
+        expect(validateEnv()?.LEARNNOW_CRAWL_ENABLED).toBe(false);
+
+        setEnv({ ...VALID_ENV, LEARNNOW_CRAWL_ENABLED: 'true' });
+        expect(validateEnv()?.LEARNNOW_CRAWL_ENABLED).toBe(true);
+    });
+
+    it('rejects unsafe Learn Now crawl limits', () => {
+        setEnv({ ...VALID_ENV, LEARNNOW_CRAWL_PACING_MS: '59999' });
+        expect(validateEnv()).toBeUndefined();
+
+        setEnv({ ...VALID_ENV, LEARNNOW_CRAWL_DAILY_CANDIDATE_LIMIT: '11' });
+        expect(validateEnv()).toBeUndefined();
+
+        setEnv({ ...VALID_ENV, LEARNNOW_CRAWL_RUN_CANDIDATE_LIMIT: '6' });
+        expect(validateEnv()).toBeUndefined();
     });
 
     it('rejects production without explicit safe allowed origins', () => {

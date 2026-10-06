@@ -4,7 +4,8 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsInt, Min, Max, IsOptional, MinLength, MaxLength, IsBoolean, IsUUID, IsArray, IsObject } from 'class-validator';
+import { IsString, IsInt, Min, Max, IsOptional, MinLength, MaxLength, IsBoolean, IsUUID, IsArray, IsObject, IsIn, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
@@ -26,8 +27,19 @@ import { Roles } from '../rbac/decorators/rbac.decorators';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { assertEmbeddingMigrationApproved } from './embedding-migration.guard';
-import { sanitizeHotinfoContext, sanitizeHotinfoString } from '../common/utils/hotinfo-context';
+import { sanitizeHotinfoContext } from '../common/utils/hotinfo-context';
+import { AllplanLicensingPolicyService, canonicalizeAllplanRelease } from './allplan-licensing-policy.service';
 
+export class AllplanLicensingIntakeDto {
+    @IsIn(['licensing']) categoryKey: 'licensing';
+    @IsString() @MaxLength(32) allplanVersion: string;
+    @IsOptional() @IsIn(['SINGLE_USER', 'LICENSE_SERVER', 'UNKNOWN']) licenseTopology?: 'SINGLE_USER' | 'LICENSE_SERVER' | 'UNKNOWN';
+    @IsOptional() @IsIn(['ACTIVATION', 'TRANSFER', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER']) licenseIssueType?: 'ACTIVATION' | 'TRANSFER' | 'LOGIN' | 'INVITATION' | 'SEAT' | 'OFFLINE' | 'OTHER';
+    @IsOptional() @IsIn(['END_USER', 'LICENSE_ADMIN', 'UNKNOWN']) licenseUserRole?: 'END_USER' | 'LICENSE_ADMIN' | 'UNKNOWN';
+    @IsOptional() @IsIn(['AVAILABLE', 'UNAVAILABLE', 'UNKNOWN']) allplanIdStatus?: 'AVAILABLE' | 'UNAVAILABLE' | 'UNKNOWN';
+    @IsOptional() @IsIn(['ACCEPTED', 'MISSING', 'UNKNOWN']) organizationInviteStatus?: 'ACCEPTED' | 'MISSING' | 'UNKNOWN';
+    @IsOptional() @IsIn(['ASSIGNED', 'MISSING', 'UNKNOWN']) licenseGroupStatus?: 'ASSIGNED' | 'MISSING' | 'UNKNOWN';
+}
 
 export class AiQueryDto {
     @ApiProperty({ example: 'Şifremi nasıl sıfırlarım?' })
@@ -36,11 +48,22 @@ export class AiQueryDto {
     @MaxLength(20000)
     query: string;
 
+    @ApiPropertyOptional({ enum: ['GENERIC', 'ALLPLAN_LICENSING'], description: 'Explicit diagnosis workflow selected by the trusted ticket wizard' })
+    @IsOptional()
+    @IsIn(['GENERIC', 'ALLPLAN_LICENSING'])
+    workflowKey?: 'GENERIC' | 'ALLPLAN_LICENSING';
+
     @ApiPropertyOptional({ description: 'User-confirmed ALLPLAN release/build from the licensing intake' })
     @IsOptional()
     @IsString()
     @MaxLength(64)
     allplanVersion?: string;
+
+    @ApiPropertyOptional({ type: AllplanLicensingIntakeDto })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => AllplanLicensingIntakeDto)
+    licensingIntake?: AllplanLicensingIntakeDto;
 
     @ApiPropertyOptional()
     @IsOptional()
@@ -121,6 +144,7 @@ export class AiController {
         private readonly preReimportInspectService: PreReimportInspectService,
         private readonly storageService: StorageService,
         private readonly geminiService: GeminiService,
+        private readonly allplanLicensingPolicy: AllplanLicensingPolicyService,
         @InjectQueue('ai-query-processing') private readonly aiQueue: Queue,
     ) { }
 
@@ -138,11 +162,19 @@ export class AiController {
     @ApiResponse({ status: 429, description: 'Rate limit exceeded for AI inference.' })
     @ApiQuery({ name: 'wait', required: false, type: Boolean, description: 'Wait for full response instead of background job' })
     @HttpCode(HttpStatus.OK)
-    query(@Body() dto: AiQueryDto, @Request() req: any /* GAP-06: Next step properly type ReqUser */, @Query('wait') wait?: string) {
+    async query(@Body() dto: AiQueryDto, @Request() req: any /* GAP-06: Next step properly type ReqUser */, @Query('wait') wait?: string) {
+        const validatedLicensing = await this.allplanLicensingPolicy.validate(
+            dto.workflowKey,
+            dto.productId,
+            dto.licensingIntake,
+        );
         const useHotinfo = dto.useHotinfo === true;
         return this.aiQueryService.query({
-            userQuery: dto.query,
-            allplanVersion: sanitizeHotinfoString(dto.allplanVersion, 64),
+            userQuery: validatedLicensing
+                ? `${dto.query}\n\n${validatedLicensing.promptContext}`
+                : dto.query,
+            allplanVersion: validatedLicensing?.allplanVersion
+                ?? canonicalizeAllplanRelease(dto.allplanVersion),
             userId: req.user.sub,
             channel: 'WEB',
             hotinfoContext: useHotinfo ? sanitizeHotinfoContext(dto.hotinfoContext) : undefined,

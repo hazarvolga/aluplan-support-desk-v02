@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import * as crypto from 'crypto';
@@ -9,10 +9,13 @@ import { StorageService } from '../common/services/storage.service';
 import { KnowledgePoolService } from './knowledge-pool.service';
 import { DiscoverLearnNowDto, LearnNowCrawlFormat } from './dto/learnnow-crawl.dto';
 import { CrawlService } from './crawl.service';
+import { OutboundUrlSafetyService } from './outbound-url-safety.service';
+import { LearnNowRequestPacer } from './learnnow-request-pacer.service';
 
 type CandidateStatus =
     | 'PENDING_REVIEW'
     | 'APPROVED'
+    | 'IMPORTING'
     | 'IMPORTED'
     | 'SKIPPED_DUPLICATE'
     | 'REJECTED'
@@ -37,10 +40,12 @@ type CrawlCandidateRecord = {
     content_hash: string | null;
     crawl_filter: string | null;
     rejection_reason: string | null;
+    imported_source_id: string | null;
+    import_started_at: Date | null;
     metadata: Record<string, unknown> | null;
 };
 
-type DiscoveredCandidate = {
+export type DiscoveredCandidate = {
     sourceUrl: string;
     title: string;
     format: CandidateFormat;
@@ -73,6 +78,9 @@ type LearnNowSession = {
 
 const LEARNNOW_BASE_URL = 'https://learnnow.allplan.com';
 const LEARNNOW_SOURCE = 'allplan_learnnow';
+const HTML_RESPONSE_LIMIT_BYTES = 2 * 1024 * 1024;
+const PDF_RESPONSE_LIMIT_BYTES = 50 * 1024 * 1024;
+const IMPORT_LEASE_MS = 15 * 60 * 1000;
 const LEARNNOW_FORMAT_FILTERS: Record<LearnNowCrawlFormat, LearnNowFilterValue> = {
     knowledge_article: 'knowledge_article',
     pdf: 'pdf',
@@ -90,13 +98,18 @@ export class LearnNowCrawlerService {
         private readonly storageService: StorageService,
         private readonly knowledgePoolService: KnowledgePoolService,
         private readonly crawlService: CrawlService,
+        private readonly urlSafety: OutboundUrlSafetyService,
+        private readonly requestPacer: LearnNowRequestPacer,
     ) { }
 
     async discover(dto: DiscoverLearnNowDto) {
+        if (dto.dryRun === false) {
+            throw new BadRequestException('Saving discovery is only available through the rate-limited Learn Now crawl run endpoint');
+        }
         const formats: LearnNowCrawlFormat[] = dto.formats?.length ? dto.formats : ['knowledge_article', 'pdf'];
-        const maxPages = dto.maxPages ?? 1;
-        const maxCandidates = dto.maxCandidates ?? 50;
-        const dryRun = dto.dryRun !== false;
+        const maxPages = Math.min(dto.maxPages ?? 1, 1);
+        const maxCandidates = Math.min(dto.maxCandidates ?? 5, 5);
+        const dryRun = true;
         const search = dto.search?.trim() ?? '';
         const session = await this.createLearnNowSession();
 
@@ -108,36 +121,26 @@ export class LearnNowCrawlerService {
                 const htmlCandidates = this.extractCandidates(html, format, url);
                 discovered.push(...htmlCandidates);
 
-                if (htmlCandidates.length === 0) {
-                    discovered.push(...await this.discoverWithCrawler(url, format));
-                }
             }
         }
 
         const unique = this.dedupeByUrl(discovered).slice(0, maxCandidates);
-        if (dryRun) {
-            return {
-                dryRun: true,
-                discovered: unique.length,
-                candidates: unique,
-            };
-        }
-
-        let inserted = 0;
-        let skipped = 0;
-        for (const candidate of unique) {
-            const enrichedCandidate = await this.enrichCandidateForReview(candidate);
-            const result = await this.upsertCandidate(enrichedCandidate);
-            if (result.inserted) inserted += 1;
-            else skipped += 1;
-        }
-
         return {
-            dryRun: false,
+            dryRun,
             discovered: unique.length,
-            inserted,
-            skipped,
+            candidates: unique,
         };
+    }
+
+    async stageCandidate(candidate: DiscoveredCandidate, runKey?: string): Promise<{ inserted: boolean }> {
+        this.assertPublicLearnNowUrl(candidate.sourceUrl);
+        if (runKey) {
+            const previous = await this.getStageResult(candidate.sourceUrl, runKey);
+            if (previous !== null) return { inserted: previous };
+        }
+
+        const enrichedCandidate = await this.enrichCandidateForReview(candidate);
+        return this.upsertCandidate(enrichedCandidate, runKey);
     }
 
     async listCandidates(status?: CandidateStatus, source?: string) {
@@ -158,25 +161,131 @@ export class LearnNowCrawlerService {
         const candidate = await this.findCandidate(id);
         if (!candidate) throw new NotFoundException('Crawler candidate not found');
 
+        if (candidate.status === 'IMPORTING') {
+            return this.resumeStaleImport(candidate);
+        }
+
         if (candidate.status === 'IMPORTED') {
             return { skipped: true, reason: 'ALREADY_IMPORTED', candidateId: id };
         }
-
-        if (candidate.format === 'PDF') {
-            return this.importPdfCandidate(candidate);
+        if (candidate.status === 'SKIPPED_DUPLICATE') {
+            return {
+                skipped: true,
+                reason: 'ALREADY_DUPLICATE',
+                candidateId: id,
+                sourceId: candidate.imported_source_id,
+            };
+        }
+        if (candidate.status !== 'APPROVED') {
+            throw new BadRequestException('Only approved crawler candidates can be imported');
         }
 
-        return this.importArticleCandidate(candidate);
+        if (this.requiresTranscript(candidate.crawl_filter ?? '', this.getCandidateSourceType(candidate))
+            && !this.hasImportableTranscript(candidate)) {
+            throw new BadRequestException('Learn Now video candidates require an available transcript before import');
+        }
+
+        if (!this.isReviewReady(candidate)) {
+            throw new BadRequestException('Candidate review quality is not ready for import');
+        }
+
+        await this.validateCandidateImportUrl(candidate);
+
+        const claimed = await this.prisma.$executeRawUnsafe<number>(
+            `UPDATE crawl_candidates
+             SET status = 'IMPORTING'::"CrawlCandidateStatus",
+                 import_started_at = CURRENT_TIMESTAMP,
+                 rejection_reason = NULL,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1::uuid
+               AND status = 'APPROVED'::"CrawlCandidateStatus"
+               AND metadata->'reviewQuality'->>'readyForImport' = 'true'`,
+            candidate.id,
+        );
+        if (Number(claimed) !== 1) {
+            const current = await this.findCandidate(candidate.id);
+            if (current?.status === 'IMPORTED') {
+                return { skipped: true, reason: 'ALREADY_IMPORTED', candidateId: id };
+            }
+            if (current?.status === 'SKIPPED_DUPLICATE') {
+                return {
+                    skipped: true,
+                    reason: 'ALREADY_DUPLICATE',
+                    candidateId: id,
+                    sourceId: current.imported_source_id,
+                };
+            }
+            throw new ConflictException('Crawler candidate import is already in progress or no longer approved');
+        }
+
+        try {
+            if (candidate.format === 'PDF') {
+                return await this.importPdfCandidate(candidate);
+            }
+            return await this.importArticleCandidate(candidate);
+        } catch (error: any) {
+            await this.recordImportError(candidate.id, error?.message ?? 'Candidate import failed');
+            throw error;
+        }
+    }
+
+    async approveCandidate(id: string): Promise<{ success: true; status: 'APPROVED' }> {
+        const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+            `UPDATE crawl_candidates
+             SET status = 'APPROVED'::"CrawlCandidateStatus",
+                 rejection_reason = NULL,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1::uuid
+               AND status = 'PENDING_REVIEW'::"CrawlCandidateStatus"
+               AND metadata->'reviewQuality'->>'readyForImport' = 'true'
+             RETURNING id`,
+            id,
+        );
+        if (rows.length === 0) {
+            throw new BadRequestException('Only ready pending-review candidates can be approved');
+        }
+        return { success: true, status: 'APPROVED' };
+    }
+
+    async rejectCandidate(id: string, reason: string): Promise<{ success: true; status: 'REJECTED' }> {
+        const normalizedReason = reason.trim();
+        if (!normalizedReason || normalizedReason.length > 500) {
+            throw new BadRequestException('Rejection reason must contain between 1 and 500 characters');
+        }
+        const rows = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+            `UPDATE crawl_candidates
+             SET status = 'REJECTED'::"CrawlCandidateStatus",
+                 rejection_reason = $2,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1::uuid
+               AND status IN ('PENDING_REVIEW', 'APPROVED')
+             RETURNING id`,
+            id,
+            normalizedReason,
+        );
+        if (rows.length === 0) {
+            throw new BadRequestException('Only pending-review or approved candidates can be rejected');
+        }
+        return { success: true, status: 'REJECTED' };
     }
 
     async deleteCandidate(id: string): Promise<{ success: boolean; count: number }> {
         const [candidateId] = this.normalizeCandidateIds([id]);
         const deleted = await this.prisma.$executeRawUnsafe<number>(
-            `DELETE FROM crawl_candidates WHERE id = $1::uuid`,
+            `DELETE FROM crawl_candidates
+             WHERE id = $1::uuid
+               AND status <> 'IMPORTING'::"CrawlCandidateStatus"`,
             candidateId,
         );
 
         if (Number(deleted) === 0) {
+            const rows = await this.prisma.$queryRawUnsafe<Array<{ status: CandidateStatus }>>(
+                `SELECT status FROM crawl_candidates WHERE id = $1::uuid LIMIT 1`,
+                candidateId,
+            );
+            if (rows[0]?.status === 'IMPORTING') {
+                throw new ConflictException('Importing crawler candidates cannot be deleted');
+            }
             throw new NotFoundException('Crawler candidate not found');
         }
 
@@ -190,12 +299,32 @@ export class LearnNowCrawlerService {
         }
 
         const placeholders = candidateIds.map((_, index) => `$${index + 1}::uuid`).join(', ');
-        const deleted = await this.prisma.$executeRawUnsafe<number>(
-            `DELETE FROM crawl_candidates WHERE id IN (${placeholders})`,
-            ...candidateIds,
-        );
+        return this.prisma.$transaction(async (transaction) => {
+            const locked = await transaction.$queryRawUnsafe<Array<{ id: string; status: CandidateStatus }>>(
+                `SELECT id, status FROM crawl_candidates
+                 WHERE id IN (${placeholders})
+                 ORDER BY id
+                 FOR UPDATE`,
+                ...candidateIds,
+            );
 
-        return { success: true, count: Number(deleted) };
+            if (locked.some(candidate => candidate.status === 'IMPORTING')) {
+                throw new ConflictException('Importing crawler candidates cannot be deleted');
+            }
+
+            if (locked.length === 0) {
+                return { success: true, count: 0 };
+            }
+
+            const lockedIds = locked.map(candidate => candidate.id);
+            const lockedPlaceholders = lockedIds.map((_, index) => `$${index + 1}::uuid`).join(', ');
+            const deleted = await transaction.$executeRawUnsafe<number>(
+                `DELETE FROM crawl_candidates WHERE id IN (${lockedPlaceholders})`,
+                ...lockedIds,
+            );
+
+            return { success: true, count: Number(deleted) };
+        });
     }
 
     private async importArticleCandidate(candidate: CrawlCandidateRecord) {
@@ -230,13 +359,13 @@ export class LearnNowCrawlerService {
     }
 
     private async importPdfCandidate(candidate: CrawlCandidateRecord) {
-        const response = await axios.get<ArrayBuffer>(candidate.source_url, {
+        const response = await this.getWithSafeRedirects<ArrayBuffer>(candidate.source_url, {
             responseType: 'arraybuffer',
             timeout: 30000,
-            maxRedirects: 5,
             headers: { 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0' },
-            validateStatus: status => status >= 200 && status < 400,
-        });
+            maxContentLength: PDF_RESPONSE_LIMIT_BYTES,
+            maxBodyLength: PDF_RESPONSE_LIMIT_BYTES,
+        }, candidate.source === LEARNNOW_SOURCE ? 'learnnow' : 'public');
 
         const buffer = Buffer.from(response.data);
         const contentType = String(response.headers['content-type'] ?? '').toLowerCase();
@@ -263,19 +392,32 @@ export class LearnNowCrawlerService {
             size: buffer.length,
         } as Express.Multer.File, 'knowledge-pool');
 
-        const source = await this.prisma.knowledgeSource.create({
-            data: {
-                name: candidate.title,
-                type: KnowledgeSourceType.FILE_PDF,
-                fileName,
-                filePath: storageKey,
-                status: KnowledgeSourceStatus.ACTIVE,
-                language: candidate.language ?? 'en',
-                lastHash: hash,
-                metadata: this.buildImportMetadata(candidate, 'pdf'),
-            },
-        });
+        let source: { id: string };
+        try {
+            source = await this.prisma.knowledgeSource.create({
+                data: {
+                    name: candidate.title,
+                    type: KnowledgeSourceType.FILE_PDF,
+                    fileName,
+                    filePath: storageKey,
+                    status: KnowledgeSourceStatus.ACTIVE,
+                    language: candidate.language ?? 'en',
+                    lastHash: hash,
+                    metadata: this.buildImportMetadata(candidate, 'pdf'),
+                },
+            });
+        } catch (error) {
+            await this.storageService.deleteFile(storageKey).catch(() => undefined);
+            throw error;
+        }
 
+        try {
+            await this.checkpointImportSource(candidate.id, source.id, hash);
+        } catch (error) {
+            await this.prisma.knowledgeSource.delete({ where: { id: source.id } }).catch(() => undefined);
+            await this.storageService.deleteFile(storageKey).catch(() => undefined);
+            throw error;
+        }
         await this.knowledgePoolService.triggerSync(source.id);
         await this.markCandidate(candidate.id, 'IMPORTED', source.id);
         return { imported: true, candidateId: candidate.id, sourceId: source.id };
@@ -293,11 +435,12 @@ export class LearnNowCrawlerService {
 
     private async createLearnNowSession(): Promise<LearnNowSession> {
         const cookies = new Map<string, string>();
-        const response = await axios.get<string>(`${LEARNNOW_BASE_URL}/int`, {
+        const response = await this.getWithSafeRedirects<string>(`${LEARNNOW_BASE_URL}/int`, {
             timeout: 15000,
-            maxRedirects: 5,
             headers: { 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0' },
-        });
+            maxContentLength: HTML_RESPONSE_LIMIT_BYTES,
+            maxBodyLength: HTML_RESPONSE_LIMIT_BYTES,
+        }, 'learnnow');
         this.collectSetCookies(response.headers?.['set-cookie'], cookies);
         return { cookies };
     }
@@ -308,36 +451,16 @@ export class LearnNowCrawlerService {
             throw new BadRequestException('Only learnnow.allplan.com crawl discovery is allowed');
         }
 
-        const response = await axios.get<string>(url, {
+        const response = await this.getWithSafeRedirects<string>(url, {
             timeout: 15000,
-            maxRedirects: 5,
             headers: {
                 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0',
                 Cookie: this.serializeCookies(session.cookies),
             },
-        });
+            maxContentLength: HTML_RESPONSE_LIMIT_BYTES,
+            maxBodyLength: HTML_RESPONSE_LIMIT_BYTES,
+        }, 'learnnow');
         return response.data;
-    }
-
-    private async discoverWithCrawler(crawlUrl: string, format: LearnNowCrawlFormat): Promise<DiscoveredCandidate[]> {
-        try {
-            const result = await this.crawlService.fetch(crawlUrl);
-            const candidates = this.extractMarkdownCandidates(result.content, format, crawlUrl);
-            if (candidates.length > 0) {
-                this.logger.log(`✅ Crawler discovered ${candidates.length} Learn Now ${format} candidates via ${result.provider ?? 'basic'}`);
-            }
-            return candidates.map(candidate => ({
-                ...candidate,
-                metadata: {
-                    ...candidate.metadata,
-                    crawlerProvider: result.provider ?? 'basic',
-                    crawler: (result.metadata ?? {}) as Prisma.InputJsonObject,
-                },
-            }));
-        } catch (error: any) {
-            this.logger.warn(`⚠️ Learn Now crawler discovery fallback failed (${error.message}): ${crawlUrl}`);
-            return [];
-        }
     }
 
     private extractCandidates(html: string, format: LearnNowCrawlFormat, crawlUrl: string): DiscoveredCandidate[] {
@@ -374,45 +497,11 @@ export class LearnNowCrawlerService {
         return candidates;
     }
 
-    private extractMarkdownCandidates(markdown: string, format: LearnNowCrawlFormat, crawlUrl: string): DiscoveredCandidate[] {
-        const candidateFormat = this.toCandidateFormat(format);
-        const candidates: DiscoveredCandidate[] = [];
-        const seen = new Set<string>();
-        const linkPattern = /\[([^\]]{3,240})\]\((https?:\/\/learnnow\.allplan\.com\/[^)\s]+)\)/gi;
-
-        for (const match of markdown.matchAll(linkPattern)) {
-            const title = this.cleanTitle(match[1]);
-            const sourceUrl = this.toLearnNowUrl(match[2]);
-            if (!sourceUrl || seen.has(sourceUrl) || !this.isAllowedResultUrl(sourceUrl, candidateFormat)) continue;
-            seen.add(sourceUrl);
-
-            candidates.push({
-                sourceUrl,
-                title: title || this.titleFromUrl(sourceUrl),
-                format: candidateFormat,
-                language: this.inferLanguage(sourceUrl),
-                categorySlug: this.inferCategorySlug(`${title} ${sourceUrl}`),
-                crawlFilter: format,
-                metadata: {
-                    source: LEARNNOW_SOURCE,
-                    sourceType: format,
-                    candidateFormat,
-                    sourceUrl,
-                    crawlFilter: format,
-                    discoveredFrom: crawlUrl,
-                    discoveredVia: 'crawler_markdown',
-                },
-            });
-        }
-
-        return candidates;
-    }
-
     private toLearnNowUrl(href: string): string | null {
         if (!href || href.startsWith('#') || href.startsWith('mailto:')) return null;
         try {
             const url = new URL(href, LEARNNOW_BASE_URL);
-            if (url.hostname !== 'learnnow.allplan.com') return null;
+            if (url.protocol !== 'https:' || url.hostname !== 'learnnow.allplan.com' || url.port || url.username || url.password) return null;
             if (this.isEnrollmentCourseUrl(url)) return null;
             if (this.isTotaraHowtoResource(url)) {
                 const id = url.searchParams.get('id');
@@ -462,7 +551,7 @@ export class LearnNowCrawlerService {
             .join('; ');
     }
 
-    private async upsertCandidate(candidate: DiscoveredCandidate): Promise<{ inserted: boolean }> {
+    private async upsertCandidate(candidate: DiscoveredCandidate, runKey?: string): Promise<{ inserted: boolean }> {
         const duplicate = await this.findDuplicateKnowledgeSource(candidate.sourceUrl, candidate.contentHash ?? null);
         const existing = await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
             `SELECT id FROM crawl_candidates WHERE source_url = $1 LIMIT 1`,
@@ -488,7 +577,7 @@ export class LearnNowCrawlerService {
                 existing[0].id,
                 candidate.title,
                 candidate.contentHash ?? null,
-                JSON.stringify(candidate.metadata),
+                JSON.stringify(this.withRunMarker(candidate.metadata, runKey, false)),
                 duplicate?.id ?? null,
                 duplicate?.reason ?? null,
             );
@@ -510,7 +599,7 @@ export class LearnNowCrawlerService {
                 candidate.crawlFilter,
                 duplicate.reason,
                 duplicate.id,
-                JSON.stringify(candidate.metadata),
+                JSON.stringify(this.withRunMarker(candidate.metadata, runKey, false)),
             );
             return { inserted: false };
         }
@@ -526,9 +615,44 @@ export class LearnNowCrawlerService {
             candidate.categorySlug,
             candidate.contentHash ?? null,
             candidate.crawlFilter,
-            JSON.stringify(candidate.metadata),
+            JSON.stringify(this.withRunMarker(candidate.metadata, runKey, true)),
         );
         return { inserted: true };
+    }
+
+    async getStageResult(sourceUrl: string, runKey: string): Promise<boolean | null> {
+        this.assertPublicLearnNowUrl(sourceUrl);
+        const rows = await this.prisma.$queryRawUnsafe<Array<{ inserted: boolean }>>(
+            `SELECT (metadata->>'crawlRunInserted')::boolean AS inserted
+             FROM crawl_candidates
+             WHERE source_url = $1
+               AND metadata->>'crawlRunKey' = $2
+             LIMIT 1`,
+            sourceUrl,
+            runKey,
+        );
+        return rows[0]?.inserted ?? null;
+    }
+
+    private withRunMarker(
+        metadata: Prisma.InputJsonObject,
+        runKey: string | undefined,
+        inserted: boolean,
+    ): Prisma.InputJsonObject {
+        if (!runKey) return metadata;
+        return { ...metadata, crawlRunKey: runKey, crawlRunInserted: inserted };
+    }
+
+    private assertPublicLearnNowUrl(value: string): void {
+        let url: URL;
+        try {
+            url = new URL(value);
+        } catch {
+            throw new BadRequestException('Invalid Learn Now candidate URL');
+        }
+        if (url.protocol !== 'https:' || url.hostname !== 'learnnow.allplan.com' || url.port || url.username || url.password) {
+            throw new BadRequestException('Only public HTTPS learnnow.allplan.com candidate URLs are allowed');
+        }
     }
 
     private async findDuplicateKnowledgeSource(sourceUrl: string, contentHash?: string | null): Promise<DuplicateKnowledgeSource | null> {
@@ -576,6 +700,8 @@ export class LearnNowCrawlerService {
                 return {
                     ...candidate,
                     title: result.title || candidate.title,
+                    language: this.authoritativeLanguage(learnNow, candidate.language),
+                    categorySlug: this.authoritativeCategorySlug(learnNow, candidate.categorySlug),
                     contentHash: result.hash,
                     metadata: {
                         ...candidate.metadata,
@@ -694,9 +820,47 @@ export class LearnNowCrawlerService {
             || normalized.has('recording');
     }
 
+    private getCandidateSourceType(candidate: CrawlCandidateRecord): string {
+        const reviewQuality = candidate.metadata?.reviewQuality;
+        if (reviewQuality && typeof reviewQuality === 'object' && !Array.isArray(reviewQuality)) {
+            const sourceType = (reviewQuality as Record<string, unknown>).sourceType;
+            if (typeof sourceType === 'string') return sourceType;
+        }
+        return candidate.crawl_filter ?? '';
+    }
+
+    private hasImportableTranscript(candidate: CrawlCandidateRecord): boolean {
+        const reviewQuality = candidate.metadata?.reviewQuality;
+        if (!reviewQuality || typeof reviewQuality !== 'object' || Array.isArray(reviewQuality)) return false;
+        const quality = reviewQuality as Record<string, unknown>;
+        return quality.transcriptStatus === 'AVAILABLE' && quality.readyForImport === true;
+    }
+
+    private isReviewReady(candidate: CrawlCandidateRecord): boolean {
+        const reviewQuality = candidate.metadata?.reviewQuality;
+        return Boolean(
+            reviewQuality
+            && typeof reviewQuality === 'object'
+            && !Array.isArray(reviewQuality)
+            && (reviewQuality as Record<string, unknown>).readyForImport === true,
+        );
+    }
+
+    private async validateCandidateImportUrl(candidate: CrawlCandidateRecord): Promise<void> {
+        if (candidate.source === LEARNNOW_SOURCE) {
+            await this.urlSafety.validateLearnNowUrl(candidate.source_url);
+            return;
+        }
+        if (candidate.source === 'allplan_help' || candidate.source === 'generic_web') {
+            await this.urlSafety.validatePublicHttpsUrl(candidate.source_url);
+            return;
+        }
+        throw new BadRequestException(`Unsupported crawler candidate source: ${candidate.source}`);
+    }
+
     private async findCandidate(id: string): Promise<CrawlCandidateRecord | null> {
         const rows = await this.prisma.$queryRawUnsafe<CrawlCandidateRecord[]>(
-            `SELECT id, source, source_url, title, format, status, language, category_slug, content_hash, crawl_filter, rejection_reason, metadata
+            `SELECT id, source, source_url, title, format, status, language, category_slug, content_hash, crawl_filter, rejection_reason, imported_source_id, import_started_at, metadata
              FROM crawl_candidates
              WHERE id = $1::uuid
              LIMIT 1`,
@@ -706,19 +870,91 @@ export class LearnNowCrawlerService {
     }
 
     private async markCandidate(id: string, status: CandidateStatus, sourceId?: string | null, reason?: string) {
-        await this.prisma.$executeRawUnsafe(
+        const updated = await this.prisma.$executeRawUnsafe<number>(
             `UPDATE crawl_candidates
              SET status = $2::"CrawlCandidateStatus",
                  imported_source_id = COALESCE($3::uuid, imported_source_id),
                  imported_at = CASE WHEN $2 = 'IMPORTED' THEN CURRENT_TIMESTAMP ELSE imported_at END,
+                 import_started_at = CASE
+                     WHEN $2 IN ('IMPORTED', 'SKIPPED_DUPLICATE', 'FAILED') THEN NULL
+                     ELSE import_started_at
+                 END,
                  rejection_reason = COALESCE($4, rejection_reason),
                  updated_at = CURRENT_TIMESTAMP
-             WHERE id = $1::uuid`,
+             WHERE id = $1::uuid
+               AND (
+                   $2::"CrawlCandidateStatus" NOT IN ('IMPORTED', 'SKIPPED_DUPLICATE', 'FAILED')
+                   OR status = 'IMPORTING'::"CrawlCandidateStatus"
+               )`,
             id,
             status,
             sourceId ?? null,
             reason ?? null,
         );
+        if (['IMPORTED', 'SKIPPED_DUPLICATE', 'FAILED'].includes(status) && Number(updated) !== 1) {
+            throw new ConflictException('Crawler candidate terminal transition lost its import claim');
+        }
+    }
+
+    private async checkpointImportSource(candidateId: string, sourceId: string, contentHash?: string): Promise<void> {
+        const updated = await this.prisma.$executeRawUnsafe<number>(
+            `UPDATE crawl_candidates
+             SET imported_source_id = $2::uuid,
+                 content_hash = COALESCE($3, content_hash),
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1::uuid
+               AND status = 'IMPORTING'::"CrawlCandidateStatus"`,
+            candidateId,
+            sourceId,
+            contentHash ?? null,
+        );
+        if (Number(updated) !== 1) {
+            throw new ConflictException('Crawler candidate lost its import claim before source checkpoint');
+        }
+    }
+
+    private async recordImportError(candidateId: string, reason: string): Promise<void> {
+        await this.prisma.$executeRawUnsafe(
+            `UPDATE crawl_candidates
+             SET rejection_reason = $2,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1::uuid
+               AND status = 'IMPORTING'::"CrawlCandidateStatus"`,
+            candidateId,
+            reason.slice(0, 1000),
+        );
+    }
+
+    private async resumeStaleImport(candidate: CrawlCandidateRecord): Promise<any> {
+        const startedAt = candidate.import_started_at?.getTime() ?? Date.now();
+        if (Date.now() - startedAt < IMPORT_LEASE_MS) {
+            throw new ConflictException('Crawler candidate import is already in progress');
+        }
+
+        const sourceId = candidate.imported_source_id
+            ?? (await this.findDuplicateKnowledgeSource(candidate.source_url, candidate.content_hash))?.id
+            ?? null;
+        if (sourceId) {
+            await this.knowledgePoolService.triggerSync(sourceId);
+            await this.markCandidate(candidate.id, 'IMPORTED', sourceId);
+            return { imported: true, resumed: true, candidateId: candidate.id, sourceId };
+        }
+
+        const released = await this.prisma.$executeRawUnsafe<number>(
+            `UPDATE crawl_candidates
+             SET status = 'APPROVED'::"CrawlCandidateStatus",
+                 import_started_at = NULL,
+                 rejection_reason = NULL,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1::uuid
+               AND status = 'IMPORTING'::"CrawlCandidateStatus"
+               AND import_started_at < CURRENT_TIMESTAMP - INTERVAL '15 minutes'`,
+            candidate.id,
+        );
+        if (Number(released) !== 1) {
+            throw new ConflictException('Crawler candidate import lease is no longer recoverable');
+        }
+        return this.importCandidate(candidate.id);
     }
 
     private normalizeCandidateIds(ids: string[] | undefined): string[] {
@@ -795,6 +1031,58 @@ export class LearnNowCrawlerService {
     private inferLanguage(url: string): string {
         const match = url.match(/learnnow\.allplan\.com\/([a-z]{2})(?:\/|$)/i);
         return match?.[1]?.toLowerCase() ?? 'en';
+    }
+
+    private authoritativeLanguage(learnNow: Record<string, unknown>, fallback: string): string {
+        const value = typeof learnNow.language === 'string' ? learnNow.language.trim().toLowerCase() : '';
+        return /^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$/.test(value) ? value : fallback;
+    }
+
+    private authoritativeCategorySlug(learnNow: Record<string, unknown>, fallback: string): string {
+        const categories = Array.isArray(learnNow.humanReadableCategories)
+            ? learnNow.humanReadableCategories
+            : Array.isArray(learnNow.categories)
+                ? learnNow.categories
+                : [];
+        const authoritative = categories
+            .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+            .join(' ')
+            .replace(/::/g, ' ')
+            .normalize('NFKD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 100);
+        return authoritative || fallback;
+    }
+
+    private async getWithSafeRedirects<T>(
+        initialUrl: string,
+        config: Record<string, unknown>,
+        policy: 'learnnow' | 'public',
+    ): Promise<{ data: T; headers: Record<string, any>; status?: number }> {
+        let currentUrl = initialUrl;
+        for (let redirectCount = 0; redirectCount <= 5; redirectCount += 1) {
+            let httpsAgent;
+            if (policy === 'learnnow') {
+                ({ httpsAgent } = await this.urlSafety.validateLearnNowUrl(currentUrl));
+                await this.requestPacer.waitForTurn();
+            } else {
+                ({ httpsAgent } = await this.urlSafety.validatePublicHttpsUrl(currentUrl));
+            }
+            const response = await axios.get<T>(currentUrl, {
+                ...config,
+                httpsAgent,
+                maxRedirects: 0,
+                validateStatus: status => status >= 200 && status < 400,
+            });
+            const status = response.status ?? 200;
+            const location = response.headers?.location;
+            if (status < 300 || status >= 400 || !location) return response as any;
+            currentUrl = new URL(String(location), currentUrl).toString();
+        }
+        throw new BadRequestException('Too many outbound redirects');
     }
 
     private toCandidateFormat(format: LearnNowCrawlFormat): CandidateFormat {

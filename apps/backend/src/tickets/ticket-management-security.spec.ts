@@ -109,11 +109,11 @@ function fixture() {
 describe('Ticket management authorization before mutations', () => {
     beforeEach(() => jest.clearAllMocks());
 
-    it('preserves the customer close-button transition on their own ticket', async () => {
+    it('requires customers to use the dedicated resolution endpoint instead of generic status management', async () => {
         const f = fixture();
         await expect(f.service.transition('own', TicketStatus.PENDING_CUSTOMER_REVIEW, { sub: 'customer-a', role: 'CUSTOMER' }))
-            .resolves.toMatchObject({ status: TicketStatus.PENDING_CUSTOMER_REVIEW });
-        expect(f.prisma.ticket.update).toHaveBeenCalledTimes(1);
+            .rejects.toThrow(ForbiddenException);
+        f.expectNoWrites();
     });
 
     it('denies customer review transition on another customer ticket', async () => {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger, Delete, ParseUUIDPipe, GoneException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
@@ -15,10 +15,13 @@ import { StorageService } from '../common/services/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LearnNowCrawlerService } from './learnnow-crawler.service';
 import { DiscoverLearnNowDto } from './dto/learnnow-crawl.dto';
+import { StartLearnNowCrawlRunDto } from './dto/learnnow-crawl-run.dto';
+import { LearnNowCrawlRunService } from './learnnow-crawl-run.service';
 import { GenericWebCrawlerService } from './generic-web-crawler.service';
 import { DiscoverGenericWebDto } from './dto/generic-crawl.dto';
 import { AllplanHelpCrawlerService } from './allplan-help-crawler.service';
 import { DiscoverAllplanHelpDto } from './dto/allplan-help-crawl.dto';
+import { RejectCrawlerCandidateDto } from './dto/review-crawler-candidate.dto';
 
 // Production Knowledge Base Stabilization Sync v1.0.3 - Final RAG Fixes (Multi-chunk + High-precision 1536 aligned)
 @ApiTags('Knowledge Pool')
@@ -32,6 +35,7 @@ export class KnowledgePoolController {
         private readonly storageService: StorageService,
         private readonly prisma: PrismaService,
         private readonly learnNowCrawlerService: LearnNowCrawlerService,
+        private readonly learnNowCrawlRunService: LearnNowCrawlRunService,
         private readonly genericWebCrawlerService: GenericWebCrawlerService,
         private readonly allplanHelpCrawlerService: AllplanHelpCrawlerService,
     ) { }
@@ -164,7 +168,46 @@ export class KnowledgePoolController {
     @Roles('admin', 'super-admin', 'manager', 'support-manager')
     @ApiOperation({ summary: 'Discover public Allplan Learn Now crawler candidates' })
     async discoverLearnNow(@Body() dto: DiscoverLearnNowDto): Promise<any> {
-        return this.learnNowCrawlerService.discover(dto);
+        void dto;
+        throw new GoneException({
+            code: 'LEARNNOW_DISCOVERY_MOVED_TO_RUNS',
+            message: 'Use POST /knowledge-pool/crawl/learnnow/runs for rate-limited discovery',
+        });
+    }
+
+    @Post('crawl/learnnow/runs')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Start a durable, rate-limited public Learn Now crawl run' })
+    async startLearnNowRun(@Body() dto: StartLearnNowCrawlRunDto): Promise<any> {
+        return this.learnNowCrawlRunService.start(dto);
+    }
+
+    @Get('crawl/learnnow/runs/latest')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Get the latest Learn Now crawl run' })
+    async latestLearnNowRun(): Promise<any> {
+        return this.learnNowCrawlRunService.latest();
+    }
+
+    @Get('crawl/learnnow/runs/:id')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Get a Learn Now crawl run' })
+    async getLearnNowRun(@Param('id', new ParseUUIDPipe()) id: string): Promise<any> {
+        return this.learnNowCrawlRunService.get(id);
+    }
+
+    @Post('crawl/learnnow/runs/:id/pause')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Pause a Learn Now crawl run' })
+    async pauseLearnNowRun(@Param('id', new ParseUUIDPipe()) id: string): Promise<any> {
+        return this.learnNowCrawlRunService.pause(id);
+    }
+
+    @Post('crawl/learnnow/runs/:id/resume')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Resume a paused Learn Now crawl run' })
+    async resumeLearnNowRun(@Param('id', new ParseUUIDPipe()) id: string): Promise<any> {
+        return this.learnNowCrawlRunService.resume(id);
     }
 
     @Post('crawl/discover')
@@ -191,8 +234,25 @@ export class KnowledgePoolController {
     @Post('crawl/candidates/:id/import')
     @Roles('admin', 'super-admin', 'manager', 'support-manager')
     @ApiOperation({ summary: 'Import an approved crawler candidate into the Knowledge Pool queue' })
-    async importCrawlerCandidate(@Param('id') id: string): Promise<any> {
+    async importCrawlerCandidate(@Param('id', new ParseUUIDPipe()) id: string): Promise<any> {
         return this.learnNowCrawlerService.importCandidate(id);
+    }
+
+    @Post('crawl/candidates/:id/approve')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Approve a review-ready crawler candidate' })
+    async approveCrawlerCandidate(@Param('id', new ParseUUIDPipe()) id: string): Promise<any> {
+        return this.learnNowCrawlerService.approveCandidate(id);
+    }
+
+    @Post('crawl/candidates/:id/reject')
+    @Roles('admin', 'super-admin', 'manager', 'support-manager')
+    @ApiOperation({ summary: 'Reject a crawler candidate with an operator reason' })
+    async rejectCrawlerCandidate(
+        @Param('id', new ParseUUIDPipe()) id: string,
+        @Body() dto: RejectCrawlerCandidateDto,
+    ): Promise<any> {
+        return this.learnNowCrawlerService.rejectCandidate(id, dto.reason);
     }
 
     @Post('crawl/candidates/bulk-delete')
@@ -205,7 +265,7 @@ export class KnowledgePoolController {
     @Delete('crawl/candidates/:id')
     @Roles('admin', 'super-admin', 'manager', 'support-manager')
     @ApiOperation({ summary: 'Delete a crawler candidate from the review queue' })
-    async deleteCrawlerCandidate(@Param('id') id: string) {
+    async deleteCrawlerCandidate(@Param('id', new ParseUUIDPipe()) id: string) {
         return this.learnNowCrawlerService.deleteCandidate(id);
     }
 

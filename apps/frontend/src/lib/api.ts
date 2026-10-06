@@ -86,12 +86,34 @@ export type CrawlCandidate = {
     metadata?: Record<string, unknown> | null;
 };
 
-export type DiscoverLearnNowPayload = {
+export type LearnNowCrawlRunStatus =
+    | 'QUEUED'
+    | 'RUNNING'
+    | 'PAUSED'
+    | 'COMPLETED'
+    | 'FAILED';
+
+export type LearnNowCrawlRun = {
+    id: string;
+    status: LearnNowCrawlRunStatus;
+    search?: string | null;
+    formats: LearnNowCrawlFormat[];
+    maxCandidates: number;
+    processedCount: number;
+    insertedCount: number;
+    skippedCount: number;
+    failedCount?: number;
+    lastError?: string | null;
+    startedAt?: string | null;
+    completedAt?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type StartLearnNowCrawlRunPayload = {
     search?: string;
     formats?: LearnNowCrawlFormat[];
-    maxPages?: number;
     maxCandidates?: number;
-    dryRun?: boolean;
 };
 
 export type DiscoverGenericWebPayload = {
@@ -477,11 +499,19 @@ export const api = {
         sync: (id: string) => request<any>(`/knowledge-pool/sources/${id}/sync`, { method: 'POST' }),
         logs: (id: string) => request<any[]>(`/knowledge-pool/sources/${id}/logs`),
         syncDataset: () => request<any>('/knowledge-pool/sync-dataset', { method: 'POST' }),
-        discoverLearnNow: (body: DiscoverLearnNowPayload) =>
-            request<any>('/knowledge-pool/crawl/learnnow/discover', {
+        startLearnNowCrawlRun: (body: StartLearnNowCrawlRunPayload) =>
+            request<LearnNowCrawlRun>('/knowledge-pool/crawl/learnnow/runs', {
                 method: 'POST',
                 body: JSON.stringify(body),
             }),
+        latestLearnNowCrawlRun: () =>
+            request<LearnNowCrawlRun | null>('/knowledge-pool/crawl/learnnow/runs/latest'),
+        learnNowCrawlRun: (id: string) =>
+            request<LearnNowCrawlRun>(`/knowledge-pool/crawl/learnnow/runs/${id}`),
+        pauseLearnNowCrawlRun: (id: string) =>
+            request<LearnNowCrawlRun>(`/knowledge-pool/crawl/learnnow/runs/${id}/pause`, { method: 'POST' }),
+        resumeLearnNowCrawlRun: (id: string) =>
+            request<LearnNowCrawlRun>(`/knowledge-pool/crawl/learnnow/runs/${id}/resume`, { method: 'POST' }),
         discoverGenericWeb: (body: DiscoverGenericWebPayload) =>
             request<any>('/knowledge-pool/crawl/discover', {
                 method: 'POST',
@@ -501,6 +531,13 @@ export const api = {
         },
         importCrawlCandidate: (id: string) =>
             request<any>(`/knowledge-pool/crawl/candidates/${id}/import`, { method: 'POST' }),
+        approveCrawlCandidate: (id: string) =>
+            request<{ success: true; status: 'APPROVED' }>(`/knowledge-pool/crawl/candidates/${id}/approve`, { method: 'POST' }),
+        rejectCrawlCandidate: (id: string, reason: string) =>
+            request<{ success: true; status: 'REJECTED' }>(`/knowledge-pool/crawl/candidates/${id}/reject`, {
+                method: 'POST',
+                body: JSON.stringify({ reason }),
+            }),
         deleteCrawlCandidate: (id: string) =>
             request<{ success: boolean; count: number }>(`/knowledge-pool/crawl/candidates/${id}`, { method: 'DELETE' }),
         bulkDeleteCrawlCandidates: (ids: string[]) =>
@@ -545,7 +582,7 @@ export const api = {
         delete: (id: string) => request<any>(`/tickets/${id}`, { method: 'DELETE' }),
     },
     ai: {
-        query: (query: string, hotinfoContext?: any, productId?: string | null, language?: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>, attachments?: any[], wait?: boolean, strictLanguage?: boolean, routeLocale?: string, useHotinfo?: boolean, allplanVersion?: string) => {
+        query: (query: string, hotinfoContext?: any, productId?: string | null, language?: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>, attachments?: any[], wait?: boolean, strictLanguage?: boolean, routeLocale?: string, useHotinfo?: boolean, allplanVersion?: string, licensingIntake?: Record<string, unknown>, workflowKey?: 'GENERIC' | 'ALLPLAN_LICENSING') => {
             const url = wait ? '/ai/query?wait=true' : '/ai/query';
             return request<{
                 query: string;
@@ -560,7 +597,7 @@ export const api = {
                 languageMismatch?: boolean;
             }>(url, {
                 method: 'POST',
-                body: JSON.stringify({ query, hotinfoContext, useHotinfo, allplanVersion, productId, language, routeLocale: routeLocale ?? language, history, attachments, strictLanguage }),
+                body: JSON.stringify({ query, hotinfoContext, useHotinfo, allplanVersion, productId, language, routeLocale: routeLocale ?? language, history, attachments, strictLanguage, licensingIntake, workflowKey }),
                 signal: typeof AbortSignal !== 'undefined'
                     ? AbortSignal.timeout(wait ? 180000 : 60000)
                     : undefined,
@@ -740,6 +777,7 @@ export const api = {
             request<any>(`/faq${status ? `?status=${status}` : ''}`),
         approve: (id: string) => request<any>(`/faq/${id}/approve`, { method: 'POST' }),
         dismiss: (id: string) => request<any>(`/faq/${id}/dismiss`, { method: 'POST' }),
+        remove: (id: string) => request<any>(`/faq/${id}`, { method: 'DELETE' }),
         runPipeline: () => request<any>('/faq/pipeline/run', { method: 'POST' }),
     },
     teams: {

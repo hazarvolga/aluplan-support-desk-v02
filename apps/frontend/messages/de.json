@@ -929,16 +929,32 @@
       },
       "licensing_intake": {
         "title": "Für die richtige Lizenzanleitung",
-        "description": "Die Lizenzierung hängt von der Version ab. Geben Sie möglichst folgende Angaben in der Beschreibung an:",
+        "description": "Geben Sie zuerst Ihre exakte ALLPLAN-Version ein. Die nächsten Fragen passen sich der Lizenzmethode an. Hotinfo ist optional; eine direkte Support-Anfrage bleibt immer möglich.",
         "context_title": "ALLPLAN LIZENZINFORMATIONEN",
         "unknown": "Unbekannt",
         "version_label": "Exakte ALLPLAN-Version / Build",
-        "version_placeholder": "Beispiel: 2024-1-10; leer lassen, wenn unbekannt",
+        "version_placeholder": "Beispiel: 2024-1-10 oder 2024-2-0",
+        "release_family_label": "Lizenzmethode",
+        "release_family": {
+          "LEGACY_PRE_2016": "Alte Lizenzierung (2015 und früher)",
+          "CODEMETER_2016_2024_1_10": "CodeMeter / Product Key (2016–2024-1-10)",
+          "CLOUD_2024_2_PLUS": "ALLPLAN ID / Cloud-Lizenzierung (ab 2024-2-0)",
+          "UNKNOWN": "Version konnte nicht geprüft werden"
+        },
         "topology_label": "Lizenznutzungsmodell",
+        "topology_placeholder": "Lizenznutzungsmodell auswählen",
         "issue_label": "Gewünschter Vorgang / Problem",
+        "issue_placeholder": "Vorgang oder Problemtyp auswählen",
+        "ai_gate_notice": "Für eine KI-Anleitung sind die exakte Version/Build, das Lizenznutzungsmodell und der Problemtyp erforderlich. Falls Sie diese Angaben nicht kennen, können Sie die Anfrage direkt an den Support senden.",
         "allplan_id_label": "Zugriff auf ALLPLAN ID",
+        "user_role_label": "Ihre Rolle bei der Lizenzierung",
         "invite_label": "Organisationseinladung",
-        "seat_label": "Arbeitsplatzzuweisung",
+        "group_label": "Lizenzgruppe / Sichtbarkeit der Lizenz",
+        "user_role": {
+          "END_USER": "Ich bin Endanwender",
+          "LICENSE_ADMIN": "Ich verwalte Organisation / Lizenzen in Connect",
+          "UNKNOWN": "Ich weiß es nicht"
+        },
         "topology": {
           "SINGLE_USER": "Einzelplatz",
           "LICENSE_SERVER": "Lizenzserver / Netzwerklizenz",
@@ -971,12 +987,33 @@
           "UNKNOWN": "Ich weiß es nicht",
           "NOT_APPLICABLE": "Nicht zutreffend"
         },
+        "group": {
+          "ASSIGNED": "Gruppe zugewiesen / Lizenz sichtbar",
+          "MISSING": "Keine Gruppenzuweisung / Lizenz nicht sichtbar",
+          "UNKNOWN": "Ich weiß es nicht"
+        },
+        "official_resources_title": "Offizielle ALLPLAN-Ressourcen für Ihre Version",
+        "official_resource": {
+          "CODEMETER_SINGLE": "Einzelplatzlizenz aktivieren",
+          "CODEMETER_SERVER": "Lizenzserver installieren und aktivieren",
+          "CLOUD_FIRST_STEPS": "Erste Schritte zur Cloud-Lizenzierung",
+          "CLOUD_VIDEO": "Video zur Cloud-Lizenzierung ansehen"
+        },
         "items": [
           "Exakte ALLPLAN-Version und Build (zum Beispiel 2024-1-10 oder 2024-2-0)",
           "Einzelplatzlizenz oder Lizenzserver/Netzwerklizenz",
           "Sichtbare Fehlermeldung und gewünschter Vorgang",
           "Ab 2024-2-0: ALLPLAN ID, Organisationseinladung und Arbeitsplatzstatus"
-        ]
+        ],
+        "validation": {
+          "allplanVersion": "Geben Sie vor der KI-Diagnose die exakte ALLPLAN-Version/Build ein oder bestätigen Sie das aktuelle Hotinfo.",
+          "licenseTopology": "Wählen Sie vor der KI-Diagnose das Lizenznutzungsmodell aus.",
+          "licenseIssueType": "Wählen Sie vor der KI-Diagnose den gewünschten Vorgang oder Problemtyp aus.",
+          "allplanIdStatus": "Wählen Sie den Status Ihres ALLPLAN-ID-Zugriffs.",
+          "organizationInviteStatus": "Wählen Sie den Status der Organisationseinladung.",
+          "licenseGroupStatus": "Wählen Sie den Status der Lizenzgruppe / Sichtbarkeit.",
+          "licenseUserRole": "Wählen Sie Ihre Rolle im Lizenzprozess."
+        }
       },
       "departments": {
         "technical_support": "Technischer Support",
@@ -1106,6 +1143,7 @@
         "hotinfo_success": "Systeminformationen erfolgreich aktualisiert",
         "upload_error": "Fehler beim Hochladen der Datei",
         "ai_unavailable": "KI-Dienst kann derzeit nicht antworten. Sie können mit der Erstellung Ihrer Anfrage fortfahren.",
+        "licensing_intake_required": "Füllen Sie die markierten Pflichtfelder aus, bevor die Lizenzanleitung erstellt wird.",
         "ai_backend_unavailable": "KI-Dienst ist derzeit nicht erreichbar. Sie können direkt mit der Ticketerstellung fortfahren.",
         "ai_no_match": "Ich konnte Ihre Frage nicht ganz verstehen, habe aber unten einen allgemeinen Leitfaden vorbereitet.",
         "ai_language_mismatch": "Ihre Frage passt nicht zur ausgewählten Oberflächensprache. Bitte ändern Sie die Sprache oder formulieren Sie die Frage in der ausgewählten Sprache.",
@@ -3080,6 +3118,8 @@
       "confidence_score": "KONFIDENZWERD",
       "approve": "GENEHMIGEN",
       "dismiss": "VERWERFEN",
+      "delete": "FAQ-Eintrag löschen",
+      "confirm_delete": "Möchten Sie diesen FAQ-Eintrag wirklich archivieren?",
       "source_ticket": "Quell-Ticket",
       "toasts": {
         "extraction_started": "Pipeline gestartet",
@@ -3089,6 +3129,8 @@
         "approved_desc": "Beispiel wurde veröffentlicht.",
         "dismissed": "FAQ verworfen",
         "dismissed_desc": "Beispiel in Entwurf verschoben/gelöscht.",
+        "deleted": "FAQ gelöscht",
+        "deleted_desc": "Der FAQ-Eintrag wurde archiviert.",
         "op_failed": "Vorgang fehlgeschlagen",
         "pipeline_failed": "Pipeline konnte nicht gestartet werden"
       }
@@ -3126,6 +3168,17 @@
       "all_synced_desc": "Führen Sie den Extraktionszyklus manuell aus, um neue Wissensbeispiele zu finden.",
       "add_to_kb": "IN KB AUFNEHMEN",
       "dismiss": "VERWERFEN",
+      "review_candidate": "VOLLSTÄNDIG PRÜFEN",
+      "candidate_detail": "PRÜFUNG DES LERNKANDIDATEN",
+      "candidate_detail_desc": "Prüfen Sie die vollständige Frage, Antwort und die Quelldatensätze vor der Freigabe oder Ablehnung.",
+      "full_question": "VOLLSTÄNDIGE FRAGE",
+      "full_answer": "VOLLSTÄNDIGE ANTWORT",
+      "source_records": "QUELLDATENSÄTZE",
+      "no_source_records": "Für diesen Kandidaten ist kein einsehbarer Quelldatensatz verfügbar.",
+      "frequency": "HÄUFIGKEIT",
+      "language": "SPRACHE",
+      "approving": "WIRD FREIGEGEBEN",
+      "dismissing": "WIRD VERWORFEN",
       "refresh": "AKTUALISIEREN",
       "toasts": {
         "pipeline_started": "KI-Pipeline gestartet",
@@ -3661,20 +3714,44 @@
         "buttons": {
           "dry_run": "VORSCHAU",
           "save_candidates": "KANDIDATEN SPEICHERN",
+          "start_slow_crawl": "KONTROLLIERTEN CRAWL STARTEN",
+          "pause": "PAUSIEREN",
+          "resume": "FORTSETZEN",
+          "approve": "FREIGEBEN",
+          "reject": "ABLEHNEN",
           "import": "IMPORT",
           "delete": "LÖSCHEN",
           "delete_selected": "AUSGEWÄHLTE LÖSCHEN"
         },
+        "run": {
+          "title": "KONTROLLIERTER LEARNNOW-CRAWL",
+          "safety_desc": "Läuft mit einem Worker, sammelt höchstens 5 Kandidaten pro Lauf und importiert oder embeddet nie ohne ausdrückliche Freigabe.",
+          "processed": "VERARBEITET",
+          "inserted": "NEUE KANDIDATEN",
+          "skipped": "ÜBERSPRUNGEN",
+          "limit": "LAUFLIMIT",
+          "daily_budget_reached": "Das sichere Crawl-Budget für heute ist erreicht.",
+          "failed_message": "Der Crawl wurde sicher beendet. Details stehen in den Serverprotokollen.",
+          "status": {
+            "queued": "EINGEREIHT",
+            "running": "LÄUFT",
+            "paused": "PAUSIERT",
+            "completed": "ABGESCHLOSSEN",
+            "failed": "FEHLGESCHLAGEN"
+          }
+        },
         "selected": "{count} KANDIDAT AUSGEWÄHLT",
         "confirm_delete": "Crawler-Kandidat \"{title}\" aus der Prüfliste löschen?",
         "confirm_bulk_delete": "{count} Crawler-Kandidaten werden aus der Prüfliste gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+        "reject_reason_prompt": "Geben Sie den Grund für die Ablehnung dieses Kandidaten ein:",
         "table": {
           "title": "TITEL",
           "source": "QUELLE",
           "format": "FORMAT",
           "category": "KATEGORIE",
           "status": "STATUS",
-          "discovered_from": "AUS"
+          "discovered_from": "AUS",
+          "rejection_reason": "GRUND"
         },
         "toasts": {
           "fetch_error": "Crawler-Kandidaten konnten nicht geladen werden",
@@ -3683,6 +3760,15 @@
           "discover_done": "Suche abgeschlossen",
           "discover_desc": "{count} neue Kandidaten gespeichert",
           "discover_error": "Crawler-Suche fehlgeschlagen",
+          "run_started": "Kontrollierter Crawl wurde eingereiht",
+          "run_started_desc": "Bis zu 5 neue Kandidaten werden mit niedriger Rate gesammelt.",
+          "run_start_error": "Der kontrollierte LearnNow-Crawl konnte nicht gestartet werden",
+          "run_fetch_error": "Der LearnNow-Crawl-Status konnte nicht geladen werden",
+          "run_control_error": "Der LearnNow-Crawl konnte nicht gesteuert werden",
+          "approve_done": "Kandidat freigegeben",
+          "approve_error": "Kandidat konnte nicht freigegeben werden",
+          "reject_done": "Kandidat abgelehnt",
+          "reject_error": "Kandidat konnte nicht abgelehnt werden",
           "import_started": "Import gestartet",
           "import_desc": "Kandidat wurde in die bestehende Sync-Pipeline gestellt",
           "import_skipped": "Kandidat übersprungen",
@@ -5223,9 +5309,29 @@
       "buttons": {
         "dry_run": "VORSCHAU",
         "save_candidates": "KANDIDATEN SPEICHERN",
+        "start_slow_crawl": "KONTROLLIERTEN CRAWL STARTEN",
+        "pause": "PAUSIEREN",
+        "resume": "FORTSETZEN",
         "import": "IMPORTIEREN",
         "delete": "LÖSCHEN",
         "delete_selected": "AUSGEWÄHLTE LÖSCHEN"
+      },
+      "run": {
+        "title": "KONTROLLIERTER LEARNNOW-CRAWL",
+        "safety_desc": "Läuft mit einem Worker, sammelt höchstens 5 neue Kandidaten pro Lauf und importiert oder embeddet nie ohne Freigabe.",
+        "processed": "VERARBEITET",
+        "inserted": "NEUE KANDIDATEN",
+        "skipped": "ÜBERSPRUNGEN",
+        "limit": "LAUFLIMIT",
+        "daily_budget_reached": "Das sichere Crawl-Tageslimit wurde erreicht.",
+        "failed_message": "Der Crawl wurde sicher beendet. Details sind in den Serverprotokollen verfügbar.",
+        "status": {
+          "queued": "EINGEREIHT",
+          "running": "LÄUFT",
+          "paused": "PAUSIERT",
+          "completed": "ABGESCHLOSSEN",
+          "failed": "FEHLGESCHLAGEN"
+        }
       },
       "selected": "{count} KANDIDAT AUSGEWÄHLT",
       "confirm_delete": "Crawler-Kandidat \"{title}\" aus der Prüfliste löschen?",
@@ -5246,6 +5352,11 @@
         "discover_done": "Discovery abgeschlossen",
         "discover_desc": "{count} neue Kandidaten gespeichert",
         "discover_error": "Crawler-Discovery fehlgeschlagen",
+        "run_started": "Kontrollierter Crawl eingereiht",
+        "run_started_desc": "Bis zu 5 neue Kandidaten werden mit niedriger Rate gesammelt.",
+        "run_start_error": "Kontrollierter LearnNow-Crawl konnte nicht gestartet werden",
+        "run_fetch_error": "LearnNow-Crawlstatus konnte nicht geladen werden",
+        "run_control_error": "LearnNow-Crawl konnte nicht gesteuert werden",
         "course_url_blocked": "LearnNow-Kurs-URLs benötigen eine Einschreibung und sind außerhalb des automatischen Crawls/Source-Imports. Fügen Sie solche Inhalte nur als freigegebenes PDF, Transcript oder Dokument hinzu.",
         "import_started": "Import gestartet",
         "import_desc": "Kandidat wurde in die bestehende Sync-Pipeline eingereiht",

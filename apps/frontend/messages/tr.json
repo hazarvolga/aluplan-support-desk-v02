@@ -953,16 +953,32 @@
       },
       "licensing_intake": {
         "title": "Doğru lisans yönlendirmesi için",
-        "description": "Lisans yöntemi sürüme göre değişir. Açıklamanızda mümkünse şu bilgileri belirtin:",
+        "description": "Önce tam ALLPLAN sürümünüzü yazın. Sonraki sorular sürümünüzün lisans yöntemine göre otomatik değişir. Hotinfo isteğe bağlıdır; bilmiyorsanız doğrudan destek talebi açabilirsiniz.",
         "context_title": "ALLPLAN LİSANSLAMA BİLGİLERİ",
         "unknown": "Bilinmiyor",
         "version_label": "Tam ALLPLAN sürümü / build",
-        "version_placeholder": "Örn. 2024-1-10; bilmiyorsanız boş bırakın",
+        "version_placeholder": "Örn. 2024-1-10 veya 2024-2-0",
+        "release_family_label": "Lisanslama yöntemi",
+        "release_family": {
+          "LEGACY_PRE_2016": "2015 ve öncesi eski lisanslama",
+          "CODEMETER_2016_2024_1_10": "CodeMeter / Product Key (2016–2024-1-10)",
+          "CLOUD_2024_2_PLUS": "ALLPLAN ID / Cloud lisanslama (2024-2-0 ve sonrası)",
+          "UNKNOWN": "Sürüm doğrulanamadı"
+        },
         "topology_label": "Lisans kullanım biçimi",
+        "topology_placeholder": "Lisans kullanım biçimini seçin",
         "issue_label": "Yapmak istediğiniz işlem / sorun",
+        "issue_placeholder": "İşlem veya sorun türünü seçin",
+        "ai_gate_notice": "Yapay zeka ile çözüm aramak için tam sürüm/build, lisans kullanım biçimi ve sorun türü gereklidir. Bu bilgileri bilmiyorsanız talebinizi doğrudan destek ekibine iletebilirsiniz.",
         "allplan_id_label": "ALLPLAN ID erişimi",
+        "user_role_label": "Lisans işlemindeki rolünüz",
         "invite_label": "Kuruluş daveti",
-        "seat_label": "Koltuk ataması",
+        "group_label": "Lisans grubu / lisans görünürlüğü",
+        "user_role": {
+          "END_USER": "Lisansı kullanacak son kullanıcıyım",
+          "LICENSE_ADMIN": "Connect kuruluş / lisans yöneticisiyim",
+          "UNKNOWN": "Bilmiyorum"
+        },
         "topology": {
           "SINGLE_USER": "Tek kullanıcı",
           "LICENSE_SERVER": "Lisans sunucusu / ağ lisansı",
@@ -995,12 +1011,33 @@
           "UNKNOWN": "Bilmiyorum",
           "NOT_APPLICABLE": "Uygulanamaz"
         },
+        "group": {
+          "ASSIGNED": "Lisans grubunda / lisans görünür",
+          "MISSING": "Grup ataması yok / lisans görünmüyor",
+          "UNKNOWN": "Bilmiyorum"
+        },
+        "official_resources_title": "Sürümünüze uygun resmi ALLPLAN kaynakları",
+        "official_resource": {
+          "CODEMETER_SINGLE": "Tek kullanıcı lisansını etkinleştirme",
+          "CODEMETER_SERVER": "Lisans sunucusunu kurma ve etkinleştirme",
+          "CLOUD_FIRST_STEPS": "Cloud lisanslama ilk adımları",
+          "CLOUD_VIDEO": "Cloud lisanslama videosunu izle"
+        },
         "items": [
           "Tam ALLPLAN sürümü ve build (ör. 2024-1-10 veya 2024-2-0)",
           "Tek kullanıcı lisansı mı, lisans sunucusu/ağ lisansı mı?",
           "Görünen hata mesajı ve yapmak istediğiniz işlem",
           "2024-2-0 ve sonrası için ALLPLAN ID, kuruluş daveti ve koltuk durumu"
-        ]
+        ],
+        "validation": {
+          "allplanVersion": "Yapay zeka teşhisi için tam ALLPLAN sürümünü/build bilgisini yazın veya güncel Hotinfo'yu onaylayın.",
+          "licenseTopology": "Yapay zeka teşhisi için lisans kullanım biçimini seçin.",
+          "licenseIssueType": "Yapay zeka teşhisi için yapmak istediğiniz işlemi veya sorun türünü seçin.",
+          "allplanIdStatus": "ALLPLAN ID erişim durumunuzu seçin.",
+          "organizationInviteStatus": "Kuruluş daveti durumunuzu seçin.",
+          "licenseGroupStatus": "Lisans grubu / lisans görünürlüğü durumunu seçin.",
+          "licenseUserRole": "Lisans işlemindeki rolünüzü seçin."
+        }
       },
       "departments": {
         "technical_support": "Teknik Destek",
@@ -1130,6 +1167,7 @@
         "hotinfo_success": "Sistem bilgileriniz başarıyla güncellendi",
         "upload_error": "Dosya yüklenirken hata oluştu",
         "ai_unavailable": "Yapay zeka servisi şu an cevap veremiyor. Talebinizi oluşturmaya devam edebilirsiniz.",
+        "licensing_intake_required": "Lisans çözümü hazırlamadan önce işaretlenen zorunlu alanları tamamlayın.",
         "ai_backend_unavailable": "AI servisine şu anda ulaşılamıyor. Talebinizi doğrudan oluşturmaya devam edebilirsiniz.",
         "ai_no_match": "Sorunuzu tam olarak anlayamadım ama aşağıda genel bir rehber hazırladım.",
         "ai_language_mismatch": "Sorunuz seçili arayüz diliyle uyumlu değil. Lütfen dil seçimini değiştirin veya sorunuzu seçili dilde yazın.",
@@ -3104,6 +3142,8 @@
       "confidence_score": "GÜVEN_SKORU",
       "approve": "ONAYLA",
       "dismiss": "YOK_SAY",
+      "delete": "SSS kaydını sil",
+      "confirm_delete": "Bu SSS kaydını arşivlemek istediğinize emin misiniz?",
       "source_ticket": "Kaynak Talep",
       "toasts": {
         "extraction_started": "Pipeline Başlatıldı",
@@ -3113,6 +3153,8 @@
         "approved_desc": "Örnek başarıyla yayınlandı.",
         "dismissed": "SSS Yok Sayıldı",
         "dismissed_desc": "Örnek taslağa taşındı veya silindi.",
+        "deleted": "SSS Silindi",
+        "deleted_desc": "SSS kaydı arşivlendi.",
         "op_failed": "İşlem başarısız oldu",
         "pipeline_failed": "Pipeline başlatılamadı"
       }
@@ -3150,6 +3192,17 @@
       "all_synced_desc": "Yeni bilgi örnekleri bulmak için çıkarma döngüsünü manuel olarak çalıştırın.",
       "add_to_kb": "BİLGİ_BANKASINA_EKLE",
       "dismiss": "REDDET",
+      "review_candidate": "TAMAMINI İNCELE",
+      "candidate_detail": "ÖĞRENME ADAYI İNCELEMESİ",
+      "candidate_detail_desc": "Onaylamadan veya reddetmeden önce sorunun, yanıtın ve kaynak kayıtların tamamını inceleyin.",
+      "full_question": "SORUNUN TAMAMI",
+      "full_answer": "YANITIN TAMAMI",
+      "source_records": "KAYNAK KAYITLAR",
+      "no_source_records": "Bu aday için görüntülenebilir kaynak kaydı bulunmuyor.",
+      "frequency": "TEKRAR SAYISI",
+      "language": "DİL",
+      "approving": "ONAYLANIYOR",
+      "dismissing": "REDDEDİLİYOR",
       "refresh": "YENİLE",
       "toasts": {
         "pipeline_started": "Yapay Zeka Hattı Başlatıldı",
@@ -3685,20 +3738,44 @@
         "buttons": {
           "dry_run": "ÖNİZLE",
           "save_candidates": "ADAYLARI KAYDET",
+          "start_slow_crawl": "KONTROLLÜ TARAMAYI BAŞLAT",
+          "pause": "DURAKLAT",
+          "resume": "DEVAM ET",
+          "approve": "ONAYLA",
+          "reject": "REDDET",
           "import": "İÇE AKTAR",
           "delete": "SİL",
           "delete_selected": "SEÇİLENLERİ SİL"
         },
+        "run": {
+          "title": "KONTROLLÜ LEARNNOW TARAMASI",
+          "safety_desc": "Tek çalışanla ilerler, çalışma başına en fazla 5 aday toplar ve açık onay olmadan içe aktarma veya embedding yapmaz.",
+          "processed": "İŞLENEN",
+          "inserted": "YENİ ADAY",
+          "skipped": "ATLANAN",
+          "limit": "ÇALIŞMA LİMİTİ",
+          "daily_budget_reached": "Bugünkü güvenli tarama bütçesine ulaşıldı.",
+          "failed_message": "Tarama güvenli biçimde durdu. Ayrıntılar sunucu günlüklerinde.",
+          "status": {
+            "queued": "SIRADA",
+            "running": "ÇALIŞIYOR",
+            "paused": "DURAKLATILDI",
+            "completed": "TAMAMLANDI",
+            "failed": "BAŞARISIZ"
+          }
+        },
         "selected": "{count} ADAY SEÇİLDİ",
         "confirm_delete": "\"{title}\" crawler adayını onay kuyruğundan silmek istiyor musunuz?",
         "confirm_bulk_delete": "{count} crawler adayı onay kuyruğundan silinecek. Bu işlem geri alınamaz.",
+        "reject_reason_prompt": "Bu adayın reddedilme gerekçesini girin:",
         "table": {
           "title": "BAŞLIK",
           "source": "KAYNAK",
           "format": "FORMAT",
           "category": "KATEGORİ",
           "status": "DURUM",
-          "discovered_from": "KAYNAK URL"
+          "discovered_from": "KAYNAK URL",
+          "rejection_reason": "ATLAMA NEDENİ"
         },
         "toasts": {
           "fetch_error": "Crawler adayları yüklenemedi",
@@ -3707,6 +3784,15 @@
           "discover_done": "Aday keşfi tamamlandı",
           "discover_desc": "{count} yeni aday kaydedildi",
           "discover_error": "Crawler keşfi başarısız",
+          "run_started": "Kontrollü tarama sıraya alındı",
+          "run_started_desc": "En fazla 5 yeni aday düşük hızla toplanacak.",
+          "run_start_error": "Kontrollü LearnNow taraması başlatılamadı",
+          "run_fetch_error": "LearnNow tarama durumu yüklenemedi",
+          "run_control_error": "LearnNow taraması yönetilemedi",
+          "approve_done": "Aday onaylandı",
+          "approve_error": "Aday onaylanamadı",
+          "reject_done": "Aday reddedildi",
+          "reject_error": "Aday reddedilemedi",
           "import_started": "İçe aktarma başlatıldı",
           "import_desc": "Aday mevcut sync kuyruğuna alındı",
           "import_skipped": "Aday atlandı",
@@ -5247,9 +5333,29 @@
       "buttons": {
         "dry_run": "ÖN İZLE",
         "save_candidates": "ADAYLARI KAYDET",
+        "start_slow_crawl": "KONTROLLÜ TARAMAYI BAŞLAT",
+        "pause": "DURAKLAT",
+        "resume": "DEVAM ET",
         "import": "İÇE AKTAR",
         "delete": "SİL",
         "delete_selected": "SEÇİLENLERİ SİL"
+      },
+      "run": {
+        "title": "KONTROLLÜ LEARNNOW TARAMASI",
+        "safety_desc": "Tek işçiyle çalışır; çalıştırma başına en fazla 5 yeni aday toplar ve onay olmadan içe aktarım veya embedding yapmaz.",
+        "processed": "İŞLENEN",
+        "inserted": "YENİ ADAY",
+        "skipped": "ATLANAN",
+        "limit": "ÇALIŞTIRMA LİMİTİ",
+        "daily_budget_reached": "Bugünkü güvenli tarama kotasına ulaşıldı.",
+        "failed_message": "Tarama güvenli biçimde durduruldu. Ayrıntılar sunucu kayıtlarında tutuldu.",
+        "status": {
+          "queued": "SIRADA",
+          "running": "ÇALIŞIYOR",
+          "paused": "DURAKLATILDI",
+          "completed": "TAMAMLANDI",
+          "failed": "BAŞARISIZ"
+        }
       },
       "selected": "{count} ADAY SEÇİLDİ",
       "confirm_delete": "\"{title}\" crawler adayını onay kuyruğundan silmek istiyor musunuz?",
@@ -5270,6 +5376,11 @@
         "discover_done": "Keşif tamamlandı",
         "discover_desc": "{count} yeni aday kaydedildi",
         "discover_error": "Crawler keşfi başarısız",
+        "run_started": "Kontrollü tarama sıraya alındı",
+        "run_started_desc": "En fazla 5 yeni aday düşük hızla toplanacak.",
+        "run_start_error": "Kontrollü LearnNow taraması başlatılamadı",
+        "run_fetch_error": "LearnNow tarama durumu yüklenemedi",
+        "run_control_error": "LearnNow taraması kontrol edilemedi",
         "course_url_blocked": "LearnNow course URL'leri enrollment gerektirir ve otomatik crawl/source ekleme kapsamı dışındadır. Bu içerikleri yalnızca izinli PDF, transcript veya doküman olarak yükleyin.",
         "import_started": "İçe aktarma başladı",
         "import_desc": "Aday mevcut eşitleme kuyruğuna alındı",

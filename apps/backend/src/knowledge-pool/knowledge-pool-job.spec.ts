@@ -76,6 +76,38 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
             );
         });
 
+        it('uses a stable BullMQ-compatible job id without reserved colons', async () => {
+            const source = {
+                id: '550e8400-e29b-41d4-a716-446655440000',
+                name: 'Stable Queue Identity Source',
+                status: KnowledgeSourceStatus.ACTIVE,
+            };
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue({
+                ...source,
+                status: KnowledgeSourceStatus.SYNCING,
+            });
+
+            await service.triggerSync(source.id);
+            await service.triggerSync(source.id);
+
+            const otherSource = {
+                ...source,
+                id: '550e8400-e29b-41d4-a716-446655440001',
+            };
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(otherSource);
+            await service.triggerSync(otherSource.id);
+
+            const firstOptions = mockQueue.add.mock.calls[0][2];
+            const secondOptions = mockQueue.add.mock.calls[1][2];
+            const otherSourceOptions = mockQueue.add.mock.calls[2][2];
+
+            expect(firstOptions.jobId).toMatch(/^[A-Za-z0-9_-]+$/);
+            expect(firstOptions.jobId).not.toContain(':');
+            expect(secondOptions.jobId).toBe(firstOptions.jobId);
+            expect(otherSourceOptions.jobId).not.toBe(firstOptions.jobId);
+        });
+
         it('should add a pacing delay for bulk-safe ingestion jobs', async () => {
             const original = process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS;
             process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS = '20000';
@@ -133,9 +165,9 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
                     metadata: expect.objectContaining({
                         category: 'License & Activation',
                         categorySlug: 'license-activation',
-                        versionFamily: 'connect_2026',
-                        licenseEra: 'connect_2026',
-                        versionRange: '2026+',
+                        versionFamily: 'cloud_2024_2_plus',
+                        licenseEra: 'cloud_2024_2_plus',
+                        versionRange: '>=2024-2-0',
                         requiresHumanReview: true,
                     }),
                 }),

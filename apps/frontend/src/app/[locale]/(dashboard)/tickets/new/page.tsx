@@ -24,7 +24,14 @@ import { getDepartmentDisplayName } from '@/lib/department-display';
 import { buildTicketCategoryOptions, getTicketCategoryCreateFields } from '@/lib/ticket-category-options';
 import { AiVisualEvidence, type AiVisualEvidenceItem } from '@/components/ai/AiVisualEvidence';
 import { isTicketDetailsReady } from '@/lib/ticket-intake-visibility';
-import { buildAllplanLicensingDescription } from '@/lib/allplan-licensing-intake';
+import {
+    buildAllplanLicensingDescription,
+    classifyAllplanRelease,
+    extractAllplanVersion,
+    getAllowedAllplanLicenseIssueTypes,
+    getMissingAllplanLicensingDiagnosisFields,
+    getOfficialAllplanLicensingResources,
+} from '@/lib/allplan-licensing-intake';
 
 const MAX_TICKET_SUBJECT_LENGTH = 255;
 const MAX_TICKET_DESCRIPTION_LENGTH = 9000;
@@ -50,9 +57,10 @@ const getTicketSchema = (t: any) => z.object({
     allplanVersion: z.string().max(64).optional(),
     licenseTopology: z.enum(['SINGLE_USER', 'LICENSE_SERVER', 'UNKNOWN']).optional(),
     licenseIssueType: z.enum(['ACTIVATION', 'TRANSFER', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER']).optional(),
-    allplanIdStatus: z.enum(['AVAILABLE', 'UNAVAILABLE', 'UNKNOWN', 'NOT_APPLICABLE']).optional(),
-    organizationInviteStatus: z.enum(['ACCEPTED', 'MISSING', 'UNKNOWN', 'NOT_APPLICABLE']).optional(),
-    seatStatus: z.enum(['ASSIGNED', 'MISSING', 'UNKNOWN', 'NOT_APPLICABLE']).optional(),
+    licenseUserRole: z.enum(['END_USER', 'LICENSE_ADMIN', 'UNKNOWN']).optional(),
+    allplanIdStatus: z.enum(['AVAILABLE', 'UNAVAILABLE', 'UNKNOWN']).optional(),
+    organizationInviteStatus: z.enum(['ACCEPTED', 'MISSING', 'UNKNOWN']).optional(),
+    licenseGroupStatus: z.enum(['ASSIGNED', 'MISSING', 'UNKNOWN']).optional(),
 });
 
 type TicketFormValues = z.infer<ReturnType<typeof getTicketSchema>>;
@@ -251,11 +259,12 @@ export default function NewTicketPage() {
             description: '',
             priority: undefined,
             allplanVersion: '',
-            licenseTopology: 'UNKNOWN',
-            licenseIssueType: 'OTHER',
+            licenseTopology: undefined,
+            licenseIssueType: undefined,
+            licenseUserRole: 'UNKNOWN',
             allplanIdStatus: 'UNKNOWN',
             organizationInviteStatus: 'UNKNOWN',
-            seatStatus: 'UNKNOWN',
+            licenseGroupStatus: 'UNKNOWN',
         },
     });
 
@@ -361,7 +370,7 @@ export default function NewTicketPage() {
             const response = await api.post('/customers/me/hotinfo', formData);
 
             setHotinfoData(response.hotinfo);
-            setIsHotinfoConfirmed(true);
+            setIsHotinfoConfirmed(false);
             setIsHotinfoHelpOpen(false);
             toast.success(t('toasts.hotinfo_success'));
         } catch (error: any) {
@@ -376,6 +385,26 @@ export default function NewTicketPage() {
         if (!(await form.trigger('description'))) {
             toast.error(t('errors.description_min'));
             return;
+        }
+
+        if (isLicensingIntakeVisible) {
+            const missingFields = getMissingAllplanLicensingDiagnosisFields(values, {
+                isApplicable: true,
+                hasConfirmedHotinfo: isHotinfoConfirmed,
+                confirmedHotinfoVersion: hotinfoData?.allplanVersion,
+            });
+
+            if (missingFields.length > 0) {
+                missingFields.forEach(field => {
+                    form.setError(field, {
+                        type: 'manual',
+                        message: t(`licensing_intake.validation.${field}`),
+                    });
+                });
+                setCurrentStep(1);
+                toast.error(t('toasts.licensing_intake_required'));
+                return;
+            }
         }
 
         setIsDiagnosing(true);
@@ -405,7 +434,19 @@ export default function NewTicketPage() {
             // Passing product context to focus search on relevant knowledge base
             const pId = selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId;
             const effectiveDescription = buildTicketDescription(values);
-            const resolvedResponse = await api.ai.query(buildDiagnosisQuery(subject, effectiveDescription), context, pId, locale, [], attachments, true, false, undefined, Boolean(context), values.allplanVersion) as
+            const effectiveAllplanVersion = values.allplanVersion || (isHotinfoConfirmed ? hotinfoData?.allplanVersion : undefined);
+            const canonicalAllplanVersion = extractAllplanVersion(effectiveAllplanVersion);
+            const licensingIntake = isLicensingIntakeVisible ? {
+                categoryKey: 'licensing' as const,
+                allplanVersion: canonicalAllplanVersion,
+                licenseTopology: values.licenseTopology,
+                licenseIssueType: values.licenseIssueType,
+                licenseUserRole: values.licenseUserRole,
+                allplanIdStatus: values.allplanIdStatus,
+                organizationInviteStatus: values.organizationInviteStatus,
+                licenseGroupStatus: values.licenseGroupStatus,
+            } : undefined;
+            const resolvedResponse = await api.ai.query(buildDiagnosisQuery(subject, effectiveDescription), context, pId, locale, [], attachments, true, false, undefined, Boolean(context), canonicalAllplanVersion || undefined, licensingIntake, isLicensingIntakeVisible ? 'ALLPLAN_LICENSING' : 'GENERIC') as
                 { answer?: string; visuals?: AiVisualEvidenceItem[]; interactionId?: string; answerMode?: 'LLM' | 'FALLBACK'; languageMismatch?: boolean } | null;
 
             if (!resolvedResponse || !resolvedResponse.answer) {
@@ -465,9 +506,10 @@ export default function NewTicketPage() {
                 allplanVersion: _allplanVersion,
                 licenseTopology: _licenseTopology,
                 licenseIssueType: _licenseIssueType,
+                licenseUserRole: _licenseUserRole,
                 allplanIdStatus: _allplanIdStatus,
                 organizationInviteStatus: _organizationInviteStatus,
-                seatStatus: _seatStatus,
+                licenseGroupStatus: _licenseGroupStatus,
                 ...ticketValues
             } = values;
             const ticket = await api.tickets.create({
@@ -516,7 +558,18 @@ export default function NewTicketPage() {
 
     const selectedProductDetails = products.find(p => p.id === selectedProductId);
     const selectedDepartmentDetails = departments.find(d => d.id === selectedDepartmentId);
-    const isAllplanSelected = selectedProductDetails?.name?.toUpperCase().includes('ALLPLAN');
+    const isAllplanSelected = selectedProductDetails?.name?.trim().toUpperCase() === 'ALLPLAN';
+    const isLicensingIntakeVisible = Boolean(isAllplanSelected && selectedCategoryOption?.isLicensing);
+    const watchedAllplanVersion = form.watch('allplanVersion');
+    const watchedLicenseTopology = form.watch('licenseTopology');
+    const effectiveAllplanVersion = watchedAllplanVersion || (isHotinfoConfirmed ? hotinfoData?.allplanVersion : '');
+    const allplanReleaseFamily = classifyAllplanRelease(effectiveAllplanVersion);
+    const allowedLicenseIssueTypes = getAllowedAllplanLicenseIssueTypes(allplanReleaseFamily);
+    const officialLicensingResources = getOfficialAllplanLicensingResources({
+        allplanVersion: effectiveAllplanVersion,
+        licenseTopology: watchedLicenseTopology,
+        licenseIssueType: form.watch('licenseIssueType'),
+    });
     const watchedSubject = form.watch('subject');
     const watchedDescription = form.watch('description');
     const selectedDepartmentName = selectedDepartmentDetails
@@ -525,8 +578,11 @@ export default function NewTicketPage() {
             : getDepartmentDisplayName(selectedDepartmentDetails, departmentLabels)
         : undefined;
     const buildTicketDescription = (values: TicketFormValues): string => {
-        if (!selectedCategoryOption?.isLicensing || !isAllplanSelected) return values.description;
-        return buildAllplanLicensingDescription(values.description, values, t);
+        if (!isLicensingIntakeVisible) return values.description;
+        return buildAllplanLicensingDescription(values.description, {
+            ...values,
+            allplanVersion: values.allplanVersion || (isHotinfoConfirmed ? hotinfoData?.allplanVersion : undefined),
+        }, t);
     };
     const rainTokens = useMemo(() => buildRainTokens({
         subject: watchedSubject,
@@ -607,7 +663,7 @@ export default function NewTicketPage() {
                                 <p className="text-[11px] text-muted-foreground/60">{t('fields.product_hint')}</p>
                             </div>
 
-                            {isAllplanSelected && selectedCategoryOption?.isLicensing && (
+                            {isLicensingIntakeVisible && (
                                 <div className="space-y-4 rounded-xl border border-brand-500/20 bg-brand-500/5 p-4">
                                     <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-brand-200">
                                         <ListChecks className="h-4 w-4" />
@@ -634,36 +690,61 @@ export default function NewTicketPage() {
                                                     <FormControl>
                                                         <Input {...field} maxLength={64} placeholder={t('licensing_intake.version_placeholder')} className="border-white/10 bg-slate-950/60" />
                                                     </FormControl>
+                                                    <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
-                                        <FormField
+                                        {allplanReleaseFamily !== 'UNKNOWN' && (
+                                            <div className="flex items-end rounded-lg border border-brand-500/15 bg-slate-950/40 px-3 py-2 text-xs text-slate-300">
+                                                {t(`licensing_intake.release_family.${allplanReleaseFamily}`)}
+                                            </div>
+                                        )}
+                                        {(allplanReleaseFamily === 'LEGACY_PRE_2016' || allplanReleaseFamily === 'CODEMETER_2016_2024_1_10') && <FormField
                                             control={form.control}
                                             name="licenseTopology"
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>{t('licensing_intake.topology_label')}</FormLabel>
                                                     <Select value={field.value} onValueChange={field.onChange}>
-                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
+                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue placeholder={t('licensing_intake.topology_placeholder')} /></SelectTrigger></FormControl>
                                                         <SelectContent>
                                                             {(['SINGLE_USER', 'LICENSE_SERVER', 'UNKNOWN'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.topology.${value}`)}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
+                                                    <FormMessage />
                                                 </FormItem>
                                             )}
-                                        />
-                                        <FormField
+                                        />}
+                                        {allplanReleaseFamily !== 'UNKNOWN' && <FormField
                                             control={form.control}
                                             name="licenseIssueType"
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>{t('licensing_intake.issue_label')}</FormLabel>
                                                     <Select value={field.value} onValueChange={field.onChange}>
-                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
+                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue placeholder={t('licensing_intake.issue_placeholder')} /></SelectTrigger></FormControl>
                                                         <SelectContent>
-                                                            {(['ACTIVATION', 'TRANSFER', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.issue.${value}`)}</SelectItem>)}
+                                                            {allowedLicenseIssueTypes.map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.issue.${value}`)}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />}
+                                        {allplanReleaseFamily === 'CLOUD_2024_2_PLUS' && <>
+                                        <FormField
+                                            control={form.control}
+                                            name="licenseUserRole"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{t('licensing_intake.user_role_label')}</FormLabel>
+                                                    <Select value={field.value} onValueChange={field.onChange}>
+                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            {(['END_USER', 'LICENSE_ADMIN', 'UNKNOWN'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.user_role.${value}`)}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
@@ -676,9 +757,10 @@ export default function NewTicketPage() {
                                                     <Select value={field.value} onValueChange={field.onChange}>
                                                         <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
                                                         <SelectContent>
-                                                            {(['AVAILABLE', 'UNAVAILABLE', 'UNKNOWN', 'NOT_APPLICABLE'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.allplan_id.${value}`)}</SelectItem>)}
+                                                            {(['AVAILABLE', 'UNAVAILABLE', 'UNKNOWN'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.allplan_id.${value}`)}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
+                                                    <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
@@ -691,28 +773,50 @@ export default function NewTicketPage() {
                                                     <Select value={field.value} onValueChange={field.onChange}>
                                                         <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
                                                         <SelectContent>
-                                                            {(['ACCEPTED', 'MISSING', 'UNKNOWN', 'NOT_APPLICABLE'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.invite.${value}`)}</SelectItem>)}
+                                                            {(['ACCEPTED', 'MISSING', 'UNKNOWN'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.invite.${value}`)}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
+                                                    <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
                                         <FormField
                                             control={form.control}
-                                            name="seatStatus"
+                                            name="licenseGroupStatus"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>{t('licensing_intake.seat_label')}</FormLabel>
+                                                    <FormLabel>{t('licensing_intake.group_label')}</FormLabel>
                                                     <Select value={field.value} onValueChange={field.onChange}>
                                                         <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
                                                         <SelectContent>
-                                                            {(['ASSIGNED', 'MISSING', 'UNKNOWN', 'NOT_APPLICABLE'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.seat.${value}`)}</SelectItem>)}
+                                                            {(['ASSIGNED', 'MISSING', 'UNKNOWN'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.group.${value}`)}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
+                                                    <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
+                                        </>}
                                     </div>
+                                    {officialLicensingResources.length > 0 && (
+                                        <div className="space-y-2 border-t border-brand-500/15 pt-4">
+                                            <p className="text-xs font-semibold text-slate-200">{t('licensing_intake.official_resources_title')}</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {officialLicensingResources.map(resource => (
+                                                    <a
+                                                        key={resource.id}
+                                                        href={resource.url}
+                                                        target="_blank"
+                                                        rel="noreferrer noopener"
+                                                        className="inline-flex items-center gap-1.5 rounded-md border border-brand-500/25 bg-slate-950/50 px-3 py-2 text-xs text-brand-200 transition hover:bg-brand-500/10"
+                                                    >
+                                                        {t(`licensing_intake.official_resource.${resource.id}`)}
+                                                        <ExternalLink className="h-3 w-3" />
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -1060,6 +1164,11 @@ export default function NewTicketPage() {
                         {isDiagnosing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
                         {isDiagnosing ? t('ai.synthesizing_btn') : t('ai.search_btn')}
                     </Button>
+                    {isLicensingIntakeVisible && (
+                        <p className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs leading-5 text-amber-100/80">
+                            {t('licensing_intake.ai_gate_notice')}
+                        </p>
+                    )}
                 </div>
 
                 {isSynthesisPanelVisible && (
@@ -1238,7 +1347,7 @@ export default function NewTicketPage() {
                             <strong>{t('summary.product_label')}</strong> {selectedProductDetails?.name || t('fields.product_general')}<br />
                             <strong>{t('summary.desc_label')}</strong> {buildTicketDescription(form.getValues()).slice(0, 500)}...
                         </p>
-                        {selectedCategoryOption?.isLicensing && isAllplanSelected && (
+                        {isLicensingIntakeVisible && (
                             <p className="text-[11px] leading-5 text-muted-foreground">{t('summary.ai_context_notice')}</p>
                         )}
                     </div>

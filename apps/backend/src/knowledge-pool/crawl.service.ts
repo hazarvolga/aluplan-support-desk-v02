@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { chromium, Browser } from 'playwright';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
+import { LearnNowRequestPacer } from './learnnow-request-pacer.service';
+import { OutboundUrlSafetyService } from './outbound-url-safety.service';
 
 export interface CrawlResult {
     content: string;
@@ -34,21 +35,29 @@ type LearnNowVideoTranscript = {
     text: string;
 };
 
+const HTML_RESPONSE_LIMIT_BYTES = 2 * 1024 * 1024;
+const JSON_RESPONSE_LIMIT_BYTES = 2 * 1024 * 1024;
+const TRANSCRIPT_RESPONSE_LIMIT_BYTES = 4 * 1024 * 1024;
+
 @Injectable()
 export class CrawlService {
     private readonly logger = new Logger(CrawlService.name);
-    private browser: Browser | null = null;
-
-    constructor(private readonly config: ConfigService) {}
+    constructor(
+        private readonly config: ConfigService,
+        private readonly learnNowPacer: LearnNowRequestPacer,
+        private readonly urlSafety: OutboundUrlSafetyService,
+    ) {}
 
     async fetch(url: string): Promise<CrawlResult> {
         this.logger.log(`🌐 Crawling URL: ${url}`);
 
         if (this.isLearnNowHowtoUrl(url)) {
             try {
+                await this.urlSafety.validateLearnNowUrl(url);
                 return await this.fetchLearnNowHowto(url);
             } catch (error: any) {
-                this.logger.warn(`⚠️ Learn Now API extraction failed (${error.message}), falling back to crawler stack: ${url}`);
+                this.logger.warn(`⚠️ Learn Now API extraction failed (${error.message}); generic browser fallback is disabled: ${url}`);
+                throw error;
             }
         }
 
@@ -56,33 +65,30 @@ export class CrawlService {
             try {
                 return await this.fetchWithCrawl4Ai(url);
             } catch (error: any) {
-                this.logger.warn(`⚠️ Crawl4AI failed (${error.message}), falling back to basic crawler: ${url}`);
+                this.logger.warn(`⚠️ Crawl4AI failed (${error.message}), falling back to bounded static fetch: ${url}`);
             }
         }
 
         let html: string;
-        let isDynamic = false;
 
         try {
             // 1. Try static fetch first (faster)
             this.logger.log(`🔍 Attempting static fetch for: ${url}`);
-            const response = await axios.get(url, {
+            const response = await this.getWithSafeRedirects<string>(url, 'public', {
                 timeout: 10000,
-                headers: { 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0' }
+                headers: { 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0' },
+                maxContentLength: HTML_RESPONSE_LIMIT_BYTES,
+                maxBodyLength: HTML_RESPONSE_LIMIT_BYTES,
             });
             html = response.data;
             this.logger.log(`📥 Static fetch successful, length: ${html.length}`);
 
             // 2. Check if it's a SPA or needs JS (simplistic check)
             if (html.includes('app-root') || html.includes('id="root"') || html.length < 1000) {
-                this.logger.log(`⚡ Site looks dynamic or too small, switching to Playwright: ${url}`);
-                html = await this.fetchWithPlaywright(url);
-                isDynamic = true;
+                throw new Error('Dynamic public page could not be rendered because Crawl4AI is unavailable');
             }
         } catch (error) {
-            this.logger.warn(`⚠️ Static fetch failed (${error.message}), trying Playwright: ${url}`);
-            html = await this.fetchWithPlaywright(url);
-            isDynamic = true;
+            throw error;
         }
 
         const { content, title } = this.extractContent(html);
@@ -92,7 +98,7 @@ export class CrawlService {
             content,
             title,
             hash,
-            isDynamic,
+            isDynamic: false,
             provider: 'basic',
             links: this.extractHtmlLinks(html, url),
             images: this.extractHtmlImages(html, url),
@@ -100,6 +106,9 @@ export class CrawlService {
     }
 
     private isCrawl4AiEnabled(): boolean {
+        if (this.config.get<string>('NODE_ENV') === 'production') {
+            return false;
+        }
         const rawValue = this.config.get<string | boolean>('CRAWL4AI_ENABLED');
         const enabled = typeof rawValue === 'boolean'
             ? rawValue
@@ -113,6 +122,98 @@ export class CrawlService {
         return value ? value.replace(/\/+$/, '') : null;
     }
 
+    private async fetchWithCrawl4Ai(url: string): Promise<CrawlResult> {
+        // Revalidate immediately before non-production delegation. Production
+        // use stays fail-closed until the sidecar has redirect-aware private
+        // network egress controls of its own.
+        await this.urlSafety.validatePublicHttpsUrl(url);
+        const baseUrl = this.getCrawl4AiBaseUrl();
+        if (!baseUrl) {
+            throw new Error('CRAWL4AI_BASE_URL is not configured');
+        }
+
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        const token = this.config.get<string>('CRAWL4AI_API_TOKEN');
+        if (token) headers.Authorization = `Bearer ${token}`;
+
+        const response = await fetch(`${baseUrl}/crawl`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                urls: [url],
+                browser_config: {
+                    type: 'BrowserConfig',
+                    params: { headless: true },
+                },
+                crawler_config: {
+                    type: 'CrawlerRunConfig',
+                    params: { stream: false, cache_mode: 'bypass' },
+                },
+            }),
+            signal: AbortSignal.timeout(Number(this.config.get('CRAWL4AI_TIMEOUT_MS') || 45000)),
+        });
+
+        if (!response.ok) {
+            const text = await response.text().catch(() => '');
+            throw new Error(`Crawl4AI HTTP ${response.status}${text ? `: ${text.slice(0, 300)}` : ''}`);
+        }
+
+        const payload = await response.json();
+        const item = this.pickCrawl4AiResult(payload);
+        const markdown = this.extractMarkdown(item);
+        if (!markdown || markdown.trim().length < 50) {
+            throw new Error('Crawl4AI returned empty or too-short markdown');
+        }
+
+        const title = this.extractCrawl4AiTitle(item, markdown);
+        const content = markdown.trim();
+        const hash = crypto.createHash('sha256').update(content).digest('hex');
+
+        return {
+            content,
+            title,
+            hash,
+            isDynamic: true,
+            provider: 'crawl4ai',
+            links: this.extractLinksFromText(content, url),
+            images: this.extractMarkdownImages(content, url),
+            metadata: {
+                crawl4aiSuccess: item?.success,
+                crawl4aiUrl: item?.url ?? url,
+            },
+        };
+    }
+
+    private pickCrawl4AiResult(payload: any): any {
+        if (Array.isArray(payload)) return payload[0];
+        if (Array.isArray(payload?.results)) return payload.results[0];
+        if (Array.isArray(payload?.result)) return payload.result[0];
+        if (Array.isArray(payload?.data)) return payload.data[0];
+        return payload?.result ?? payload?.data ?? payload;
+    }
+
+    private extractMarkdown(item: any): string {
+        const markdown = item?.markdown;
+        if (typeof markdown === 'string') return markdown;
+        if (markdown && typeof markdown === 'object') {
+            return markdown.fit_markdown
+                || markdown.raw_markdown
+                || markdown.markdown_with_citations
+                || markdown.markdown
+                || '';
+        }
+        return item?.cleaned_html || item?.html || item?.text || '';
+    }
+
+    private extractCrawl4AiTitle(item: any, markdown: string): string {
+        const metadataTitle = item?.metadata?.title || item?.title;
+        if (typeof metadataTitle === 'string' && metadataTitle.trim()) {
+            return metadataTitle.trim();
+        }
+        const firstHeading = markdown.split('\n').find(line => line.trim().startsWith('# '));
+        return firstHeading?.replace(/^#\s+/, '').trim() || item?.url || 'Untitled Source';
+    }
+
     private async fetchLearnNowHowto(url: string): Promise<CrawlResult> {
         const resourceId = this.extractLearnNowResourceId(url);
         if (!resourceId) {
@@ -122,20 +223,24 @@ export class CrawlService {
         const cookies = new Map<string, string>();
         const headers = { 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0' };
 
-        const sessionResponse = await axios.get<string>('https://learnnow.allplan.com/int', {
+        const sessionResponse = await this.getWithSafeRedirects<string>('https://learnnow.allplan.com/int', 'learnnow', {
             timeout: 15000,
-            maxRedirects: 5,
+            beforeRedirect: (options: { protocol?: string; hostname?: string; host?: string }) => this.assertSafeLearnNowRedirect(options),
             headers,
+            maxContentLength: HTML_RESPONSE_LIMIT_BYTES,
+            maxBodyLength: HTML_RESPONSE_LIMIT_BYTES,
         });
         this.collectSetCookies(sessionResponse.headers?.['set-cookie'], cookies);
 
-        const detailResponse = await axios.get<string>(url, {
+        const detailResponse = await this.getWithSafeRedirects<string>(url, 'learnnow', {
             timeout: 15000,
-            maxRedirects: 5,
+            beforeRedirect: (options: { protocol?: string; hostname?: string; host?: string }) => this.assertSafeLearnNowRedirect(options),
             headers: {
                 ...headers,
                 Cookie: this.serializeCookies(cookies),
             },
+            maxContentLength: HTML_RESPONSE_LIMIT_BYTES,
+            maxBodyLength: HTML_RESPONSE_LIMIT_BYTES,
         });
         this.collectSetCookies(detailResponse.headers?.['set-cookie'], cookies);
 
@@ -145,8 +250,11 @@ export class CrawlService {
         }
 
         const language = this.extractLearnNowLanguage(detailResponse.data) || this.inferLanguageFromUrl(url);
+        const apiUrl = `https://learnnow.allplan.com/totara/webapi/ajax.php?operation=engage_howto_get_howto&lang=${encodeURIComponent(language)}`;
+        const apiValidation = await this.urlSafety.validateLearnNowUrl(apiUrl);
+        await this.learnNowPacer.waitForTurn();
         const apiResponse = await axios.post(
-            `https://learnnow.allplan.com/totara/webapi/ajax.php?operation=engage_howto_get_howto&lang=${encodeURIComponent(language)}`,
+            apiUrl,
             {
                 operationName: 'engage_howto_get_howto',
                 variables: { id: resourceId },
@@ -154,6 +262,11 @@ export class CrawlService {
             },
             {
                 timeout: 20000,
+                maxRedirects: 0,
+                beforeRedirect: options => this.assertSafeLearnNowRedirect(options),
+                maxContentLength: JSON_RESPONSE_LIMIT_BYTES,
+                maxBodyLength: JSON_RESPONSE_LIMIT_BYTES,
+                httpsAgent: apiValidation.httpsAgent,
                 headers: {
                     ...headers,
                     Accept: '*/*',
@@ -227,105 +340,6 @@ export class CrawlService {
         };
     }
 
-    private async fetchWithCrawl4Ai(url: string): Promise<CrawlResult> {
-        const baseUrl = this.getCrawl4AiBaseUrl();
-        if (!baseUrl) {
-            throw new Error('CRAWL4AI_BASE_URL is not configured');
-        }
-
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        const token = this.config.get<string>('CRAWL4AI_API_TOKEN');
-        if (token) {
-            headers.Authorization = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`${baseUrl}/crawl`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                urls: [url],
-                browser_config: {
-                    type: 'BrowserConfig',
-                    params: {
-                        headless: true,
-                    },
-                },
-                crawler_config: {
-                    type: 'CrawlerRunConfig',
-                    params: {
-                        stream: false,
-                        cache_mode: 'bypass',
-                    },
-                },
-            }),
-            signal: AbortSignal.timeout(Number(this.config.get('CRAWL4AI_TIMEOUT_MS') || 45000)),
-        });
-
-        if (!response.ok) {
-            const text = await response.text().catch(() => '');
-            throw new Error(`Crawl4AI HTTP ${response.status}${text ? `: ${text.slice(0, 300)}` : ''}`);
-        }
-
-        const payload = await response.json();
-        const item = this.pickCrawl4AiResult(payload);
-        const markdown = this.extractMarkdown(item);
-        if (!markdown || markdown.trim().length < 50) {
-            throw new Error('Crawl4AI returned empty or too-short markdown');
-        }
-
-        const title = this.extractCrawl4AiTitle(item, markdown);
-        const content = markdown.trim();
-        const hash = crypto.createHash('sha256').update(content).digest('hex');
-
-        this.logger.log(`✅ Crawl4AI fetched markdown, length: ${content.length}`);
-
-        return {
-            content,
-            title,
-            hash,
-            isDynamic: true,
-            provider: 'crawl4ai',
-            links: this.extractLinksFromText(content, url),
-            images: this.extractMarkdownImages(content, url),
-            metadata: {
-                crawl4aiSuccess: item?.success,
-                crawl4aiUrl: item?.url ?? url,
-            },
-        };
-    }
-
-    private pickCrawl4AiResult(payload: any): any {
-        if (Array.isArray(payload)) return payload[0];
-        if (Array.isArray(payload?.results)) return payload.results[0];
-        if (Array.isArray(payload?.result)) return payload.result[0];
-        if (Array.isArray(payload?.data)) return payload.data[0];
-        return payload?.result ?? payload?.data ?? payload;
-    }
-
-    private extractMarkdown(item: any): string {
-        const markdown = item?.markdown;
-        if (typeof markdown === 'string') return markdown;
-        if (markdown && typeof markdown === 'object') {
-            return markdown.fit_markdown
-                || markdown.raw_markdown
-                || markdown.markdown_with_citations
-                || markdown.markdown
-                || '';
-        }
-
-        return item?.cleaned_html || item?.html || item?.text || '';
-    }
-
-    private extractCrawl4AiTitle(item: any, markdown: string): string {
-        const metadataTitle = item?.metadata?.title || item?.title;
-        if (typeof metadataTitle === 'string' && metadataTitle.trim()) {
-            return metadataTitle.trim();
-        }
-
-        const firstHeading = markdown.split('\n').find(line => line.trim().startsWith('# '));
-        return firstHeading?.replace(/^#\s+/, '').trim() || item?.url || 'Untitled Source';
-    }
-
     extractLinksFromText(text: string, baseUrl: string): string[] {
         const links = new Set<string>();
         const markdownPattern = /\[[^\]]{1,300}\]\((https?:\/\/[^)\s]+|\/[^)\s]+)\)/gi;
@@ -386,6 +400,13 @@ export class CrawlService {
                 && Boolean(url.searchParams.get('id'));
         } catch {
             return false;
+        }
+    }
+
+    private assertSafeLearnNowRedirect(options: { protocol?: string; hostname?: string; host?: string }): void {
+        const hostname = String(options.hostname ?? options.host ?? '').split(':')[0].toLowerCase();
+        if (options.protocol !== 'https:' || hostname !== 'learnnow.allplan.com') {
+            throw new Error('Learn Now redirects must remain on the public HTTPS Learn Now host');
         }
     }
 
@@ -472,8 +493,10 @@ export class CrawlService {
 
     private async fetchVimeoTranscript(videoId: string): Promise<LearnNowVideoTranscript | null> {
         const configUrl = `https://player.vimeo.com/video/${videoId}/config`;
-        const response = await axios.get<any>(configUrl, {
+        const response = await this.getWithSafeRedirects<any>(configUrl, 'vimeo', {
             timeout: 15000,
+            maxContentLength: JSON_RESPONSE_LIMIT_BYTES,
+            maxBodyLength: JSON_RESPONSE_LIMIT_BYTES,
             headers: {
                 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0',
                 Referer: 'https://learnnow.allplan.com/',
@@ -490,8 +513,11 @@ export class CrawlService {
             ?? tracks[0];
         if (!track?.url) return null;
 
-        const transcriptResponse = await axios.get<string>(track.url, {
+        const transcriptUrl = new URL(String(track.url), configUrl).toString();
+        const transcriptResponse = await this.getWithSafeRedirects<string>(transcriptUrl, 'vimeo', {
             timeout: 15000,
+            maxContentLength: TRANSCRIPT_RESPONSE_LIMIT_BYTES,
+            maxBodyLength: TRANSCRIPT_RESPONSE_LIMIT_BYTES,
             headers: { 'User-Agent': 'Mozilla/5.0 AluplanSupportBot/1.0' },
         });
         const text = this.vttToCleanText(transcriptResponse.data);
@@ -502,7 +528,7 @@ export class CrawlService {
             title: typeof response.data?.video?.title === 'string' ? response.data.video.title : undefined,
             language: typeof track.lang === 'string' ? track.lang : undefined,
             label: typeof track.label === 'string' ? track.label : undefined,
-            sourceUrl: track.url,
+            sourceUrl: transcriptUrl,
             text,
         };
     }
@@ -590,38 +616,35 @@ export class CrawlService {
         }
     }
 
-    private async fetchWithPlaywright(url: string): Promise<string> {
-        if (!this.browser) {
-            const executablePath = process.env.CHROME_BIN || process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
-            this.logger.log(`🚀 Launching browser (Path: ${executablePath || 'default'})...`);
-            try {
-                this.browser = await chromium.launch({
-                    headless: true,
-                    executablePath: executablePath || undefined,
-                    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-                });
-                this.logger.log(`✅ Browser launched successfully.`);
-            } catch (err) {
-                this.logger.error(`❌ Browser launch FAILED: ${err.message}`);
-                throw err;
+    private async getWithSafeRedirects<T>(
+        initialUrl: string,
+        policy: 'learnnow' | 'public' | 'vimeo',
+        config: Record<string, unknown>,
+    ): Promise<{ data: T; headers: Record<string, any>; status?: number }> {
+        let currentUrl = initialUrl;
+        for (let redirectCount = 0; redirectCount <= 5; redirectCount += 1) {
+            let httpsAgent;
+            if (policy === 'learnnow') {
+                ({ httpsAgent } = await this.urlSafety.validateLearnNowUrl(currentUrl));
+                await this.learnNowPacer.waitForTurn();
+            } else if (policy === 'vimeo') {
+                ({ httpsAgent } = await this.urlSafety.validateVimeoUrl(currentUrl));
+            } else {
+                ({ httpsAgent } = await this.urlSafety.validatePublicHttpsUrl(currentUrl));
             }
-        }
-        const context = await this.browser.newContext();
-        const page = await context.newPage();
 
-        try {
-            this.logger.log(`📄 Navigating to URL in Playwright...`);
-            await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
-            const content = await page.content();
-            this.logger.log(`✅ Content fetched via Playwright, length: ${content.length}`);
-            return content;
-        } catch (err) {
-            this.logger.error(`❌ Playwright navigation FAILED: ${err.message}`);
-            throw err;
-        } finally {
-            await page.close();
-            await context.close();
+            const response = await axios.get<T>(currentUrl, {
+                ...config,
+                httpsAgent,
+                maxRedirects: 0,
+                validateStatus: status => status >= 200 && status < 400,
+            });
+            const status = response.status ?? 200;
+            const location = response.headers?.location;
+            if (status < 300 || status >= 400 || !location) return response as any;
+            currentUrl = new URL(String(location), currentUrl).toString();
         }
+        throw new Error('Too many outbound redirects');
     }
 
     private extractContent(html: string): { content: string; title: string } {
@@ -642,9 +665,4 @@ export class CrawlService {
         return { content: cleanText, title };
     }
 
-    async onModuleDestroy() {
-        if (this.browser) {
-            await this.browser.close();
-        }
-    }
 }

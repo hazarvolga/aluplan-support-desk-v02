@@ -8,12 +8,14 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 const makeService = () => {
     const prisma = {
         $queryRawUnsafe: jest.fn(),
-        $executeRawUnsafe: jest.fn(),
+        $executeRawUnsafe: jest.fn().mockResolvedValue(1),
+        $transaction: jest.fn(),
         knowledgeSource: {
             findFirst: jest.fn(),
             create: jest.fn(),
         },
     };
+    prisma.$transaction.mockImplementation(async (callback: (transaction: typeof prisma) => unknown) => callback(prisma));
     const storage = {
         uploadFile: jest.fn(),
     };
@@ -24,13 +26,30 @@ const makeService = () => {
     const crawl = {
         fetch: jest.fn(),
     };
+    const urlSafety = {
+        validateLearnNowUrl: jest.fn().mockResolvedValue({ httpsAgent: {} }),
+        validatePublicHttpsUrl: jest.fn().mockResolvedValue({ httpsAgent: {} }),
+        validateVimeoUrl: jest.fn().mockResolvedValue({ httpsAgent: {} }),
+    };
+    const pacer = {
+        waitForTurn: jest.fn().mockResolvedValue(undefined),
+    };
 
     return {
-        service: new LearnNowCrawlerService(prisma as any, storage as any, pool as any, crawl as any),
+        service: new LearnNowCrawlerService(
+            prisma as any,
+            storage as any,
+            pool as any,
+            crawl as any,
+            urlSafety as any,
+            pacer as any,
+        ),
         prisma,
         storage,
         pool,
         crawl,
+        urlSafety,
+        pacer,
     };
 };
 
@@ -40,7 +59,7 @@ describe('LearnNowCrawlerService', () => {
     });
 
     it('discovers public Learn Now knowledge article and PDF candidates without importing in dry-run mode', async () => {
-        const { service, prisma } = makeService();
+        const { service, prisma, urlSafety, pacer } = makeService();
         mockedAxios.get.mockResolvedValue({
             data: `
               <html><body>
@@ -56,6 +75,10 @@ describe('LearnNowCrawlerService', () => {
             maxCandidates: 10,
             dryRun: true,
         });
+
+        expect(urlSafety.validateLearnNowUrl).toHaveBeenCalledWith('https://learnnow.allplan.com/int');
+        expect(urlSafety.validateLearnNowUrl).toHaveBeenCalledWith(expect.stringContaining('/course/search.php'));
+        expect(pacer.waitForTurn).toHaveBeenCalledTimes(3);
 
         expect(result).toMatchObject({ dryRun: true, discovered: 2 });
         expect(result.candidates).toEqual(expect.arrayContaining([
@@ -73,7 +96,7 @@ describe('LearnNowCrawlerService', () => {
         expect(prisma.$executeRawUnsafe).not.toHaveBeenCalled();
     });
 
-    it('falls back to Crawler markdown discovery when static Learn Now search has no usable links', async () => {
+    it('does not fall back to an unbounded browser crawler when static Learn Now search has no usable links', async () => {
         const { service, crawl } = makeService();
         mockedAxios.get.mockResolvedValue({
             data: '<html><body><main>No static anchors rendered here</main></body></html>',
@@ -91,26 +114,14 @@ describe('LearnNowCrawlerService', () => {
         });
 
         const result = await service.discover({
-            formats: ['knowledge_article', 'pdf'],
+            formats: ['knowledge_article'],
             maxPages: 1,
-            maxCandidates: 10,
+            maxCandidates: 5,
             dryRun: true,
         });
 
-        expect(crawl.fetch).toHaveBeenCalled();
-        expect(result).toMatchObject({ dryRun: true, discovered: 2 });
-        expect(result.candidates).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                sourceUrl: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=301&source=howto',
-                format: 'KNOWLEDGE_ARTICLE',
-                metadata: expect.objectContaining({ discoveredVia: 'crawler_markdown', crawlerProvider: 'crawl4ai' }),
-            }),
-            expect.objectContaining({
-                sourceUrl: 'https://learnnow.allplan.com/mod/resource/view.php?id=302',
-                format: 'PDF',
-                metadata: expect.objectContaining({ discoveredVia: 'crawler_markdown', crawlerProvider: 'crawl4ai' }),
-            }),
-        ]));
+        expect(crawl.fetch).not.toHaveBeenCalled();
+        expect(result).toEqual({ dryRun: true, discovered: 0, candidates: [] });
     });
 
     it('does not stage enrollment/course-layer Learn Now pages for automatic crawl', async () => {
@@ -309,6 +320,8 @@ describe('LearnNowCrawlerService', () => {
             metadata: {
                 learnNow: {
                     type: 'explainer_video',
+                    language: 'de',
+                    humanReadableCategories: ['ALLPLAN', 'General', 'Interface'],
                     transcriptStatus: 'AVAILABLE',
                     transcriptLanguage: 'de',
                     transcriptLength: 442,
@@ -320,10 +333,11 @@ describe('LearnNowCrawlerService', () => {
             formats: ['explaining_video'],
             maxPages: 1,
             maxCandidates: 10,
-            dryRun: false,
+            dryRun: true,
         });
+        await service.stageCandidate(result.candidates[0]);
 
-        expect(result).toMatchObject({ dryRun: false, discovered: 1, inserted: 1, skipped: 0 });
+        expect(result).toMatchObject({ dryRun: true, discovered: 1 });
         expect(crawl.fetch).toHaveBeenCalledWith('https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=2740&source=howto');
         expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(
             expect.stringContaining('INSERT INTO crawl_candidates'),
@@ -331,8 +345,8 @@ describe('LearnNowCrawlerService', () => {
             'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=2740&source=howto',
             'NEUERUNG 2024 - IFC Verbesserungen Infrastruktur',
             'KNOWLEDGE_ARTICLE',
-            'en',
-            'export-import-ifc-dwg',
+            'de',
+            'allplan-general-interface',
             'video-content-hash',
             'explaining_video',
             expect.stringContaining('"transcriptStatus":"AVAILABLE"'),
@@ -381,12 +395,13 @@ describe('LearnNowCrawlerService', () => {
             },
         });
 
-        await service.discover({
+        const result = await service.discover({
             formats: ['recorded_online_session'],
             maxPages: 1,
             maxCandidates: 10,
-            dryRun: false,
+            dryRun: true,
         });
+        await service.stageCandidate(result.candidates[0]);
 
         const metadata = JSON.parse(prisma.$executeRawUnsafe.mock.calls[0][9]);
         expect(metadata.reviewQuality).toEqual(expect.objectContaining({
@@ -413,12 +428,13 @@ describe('LearnNowCrawlerService', () => {
             } as any);
         prisma.$queryRawUnsafe.mockResolvedValue([]);
 
-        await service.discover({
+        const result = await service.discover({
             formats: ['technical_manual'],
             maxPages: 1,
             maxCandidates: 10,
-            dryRun: false,
+            dryRun: true,
         });
+        await service.stageCandidate(result.candidates[0]);
 
         expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(
             expect.stringContaining('INSERT INTO crawl_candidates'),
@@ -462,10 +478,12 @@ describe('LearnNowCrawlerService', () => {
             formats: ['technical_manual'],
             maxPages: 1,
             maxCandidates: 10,
-            dryRun: false,
+            dryRun: true,
         });
+        const staged = await service.stageCandidate(result.candidates[0]);
 
-        expect(result).toMatchObject({ dryRun: false, discovered: 1, inserted: 0, skipped: 1 });
+        expect(result).toMatchObject({ dryRun: true, discovered: 1 });
+        expect(staged).toEqual({ inserted: false });
         expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(
             expect.stringContaining('SKIPPED_DUPLICATE'),
             'allplan_learnnow',
@@ -490,13 +508,13 @@ describe('LearnNowCrawlerService', () => {
             source_url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=101&source=howto',
             title: 'License Server Access Rights',
             format: 'KNOWLEDGE_ARTICLE',
-            status: 'PENDING_REVIEW',
+            status: 'APPROVED',
             language: 'en',
             category_slug: 'license-server-codemeter',
             content_hash: null,
             crawl_filter: 'knowledge_article',
             rejection_reason: null,
-            metadata: { source: 'allplan_learnnow' },
+            metadata: { source: 'allplan_learnnow', reviewQuality: { readyForImport: true } },
         }]);
         prisma.knowledgeSource.findFirst.mockResolvedValue(null);
         pool.createImportedUrlSource.mockResolvedValue({ source: { id: 'source-1' }, created: true });
@@ -520,6 +538,234 @@ describe('LearnNowCrawlerService', () => {
         expect(result).toEqual({ imported: true, candidateId: '7c0ee310-32d5-47d0-bf19-286b8839b4db', sourceId: 'source-1' });
     });
 
+    it.each(['PENDING_REVIEW', 'FAILED', 'REJECTED'])(
+        'rejects import while candidate status is %s',
+        async (status) => {
+            const { service, prisma, pool } = makeService();
+            prisma.$queryRawUnsafe.mockResolvedValueOnce([{
+                id: '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+                source: 'allplan_learnnow',
+                source_url: 'https://learnnow.allplan.com/resource',
+                title: 'Candidate',
+                format: 'KNOWLEDGE_ARTICLE',
+                status,
+                language: 'en',
+                category_slug: 'general',
+                content_hash: null,
+                crawl_filter: 'knowledge_article',
+                rejection_reason: null,
+                imported_source_id: null,
+                metadata: { reviewQuality: { readyForImport: true } },
+            }]);
+
+            await expect(service.importCandidate('7c0ee310-32d5-47d0-bf19-286b8839b4db'))
+                .rejects.toThrow('Only approved crawler candidates can be imported');
+            expect(pool.createImportedUrlSource).not.toHaveBeenCalled();
+        },
+    );
+
+    it('rejects an approved candidate whose review quality is not ready', async () => {
+        const { service, prisma, pool } = makeService();
+        prisma.$queryRawUnsafe.mockResolvedValueOnce([{
+            id: '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            source: 'allplan_learnnow',
+            source_url: 'https://learnnow.allplan.com/resource',
+            title: 'Candidate',
+            format: 'KNOWLEDGE_ARTICLE',
+            status: 'APPROVED',
+            language: 'en',
+            category_slug: 'general',
+            content_hash: null,
+            crawl_filter: 'knowledge_article',
+            rejection_reason: null,
+            imported_source_id: null,
+            metadata: { reviewQuality: { readyForImport: false } },
+        }]);
+
+        await expect(service.importCandidate('7c0ee310-32d5-47d0-bf19-286b8839b4db'))
+            .rejects.toThrow('Candidate review quality is not ready for import');
+        expect(pool.createImportedUrlSource).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ['IMPORTED', 'ALREADY_IMPORTED'],
+        ['SKIPPED_DUPLICATE', 'ALREADY_DUPLICATE'],
+    ])('keeps %s imports idempotent', async (status, reason) => {
+        const { service, prisma, pool, urlSafety } = makeService();
+        prisma.$queryRawUnsafe.mockResolvedValueOnce([{
+            id: '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            source: 'allplan_learnnow',
+            source_url: 'https://learnnow.allplan.com/resource',
+            title: 'Candidate',
+            format: 'KNOWLEDGE_ARTICLE',
+            status,
+            language: 'en',
+            category_slug: 'general',
+            content_hash: null,
+            crawl_filter: 'knowledge_article',
+            rejection_reason: null,
+            imported_source_id: '2fe6127e-ca14-4a60-91eb-539ffd09c83d',
+            metadata: { reviewQuality: { readyForImport: true } },
+        }]);
+
+        await expect(service.importCandidate('7c0ee310-32d5-47d0-bf19-286b8839b4db'))
+            .resolves.toEqual(expect.objectContaining({ skipped: true, reason }));
+        expect(urlSafety.validateLearnNowUrl).not.toHaveBeenCalled();
+        expect(pool.createImportedUrlSource).not.toHaveBeenCalled();
+    });
+
+    it('allows only one concurrent importer to claim an approved candidate', async () => {
+        const { service, prisma, pool } = makeService();
+        const candidate = {
+            id: '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            source: 'allplan_learnnow',
+            source_url: 'https://learnnow.allplan.com/resource',
+            title: 'Candidate',
+            format: 'KNOWLEDGE_ARTICLE',
+            status: 'APPROVED',
+            language: 'en',
+            category_slug: 'general',
+            content_hash: null,
+            crawl_filter: 'knowledge_article',
+            rejection_reason: null,
+            imported_source_id: null,
+            metadata: { reviewQuality: { readyForImport: true } },
+        };
+        prisma.$queryRawUnsafe
+            .mockResolvedValueOnce([candidate])
+            .mockResolvedValueOnce([{ ...candidate, status: 'IMPORTING' }]);
+        prisma.$executeRawUnsafe.mockResolvedValueOnce(0);
+
+        await expect(service.importCandidate(candidate.id))
+            .rejects.toThrow('import is already in progress or no longer approved');
+        expect(pool.createImportedUrlSource).not.toHaveBeenCalled();
+    });
+
+    it('does not allow rejection to overwrite an importing candidate', async () => {
+        const { service, prisma } = makeService();
+        prisma.$queryRawUnsafe.mockResolvedValueOnce([]);
+
+        await expect(service.rejectCandidate(
+            '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            'Operator changed their mind',
+        )).rejects.toThrow('Only pending-review or approved candidates can be rejected');
+    });
+
+    it('approves only ready pending-review candidates and rejects candidates explicitly', async () => {
+        const { service, prisma } = makeService();
+        prisma.$queryRawUnsafe
+            .mockResolvedValueOnce([{ id: '7c0ee310-32d5-47d0-bf19-286b8839b4db' }])
+            .mockResolvedValueOnce([{ id: '7c0ee310-32d5-47d0-bf19-286b8839b4db' }]);
+
+        await expect(service.approveCandidate('7c0ee310-32d5-47d0-bf19-286b8839b4db'))
+            .resolves.toEqual({ success: true, status: 'APPROVED' });
+        await expect(service.rejectCandidate('7c0ee310-32d5-47d0-bf19-286b8839b4db', 'Not relevant'))
+            .resolves.toEqual({ success: true, status: 'REJECTED' });
+
+        expect(prisma.$queryRawUnsafe).toHaveBeenNthCalledWith(
+            1,
+            expect.stringContaining("metadata->'reviewQuality'->>'readyForImport' = 'true'"),
+            '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+        );
+        expect(prisma.$queryRawUnsafe).toHaveBeenNthCalledWith(
+            2,
+            expect.stringContaining("status IN ('PENDING_REVIEW', 'APPROVED')"),
+            '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            'Not relevant',
+        );
+    });
+
+    it('rejects save mode on the legacy synchronous discovery endpoint', async () => {
+        const { service, prisma } = makeService();
+
+        await expect(service.discover({ dryRun: false })).rejects.toThrow(
+            'Saving discovery is only available through the rate-limited Learn Now crawl run endpoint',
+        );
+        expect(prisma.$executeRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    it('does not import a video candidate without a transcript', async () => {
+        const { service, prisma, pool } = makeService();
+        prisma.$queryRawUnsafe.mockResolvedValueOnce([{
+            id: '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            source: 'allplan_learnnow',
+            source_url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=3777&source=howto',
+            title: 'Recorded Session - Model Coordination',
+            format: 'KNOWLEDGE_ARTICLE',
+            status: 'APPROVED',
+            language: 'en',
+            category_slug: 'uncategorized',
+            content_hash: 'recording-content-hash',
+            crawl_filter: 'recorded_online_session',
+            rejection_reason: null,
+            metadata: {
+                reviewQuality: {
+                    sourceType: 'recording',
+                    transcriptStatus: 'MISSING',
+                    readyForImport: false,
+                },
+            },
+        }]);
+
+        await expect(service.importCandidate('7c0ee310-32d5-47d0-bf19-286b8839b4db'))
+            .rejects.toThrow('Learn Now video candidates require an available transcript before import');
+        expect(pool.createImportedUrlSource).not.toHaveBeenCalled();
+    });
+
+    it('reuses the durable run marker without enriching the same candidate twice', async () => {
+        const { service, prisma, crawl } = makeService();
+        const runCandidate = {
+            sourceUrl: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=2740&source=howto',
+            title: 'IFC Improvements',
+            format: 'KNOWLEDGE_ARTICLE' as const,
+            language: 'en',
+            categorySlug: 'export-import-ifc-dwg',
+            crawlFilter: 'knowledge_article',
+            metadata: { source: 'allplan_learnnow' },
+        };
+        prisma.$queryRawUnsafe
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([{ inserted: true }]);
+        prisma.knowledgeSource.findFirst.mockResolvedValue(null);
+        crawl.fetch.mockResolvedValue({
+            content: 'Official Learn Now article content.'.repeat(20),
+            title: 'IFC Improvements',
+            hash: 'hash-1',
+            isDynamic: true,
+            provider: 'learnnow-api',
+            metadata: { learnNow: { type: 'knowledge_article' } },
+        });
+
+        await expect(service.stageCandidate(runCandidate, 'run-1:0')).resolves.toEqual({ inserted: true });
+        await expect(service.stageCandidate(runCandidate, 'run-1:0')).resolves.toEqual({ inserted: true });
+
+        expect(crawl.fetch).toHaveBeenCalledTimes(1);
+        expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(
+            expect.stringContaining('INSERT INTO crawl_candidates'),
+            expect.anything(), expect.anything(), expect.anything(), expect.anything(), expect.anything(),
+            expect.anything(), expect.anything(), expect.anything(),
+            expect.stringContaining('"crawlRunKey":"run-1:0"'),
+        );
+    });
+
+    it('rejects non-HTTPS and non-LearnNow candidates at the staging sink', async () => {
+        const { service, crawl } = makeService();
+        const unsafeCandidate = {
+            sourceUrl: 'http://169.254.169.254/latest/meta-data',
+            title: 'Unsafe candidate',
+            format: 'KNOWLEDGE_ARTICLE' as const,
+            language: 'en',
+            categorySlug: 'uncategorized',
+            crawlFilter: 'knowledge_article',
+            metadata: { source: 'allplan_learnnow' },
+        };
+
+        await expect(service.stageCandidate(unsafeCandidate, 'run-1:0'))
+            .rejects.toThrow('Only public HTTPS learnnow.allplan.com candidate URLs are allowed');
+        expect(crawl.fetch).not.toHaveBeenCalled();
+    });
+
     it('marks an article candidate duplicate when the shared URL writer loses a race', async () => {
         const { service, prisma, pool } = makeService();
         prisma.$queryRawUnsafe.mockResolvedValueOnce([{
@@ -528,13 +774,13 @@ describe('LearnNowCrawlerService', () => {
             source_url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=101&source=howto',
             title: 'License Server Access Rights',
             format: 'KNOWLEDGE_ARTICLE',
-            status: 'PENDING_REVIEW',
+            status: 'APPROVED',
             language: 'en',
             category_slug: 'license-server-codemeter',
             content_hash: null,
             crawl_filter: 'knowledge_article',
             rejection_reason: null,
-            metadata: {},
+            metadata: { reviewQuality: { readyForImport: true } },
         }]);
         prisma.knowledgeSource.findFirst.mockResolvedValue(null);
         pool.createImportedUrlSource.mockResolvedValue({
@@ -562,13 +808,13 @@ describe('LearnNowCrawlerService', () => {
             source_url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=101&source=howto',
             title: 'License Server Access Rights',
             format: 'KNOWLEDGE_ARTICLE',
-            status: 'PENDING_REVIEW',
+            status: 'APPROVED',
             language: 'en',
             category_slug: 'license-server-codemeter',
             content_hash: null,
             crawl_filter: 'knowledge_article',
             rejection_reason: null,
-            metadata: {},
+            metadata: { reviewQuality: { readyForImport: true } },
         }]);
         prisma.knowledgeSource.findFirst.mockResolvedValue({ id: 'existing-source' });
 
@@ -585,7 +831,7 @@ describe('LearnNowCrawlerService', () => {
         const result = await service.deleteCandidate('7c0ee310-32d5-47d0-bf19-286b8839b4db');
 
         expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(
-            'DELETE FROM crawl_candidates WHERE id = $1::uuid',
+            expect.stringContaining("status <> 'IMPORTING'"),
             '7c0ee310-32d5-47d0-bf19-286b8839b4db',
         );
         expect(result).toEqual({ success: true, count: 1 });
@@ -593,6 +839,10 @@ describe('LearnNowCrawlerService', () => {
 
     it('bulk deletes unique crawler candidates with validated UUID placeholders', async () => {
         const { service, prisma } = makeService();
+        prisma.$queryRawUnsafe.mockResolvedValueOnce([
+            { id: '7c0ee310-32d5-47d0-bf19-286b8839b4db', status: 'APPROVED' },
+            { id: '996bd927-1c24-48e2-a256-1420b6d57bb6', status: 'PENDING_REVIEW' },
+        ]);
         prisma.$executeRawUnsafe.mockResolvedValue(2);
 
         const result = await service.bulkDeleteCandidates([
@@ -601,11 +851,69 @@ describe('LearnNowCrawlerService', () => {
             '996bd927-1c24-48e2-a256-1420b6d57bb6',
         ]);
 
+        expect(prisma.$queryRawUnsafe).toHaveBeenCalledWith(
+            expect.stringContaining('ORDER BY id\n                 FOR UPDATE'),
+            '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            '996bd927-1c24-48e2-a256-1420b6d57bb6',
+        );
         expect(prisma.$executeRawUnsafe).toHaveBeenCalledWith(
-            'DELETE FROM crawl_candidates WHERE id IN ($1::uuid, $2::uuid)',
+            expect.stringContaining('DELETE FROM crawl_candidates'),
             '7c0ee310-32d5-47d0-bf19-286b8839b4db',
             '996bd927-1c24-48e2-a256-1420b6d57bb6',
         );
         expect(result).toEqual({ success: true, count: 2 });
+    });
+
+    it('bulk delete is atomic when any requested candidate is importing', async () => {
+        const { service, prisma } = makeService();
+        prisma.$queryRawUnsafe.mockResolvedValueOnce([
+            { id: '7c0ee310-32d5-47d0-bf19-286b8839b4db', status: 'APPROVED' },
+            { id: '996bd927-1c24-48e2-a256-1420b6d57bb6', status: 'IMPORTING' },
+        ]);
+
+        await expect(service.bulkDeleteCandidates([
+            '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            '996bd927-1c24-48e2-a256-1420b6d57bb6',
+        ])).rejects.toThrow('Importing crawler candidates cannot be deleted');
+
+        expect(prisma.$queryRawUnsafe).toHaveBeenCalledWith(
+            expect.stringContaining('FOR UPDATE'),
+            '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            '996bd927-1c24-48e2-a256-1420b6d57bb6',
+        );
+        expect(prisma.$executeRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    it('rejects deletion of an importing candidate', async () => {
+        const { service, prisma } = makeService();
+        prisma.$executeRawUnsafe.mockResolvedValueOnce(0);
+        prisma.$queryRawUnsafe.mockResolvedValueOnce([{ status: 'IMPORTING' }]);
+
+        await expect(service.deleteCandidate('7c0ee310-32d5-47d0-bf19-286b8839b4db'))
+            .rejects.toThrow('Importing crawler candidates cannot be deleted');
+    });
+
+    it('recovers a stale importing candidate by reconciling its checkpointed source', async () => {
+        const { service, prisma, pool } = makeService();
+        prisma.$queryRawUnsafe.mockResolvedValueOnce([{
+            id: '7c0ee310-32d5-47d0-bf19-286b8839b4db',
+            source: 'allplan_learnnow',
+            source_url: 'https://learnnow.allplan.com/resource',
+            title: 'Candidate',
+            format: 'KNOWLEDGE_ARTICLE',
+            status: 'IMPORTING',
+            language: 'en',
+            category_slug: 'general',
+            content_hash: null,
+            crawl_filter: 'knowledge_article',
+            rejection_reason: 'process interrupted',
+            imported_source_id: '2fe6127e-ca14-4a60-91eb-539ffd09c83d',
+            import_started_at: new Date(Date.now() - (16 * 60 * 1000)),
+            metadata: { reviewQuality: { readyForImport: true } },
+        }]);
+
+        await expect(service.importCandidate('7c0ee310-32d5-47d0-bf19-286b8839b4db'))
+            .resolves.toEqual(expect.objectContaining({ imported: true, resumed: true }));
+        expect(pool.triggerSync).toHaveBeenCalledWith('2fe6127e-ca14-4a60-91eb-539ffd09c83d');
     });
 });

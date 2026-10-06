@@ -15,6 +15,7 @@ import { EmbeddingVersionRegistry } from '../ai/embedding-version.registry';
 import { SettingsService } from '../settings/settings.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { AiService } from '../ai/ai.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 const mockEmbeddingVersionRegistry = {
     getActiveVersionConfig: jest.fn().mockResolvedValue({ version: 'v3s', dimension: 1536, provider: 'openai', model: 'text-embedding-3-small' }),
@@ -79,6 +80,7 @@ describe('FaqService — Property-Based Tests', () => {
                 },
                 { provide: EmbeddingVersionRegistry, useValue: mockEmbeddingVersionRegistry },
                 { provide: SettingsService, useValue: { getValue: jest.fn().mockResolvedValue(null) } },
+                { provide: EventEmitter2, useValue: { emitAsync: jest.fn().mockResolvedValue(false) } },
             ],
         }).compile();
 

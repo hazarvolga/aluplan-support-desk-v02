@@ -298,7 +298,9 @@ export class KnowledgePoolService {
                 backoff: { type: 'exponential', delay: 5000 },
                 removeOnComplete: true,
                 delay,
-                jobId: `knowledge-sync:${id}`,
+                // BullMQ custom job IDs cannot contain a colon. Keep this
+                // deterministic so repeated sync requests remain idempotent.
+                jobId: `knowledge-sync-${id}`,
             });
         } catch (error) {
             try {

@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,13 +10,33 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslations } from 'next-intl';
+import { useAuth } from '@/components/auth/role-guard';
 
 export default function FaqPage() {
     const t = useTranslations('admin.faq');
     const [faqs, setFaqs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+    const pendingActionRef = useRef<string | null>(null);
     const [filter, setFilter] = useState<'ALL' | 'PUBLISHED' | 'PENDING_REVIEW' | 'DRAFT'>('ALL');
     const { toast } = useToast();
+    const { user } = useAuth();
+    const role = typeof user?.role === 'string'
+        ? user.role.trim().replace(/-/g, '_').toUpperCase()
+        : '';
+    const canDelete = role === 'ADMIN' || Boolean(user?.permissions?.includes('*'));
+
+    const beginAction = (id: string) => {
+        if (pendingActionRef.current) return false;
+        pendingActionRef.current = id;
+        setPendingActionId(id);
+        return true;
+    };
+
+    const finishAction = () => {
+        pendingActionRef.current = null;
+        setPendingActionId(null);
+    };
 
     const fetchFaqs = async () => {
         setLoading(true);
@@ -37,22 +57,42 @@ export default function FaqPage() {
     }, [filter]);
 
     const handleApprove = async (id: string) => {
+        if (!beginAction(id)) return;
         try {
             await api.faq.approve(id);
             toast({ title: t('toasts.approved'), description: t('toasts.approved_desc') });
-            fetchFaqs();
+            await fetchFaqs();
         } catch (error) {
             toast({ title: t('toasts.op_failed'), description: String(error), variant: 'destructive' });
+        } finally {
+            finishAction();
         }
     };
 
     const handleDismiss = async (id: string) => {
+        if (!beginAction(id)) return;
         try {
             await api.faq.dismiss(id);
             toast({ title: t('toasts.dismissed'), description: t('toasts.dismissed_desc') });
-            fetchFaqs();
+            await fetchFaqs();
         } catch (error) {
             toast({ title: t('toasts.op_failed'), description: String(error), variant: 'destructive' });
+        } finally {
+            finishAction();
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm(t('confirm_delete'))) return;
+        if (!beginAction(id)) return;
+        try {
+            await api.faq.remove(id);
+            toast({ title: t('toasts.deleted'), description: t('toasts.deleted_desc') });
+            await fetchFaqs();
+        } catch (error) {
+            toast({ title: t('toasts.op_failed'), description: String(error), variant: 'destructive' });
+        } finally {
+            finishAction();
         }
     };
 
@@ -132,17 +172,27 @@ export default function FaqPage() {
                                 <div className="flex gap-1.5">
                                     {faq.status === 'PENDING_REVIEW' && (
                                         <>
-                                            <Button size="sm" variant="outline" className="h-6 text-[9px] uppercase font-bold tracking-wider border-emerald-900/50 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10" onClick={() => handleApprove(faq.id)}>
+                                            <Button disabled={pendingActionId !== null} size="sm" variant="outline" className="h-6 text-[9px] uppercase font-bold tracking-wider border-emerald-900/50 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10" onClick={() => handleApprove(faq.id)}>
                                                 {t('approve')}
                                             </Button>
-                                            <Button size="sm" variant="outline" className="h-6 text-[9px] uppercase font-bold tracking-wider border-orange-900/50 text-orange-500 bg-orange-500/5 hover:bg-orange-500/10" onClick={() => handleDismiss(faq.id)}>
+                                            <Button disabled={pendingActionId !== null} size="sm" variant="outline" className="h-6 text-[9px] uppercase font-bold tracking-wider border-orange-900/50 text-orange-500 bg-orange-500/5 hover:bg-orange-500/10" onClick={() => handleDismiss(faq.id)}>
                                                 {t('dismiss')}
                                             </Button>
                                         </>
                                     )}
-                                    <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => handleDismiss(faq.id)}>
-                                        <Trash2 className="h-3 w-3" />
-                                    </Button>
+                                    {canDelete && (
+                                        <Button
+                                            aria-label={t('delete')}
+                                            title={t('delete')}
+                                            disabled={pendingActionId !== null}
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-6 w-6 text-muted-foreground hover:text-red-500"
+                                            onClick={() => handleDelete(faq.id)}
+                                        >
+                                            <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         </CardHeader>

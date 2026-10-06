@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { FaqStatus } from '@aluplan/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -419,29 +419,52 @@ export class FaqService {
     async approveFaq(id: string): Promise<any> {
         const candidate = await this.prisma.faqEntry.findUnique({
             where: { id, deletedAt: null },
-            select: { question: true, answer: true },
+            select: { question: true, answer: true, status: true },
         });
-        if (!candidate?.question?.trim()) throw new BadRequestException('FAQ_QUESTION_REQUIRED');
+        if (!candidate) throw new NotFoundException('FAQ_NOT_FOUND');
+        if (candidate.status !== 'PENDING_REVIEW') throw new ConflictException('FAQ_ALREADY_REVIEWED');
+        if (!candidate.question?.trim()) throw new BadRequestException('FAQ_QUESTION_REQUIRED');
         if (!candidate.answer?.trim()) throw new BadRequestException('FAQ_ANSWER_REQUIRED');
 
         const faq = await this.prisma.faqEntry.update({
-            where: { id, deletedAt: null },
+            where: { id, deletedAt: null, status: 'PENDING_REVIEW' },
             data: {
                 status: 'PUBLISHED',
                 publishedAt: new Date(),
                 isInternal: false // Make public when approved by human
             },
-        });
-        await this.emitFaqChanged(id);
+        }).catch((error: unknown) => this.rethrowFaqReviewConflict(id, error));
         await this.refreshFaqQuestionEmbedding(faq);
         await this.emitFaqChanged(id);
         return faq;
     }
 
     async dismissFaq(id: string): Promise<any> {
-        const faq = await this.prisma.faqEntry.update({ where: { id, deletedAt: null }, data: { status: 'DISMISSED' } });
+        const candidate = await this.prisma.faqEntry.findUnique({
+            where: { id, deletedAt: null },
+            select: { status: true },
+        });
+        if (!candidate) throw new NotFoundException('FAQ_NOT_FOUND');
+        if (candidate.status !== 'PENDING_REVIEW') throw new ConflictException('FAQ_ALREADY_REVIEWED');
+
+        const faq = await this.prisma.faqEntry.update({
+            where: { id, deletedAt: null, status: 'PENDING_REVIEW' },
+            data: { status: 'DISMISSED' },
+        }).catch((error: unknown) => this.rethrowFaqReviewConflict(id, error));
         await this.emitFaqChanged(id);
         return faq;
+    }
+
+    private async rethrowFaqReviewConflict(id: string, error: unknown): Promise<never> {
+        if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2025') {
+            const current = await this.prisma.faqEntry.findUnique({
+                where: { id, deletedAt: null },
+                select: { status: true },
+            });
+            if (!current) throw new NotFoundException('FAQ_NOT_FOUND');
+            throw new ConflictException('FAQ_ALREADY_REVIEWED');
+        }
+        throw error;
     }
 
     async updateFaq(id: string, data: { question?: string; answer?: string; tags?: string[] }): Promise<any> {

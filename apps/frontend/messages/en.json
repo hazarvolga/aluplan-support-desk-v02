@@ -929,16 +929,32 @@
       },
       "licensing_intake": {
         "title": "For accurate licensing guidance",
-        "description": "Licensing technology depends on the release. If possible, include these details in your description:",
+        "description": "Enter your exact ALLPLAN release first. The next questions adapt to its licensing method. Hotinfo is optional, and you can always create a support request directly.",
         "context_title": "ALLPLAN LICENSING INFORMATION",
         "unknown": "Unknown",
         "version_label": "Exact ALLPLAN release / build",
-        "version_placeholder": "Example: 2024-1-10; leave blank if unknown",
+        "version_placeholder": "Example: 2024-1-10 or 2024-2-0",
+        "release_family_label": "Licensing method",
+        "release_family": {
+          "LEGACY_PRE_2016": "Legacy licensing (2015 and earlier)",
+          "CODEMETER_2016_2024_1_10": "CodeMeter / Product Key (2016–2024-1-10)",
+          "CLOUD_2024_2_PLUS": "ALLPLAN ID / cloud licensing (2024-2-0 and later)",
+          "UNKNOWN": "Release could not be verified"
+        },
         "topology_label": "License usage model",
+        "topology_placeholder": "Select the license usage model",
         "issue_label": "Requested action / issue",
+        "issue_placeholder": "Select the action or issue type",
+        "ai_gate_notice": "An exact release/build, license usage model, and issue type are required for AI guidance. If you do not know them, you can send the request directly to the support team.",
         "allplan_id_label": "ALLPLAN ID access",
+        "user_role_label": "Your licensing role",
         "invite_label": "Organization invitation",
-        "seat_label": "Seat assignment",
+        "group_label": "License group / license visibility",
+        "user_role": {
+          "END_USER": "I am the end user",
+          "LICENSE_ADMIN": "I manage the Connect organization / licenses",
+          "UNKNOWN": "I don't know"
+        },
         "topology": {
           "SINGLE_USER": "Single user",
           "LICENSE_SERVER": "License server / network license",
@@ -971,12 +987,33 @@
           "UNKNOWN": "I don't know",
           "NOT_APPLICABLE": "Not applicable"
         },
+        "group": {
+          "ASSIGNED": "Assigned to a group / license is visible",
+          "MISSING": "No group assignment / license is not visible",
+          "UNKNOWN": "I don't know"
+        },
+        "official_resources_title": "Official ALLPLAN resources for your release",
+        "official_resource": {
+          "CODEMETER_SINGLE": "Activate a single-user license",
+          "CODEMETER_SERVER": "Install and activate a license server",
+          "CLOUD_FIRST_STEPS": "Cloud licensing first steps",
+          "CLOUD_VIDEO": "Watch the cloud licensing video"
+        },
         "items": [
           "Exact ALLPLAN release and build (for example 2024-1-10 or 2024-2-0)",
           "Single-user license or license server/network license",
           "The visible error and the action you are trying to perform",
           "For 2024-2-0 and later: ALLPLAN ID, organization invitation, and seat status"
-        ]
+        ],
+        "validation": {
+          "allplanVersion": "Enter the exact ALLPLAN release/build or confirm current Hotinfo before AI diagnosis.",
+          "licenseTopology": "Select the license usage model before AI diagnosis.",
+          "licenseIssueType": "Select the requested action or issue type before AI diagnosis.",
+          "allplanIdStatus": "Select your ALLPLAN ID access status.",
+          "organizationInviteStatus": "Select your organization invitation status.",
+          "licenseGroupStatus": "Select the license group / visibility status.",
+          "licenseUserRole": "Select your role in the licensing process."
+        }
       },
       "departments": {
         "technical_support": "Technical Support",
@@ -1106,6 +1143,7 @@
         "hotinfo_success": "System information updated successfully",
         "upload_error": "Error occurred while uploading file",
         "ai_unavailable": "AI service is currently unable to respond. You can continue creating your request.",
+        "licensing_intake_required": "Complete the highlighted required fields before generating licensing guidance.",
         "ai_backend_unavailable": "AI service is currently unreachable. You can continue directly with ticket creation.",
         "ai_no_match": "I couldn't fully understand your question, but I've prepared a general guide below.",
         "ai_language_mismatch": "Your question does not match the selected interface language. Please change the language or write your question in the selected language.",
@@ -3080,6 +3118,8 @@
       "confidence_score": "CONFIDENCE_SCORE",
       "approve": "APPROVE",
       "dismiss": "DISMISS",
+      "delete": "Delete FAQ entry",
+      "confirm_delete": "Are you sure you want to archive this FAQ entry?",
       "source_ticket": "Source Ticket",
       "toasts": {
         "extraction_started": "Pipeline Started",
@@ -3089,6 +3129,8 @@
         "approved_desc": "Sample has been published.",
         "dismissed": "FAQ Dismissed",
         "dismissed_desc": "Sample moved to draft/deleted.",
+        "deleted": "FAQ Deleted",
+        "deleted_desc": "The FAQ entry was archived.",
         "op_failed": "Operation failed",
         "pipeline_failed": "Failed to run pipeline"
       }
@@ -3126,6 +3168,17 @@
       "all_synced_desc": "Run the extraction loop manually to find new knowledge samples.",
       "add_to_kb": "ADD TO KB",
       "dismiss": "DISMISS",
+      "review_candidate": "REVIEW FULL CONTENT",
+      "candidate_detail": "LEARNING CANDIDATE REVIEW",
+      "candidate_detail_desc": "Review the complete question, answer, and source records before approving or dismissing.",
+      "full_question": "FULL QUESTION",
+      "full_answer": "FULL ANSWER",
+      "source_records": "SOURCE RECORDS",
+      "no_source_records": "No viewable source record is available for this candidate.",
+      "frequency": "FREQUENCY",
+      "language": "LANGUAGE",
+      "approving": "APPROVING",
+      "dismissing": "DISMISSING",
       "refresh": "REFRESH",
       "toasts": {
         "pipeline_started": "AI Pipeline Started",
@@ -3661,20 +3714,44 @@
         "buttons": {
           "dry_run": "PREVIEW",
           "save_candidates": "SAVE CANDIDATES",
+          "start_slow_crawl": "START CONTROLLED CRAWL",
+          "pause": "PAUSE",
+          "resume": "RESUME",
+          "approve": "APPROVE",
+          "reject": "REJECT",
           "import": "IMPORT",
           "delete": "DELETE",
           "delete_selected": "DELETE SELECTED"
         },
+        "run": {
+          "title": "CONTROLLED LEARNNOW CRAWL",
+          "safety_desc": "Runs with one worker, collects at most 5 candidates per run, and never imports or embeds without explicit approval.",
+          "processed": "PROCESSED",
+          "inserted": "NEW CANDIDATES",
+          "skipped": "SKIPPED",
+          "limit": "RUN LIMIT",
+          "daily_budget_reached": "Today's safe crawl budget has been reached.",
+          "failed_message": "The crawl stopped safely. Details are available in server logs.",
+          "status": {
+            "queued": "QUEUED",
+            "running": "RUNNING",
+            "paused": "PAUSED",
+            "completed": "COMPLETED",
+            "failed": "FAILED"
+          }
+        },
         "selected": "{count} CANDIDATE SELECTED",
         "confirm_delete": "Delete crawler candidate \"{title}\" from the review queue?",
         "confirm_bulk_delete": "Delete {count} crawler candidates from the review queue? This action cannot be undone.",
+        "reject_reason_prompt": "Enter the reason for rejecting this candidate:",
         "table": {
           "title": "TITLE",
           "source": "SOURCE",
           "format": "FORMAT",
           "category": "CATEGORY",
           "status": "STATUS",
-          "discovered_from": "FROM"
+          "discovered_from": "FROM",
+          "rejection_reason": "SKIP REASON"
         },
         "toasts": {
           "fetch_error": "Could not load crawler candidates",
@@ -3683,6 +3760,15 @@
           "discover_done": "Discovery complete",
           "discover_desc": "{count} new candidates saved",
           "discover_error": "Crawler discovery failed",
+          "run_started": "Controlled crawl queued",
+          "run_started_desc": "Up to 5 new candidates will be collected at low speed.",
+          "run_start_error": "Could not start the controlled LearnNow crawl",
+          "run_fetch_error": "Could not load LearnNow crawl status",
+          "run_control_error": "Could not control the LearnNow crawl",
+          "approve_done": "Candidate approved",
+          "approve_error": "Candidate could not be approved",
+          "reject_done": "Candidate rejected",
+          "reject_error": "Candidate could not be rejected",
           "import_started": "Import started",
           "import_desc": "Candidate was queued through the existing sync pipeline",
           "import_skipped": "Candidate skipped",
@@ -5223,9 +5309,29 @@
       "buttons": {
         "dry_run": "PREVIEW",
         "save_candidates": "SAVE CANDIDATES",
+        "start_slow_crawl": "START CONTROLLED CRAWL",
+        "pause": "PAUSE",
+        "resume": "RESUME",
         "import": "IMPORT",
         "delete": "DELETE",
         "delete_selected": "DELETE SELECTED"
+      },
+      "run": {
+        "title": "CONTROLLED LEARNNOW CRAWL",
+        "safety_desc": "Runs with one worker, collects at most 5 new candidates per run, and never imports or embeds without approval.",
+        "processed": "PROCESSED",
+        "inserted": "NEW CANDIDATES",
+        "skipped": "SKIPPED",
+        "limit": "RUN LIMIT",
+        "daily_budget_reached": "Today's safe crawl budget has been reached.",
+        "failed_message": "The crawl stopped safely. Details are available in server logs.",
+        "status": {
+          "queued": "QUEUED",
+          "running": "RUNNING",
+          "paused": "PAUSED",
+          "completed": "COMPLETED",
+          "failed": "FAILED"
+        }
       },
       "selected": "{count} CANDIDATE SELECTED",
       "confirm_delete": "Delete crawler candidate \"{title}\" from the review queue?",
@@ -5246,6 +5352,11 @@
         "discover_done": "Discovery complete",
         "discover_desc": "{count} new candidates saved",
         "discover_error": "Crawler discovery failed",
+        "run_started": "Controlled crawl queued",
+        "run_started_desc": "Up to 5 new candidates will be collected at low speed.",
+        "run_start_error": "Could not start the controlled LearnNow crawl",
+        "run_fetch_error": "Could not load LearnNow crawl status",
+        "run_control_error": "Could not control the LearnNow crawl",
         "course_url_blocked": "LearnNow course URLs require enrollment and are outside automatic crawl/source ingestion. Add this content only as an approved PDF, transcript, or document upload.",
         "import_started": "Import started",
         "import_desc": "Candidate was queued through the existing sync pipeline",

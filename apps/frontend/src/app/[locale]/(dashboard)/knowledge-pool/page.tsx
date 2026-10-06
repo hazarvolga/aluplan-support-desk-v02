@@ -11,7 +11,7 @@ import {
     ChevronDown, ChevronUp, ChevronsUpDown, PlayCircle, Trash2
 } from 'lucide-react';
 import Link from 'next/link';
-import { api, CrawlCandidate, LearnNowCrawlFormat } from '@/lib/api';
+import { api, CrawlCandidate, LearnNowCrawlFormat, LearnNowCrawlRun } from '@/lib/api';
 import { isDuplicateKnowledgeSourceUrlError } from '@/lib/knowledge-source-errors';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -91,13 +91,17 @@ export default function KnowledgePoolPage() {
     const [crawlSearch, setCrawlSearch] = useState('');
     const [crawlStatusFilter, setCrawlStatusFilter] = useState<string>(initialDeepLink.status);
     const [crawlSourceFilter, setCrawlSourceFilter] = useState('');
-    const [crawlFormats, setCrawlFormats] = useState<Set<LearnNowCrawlFormat>>(new Set(['knowledge_article', 'pdf']));
-    const [crawlDryRun, setCrawlDryRun] = useState<any>(null);
+    const [crawlFormats, setCrawlFormats] = useState<Set<LearnNowCrawlFormat>>(new Set(['knowledge_article']));
     const [isDiscovering, setIsDiscovering] = useState(false);
     const [importingCandidateIds, setImportingCandidateIds] = useState<Set<string>>(new Set());
+    const [reviewingCandidateIds, setReviewingCandidateIds] = useState<Set<string>>(new Set());
     const [selectedCrawlCandidateIds, setSelectedCrawlCandidateIds] = useState<Set<string>>(new Set());
     const [deletingCandidateIds, setDeletingCandidateIds] = useState<Set<string>>(new Set());
     const [isBulkDeletingCandidates, setIsBulkDeletingCandidates] = useState(false);
+    const [learnNowCrawlRun, setLearnNowCrawlRun] = useState<LearnNowCrawlRun | null>(null);
+    const [isLoadingLearnNowRun, setIsLoadingLearnNowRun] = useState(false);
+    const learnNowRequestGenerationRef = useRef(0);
+    const learnNowPollGenerationRef = useRef(0);
 
     const { toast } = useToast();
 
@@ -150,8 +154,50 @@ export default function KnowledgePoolPage() {
     useEffect(() => {
         if (activeTab === 'sources') loadSources();
         if (activeTab === 'articles') { setArticlePage(1); loadArticles(1); }
-        if (activeTab === 'crawler') loadCrawlCandidates();
+        if (activeTab === 'crawler') {
+            loadCrawlCandidates();
+            loadLatestLearnNowRun();
+        }
     }, [activeTab]);
+
+    useEffect(() => {
+        if (activeTab !== 'crawler' || !learnNowCrawlRun?.id) return;
+        if (!['QUEUED', 'RUNNING'].includes(learnNowCrawlRun.status)) return;
+
+        const runId = learnNowCrawlRun.id;
+        const pollGeneration = ++learnNowPollGenerationRef.current;
+        const previousInsertedCount = learnNowCrawlRun.insertedCount;
+        const previousStatus = learnNowCrawlRun.status;
+        let timer: number | undefined;
+        const poll = async () => {
+            try {
+                const nextRun = await api.pool.learnNowCrawlRun(runId);
+                if (pollGeneration !== learnNowPollGenerationRef.current) return;
+                setLearnNowCrawlRun(current => current?.id === runId ? nextRun : current);
+                const reachedTerminalState = !['COMPLETED', 'FAILED'].includes(previousStatus)
+                    && ['COMPLETED', 'FAILED'].includes(nextRun.status);
+                if (nextRun.insertedCount > previousInsertedCount || reachedTerminalState) {
+                    loadCrawlCandidates();
+                }
+                if (['QUEUED', 'RUNNING'].includes(nextRun.status)) {
+                    timer = window.setTimeout(poll, 10_000);
+                }
+            } catch {
+                // The visible run state remains available while a transient refresh fails.
+                if (pollGeneration === learnNowPollGenerationRef.current) {
+                    timer = window.setTimeout(poll, 10_000);
+                }
+            }
+        };
+        timer = window.setTimeout(poll, 10_000);
+
+        return () => {
+            if (timer !== undefined) window.clearTimeout(timer);
+            if (learnNowPollGenerationRef.current === pollGeneration) {
+                learnNowPollGenerationRef.current += 1;
+            }
+        };
+    }, [activeTab, learnNowCrawlRun?.id, learnNowCrawlRun?.insertedCount, learnNowCrawlRun?.status]);
 
     useEffect(() => {
         if (activeTab === 'articles') { setArticlePage(1); loadArticles(1); }
@@ -397,35 +443,70 @@ export default function KnowledgePoolPage() {
             setCrawlCandidates(data);
             const visibleIds = new Set(data.map(candidate => candidate.id));
             setSelectedCrawlCandidateIds(prev => new Set(Array.from(prev).filter(id => visibleIds.has(id))));
-        } catch (error: any) {
-            toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.fetch_error'), variant: 'destructive' });
+        } catch {
+            toast({ title: t('logs.error'), description: t('crawler.toasts.fetch_error'), variant: 'destructive' });
         } finally {
             setLoadingCrawlCandidates(false);
         }
     };
 
-    const handleDiscoverLearnNow = async (dryRun: boolean) => {
+    const loadLatestLearnNowRun = async () => {
+        const requestGeneration = ++learnNowRequestGenerationRef.current;
+        setIsLoadingLearnNowRun(true);
+        try {
+            const run = await api.pool.latestLearnNowCrawlRun();
+            if (requestGeneration === learnNowRequestGenerationRef.current) setLearnNowCrawlRun(run);
+        } catch {
+            toast({ title: t('logs.error'), description: t('crawler.toasts.run_fetch_error'), variant: 'destructive' });
+        } finally {
+            if (requestGeneration === learnNowRequestGenerationRef.current) setIsLoadingLearnNowRun(false);
+        }
+    };
+
+    const handleStartLearnNowRun = async () => {
+        const requestGeneration = ++learnNowRequestGenerationRef.current;
         setIsDiscovering(true);
         try {
-            const result = await api.pool.discoverLearnNow({
+            const run = await api.pool.startLearnNowCrawlRun({
                 search: crawlSearch,
                 formats: Array.from(crawlFormats),
-                maxPages: 1,
-                maxCandidates: 50,
-                dryRun,
+                maxCandidates: 5,
             });
-            setCrawlDryRun(result);
-            toast({
-                title: dryRun ? t('crawler.toasts.dry_run_done') : t('crawler.toasts.discover_done'),
-                description: dryRun
-                    ? t('crawler.toasts.dry_run_desc', { count: result.discovered ?? 0 })
-                    : t('crawler.toasts.discover_desc', { count: result.inserted ?? 0 }),
-            });
-            if (!dryRun) loadCrawlCandidates();
-        } catch (error: any) {
-            toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.discover_error'), variant: 'destructive' });
+            if (requestGeneration !== learnNowRequestGenerationRef.current) return;
+            setLearnNowCrawlRun(run);
+            toast({ title: t('crawler.toasts.run_started'), description: t('crawler.toasts.run_started_desc') });
+        } catch {
+            toast({ title: t('logs.error'), description: t('crawler.toasts.run_start_error'), variant: 'destructive' });
         } finally {
             setIsDiscovering(false);
+        }
+    };
+
+    const handlePauseLearnNowRun = async () => {
+        if (!learnNowCrawlRun) return;
+        const requestGeneration = ++learnNowRequestGenerationRef.current;
+        setIsLoadingLearnNowRun(true);
+        try {
+            const run = await api.pool.pauseLearnNowCrawlRun(learnNowCrawlRun.id);
+            if (requestGeneration === learnNowRequestGenerationRef.current) setLearnNowCrawlRun(run);
+        } catch {
+            toast({ title: t('logs.error'), description: t('crawler.toasts.run_control_error'), variant: 'destructive' });
+        } finally {
+            if (requestGeneration === learnNowRequestGenerationRef.current) setIsLoadingLearnNowRun(false);
+        }
+    };
+
+    const handleResumeLearnNowRun = async () => {
+        if (!learnNowCrawlRun) return;
+        const requestGeneration = ++learnNowRequestGenerationRef.current;
+        setIsLoadingLearnNowRun(true);
+        try {
+            const run = await api.pool.resumeLearnNowCrawlRun(learnNowCrawlRun.id);
+            if (requestGeneration === learnNowRequestGenerationRef.current) setLearnNowCrawlRun(run);
+        } catch {
+            toast({ title: t('logs.error'), description: t('crawler.toasts.run_control_error'), variant: 'destructive' });
+        } finally {
+            if (requestGeneration === learnNowRequestGenerationRef.current) setIsLoadingLearnNowRun(false);
         }
     };
 
@@ -439,14 +520,45 @@ export default function KnowledgePoolPage() {
             });
             loadCrawlCandidates();
             loadSources();
-        } catch (error: any) {
-            toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.import_error'), variant: 'destructive' });
+        } catch {
+            toast({ title: t('logs.error'), description: t('crawler.toasts.import_error'), variant: 'destructive' });
         } finally {
             setImportingCandidateIds(prev => { const next = new Set(prev); next.delete(id); return next; });
         }
     };
 
+    const handleReviewCandidate = async (id: string, decision: 'approve' | 'reject') => {
+        const rejectionReason = decision === 'reject'
+            ? window.prompt(t('crawler.reject_reason_prompt'))?.trim()
+            : undefined;
+        if (decision === 'reject' && !rejectionReason) return;
+
+        setReviewingCandidateIds(prev => new Set(prev).add(id));
+        try {
+            const result = decision === 'approve'
+                ? await api.pool.approveCrawlCandidate(id)
+                : await api.pool.rejectCrawlCandidate(id, rejectionReason!);
+            setCrawlCandidates(prev => prev.map(candidate => candidate.id === id
+                ? { ...candidate, status: result.status, rejectionReason: rejectionReason ?? null }
+                : candidate));
+            toast({ title: t(`crawler.toasts.${decision}_done`) });
+        } catch {
+            toast({
+                title: t('logs.error'),
+                description: t(`crawler.toasts.${decision}_error`),
+                variant: 'destructive',
+            });
+        } finally {
+            setReviewingCandidateIds(prev => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+            });
+        }
+    };
+
     const allCrawlCandidatesSelected = crawlCandidates.length > 0 && crawlCandidates.every(candidate => selectedCrawlCandidateIds.has(candidate.id));
+    const hasActiveLearnNowRun = Boolean(learnNowCrawlRun && ['QUEUED', 'RUNNING'].includes(learnNowCrawlRun.status));
 
     const toggleCrawlCandidateSelect = (id: string) => {
         setSelectedCrawlCandidateIds(prev => {
@@ -480,8 +592,8 @@ export default function KnowledgePoolPage() {
                 next.delete(candidate.id);
                 return next;
             });
-        } catch (error: any) {
-            toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.delete_error'), variant: 'destructive' });
+        } catch {
+            toast({ title: t('logs.error'), description: t('crawler.toasts.delete_error'), variant: 'destructive' });
         } finally {
             setDeletingCandidateIds(prev => { const next = new Set(prev); next.delete(candidate.id); return next; });
         }
@@ -500,20 +612,15 @@ export default function KnowledgePoolPage() {
             toast({ title: t('crawler.toasts.bulk_delete_done'), description: t('crawler.toasts.bulk_delete_desc', { count: result.count }) });
             setCrawlCandidates(prev => prev.filter(candidate => !ids.includes(candidate.id)));
             setSelectedCrawlCandidateIds(new Set());
-        } catch (error: any) {
-            toast({ title: t('logs.error'), description: error.message || t('crawler.toasts.bulk_delete_error'), variant: 'destructive' });
+        } catch {
+            toast({ title: t('logs.error'), description: t('crawler.toasts.bulk_delete_error'), variant: 'destructive' });
         } finally {
             setIsBulkDeletingCandidates(false);
         }
     };
 
     const toggleCrawlFormat = (format: LearnNowCrawlFormat) => {
-        setCrawlFormats(prev => {
-            const next = new Set(prev);
-            if (next.has(format)) next.delete(format);
-            else next.add(format);
-            return next.size > 0 ? next : prev;
-        });
+        setCrawlFormats(new Set([format]));
     };
 
     const getCandidateReviewQuality = (candidate: CrawlCandidate): Record<string, unknown> | null => {
@@ -538,6 +645,13 @@ export default function KnowledgePoolPage() {
         }
 
         return null;
+    };
+
+    const isCandidateReviewReady = (candidate: CrawlCandidate): boolean => {
+        const reviewQuality = candidate.metadata?.reviewQuality;
+        return Boolean(reviewQuality
+            && typeof reviewQuality === 'object'
+            && (reviewQuality as Record<string, unknown>).readyForImport === true);
     };
 
     const renderCandidateQuality = (candidate: CrawlCandidate) => {
@@ -1053,6 +1167,8 @@ export default function KnowledgePoolPage() {
                                     ].map(format => (
                                         <button
                                             key={format.value}
+                                            type="button"
+                                            aria-pressed={crawlFormats.has(format.value)}
                                             onClick={() => toggleCrawlFormat(format.value)}
                                             className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest border rounded ${crawlFormats.has(format.value) ? 'bg-primary/10 text-primary border-primary/30' : 'bg-transparent border-border/30 text-muted-foreground/60'}`}
                                         >
@@ -1061,21 +1177,12 @@ export default function KnowledgePoolPage() {
                                     ))}
                                 </div>
                                 <Button
-                                    onClick={() => handleDiscoverLearnNow(true)}
-                                    disabled={isDiscovering}
-                                    variant="outline"
-                                    className="h-8 text-[10px] uppercase font-bold tracking-widest gap-2"
-                                >
-                                    {isDiscovering ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
-                                    {t('crawler.buttons.dry_run')}
-                                </Button>
-                                <Button
-                                    onClick={() => handleDiscoverLearnNow(false)}
-                                    disabled={isDiscovering}
+                                    onClick={handleStartLearnNowRun}
+                                    disabled={isDiscovering || isLoadingLearnNowRun || hasActiveLearnNowRun}
                                     className="h-8 text-[10px] uppercase font-bold tracking-widest gap-2"
                                 >
                                     {isDiscovering ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Globe className="h-3 w-3" />}
-                                    {t('crawler.buttons.save_candidates')}
+                                    {t('crawler.buttons.start_slow_crawl')}
                                 </Button>
                             </div>
                         </div>
@@ -1088,28 +1195,46 @@ export default function KnowledgePoolPage() {
                                     <p className="text-[10px] leading-relaxed text-muted-foreground">{t('crawler.public_notice_desc')}</p>
                                 </div>
                             </div>
-                        </div>
-
-                        {crawlDryRun?.dryRun && (
-                            <div className="border border-primary/20 bg-primary/5 rounded-md p-3 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">{t('crawler.dry_run_title')}</span>
-                                    <Badge className="bg-primary/10 text-primary font-mono">{t('crawler.discovered', { count: crawlDryRun.discovered ?? 0 })}</Badge>
+                            <div className="border border-border/40 bg-card rounded-md p-3 space-y-3">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-bold uppercase tracking-widest">{t('crawler.run.title')}</p>
+                                        <p className="text-[10px] text-muted-foreground">{t('crawler.run.safety_desc')}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {learnNowCrawlRun && (
+                                            <Badge variant="outline" className="text-[9px] font-mono uppercase">
+                                                {t(`crawler.run.status.${learnNowCrawlRun.status.toLowerCase()}`)}
+                                            </Badge>
+                                        )}
+                                        {hasActiveLearnNowRun && (
+                                            <Button size="sm" variant="outline" className="h-7 text-[9px] uppercase" onClick={handlePauseLearnNowRun} disabled={isLoadingLearnNowRun}>
+                                                {t('crawler.buttons.pause')}
+                                            </Button>
+                                        )}
+                                        {learnNowCrawlRun?.status === 'PAUSED' && (
+                                            <Button size="sm" variant="outline" className="h-7 text-[9px] uppercase" onClick={handleResumeLearnNowRun} disabled={isLoadingLearnNowRun}>
+                                                <PlayCircle className="h-3 w-3 mr-1" /> {t('crawler.buttons.resume')}
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 max-h-[220px] overflow-auto">
-                                    {(crawlDryRun.candidates || []).slice(0, 12).map((candidate: any) => (
-                                        <div key={candidate.sourceUrl} className="border border-border/30 bg-background/40 p-2 rounded">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Badge variant="outline" className="text-[8px] rounded-none">{candidate.format}</Badge>
-                                                <span className="text-[8px] font-mono text-muted-foreground">{candidate.categorySlug}</span>
-                                            </div>
-                                            <p className="text-[11px] font-bold truncate">{candidate.title}</p>
-                                            <p className="text-[9px] font-mono text-muted-foreground/60 truncate">{candidate.sourceUrl}</p>
-                                        </div>
-                                    ))}
-                                </div>
+                                {learnNowCrawlRun && (
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[9px] font-mono uppercase text-muted-foreground">
+                                        <span>{t('crawler.run.processed')}: {learnNowCrawlRun.processedCount}</span>
+                                        <span>{t('crawler.run.inserted')}: {learnNowCrawlRun.insertedCount}</span>
+                                        <span>{t('crawler.run.skipped')}: {learnNowCrawlRun.skippedCount}</span>
+                                        <span>{t('crawler.run.limit')}: {learnNowCrawlRun.maxCandidates}</span>
+                                    </div>
+                                )}
+                                {learnNowCrawlRun?.lastError === 'DAILY_BUDGET_REACHED' && (
+                                    <p className="text-[9px] text-muted-foreground font-mono">{t('crawler.run.daily_budget_reached')}</p>
+                                )}
+                                {learnNowCrawlRun?.status === 'FAILED' && (
+                                    <p className="text-[9px] text-destructive font-mono">{t('crawler.run.failed_message')}</p>
+                                )}
                             </div>
-                        )}
+                        </div>
 
                         <div className="flex items-center justify-between gap-3">
                             <div className="space-y-2">
@@ -1130,7 +1255,7 @@ export default function KnowledgePoolPage() {
                                     ))}
                                 </div>
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                    {['PENDING_REVIEW', 'IMPORTED', 'SKIPPED_DUPLICATE', 'FAILED', ''].map(status => (
+                                    {['PENDING_REVIEW', 'APPROVED', 'IMPORTING', 'IMPORTED', 'REJECTED', 'SKIPPED_DUPLICATE', 'FAILED', ''].map(status => (
                                         <button
                                             key={status || 'ALL'}
                                             onClick={() => setCrawlStatusFilter(status)}
@@ -1273,15 +1398,39 @@ export default function KnowledgePoolPage() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-1">
-                                                    <Button
-                                                        onClick={() => handleImportCandidate(candidate.id)}
-                                                        disabled={['IMPORTED', 'SKIPPED_DUPLICATE'].includes(candidate.status) || importingCandidateIds.has(candidate.id) || deletingCandidateIds.has(candidate.id)}
-                                                        size="sm"
-                                                        className="h-7 text-[10px] uppercase font-bold tracking-widest gap-1.5"
-                                                    >
-                                                        {importingCandidateIds.has(candidate.id) ? <RefreshCw className="h-3 w-3 animate-spin" /> : <ArrowUpCircle className="h-3 w-3" />}
-                                                        {t('crawler.buttons.import')}
-                                                    </Button>
+                                                    {candidate.status === 'PENDING_REVIEW' && (
+                                                        <Button
+                                                            onClick={() => handleReviewCandidate(candidate.id, 'approve')}
+                                                            disabled={!isCandidateReviewReady(candidate) || reviewingCandidateIds.has(candidate.id)}
+                                                            size="sm"
+                                                            className="h-7 text-[10px] uppercase font-bold tracking-widest gap-1.5"
+                                                        >
+                                                            {reviewingCandidateIds.has(candidate.id) ? <RefreshCw className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                                                            {t('crawler.buttons.approve')}
+                                                        </Button>
+                                                    )}
+                                                    {candidate.status === 'APPROVED' && (
+                                                        <Button
+                                                            onClick={() => handleImportCandidate(candidate.id)}
+                                                            disabled={importingCandidateIds.has(candidate.id) || deletingCandidateIds.has(candidate.id)}
+                                                            size="sm"
+                                                            className="h-7 text-[10px] uppercase font-bold tracking-widest gap-1.5"
+                                                        >
+                                                            {importingCandidateIds.has(candidate.id) ? <RefreshCw className="h-3 w-3 animate-spin" /> : <ArrowUpCircle className="h-3 w-3" />}
+                                                            {t('crawler.buttons.import')}
+                                                        </Button>
+                                                    )}
+                                                    {['PENDING_REVIEW', 'APPROVED'].includes(candidate.status) && (
+                                                        <Button
+                                                            onClick={() => handleReviewCandidate(candidate.id, 'reject')}
+                                                            disabled={reviewingCandidateIds.has(candidate.id)}
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-7 text-[10px] uppercase font-bold tracking-widest"
+                                                        >
+                                                            {t('crawler.buttons.reject')}
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         onClick={() => handleDeleteCrawlCandidate(candidate)}
                                                         disabled={deletingCandidateIds.has(candidate.id)}

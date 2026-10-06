@@ -147,6 +147,12 @@ const inferCategorySlug = (filePath: string, fileName: string): keyof typeof DAT
         'client id',
         'cd-key',
         'cd key',
+        'hotinfo',
+        'teshis',
+        'teşhis',
+        'offline-odunc',
+        'offline ödünç',
+        'offline odunc',
     ])) {
         return 'license-activation';
     }
