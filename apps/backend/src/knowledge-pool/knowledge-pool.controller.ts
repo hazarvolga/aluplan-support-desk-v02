@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger, Delete, ParseUUIDPipe, GoneException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, Logger, Delete, ParseUUIDPipe, GoneException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
@@ -22,6 +22,7 @@ import { DiscoverGenericWebDto } from './dto/generic-crawl.dto';
 import { AllplanHelpCrawlerService } from './allplan-help-crawler.service';
 import { DiscoverAllplanHelpDto } from './dto/allplan-help-crawl.dto';
 import { RejectCrawlerCandidateDto } from './dto/review-crawler-candidate.dto';
+import { UpdateKnowledgeSourceCategoryDto } from './dto/update-knowledge-source-category.dto';
 
 // Production Knowledge Base Stabilization Sync v1.0.3 - Final RAG Fixes (Multi-chunk + High-precision 1536 aligned)
 @ApiTags('Knowledge Pool')
@@ -162,6 +163,16 @@ export class KnowledgePoolController {
     @ApiOperation({ summary: 'List all knowledge sources' })
     async getSources(): Promise<any> {
         return this.knowledgePoolService.getAllSources();
+    }
+
+    @Patch('admin/sources/:id/category')
+    @Roles('admin', 'super-admin')
+    @ApiOperation({ summary: 'Correct source category metadata without re-indexing' })
+    async updateSourceCategory(
+        @Param('id', new ParseUUIDPipe()) id: string,
+        @Body() dto: UpdateKnowledgeSourceCategoryDto,
+    ): Promise<any> {
+        return this.knowledgePoolService.updateSourceCategory(id, dto.categorySlug);
     }
 
     @Post('crawl/learnnow/discover')

@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateKnowledgeSourceDto } from './dto/create-knowledge-source.dto';
@@ -7,7 +8,14 @@ import { KnowledgeSourceStatus, KnowledgeSourceType, Prisma } from '@aluplan/dat
 import * as path from 'path';
 import * as fs from 'fs';
 import { StorageService } from '../common/services/storage.service';
-import { classifyDatasetFile, DatasetFileClassification } from './dataset-classifier';
+import {
+    classifyDatasetFile,
+    DATASET_CATEGORY_BY_SLUG,
+    DatasetCategorySlug,
+    DatasetFileClassification,
+    getDatasetSourceClass,
+    isDatasetCategorySlug,
+} from './dataset-classifier';
 import { canonicalizeKnowledgeSourceUrl, INVALID_KNOWLEDGE_SOURCE_URL } from './knowledge-source-url';
 
 const DUPLICATE_KNOWLEDGE_SOURCE_URL = 'KNOWLEDGE_SOURCE_URL_DUPLICATE';
@@ -31,22 +39,30 @@ const parseJobDelay = (value: string | undefined, fallback: number): number => {
 const buildDatasetMetadata = (
     classification: DatasetFileClassification,
     existing?: Record<string, unknown> | null,
-): Prisma.InputJsonObject => ({
-    ...(existing ?? {}),
-    useAiPreprocessing: existing?.useAiPreprocessing ?? false,
-    ingestionMode: existing?.ingestionMode ?? 'bulk-safe',
-    category: classification.category,
-    categorySlug: classification.categorySlug,
-    sourceClass: classification.sourceClass,
-    canonicalSource: classification.canonicalSource,
-    importBatch: classification.importBatch,
-    versionFamily: classification.versionFamily,
-    licenseEra: classification.licenseEra,
-    versionRange: classification.versionRange,
-    licenseMethods: classification.licenseMethods,
-    scenarios: classification.scenarios,
-    requiresHumanReview: classification.requiresHumanReview,
-});
+): Prisma.InputJsonObject => {
+    const manualCategorySlug = existing?.categoryAssignment === 'manual'
+        && isDatasetCategorySlug(existing.categorySlug)
+        ? existing.categorySlug
+        : null;
+    const categorySlug = manualCategorySlug ?? classification.categorySlug;
+
+    return {
+        ...(existing ?? {}),
+        useAiPreprocessing: existing?.useAiPreprocessing ?? false,
+        ingestionMode: existing?.ingestionMode ?? 'bulk-safe',
+        category: DATASET_CATEGORY_BY_SLUG[categorySlug],
+        categorySlug,
+        sourceClass: getDatasetSourceClass(categorySlug),
+        canonicalSource: classification.canonicalSource,
+        importBatch: classification.importBatch,
+        versionFamily: classification.versionFamily,
+        licenseEra: classification.licenseEra,
+        versionRange: classification.versionRange,
+        licenseMethods: classification.licenseMethods,
+        scenarios: classification.scenarios,
+        requiresHumanReview: classification.requiresHumanReview,
+    };
+};
 
 @Injectable()
 export class KnowledgePoolService {
@@ -56,6 +72,7 @@ export class KnowledgePoolService {
         private readonly prisma: PrismaService,
         private readonly storageService: StorageService,
         @InjectQueue('knowledge-sync') private readonly syncQueue: Queue,
+        private readonly eventEmitter: EventEmitter2,
     ) { }
 
     async createSource(dto: CreateKnowledgeSourceDto): Promise<any> {
@@ -206,6 +223,47 @@ export class KnowledgePoolService {
         });
     }
 
+    async updateSourceCategory(id: string, categorySlug: DatasetCategorySlug): Promise<any> {
+        const { updated, previousCategory } = await this.prisma.$transaction(async (tx) => {
+            await tx.$queryRaw(Prisma.sql`
+                SELECT "id"
+                FROM "knowledge_sources"
+                WHERE "id" = ${id}::uuid
+                FOR UPDATE
+            `);
+
+            const source = await tx.knowledgeSource.findUnique({ where: { id } });
+            if (!source) throw new NotFoundException('Source not found');
+            if (source.status === KnowledgeSourceStatus.SYNCING) {
+                throw new ConflictException('SOURCE_CATEGORY_UPDATE_BLOCKED_WHILE_SYNCING');
+            }
+
+            const existingMetadata = (source.metadata as Record<string, unknown> | null) ?? {};
+            const metadata: Prisma.InputJsonObject = {
+                ...existingMetadata,
+                category: DATASET_CATEGORY_BY_SLUG[categorySlug],
+                categorySlug,
+                sourceClass: getDatasetSourceClass(categorySlug),
+                categoryAssignment: 'manual',
+            };
+            const updated = await tx.knowledgeSource.update({
+                where: { id },
+                data: { metadata },
+            });
+
+            return {
+                updated,
+                previousCategory: String(existingMetadata.category ?? 'General'),
+            };
+        });
+
+        await this.eventEmitter.emitAsync('knowledge-pool.source_processed', { sourceId: id });
+        this.logger.log(
+            `🏷️ Updated knowledge source category: ${updated.name} (${id}) ${previousCategory} → ${DATASET_CATEGORY_BY_SLUG[categorySlug]}`,
+        );
+        return updated;
+    }
+
     async deleteSource(id: string): Promise<{ success: boolean; message: string }> {
         const source = await this.prisma.knowledgeSource.findUnique({
             where: { id }
@@ -258,28 +316,39 @@ export class KnowledgePoolService {
     }
 
     async triggerSync(id: string) {
-        const source = await this.prisma.knowledgeSource.findUnique({ where: { id } });
-        if (!source) throw new NotFoundException('Source not found');
+        const { source, delay } = await this.prisma.$transaction(async (tx) => {
+            await tx.$queryRaw(Prisma.sql`
+                SELECT "id"
+                FROM "knowledge_sources"
+                WHERE "id" = ${id}::uuid
+                FOR UPDATE
+            `);
 
-        const existingMetadata = (source.metadata as Record<string, unknown> | null) ?? null;
-        const classificationPath = source.filePath && source.fileName
-            ? path.join(source.filePath, source.fileName)
-            : null;
-        const classification = classificationPath ? classifyDatasetFile(classificationPath) : null;
-        const metadata = classification
-            ? buildDatasetMetadata(classification, existingMetadata)
-            : undefined;
-        const isBulkSafe = existingMetadata?.ingestionMode === 'bulk-safe';
-        const delay = isBulkSafe
-            ? parseJobDelay(process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS, 15000)
-            : 0;
+            const lockedSource = await tx.knowledgeSource.findUnique({ where: { id } });
+            if (!lockedSource) throw new NotFoundException('Source not found');
 
-        await this.prisma.knowledgeSource.update({
-            where: { id },
-            data: {
-                status: KnowledgeSourceStatus.SYNCING,
-                ...(metadata ? { metadata } : {}),
-            },
+            const existingMetadata = (lockedSource.metadata as Record<string, unknown> | null) ?? null;
+            const classificationPath = lockedSource.filePath && lockedSource.fileName
+                ? path.join(lockedSource.filePath, lockedSource.fileName)
+                : null;
+            const classification = classificationPath ? classifyDatasetFile(classificationPath) : null;
+            const metadata = classification
+                ? buildDatasetMetadata(classification, existingMetadata)
+                : undefined;
+            const isBulkSafe = existingMetadata?.ingestionMode === 'bulk-safe';
+            const syncDelay = isBulkSafe
+                ? parseJobDelay(process.env.KNOWLEDGE_SYNC_BULK_DELAY_MS, 15000)
+                : 0;
+
+            await tx.knowledgeSource.update({
+                where: { id },
+                data: {
+                    status: KnowledgeSourceStatus.SYNCING,
+                    ...(metadata ? { metadata } : {}),
+                },
+            });
+
+            return { source: lockedSource, delay: syncDelay };
         });
 
         try {
@@ -403,39 +472,42 @@ export class KnowledgePoolService {
                 const fileName = path.basename(filePath);
                 const classification = classifyDatasetFile(filePath);
 
-                const existing = await this.prisma.knowledgeSource.findFirst({
-                    where: { filePath }
-                });
-                const existingMetadata = (existing?.metadata as Record<string, unknown> | null) ?? null;
-                const metadata = buildDatasetMetadata(classification, existingMetadata);
+                const outcome = await this.prisma.$transaction(async (tx) => {
+                    await tx.$queryRaw(Prisma.sql`
+                        SELECT "id"
+                        FROM "knowledge_sources"
+                        WHERE "file_path" = ${filePath}
+                        FOR UPDATE
+                    `);
+                    const existing = await tx.knowledgeSource.findFirst({ where: { filePath } });
+                    const existingMetadata = (existing?.metadata as Record<string, unknown> | null) ?? null;
+                    const metadata = buildDatasetMetadata(classification, existingMetadata);
 
-                if (existing) {
-                    existingCount++;
-                    if (
-                        existing.language !== classification.language ||
-                        existingMetadata?.category !== classification.category ||
-                        existingMetadata?.categorySlug !== classification.categorySlug ||
-                        existingMetadata?.sourceClass !== classification.sourceClass ||
-                        existingMetadata?.canonicalSource !== classification.canonicalSource ||
-                        existingMetadata?.importBatch !== classification.importBatch ||
-                        existingMetadata?.versionFamily !== classification.versionFamily ||
-                        existingMetadata?.licenseEra !== classification.licenseEra ||
-                        existingMetadata?.versionRange !== classification.versionRange ||
-                        JSON.stringify(existingMetadata?.licenseMethods ?? []) !== JSON.stringify(classification.licenseMethods) ||
-                        JSON.stringify(existingMetadata?.scenarios ?? []) !== JSON.stringify(classification.scenarios) ||
-                        existingMetadata?.requiresHumanReview !== classification.requiresHumanReview
-                    ) {
-                        await this.prisma.knowledgeSource.update({
-                            where: { id: existing.id },
-                            data: {
-                                language: classification.language,
-                                metadata,
-                            },
-                        });
-                        updatedCount++;
+                    if (existing) {
+                        const needsUpdate =
+                            existing.language !== classification.language ||
+                            existingMetadata?.category !== metadata.category ||
+                            existingMetadata?.categorySlug !== metadata.categorySlug ||
+                            existingMetadata?.sourceClass !== metadata.sourceClass ||
+                            existingMetadata?.canonicalSource !== classification.canonicalSource ||
+                            existingMetadata?.importBatch !== classification.importBatch ||
+                            existingMetadata?.versionFamily !== classification.versionFamily ||
+                            existingMetadata?.licenseEra !== classification.licenseEra ||
+                            existingMetadata?.versionRange !== classification.versionRange ||
+                            JSON.stringify(existingMetadata?.licenseMethods ?? []) !== JSON.stringify(classification.licenseMethods) ||
+                            JSON.stringify(existingMetadata?.scenarios ?? []) !== JSON.stringify(classification.scenarios) ||
+                            existingMetadata?.requiresHumanReview !== classification.requiresHumanReview;
+                        if (needsUpdate) {
+                            await tx.knowledgeSource.update({
+                                where: { id: existing.id },
+                                data: { language: classification.language, metadata },
+                            });
+                            return 'updated' as const;
+                        }
+                        return 'existing' as const;
                     }
-                } else {
-                    await this.prisma.knowledgeSource.create({
+
+                    await tx.knowledgeSource.create({
                         data: {
                             name: `[Dataset] ${fileName.substring(0, 200)}`,
                             type,
@@ -446,7 +518,14 @@ export class KnowledgePoolService {
                             metadata,
                         },
                     });
+                    return 'added' as const;
+                });
+
+                if (outcome === 'added') {
                     addedCount++;
+                } else {
+                    existingCount++;
+                    if (outcome === 'updated') updatedCount++;
                 }
             }
 
@@ -454,7 +533,10 @@ export class KnowledgePoolService {
             return {
                 success: true,
                 message: `Dataset scan complete. Discovered ${addedCount} new files. Checked ${existingCount} existing files. Updated ${updatedCount} existing files. Sync must be started manually from the UI for specific items.`,
-                totalFiles: filesToSync.length
+                totalFiles: filesToSync.length,
+                added: addedCount,
+                existing: existingCount,
+                updated: updatedCount,
             };
         } catch (error: any) {
             this.logger.error(`Error syncing local dataset: ${error.message}`, error.stack);

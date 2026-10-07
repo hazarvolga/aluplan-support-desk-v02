@@ -8,7 +8,7 @@ import {
     Database, Globe, FileText, RefreshCw,
     History, CheckCircle2, XCircle, Clock, Search,
     FileIcon, ArrowUpCircle, MousePointer2,
-    ChevronDown, ChevronUp, ChevronsUpDown, PlayCircle, Trash2
+    ChevronDown, ChevronUp, ChevronsUpDown, Pencil, PlayCircle, Trash2
 } from 'lucide-react';
 import Link from 'next/link';
 import { api, CrawlCandidate, LearnNowCrawlFormat, LearnNowCrawlRun } from '@/lib/api';
@@ -18,10 +18,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
     Dialog, DialogContent, DialogHeader,
-    DialogTitle, DialogTrigger, DialogFooter
+    DialogTitle, DialogTrigger, DialogFooter, DialogDescription
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import {
     Table, TableBody, TableCell,
     TableHead, TableHeader, TableRow
@@ -29,9 +32,25 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams } from 'next/navigation';
 import { getKnowledgePoolDeepLink } from '@/components/review-center/deep-link-filters';
+import { useAuth } from '@/components/auth/role-guard';
 
 type SortField = 'name' | 'status' | 'type' | 'lastSyncedAt' | 'embeddings' | 'category';
 type SortDir = 'asc' | 'desc';
+
+const KNOWLEDGE_SOURCE_CATEGORIES = [
+    { slug: 'license-activation', label: 'License & Activation' },
+    { slug: 'license-server-codemeter', label: 'License Server & CodeMeter' },
+    { slug: 'installation-setup', label: 'Installation & Setup' },
+    { slug: 'performance-hardware', label: 'Performance & Hardware' },
+    { slug: 'network-workgroup', label: 'Network & Workgroup' },
+    { slug: 'export-import-ifc-dwg', label: 'Export Import & IFC DWG' },
+    { slug: 'allplan-share-cloud', label: 'Allplan Share & Cloud' },
+    { slug: 'project-data-management', label: 'Project Data Management' },
+    { slug: 'turkish-local-support', label: 'Turkish Local Support' },
+    { slug: 'release-package-info', label: 'Release Package Info' },
+    { slug: 'manuals-tutorials', label: 'Manuals & Tutorials' },
+    { slug: 'review-backlog', label: 'Review Backlog' },
+] as const;
 
 const isLearnNowCourseUrl = (value: string): boolean => {
     try {
@@ -52,6 +71,12 @@ const isAllplanHelpUrl = (value: string): boolean => {
 
 export default function KnowledgePoolPage() {
     const t = useTranslations('admin.knowledge_pool');
+    const { user } = useAuth();
+    const normalizedRole = typeof user?.role === 'string'
+        ? user.role.trim().replace(/-/g, '_').toUpperCase()
+        : '';
+    const canManageCategories = ['ADMIN', 'SUPER_ADMIN'].includes(normalizedRole)
+        || user?.permissions?.includes('*') === true;
     const searchParams = useSearchParams();
     const initialDeepLink = getKnowledgePoolDeepLink(searchParams);
     const [activeTab, setActiveTab] = useState<string>(initialDeepLink.tab);
@@ -68,6 +93,9 @@ export default function KnowledgePoolPage() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isSyncing, setIsSyncing] = useState<Set<string>>(new Set());
     const [isBulkSyncing, setIsBulkSyncing] = useState(false);
+    const [categoryEditorSource, setCategoryEditorSource] = useState<any>(null);
+    const [categorySlug, setCategorySlug] = useState('');
+    const [isSavingCategory, setIsSavingCategory] = useState(false);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [typeFilter, setTypeFilter] = useState('');
@@ -224,6 +252,7 @@ export default function KnowledgePoolPage() {
             else if (sortField === 'type') { av = a.type; bv = b.type; }
             else if (sortField === 'lastSyncedAt') { av = a.lastSyncedAt || ''; bv = b.lastSyncedAt || ''; }
             else if (sortField === 'embeddings') { av = a._count?.embeddings || 0; bv = b._count?.embeddings || 0; }
+            else if (sortField === 'category') { av = a.metadata?.category || 'General'; bv = b.metadata?.category || 'General'; }
             if (av < bv) return sortDir === 'asc' ? -1 : 1;
             if (av > bv) return sortDir === 'asc' ? 1 : -1;
             return 0;
@@ -280,6 +309,38 @@ export default function KnowledgePoolPage() {
             setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
         } catch (error: any) {
             toast({ title: 'Delete Failed', description: error.message || 'Something went wrong', variant: 'destructive' });
+        }
+    };
+
+    const openCategoryEditor = (source: any) => {
+        const currentCategory = KNOWLEDGE_SOURCE_CATEGORIES.find(category => (
+            category.slug === source.metadata?.categorySlug
+            || category.label === source.metadata?.category
+        ));
+        setCategoryEditorSource(source);
+        setCategorySlug(currentCategory?.slug ?? '');
+    };
+
+    const handleCategorySave = async () => {
+        if (!categoryEditorSource || !categorySlug) return;
+        setIsSavingCategory(true);
+        try {
+            const updated = await api.pool.updateCategory(categoryEditorSource.id, categorySlug);
+            setSources(prev => prev.map(source => (
+                source.id === updated.id
+                    ? { ...source, ...updated, _count: source._count }
+                    : source
+            )));
+            setCategoryEditorSource(null);
+            toast({ title: t('toasts.category_updated'), description: t('toasts.category_updated_desc') });
+        } catch (error: any) {
+            toast({
+                title: t('toasts.category_update_failed'),
+                description: error?.message || t('toasts.category_update_failed_desc'),
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSavingCategory(false);
         }
     };
 
@@ -739,6 +800,50 @@ export default function KnowledgePoolPage() {
 
     return (
         <div className="p-4 space-y-4">
+            <Dialog
+                open={Boolean(categoryEditorSource)}
+                onOpenChange={(open) => { if (!open && !isSavingCategory) setCategoryEditorSource(null); }}
+            >
+                <DialogContent className="sm:max-w-[440px]">
+                    <DialogHeader>
+                        <DialogTitle>{t('dialogs.category_title')}</DialogTitle>
+                        <DialogDescription>{t('dialogs.category_desc')}</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium">{categoryEditorSource?.name}</p>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>{t('dialogs.category_label')}</Label>
+                            <Select value={categorySlug} onValueChange={setCategorySlug} disabled={isSavingCategory}>
+                                <SelectTrigger aria-label={t('dialogs.category_label')}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {KNOWLEDGE_SOURCE_CATEGORIES.map(category => (
+                                        <SelectItem key={category.slug} value={category.slug}>
+                                            {category.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setCategoryEditorSource(null)}
+                            disabled={isSavingCategory}
+                        >
+                            {t('buttons.cancel')}
+                        </Button>
+                        <Button onClick={handleCategorySave} disabled={isSavingCategory || !categorySlug}>
+                            {isSavingCategory && <RefreshCw className="h-3.5 w-3.5 mr-2 animate-spin" />}
+                            {t('buttons.save_category')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 {/* ── Header ── */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border/40 pb-4">
@@ -891,7 +996,7 @@ export default function KnowledgePoolPage() {
                                                 <span className="flex items-center gap-1">{t('table.type')} <SortIcon field="type" /></span>
                                             </TableHead>
                                             <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-32" onClick={() => toggleSort('category')}>
-                                                <span className="flex items-center gap-1">Kategori <SortIcon field="category" /></span>
+                                                <span className="flex items-center gap-1">{t('table.category')} <SortIcon field="category" /></span>
                                             </TableHead>
                                             <TableHead className="text-[9px] font-bold uppercase tracking-widest cursor-pointer select-none w-28" onClick={() => toggleSort('status')}>
                                                 <span className="flex items-center gap-1">{t('table.status')} <SortIcon field="status" /></span>
@@ -964,6 +1069,19 @@ export default function KnowledgePoolPage() {
                                                 </TableCell>
                                                 <TableCell className="w-24 pr-3">
                                                     <div className="flex items-center justify-end gap-1">
+                                                        {canManageCategories && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-7 w-7 rounded-none hover:bg-primary/10 hover:text-primary"
+                                                                onClick={() => openCategoryEditor(source)}
+                                                                disabled={source.status === 'SYNCING'}
+                                                                aria-label={t('buttons.edit_category')}
+                                                                title={t('buttons.edit_category')}
+                                                            >
+                                                                <Pencil className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        )}
                                                         <Button variant="ghost" size="icon" className="h-7 w-7 rounded-none hover:bg-primary/10 hover:text-primary"
                                                             onClick={() => handleSync(source.id)} 
                                                             disabled={isSyncing.has(source.id) || source.status === 'SYNCING'}>

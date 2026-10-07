@@ -20,6 +20,7 @@ import { countTokens } from '../ai/utils/token-counter';
 import { VisualContentService } from './visual-content.service';
 import {
     DATASET_CATEGORY_BY_SLUG,
+    getDatasetSourceClass,
     isDatasetCategorySlug,
     resolveDatasetCategory,
 } from './dataset-classifier';
@@ -168,6 +169,9 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         const existingCategorySlug = isDatasetCategorySlug(sourceMetadata.categorySlug)
             ? sourceMetadata.categorySlug
             : undefined;
+        const manualCategorySlug = sourceMetadata.categoryAssignment === 'manual'
+            ? existingCategorySlug
+            : undefined;
         const crawlerMetadata = metadata && typeof metadata === 'object'
             ? metadata as Record<string, unknown>
             : {};
@@ -178,18 +182,21 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
             .flatMap(value => Array.isArray(value) ? value : [])
             .filter((value): value is string => typeof value === 'string')
             .join(' ');
-        const autoCategorized = sourceMetadata.source === 'allplan_learnnow';
-        const preferredCategorySlug = autoCategorized ? undefined : existingCategorySlug;
-        const primaryCategory = resolveDatasetCategory(
-            `${title} ${taxonomyValues}`,
-            preferredCategorySlug,
-        );
-        const inferredCategory = primaryCategory.categorySlug === 'review-backlog'
-            ? resolveDatasetCategory(enrichedContent.slice(0, 32768), preferredCategorySlug)
-            : primaryCategory;
-        const categorySlug = inferredCategory.categorySlug !== 'review-backlog'
-            ? inferredCategory.categorySlug
-            : existingCategorySlug;
+        let categorySlug = manualCategorySlug;
+        if (!categorySlug) {
+            const autoCategorized = sourceMetadata.source === 'allplan_learnnow';
+            const preferredCategorySlug = autoCategorized ? undefined : existingCategorySlug;
+            const primaryCategory = resolveDatasetCategory(
+                `${title} ${taxonomyValues}`,
+                preferredCategorySlug,
+            );
+            const inferredCategory = primaryCategory.categorySlug === 'review-backlog'
+                ? resolveDatasetCategory(enrichedContent.slice(0, 32768), preferredCategorySlug)
+                : primaryCategory;
+            categorySlug = inferredCategory.categorySlug !== 'review-backlog'
+                ? inferredCategory.categorySlug
+                : existingCategorySlug;
+        }
         const category = categorySlug
             ? DATASET_CATEGORY_BY_SLUG[categorySlug]
             : (typeof sourceMetadata.category === 'string' ? sourceMetadata.category : 'General');
@@ -322,15 +329,22 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         }
 
         // Apply AI Pre-processing if enabled in metadata
-        let category = (source.metadata as any)?.category || 'General';
+        const sourceMetadata = (source.metadata as Record<string, unknown> | null) ?? {};
+        const manualCategorySlug = sourceMetadata.categoryAssignment === 'manual'
+            && isDatasetCategorySlug(sourceMetadata.categorySlug)
+            ? sourceMetadata.categorySlug
+            : undefined;
+        let category = manualCategorySlug
+            ? DATASET_CATEGORY_BY_SLUG[manualCategorySlug]
+            : (typeof sourceMetadata.category === 'string' ? sourceMetadata.category : 'General');
         
-        if ((source.metadata as Record<string, unknown>)?.useAiPreprocessing === true) {
+        if (sourceMetadata.useAiPreprocessing === true) {
             this.logger.log(`🧠 Applying AI for categorization and cleaning: ${source.fileName}`);
             try {
                 // 1. Categorize & Clean
                 const aiResult = await this.aiService.analyzeAndCleanDocument(content, source.fileName || source.name || 'document');
                 content = aiResult.cleanedContent ?? content;
-                category = aiResult.category ?? category;
+                if (!manualCategorySlug) category = aiResult.category ?? category;
                 this.logger.log(`🏷️ Document categorized as: ${category}`);
             } catch (aiError: any) {
                 this.logger.warn(`⚠️ AI Pre-processing failed: ${aiError.message}. Continuing with raw content.`);
@@ -361,9 +375,14 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
                 status: KnowledgeSourceStatus.ACTIVE,
                 lastSyncedAt: new Date(),
                 metadata: {
-                    ...((source.metadata as Record<string, unknown>) || {}),
+                    ...sourceMetadata,
                     lastContentLength: newLength,
-                    category: category
+                    category,
+                    ...(manualCategorySlug ? {
+                        categorySlug: manualCategorySlug,
+                        sourceClass: getDatasetSourceClass(manualCategorySlug),
+                        categoryAssignment: 'manual',
+                    } : {}),
                 }
             }
         });

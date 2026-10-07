@@ -3639,10 +3639,13 @@
         "publish_selected": "AUSGEWÄHLTE_VERÖFFENTLICHEN",
         "examine": "UNTERSUCHEN",
         "load_more": "MEHR_LADEN",
-        "loading": "LADEN..."
+        "loading": "LADEN...",
+        "edit_category": "KATEGORIE BEARBEITEN",
+        "save_category": "KATEGORIE SPEICHERN"
       },
       "table": {
         "source": "QUELLE",
+        "category": "KATEGORIE",
         "type": "TYP",
         "status": "STATUS",
         "vector": "VEKTOR",
@@ -3809,7 +3812,10 @@
         "url_mode_crawl": "Unterseiten crawlen",
         "url_mode_crawl_desc": "Findet Seiten derselben Domain und sendet sie zur Prüfung.",
         "save_sync": "Speichern und Synchronisieren",
-        "save_candidates": "Kandidaten speichern"
+        "save_candidates": "Kandidaten speichern",
+        "category_title": "Quellenkategorie bearbeiten",
+        "category_label": "Kategorie",
+        "category_desc": "Dabei werden nur die Quellenmetadaten aktualisiert; vorhandene Vektoren bleiben erhalten."
       },
       "toasts": {
         "fetch_error": "Ressourcen konnten nicht geladen werden",
@@ -3826,7 +3832,11 @@
         "url_duplicate": "URL bereits vorhanden",
         "url_duplicate_desc": "Diese URL oder eine gleichwertige Form ist bereits im Wissenspool vorhanden.",
         "logs_error": "Protokolle konnten nicht geladen werden",
-        "publish_success": "{count} Artikel veröffentlicht"
+        "publish_success": "{count} Artikel veröffentlicht",
+        "category_updated": "Kategorie aktualisiert",
+        "category_updated_desc": "Die Quellenmetadaten wurden aktualisiert; vorhandene Vektoren blieben unverändert.",
+        "category_update_failed": "Kategorie konnte nicht aktualisiert werden",
+        "category_update_failed_desc": "Die Quellenkategorie konnte nicht gespeichert werden."
       }
     },
     "announcements": {
@@ -5247,10 +5257,13 @@
       "publish_selected": "SEÇİLENLERİ YAYINLA",
       "examine": "İNCELE",
       "load_more": "DAHA FAZLA YÜKLE",
-      "loading": "YÜKLENİYOR..."
+      "loading": "YÜKLENİYOR...",
+      "edit_category": "KATEGORIE BEARBEITEN",
+      "save_category": "KATEGORIE SPEICHERN"
     },
     "table": {
       "source": "KAYNAK",
+      "category": "KATEGORIE",
       "type": "TİP",
       "status": "DURUM",
       "vector": "VEKTÖR",
@@ -5398,7 +5411,10 @@
       "url_mode_crawl": "Unterseiten crawlen",
       "url_mode_crawl_desc": "Findet Seiten derselben Domain und sendet sie zur Prüfung.",
       "save_sync": "Kaydet ve Eşitle",
-      "save_candidates": "Kandidaten speichern"
+      "save_candidates": "Kandidaten speichern",
+      "category_title": "Quellenkategorie bearbeiten",
+      "category_label": "Kategorie",
+      "category_desc": "Dabei werden nur die Quellenmetadaten aktualisiert; vorhandene Vektoren bleiben erhalten."
     },
     "toasts": {
       "fetch_error": "Kaynaklar yüklenemedi",
@@ -5413,7 +5429,11 @@
       "dataset_sync_success": "Akıllı Eşitleme Başarılı",
       "url_added": "URL kaynağı eklendi",
       "logs_error": "Günlükler yüklenemedi",
-      "publish_success": "{count} makale yayınlandı"
+      "publish_success": "{count} makale yayınlandı",
+      "category_updated": "Kategorie aktualisiert",
+      "category_updated_desc": "Die Quellenmetadaten wurden aktualisiert; vorhandene Vektoren blieben unverändert.",
+      "category_update_failed": "Kategorie konnte nicht aktualisiert werden",
+      "category_update_failed_desc": "Die Quellenkategorie konnte nicht gespeichert werden."
     }
   },
   "announcements": {

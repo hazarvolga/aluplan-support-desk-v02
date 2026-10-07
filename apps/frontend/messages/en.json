@@ -3639,10 +3639,13 @@
         "publish_selected": "PUBLISH SELECTED",
         "examine": "EXAMINE",
         "load_more": "LOAD MORE",
-        "loading": "LOADING..."
+        "loading": "LOADING...",
+        "edit_category": "EDIT CATEGORY",
+        "save_category": "SAVE CATEGORY"
       },
       "table": {
         "source": "SOURCE",
+        "category": "CATEGORY",
         "type": "TYPE",
         "status": "STATUS",
         "vector": "VECTOR",
@@ -3809,7 +3812,10 @@
         "url_mode_crawl": "Crawl Subpages",
         "url_mode_crawl_desc": "Find same-domain pages and send them to crawler review.",
         "save_sync": "Save and Sync",
-        "save_candidates": "Save Candidates"
+        "save_candidates": "Save Candidates",
+        "category_title": "Edit Source Category",
+        "category_label": "Category",
+        "category_desc": "This updates source metadata only and preserves all existing vectors."
       },
       "toasts": {
         "fetch_error": "Could not load resources",
@@ -3826,7 +3832,11 @@
         "url_duplicate": "URL already exists",
         "url_duplicate_desc": "This URL or an equivalent form is already in the Knowledge Pool.",
         "logs_error": "Could not load logs",
-        "publish_success": "{count} articles published"
+        "publish_success": "{count} articles published",
+        "category_updated": "Category updated",
+        "category_updated_desc": "Source metadata was updated without changing existing vectors.",
+        "category_update_failed": "Category update failed",
+        "category_update_failed_desc": "The source category could not be saved."
       }
     },
     "announcements": {
@@ -5247,10 +5257,13 @@
       "publish_selected": "SEÇİLENLERİ YAYINLA",
       "examine": "İNCELE",
       "load_more": "DAHA FAZLA YÜKLE",
-      "loading": "YÜKLENİYOR..."
+      "loading": "YÜKLENİYOR...",
+      "edit_category": "EDIT CATEGORY",
+      "save_category": "SAVE CATEGORY"
     },
     "table": {
       "source": "KAYNAK",
+      "category": "CATEGORY",
       "type": "TİP",
       "status": "DURUM",
       "vector": "VEKTÖR",
@@ -5398,7 +5411,10 @@
       "url_mode_crawl": "Crawl Subpages",
       "url_mode_crawl_desc": "Find same-domain pages and send them to crawler review.",
       "save_sync": "Kaydet ve Eşitle",
-      "save_candidates": "Save Candidates"
+      "save_candidates": "Save Candidates",
+      "category_title": "Edit Source Category",
+      "category_label": "Category",
+      "category_desc": "This updates source metadata only and preserves all existing vectors."
     },
     "toasts": {
       "fetch_error": "Kaynaklar yüklenemedi",
@@ -5413,7 +5429,11 @@
       "dataset_sync_success": "Akıllı Eşitleme Başarılı",
       "url_added": "URL kaynağı eklendi",
       "logs_error": "Günlükler yüklenemedi",
-      "publish_success": "{count} makale yayınlandı"
+      "publish_success": "{count} makale yayınlandı",
+      "category_updated": "Category updated",
+      "category_updated_desc": "Source metadata was updated without changing existing vectors.",
+      "category_update_failed": "Category update failed",
+      "category_update_failed_desc": "The source category could not be saved."
     }
   },
   "announcements": {

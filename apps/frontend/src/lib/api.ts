@@ -497,6 +497,11 @@ export const api = {
             };
         },
         sync: (id: string) => request<any>(`/knowledge-pool/sources/${id}/sync`, { method: 'POST' }),
+        updateCategory: (id: string, categorySlug: string) =>
+            request<any>(`/knowledge-pool/admin/sources/${id}/category`, {
+                method: 'PATCH',
+                body: JSON.stringify({ categorySlug }),
+            }),
         logs: (id: string) => request<any[]>(`/knowledge-pool/sources/${id}/logs`),
         syncDataset: () => request<any>('/knowledge-pool/sync-dataset', { method: 'POST' }),
         startLearnNowCrawlRun: (body: StartLearnNowCrawlRunPayload) =>

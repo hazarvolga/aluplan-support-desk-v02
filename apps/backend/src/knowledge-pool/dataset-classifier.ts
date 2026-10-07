@@ -238,7 +238,7 @@ const inferCategorySlug = (filePath: string, fileName: string): keyof typeof DAT
     return 'review-backlog';
 };
 
-const inferSourceClass = (categorySlug: keyof typeof DATASET_CATEGORY_BY_SLUG): DatasetSourceClass => {
+export const getDatasetSourceClass = (categorySlug: DatasetCategorySlug): DatasetSourceClass => {
     if (categorySlug === 'manuals-tutorials') return 'manual';
     if (categorySlug === 'review-backlog') return 'review';
     return 'support';
@@ -361,7 +361,7 @@ export const classifyDatasetFile = (filePath: string): DatasetFileClassification
         language: inferLanguage(filePath, fileName),
         category: DATASET_CATEGORY_BY_SLUG[categorySlug],
         categorySlug,
-        sourceClass: inferSourceClass(categorySlug),
+        sourceClass: getDatasetSourceClass(categorySlug),
         canonicalSource: ext,
         importBatch: inferImportBatch(filePath),
         ...licenseProfile,

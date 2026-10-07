@@ -3663,10 +3663,13 @@
         "publish_selected": "SEÇİLENLERİ YAYINLA",
         "examine": "İNCELE",
         "load_more": "DAHA FAZLA YÜKLE",
-        "loading": "YÜKLENİYOR..."
+        "loading": "YÜKLENİYOR...",
+        "edit_category": "KATEGORİYİ DÜZENLE",
+        "save_category": "KATEGORİYİ KAYDET"
       },
       "table": {
         "source": "KAYNAK",
+        "category": "KATEGORİ",
         "type": "TİP",
         "status": "DURUM",
         "vector": "VEKTÖR",
@@ -3833,7 +3836,10 @@
         "url_mode_crawl": "Alt Sayfaları Tara",
         "url_mode_crawl_desc": "Aynı domain altındaki sayfaları bulup onay kuyruğuna gönderir.",
         "save_sync": "Kaydet ve Eşitle",
-        "save_candidates": "Adayları Kaydet"
+        "save_candidates": "Adayları Kaydet",
+        "category_title": "Kaynak Kategorisini Düzenle",
+        "category_label": "Kategori",
+        "category_desc": "Bu işlem mevcut vektörleri silmeden yalnızca kaynak metadatasını günceller."
       },
       "toasts": {
         "fetch_error": "Kaynaklar yüklenemedi",
@@ -3850,7 +3856,11 @@
         "url_duplicate": "URL zaten kayıtlı",
         "url_duplicate_desc": "Bu URL veya eşdeğer biçimi Bilgi Havuzunda zaten bulunuyor.",
         "logs_error": "Günlükler yüklenemedi",
-        "publish_success": "{count} makale yayınlandı"
+        "publish_success": "{count} makale yayınlandı",
+        "category_updated": "Kategori güncellendi",
+        "category_updated_desc": "Mevcut vektörler korunarak kaynak metadatası güncellendi.",
+        "category_update_failed": "Kategori güncellenemedi",
+        "category_update_failed_desc": "Kaynak kategorisi kaydedilemedi."
       }
     },
     "announcements": {
@@ -5271,10 +5281,13 @@
       "publish_selected": "SEÇİLENLERİ YAYINLA",
       "examine": "İNCELE",
       "load_more": "DAHA FAZLA YÜKLE",
-      "loading": "YÜKLENİYOR..."
+      "loading": "YÜKLENİYOR...",
+      "edit_category": "KATEGORİYİ DÜZENLE",
+      "save_category": "KATEGORİYİ KAYDET"
     },
     "table": {
       "source": "KAYNAK",
+      "category": "KATEGORİ",
       "type": "TİP",
       "status": "DURUM",
       "vector": "VEKTÖR",
@@ -5422,7 +5435,10 @@
       "url_mode_crawl": "Alt Sayfaları Tara",
       "url_mode_crawl_desc": "Aynı domain altındaki sayfaları bulup onay kuyruğuna gönderir.",
       "save_sync": "Kaydet ve Eşitle",
-      "save_candidates": "Adayları Kaydet"
+      "save_candidates": "Adayları Kaydet",
+      "category_title": "Kaynak Kategorisini Düzenle",
+      "category_label": "Kategori",
+      "category_desc": "Bu işlem mevcut vektörleri silmeden yalnızca kaynak metadatasını günceller."
     },
     "toasts": {
       "fetch_error": "Kaynaklar yüklenemedi",
@@ -5437,7 +5453,11 @@
       "dataset_sync_success": "Akıllı Eşitleme Başarılı",
       "url_added": "URL kaynağı eklendi",
       "logs_error": "Günlükler yüklenemedi",
-      "publish_success": "{count} makale yayınlandı"
+      "publish_success": "{count} makale yayınlandı",
+      "category_updated": "Kategori güncellendi",
+      "category_updated_desc": "Mevcut vektörler korunarak kaynak metadatası güncellendi.",
+      "category_update_failed": "Kategori güncellenemedi",
+      "category_update_failed_desc": "Kaynak kategorisi kaydedilemedi."
     }
   },
   "announcements": {
