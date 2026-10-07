@@ -7,6 +7,15 @@ import { getQueueToken } from '@nestjs/bullmq';
 import { mockPrismaService } from '../test/mock.utils';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { KnowledgeSourceStatus, KnowledgeSourceType } from '@aluplan/database';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import * as fs from 'fs';
+
+jest.mock('fs', () => ({
+    ...jest.requireActual('fs'),
+    existsSync: jest.fn(jest.requireActual('fs').existsSync),
+    readdirSync: jest.fn(jest.requireActual('fs').readdirSync),
+    statSync: jest.fn(jest.requireActual('fs').statSync),
+}));
 
 describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
     let service: KnowledgePoolService;
@@ -16,12 +25,16 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
         add: jest.fn(),
         getJob: jest.fn(),
     };
+    const mockEventEmitter = {
+        emitAsync: jest.fn().mockResolvedValue([]),
+    };
 
     const localMockPrismaService = {
         ...mockPrismaService,
         knowledgeSource: {
             create: jest.fn(),
             findUnique: jest.fn(),
+            findFirst: jest.fn(),
             findMany: jest.fn(),
             update: jest.fn(),
         },
@@ -39,6 +52,7 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
                 { provide: PrismaService, useValue: localMockPrismaService },
                 { provide: StorageService, useValue: { uploadFile: jest.fn(), deleteFile: jest.fn(), getSignedUrl: jest.fn(), testConnection: jest.fn() } },
                 { provide: getQueueToken('knowledge-sync'), useValue: mockQueue },
+                { provide: EventEmitter2, useValue: mockEventEmitter },
             ],
         }).compile();
 
@@ -48,6 +62,95 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
         jest.clearAllMocks();
         localMockPrismaService.knowledgeSource.findMany.mockResolvedValue([]);
         mockQueue.getJob.mockResolvedValue(null);
+    });
+
+    describe('updateSourceCategory', () => {
+        it('updates only category metadata and preserves existing vectors and metadata', async () => {
+            const source = {
+                id: '550e8400-e29b-41d4-a716-446655440000',
+                name: '06-offline-odunc-alma-ve-iade',
+                status: KnowledgeSourceStatus.ACTIVE,
+                metadata: {
+                    category: 'Review Backlog',
+                    categorySlug: 'review-backlog',
+                    sourceClass: 'review',
+                    importBatch: 'ui-upload',
+                    licenseEra: 'unknown',
+                },
+                _count: { embeddings: 12 },
+            };
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockImplementation(({ data }: any) => ({
+                ...source,
+                ...data,
+            }));
+
+            const result = await service.updateSourceCategory(source.id, 'license-activation');
+
+            expect(localMockPrismaService.knowledgeSource.update).toHaveBeenCalledWith({
+                where: { id: source.id },
+                data: {
+                    metadata: {
+                        ...source.metadata,
+                        category: 'License & Activation',
+                        categorySlug: 'license-activation',
+                        sourceClass: 'support',
+                        categoryAssignment: 'manual',
+                    },
+                },
+            });
+            expect(mockQueue.add).not.toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith(
+                'knowledge-pool.source_processed',
+                { sourceId: source.id },
+            );
+            expect(result.metadata).toEqual(expect.objectContaining({
+                category: 'License & Activation',
+                categoryAssignment: 'manual',
+                importBatch: 'ui-upload',
+            }));
+        });
+
+        it('rejects category changes while a source is syncing', async () => {
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue({
+                id: '550e8400-e29b-41d4-a716-446655440000',
+                status: KnowledgeSourceStatus.SYNCING,
+                metadata: {},
+            });
+
+            await expect(service.updateSourceCategory(
+                '550e8400-e29b-41d4-a716-446655440000',
+                'installation-setup',
+            )).rejects.toThrow(ConflictException);
+            expect(localMockPrismaService.knowledgeSource.update).not.toHaveBeenCalled();
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled();
+        });
+
+        it('throws when the source does not exist', async () => {
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(null);
+
+            await expect(service.updateSourceCategory(
+                '550e8400-e29b-41d4-a716-446655440000',
+                'license-activation',
+            )).rejects.toThrow(NotFoundException);
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled();
+        });
+
+        it('does not invalidate caches when the category update fails to commit', async () => {
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue({
+                id: '550e8400-e29b-41d4-a716-446655440000',
+                name: '06-offline-odunc-alma-ve-iade',
+                status: KnowledgeSourceStatus.ACTIVE,
+                metadata: {},
+            });
+            localMockPrismaService.knowledgeSource.update.mockRejectedValue(new Error('database unavailable'));
+
+            await expect(service.updateSourceCategory(
+                '550e8400-e29b-41d4-a716-446655440000',
+                'license-activation',
+            )).rejects.toThrow('database unavailable');
+            expect(mockEventEmitter.emitAsync).not.toHaveBeenCalled();
+        });
     });
 
     describe('triggerSync', () => {
@@ -182,6 +285,43 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
                 { sourceId: source.id },
                 expect.objectContaining({ delay: 15000 }),
             );
+        });
+
+        it('preserves a manually corrected category when the source is synchronized again', async () => {
+            const source = {
+                id: 'source-manual-category',
+                name: '06-offline-odunc-alma-ve-iade',
+                filePath: 'knowledge-pool/source-manual-category/06-offline-odunc-alma-ve-iade.md',
+                fileName: '06-offline-odunc-alma-ve-iade.md',
+                status: KnowledgeSourceStatus.ACTIVE,
+                metadata: {
+                    ingestionMode: 'bulk-safe',
+                    category: 'Installation & Setup',
+                    categorySlug: 'installation-setup',
+                    sourceClass: 'support',
+                    categoryAssignment: 'manual',
+                },
+            };
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue({
+                ...source,
+                status: KnowledgeSourceStatus.SYNCING,
+            });
+
+            await service.triggerSync(source.id);
+
+            expect(localMockPrismaService.knowledgeSource.update).toHaveBeenCalledWith({
+                where: { id: source.id },
+                data: expect.objectContaining({
+                    status: KnowledgeSourceStatus.SYNCING,
+                    metadata: expect.objectContaining({
+                        category: 'Installation & Setup',
+                        categorySlug: 'installation-setup',
+                        sourceClass: 'support',
+                        categoryAssignment: 'manual',
+                    }),
+                }),
+            });
         });
 
         it.each([
@@ -326,6 +466,53 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
         });
     });
 
+    describe('syncLocalDataset', () => {
+        afterEach(() => {
+            (fs.existsSync as jest.Mock).mockImplementation(jest.requireActual('fs').existsSync);
+            (fs.readdirSync as jest.Mock).mockImplementation(jest.requireActual('fs').readdirSync);
+            (fs.statSync as jest.Mock).mockImplementation(jest.requireActual('fs').statSync);
+        });
+
+        it('locks and re-reads an existing source before preserving its manual category', async () => {
+            const source = {
+                id: '550e8400-e29b-41d4-a716-446655440000',
+                filePath: expect.any(String),
+                language: 'tr',
+                metadata: {
+                    category: 'Installation & Setup',
+                    categorySlug: 'installation-setup',
+                    sourceClass: 'support',
+                    categoryAssignment: 'manual',
+                },
+            };
+            (fs.existsSync as jest.Mock).mockReturnValue(true);
+            (fs.readdirSync as jest.Mock).mockReturnValue(['06-offline-odunc-alma-ve-iade.md']);
+            (fs.statSync as jest.Mock).mockReturnValue({ isDirectory: () => false });
+            localMockPrismaService.knowledgeSource.findFirst.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockImplementation(({ data }: any) => ({
+                ...source,
+                ...data,
+            }));
+
+            const result = await service.syncLocalDataset();
+
+            expect(result).toEqual(expect.objectContaining({ success: true, existing: 1 }));
+            expect(localMockPrismaService.$queryRaw).toHaveBeenCalledWith(
+                expect.objectContaining({ strings: expect.arrayContaining([expect.stringContaining('FOR UPDATE')]) }),
+            );
+            expect(localMockPrismaService.knowledgeSource.update).toHaveBeenCalledWith({
+                where: { id: source.id },
+                data: expect.objectContaining({
+                    metadata: expect.objectContaining({
+                        category: 'Installation & Setup',
+                        categorySlug: 'installation-setup',
+                        categoryAssignment: 'manual',
+                    }),
+                }),
+            });
+        });
+    });
+
     describe('createSource', () => {
         it('stores the user supplied URL name in metadata before initial sync', async () => {
             const source = {
@@ -431,8 +618,8 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
                 url: 'https://example.com/locked',
             });
 
-            expect(localMockPrismaService.$queryRaw).toHaveBeenCalledTimes(1);
-            expect(localMockPrismaService.$transaction).toHaveBeenCalledTimes(1);
+            expect(localMockPrismaService.$queryRaw).toHaveBeenCalledTimes(2);
+            expect(localMockPrismaService.$transaction).toHaveBeenCalledTimes(2);
             const advisoryLockQuery = localMockPrismaService.$queryRaw.mock.calls[0][0];
             expect(advisoryLockQuery.strings.join(' ')).toContain('IS NULL AS locked');
             expect(localMockPrismaService.$queryRaw.mock.invocationCallOrder[0])

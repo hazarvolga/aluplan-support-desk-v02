@@ -227,6 +227,111 @@ describe('KnowledgePoolProcessor file sync', () => {
         });
     });
 
+    it('preserves a manually assigned category for LearnNow URL sources', async () => {
+        const prisma = {
+            knowledgeSource: { update: jest.fn().mockResolvedValue({}) },
+            knowledgeSourceSyncLog: { update: jest.fn().mockResolvedValue({}) },
+        };
+        const embeddingService = { indexPoolContent: jest.fn().mockResolvedValue(undefined) };
+        const crawlService = {
+            fetch: jest.fn().mockResolvedValue({
+                content: 'License activation article content with enough detail for URL indexing.',
+                title: 'Activating ALLPLAN license using Product Key',
+                provider: 'crawl4ai',
+                metadata: {},
+            }),
+        };
+        const visualContentService = {
+            enrichUrlContent: jest.fn().mockImplementation(({ content }) => Promise.resolve({
+                content,
+                summaries: [],
+                metadata: {},
+            })),
+        };
+        const processor = new KnowledgePoolProcessor(
+            prisma as any,
+            embeddingService as any,
+            {} as any,
+            crawlService as any,
+            visualContentService as any,
+            {} as any,
+            {} as any,
+            { get: jest.fn((key: string, fallback?: string) => key === 'KNOWLEDGE_SYNC_EMBED_BUDGET_GUARD' ? 'false' : fallback) } as any,
+            { get: jest.fn(), getClient: jest.fn() } as any,
+            { pause: jest.fn() } as any,
+        );
+
+        await (processor as any).handleUrlSync({
+            id: '8551f74c-e2e1-432c-af47-8ee988f86d14',
+            url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=8646',
+            name: 'Borrow and return cloud-based licences',
+            metadata: {
+                source: 'allplan_learnnow',
+                category: 'Installation & Setup',
+                categorySlug: 'installation-setup',
+                sourceClass: 'support',
+                categoryAssignment: 'manual',
+            },
+        }, 'log-manual-url');
+
+        expect(embeddingService.indexPoolContent).toHaveBeenCalledWith(
+            '8551f74c-e2e1-432c-af47-8ee988f86d14',
+            expect.any(String),
+            expect.objectContaining({
+                category: 'Installation & Setup',
+                categorySlug: 'installation-setup',
+            }),
+        );
+        expect(prisma.knowledgeSource.update).toHaveBeenCalledWith({
+            where: { id: '8551f74c-e2e1-432c-af47-8ee988f86d14' },
+            data: expect.objectContaining({
+                metadata: expect.objectContaining({
+                    category: 'Installation & Setup',
+                    categorySlug: 'installation-setup',
+                    categoryAssignment: 'manual',
+                }),
+            }),
+        });
+    });
+
+    it('keeps a manual file category authoritative during AI preprocessing', async () => {
+        const { processor, prisma, embeddingService } = buildProcessor(0);
+        const aiService = (processor as any).aiService;
+        aiService.analyzeAndCleanDocument = jest.fn().mockResolvedValue({
+            cleanedContent: content,
+            category: 'Performance & Hardware',
+        });
+
+        await (processor as any).handleFileSync({
+            ...source,
+            lastHash: null,
+            metadata: {
+                useAiPreprocessing: true,
+                category: 'Installation & Setup',
+                categorySlug: 'installation-setup',
+                sourceClass: 'support',
+                categoryAssignment: 'manual',
+            },
+        }, 'log-manual-file');
+
+        expect(aiService.analyzeAndCleanDocument).toHaveBeenCalled();
+        expect(embeddingService.indexPoolContent).toHaveBeenCalledWith(
+            source.id,
+            content,
+            expect.objectContaining({ category: 'Installation & Setup' }),
+        );
+        expect(prisma.knowledgeSource.update).toHaveBeenCalledWith({
+            where: { id: source.id },
+            data: expect.objectContaining({
+                metadata: expect.objectContaining({
+                    category: 'Installation & Setup',
+                    categorySlug: 'installation-setup',
+                    categoryAssignment: 'manual',
+                }),
+            }),
+        });
+    });
+
     it('indexes visual summaries together with URL text content', async () => {
         const prisma = {
             knowledgeSource: {

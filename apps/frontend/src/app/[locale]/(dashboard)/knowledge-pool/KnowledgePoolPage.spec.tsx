@@ -9,11 +9,19 @@ import enMessages from '../../../../../messages/en.json';
 import deMessages from '../../../../../messages/de.json';
 import trMessages from '../../../../../messages/tr.json';
 
+vi.mock('@/components/auth/role-guard', () => ({
+    useAuth: () => ({ user: { role: 'admin', roles: ['admin'] } }),
+}));
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 describe('KnowledgePoolPage review-center navigation', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        Object.defineProperty(Element.prototype, 'scrollIntoView', {
+            configurable: true,
+            value: vi.fn(),
+        });
         vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams() as never);
     });
 
@@ -53,6 +61,53 @@ describe('KnowledgePoolPage review-center navigation', () => {
         view.rerender(<KnowledgePoolPage />);
 
         await waitFor(() => expect(sourceRequests).toBeGreaterThan(0));
+    });
+
+    it('corrects source category metadata without re-syncing the source', async () => {
+        const user = userEvent.setup();
+        const source = {
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            name: '06-offline-odunc-alma-ve-iade',
+            type: 'FILE_MD',
+            status: 'ACTIVE',
+            metadata: { category: 'Review Backlog', categorySlug: 'review-backlog' },
+            _count: { embeddings: 12 },
+        };
+        let patchBody: Record<string, unknown> | null = null;
+        let syncRequests = 0;
+        server.use(
+            http.get(`${API_BASE}/knowledge-pool/sources`, () => HttpResponse.json([source])),
+            http.patch(`${API_BASE}/knowledge-pool/admin/sources/${source.id}/category`, async ({ request }) => {
+                patchBody = await request.json() as Record<string, unknown>;
+                return HttpResponse.json({
+                    ...source,
+                    metadata: {
+                        ...source.metadata,
+                        category: 'License & Activation',
+                        categorySlug: 'license-activation',
+                        sourceClass: 'support',
+                    },
+                });
+            }),
+            http.post(`${API_BASE}/knowledge-pool/sources/${source.id}/sync`, () => {
+                syncRequests += 1;
+                return HttpResponse.json({ success: true });
+            }),
+        );
+
+        render(<KnowledgePoolPage />);
+        expect(await screen.findByText('Review Backlog')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', { name: 'buttons.edit_category' }));
+        const categorySelect = screen.getByRole('combobox', { name: 'dialogs.category_label' });
+        categorySelect.focus();
+        await user.keyboard('{ArrowDown}');
+        fireEvent.click(await screen.findByRole('option', { name: 'License & Activation' }));
+        await user.click(screen.getByRole('button', { name: 'buttons.save_category' }));
+
+        await waitFor(() => expect(patchBody).toEqual({ categorySlug: 'license-activation' }));
+        expect(syncRequests).toBe(0);
+        expect(await screen.findByText('License & Activation')).toBeInTheDocument();
     });
 
     it('starts a durable low-rate LearnNow crawl instead of saving candidates synchronously', async () => {

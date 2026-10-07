@@ -169,6 +169,24 @@ describe('api.ts', () => {
 
             await expect(api.pool.latestLearnNowCrawlRun()).resolves.toBeNull();
         });
+
+        it('updates a source category without triggering sync', async () => {
+            vi.mocked(global.fetch).mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                text: async () => JSON.stringify({ id: 'source-1' }),
+            } as Response);
+
+            await api.pool.updateCategory('source-1', 'license-activation');
+
+            expect(global.fetch).toHaveBeenCalledWith(
+                expect.stringContaining('/knowledge-pool/admin/sources/source-1/category'),
+                expect.objectContaining({
+                    method: 'PATCH',
+                    body: JSON.stringify({ categorySlug: 'license-activation' }),
+                }),
+            );
+        });
     });
 
     describe('api.tickets', () => {
