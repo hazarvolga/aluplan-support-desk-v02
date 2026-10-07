@@ -1,6 +1,13 @@
-import { classifyDatasetFile } from './dataset-classifier';
+import { classifyDatasetFile, isDatasetCategorySlug } from './dataset-classifier';
 
 describe('classifyDatasetFile', () => {
+    it.each(['toString', 'constructor', '__proto__'])(
+        'rejects inherited object property %s as a category slug',
+        (value) => {
+            expect(isDatasetCategorySlug(value)).toBe(false);
+        },
+    );
+
     it('classifies Turkish license PDFs as Turkish license support content', () => {
         const result = classifyDatasetFile('/repo/dataset/tr/license-activation/SSS_Allplan Lisansının Kayıtlandırma İşlemi.pdf');
 

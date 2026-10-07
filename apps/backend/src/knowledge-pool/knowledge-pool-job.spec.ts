@@ -14,6 +14,7 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
 
     const mockQueue = {
         add: jest.fn(),
+        getJob: jest.fn(),
     };
 
     const localMockPrismaService = {
@@ -23,6 +24,9 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
             findUnique: jest.fn(),
             findMany: jest.fn(),
             update: jest.fn(),
+        },
+        knowledgeSourceSyncLog: {
+            create: jest.fn(),
         },
         $queryRaw: jest.fn(),
         $transaction: jest.fn((callback: any) => callback(localMockPrismaService)),
@@ -43,6 +47,7 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
 
         jest.clearAllMocks();
         localMockPrismaService.knowledgeSource.findMany.mockResolvedValue([]);
+        mockQueue.getJob.mockResolvedValue(null);
     });
 
     describe('triggerSync', () => {
@@ -179,6 +184,125 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
             );
         });
 
+        it.each([
+            '06-offline-odunc-alma-ve-iade.md',
+            '07-hotinfo-var-yok-teshis-akisi.md',
+        ])('reclassifies %s even when its version family is unknown', async (fileName) => {
+            const source = {
+                id: `source-${fileName}`,
+                name: fileName,
+                filePath: `knowledge-pool/licensing/${fileName}`,
+                fileName,
+                status: KnowledgeSourceStatus.FAILED,
+                metadata: {
+                    ingestionMode: 'bulk-safe',
+                    category: 'Review Backlog',
+                    categorySlug: 'review-backlog',
+                    versionFamily: 'unknown',
+                },
+            };
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue(source);
+
+            await service.triggerSync(source.id);
+
+            expect(localMockPrismaService.knowledgeSource.update).toHaveBeenCalledWith({
+                where: { id: source.id },
+                data: expect.objectContaining({
+                    status: KnowledgeSourceStatus.SYNCING,
+                    metadata: expect.objectContaining({
+                        category: 'License & Activation',
+                        categorySlug: 'license-activation',
+                        versionFamily: 'unknown',
+                        licenseEra: 'unknown',
+                        requiresHumanReview: true,
+                    }),
+                }),
+            });
+        });
+
+        it('requeues a retained failed deterministic job with the configured pacing delay', async () => {
+            const source = {
+                id: 'source-retained-failure',
+                name: 'Retained failure',
+                status: KnowledgeSourceStatus.FAILED,
+                metadata: { ingestionMode: 'bulk-safe' },
+            };
+            const failedJob = {
+                getState: jest.fn().mockResolvedValue('failed'),
+                remove: jest.fn().mockResolvedValue(undefined),
+            };
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue(source);
+            mockQueue.getJob.mockResolvedValue(failedJob);
+
+            await service.triggerSync(source.id);
+
+            expect(mockQueue.getJob).toHaveBeenCalledWith(`knowledge-sync-${source.id}`);
+            expect(failedJob.remove).toHaveBeenCalledTimes(1);
+            expect(mockQueue.add).toHaveBeenCalledWith(
+                'sync-source',
+                { sourceId: source.id },
+                expect.objectContaining({ delay: 15000, jobId: `knowledge-sync-${source.id}` }),
+            );
+        });
+
+        it.each(['active', 'waiting', 'delayed'])('keeps an existing %s job idempotent', async (state) => {
+            const source = { id: `source-${state}`, name: `${state} source`, status: KnowledgeSourceStatus.SYNCING };
+            const existingJob = {
+                getState: jest.fn().mockResolvedValue(state),
+                retry: jest.fn(),
+            };
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue(source);
+            mockQueue.getJob.mockResolvedValue(existingJob);
+
+            await service.triggerSync(source.id);
+
+            expect(existingJob.retry).not.toHaveBeenCalled();
+            expect(mockQueue.add).not.toHaveBeenCalled();
+        });
+
+        it('re-enqueues when a retained job disappears and reports an unknown state', async () => {
+            const source = { id: 'source-unknown', name: 'Unknown state', status: KnowledgeSourceStatus.FAILED };
+            const vanishedJob = {
+                getState: jest.fn().mockResolvedValue('unknown'),
+            };
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue(source);
+            mockQueue.getJob.mockResolvedValue(vanishedJob);
+
+            await service.triggerSync(source.id);
+
+            expect(mockQueue.add).toHaveBeenCalledWith(
+                'sync-source',
+                { sourceId: source.id },
+                expect.objectContaining({ jobId: `knowledge-sync-${source.id}` }),
+            );
+        });
+
+        it('treats a concurrently replaced failed job as an idempotent retry', async () => {
+            const source = { id: 'source-concurrent-retry', name: 'Concurrent retry', status: KnowledgeSourceStatus.FAILED };
+            const retainedJob = {
+                getState: jest.fn().mockResolvedValue('failed'),
+                remove: jest.fn().mockRejectedValue(new Error('job is locked')),
+            };
+            const replacementJob = {
+                getState: jest.fn().mockResolvedValue('delayed'),
+            };
+            localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
+            localMockPrismaService.knowledgeSource.update.mockResolvedValue(source);
+            mockQueue.getJob
+                .mockResolvedValueOnce(retainedJob)
+                .mockResolvedValueOnce(replacementJob);
+
+            await expect(service.triggerSync(source.id)).resolves.toBeUndefined();
+
+            expect(mockQueue.getJob).toHaveBeenCalledTimes(2);
+            expect(mockQueue.add).not.toHaveBeenCalled();
+            expect(localMockPrismaService.knowledgeSourceSyncLog.create).not.toHaveBeenCalled();
+        });
+
         it('marks the source FAILED when queue enqueue fails after SYNCING transition', async () => {
             const source = { id: 'source-queue-failure', name: 'Queue Failure', status: KnowledgeSourceStatus.ACTIVE };
             localMockPrismaService.knowledgeSource.findUnique.mockResolvedValue(source);
@@ -190,6 +314,14 @@ describe('KnowledgePoolService - BullMQ Sync Job Flow', () => {
             expect(localMockPrismaService.knowledgeSource.update).toHaveBeenLastCalledWith({
                 where: { id: source.id },
                 data: { status: KnowledgeSourceStatus.FAILED },
+            });
+            expect(localMockPrismaService.knowledgeSourceSyncLog.create).toHaveBeenCalledWith({
+                data: {
+                    sourceId: source.id,
+                    status: 'FAILED',
+                    error: 'KNOWLEDGE_SYNC_ENQUEUE_FAILED',
+                    syncFinishedAt: expect.any(Date),
+                },
             });
         });
     });

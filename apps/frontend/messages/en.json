@@ -929,23 +929,31 @@
       },
       "licensing_intake": {
         "title": "For accurate licensing guidance",
-        "description": "Enter your exact ALLPLAN release first. The next questions adapt to its licensing method. Hotinfo is optional, and you can always create a support request directly.",
+        "description": "Enter the ALLPLAN release you know; the year alone is enough. The next questions adapt to its licensing method. Hotinfo is optional, and you can always create a support request directly.",
         "context_title": "ALLPLAN LICENSING INFORMATION",
         "unknown": "Unknown",
-        "version_label": "Exact ALLPLAN release / build",
-        "version_placeholder": "Example: 2024-1-10 or 2024-2-0",
+        "version_label": "ALLPLAN release / build",
+        "version_placeholder": "Example: 2024 or 2024-2-0",
         "release_family_label": "Licensing method",
         "release_family": {
           "LEGACY_PRE_2016": "Legacy licensing (2015 and earlier)",
           "CODEMETER_2016_2024_1_10": "CodeMeter / Product Key (2016–2024-1-10)",
+          "TRANSITION_2024": "2024 transition release — select the release range",
           "CLOUD_2024_2_PLUS": "ALLPLAN ID / cloud licensing (2024-2-0 and later)",
           "UNKNOWN": "Release could not be verified"
+        },
+        "release_band_label": "ALLPLAN 2024 release range",
+        "release_band_placeholder": "Select the release range you know",
+        "release_band": {
+          "UP_TO_2024_1_10": "2024-1-10 or earlier",
+          "FROM_2024_2_0": "2024-2-0 or later",
+          "UNKNOWN": "I don't know"
         },
         "topology_label": "License usage model",
         "topology_placeholder": "Select the license usage model",
         "issue_label": "Requested action / issue",
         "issue_placeholder": "Select the action or issue type",
-        "ai_gate_notice": "An exact release/build, license usage model, and issue type are required for AI guidance. If you do not know them, you can send the request directly to the support team.",
+        "ai_gate_notice": "The release family, license usage model, and issue type are required for AI guidance. If you do not know the 2024 build, select its release range or send the request directly to support.",
         "allplan_id_label": "ALLPLAN ID access",
         "user_role_label": "Your licensing role",
         "invite_label": "Organization invitation",
@@ -1000,13 +1008,14 @@
           "CLOUD_VIDEO": "Watch the cloud licensing video"
         },
         "items": [
-          "Exact ALLPLAN release and build (for example 2024-1-10 or 2024-2-0)",
+          "ALLPLAN release; enter only the year if the build is unknown (for example 2024)",
           "Single-user license or license server/network license",
           "The visible error and the action you are trying to perform",
           "For 2024-2-0 and later: ALLPLAN ID, organization invitation, and seat status"
         ],
         "validation": {
-          "allplanVersion": "Enter the exact ALLPLAN release/build or confirm current Hotinfo before AI diagnosis.",
+          "allplanVersion": "Enter the ALLPLAN release you know or confirm current Hotinfo before AI diagnosis.",
+          "allplan2024ReleaseBand": "Select the release range so the 2024 licensing method can be determined.",
           "licenseTopology": "Select the license usage model before AI diagnosis.",
           "licenseIssueType": "Select the requested action or issue type before AI diagnosis.",
           "allplanIdStatus": "Select your ALLPLAN ID access status.",

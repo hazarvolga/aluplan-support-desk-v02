@@ -266,17 +266,7 @@ export class KnowledgePoolService {
             ? path.join(source.filePath, source.fileName)
             : null;
         const classification = classificationPath ? classifyDatasetFile(classificationPath) : null;
-        const shouldRefreshLicenseMetadata = Boolean(
-            classification &&
-            classification.versionFamily !== 'unknown' &&
-            (
-                existingMetadata?.categorySlug !== classification.categorySlug ||
-                existingMetadata?.versionFamily !== classification.versionFamily ||
-                existingMetadata?.licenseEra !== classification.licenseEra ||
-                existingMetadata?.versionRange !== classification.versionRange
-            ),
-        );
-        const metadata = shouldRefreshLicenseMetadata && classification
+        const metadata = classification
             ? buildDatasetMetadata(classification, existingMetadata)
             : undefined;
         const isBulkSafe = existingMetadata?.ingestionMode === 'bulk-safe';
@@ -293,15 +283,7 @@ export class KnowledgePoolService {
         });
 
         try {
-            await this.syncQueue.add('sync-source', { sourceId: id }, {
-                attempts: 3,
-                backoff: { type: 'exponential', delay: 5000 },
-                removeOnComplete: true,
-                delay,
-                // BullMQ custom job IDs cannot contain a colon. Keep this
-                // deterministic so repeated sync requests remain idempotent.
-                jobId: `knowledge-sync-${id}`,
-            });
+            await this.enqueueOrResumeSync(id, delay);
         } catch (error) {
             try {
                 await this.prisma.knowledgeSource.update({
@@ -311,11 +293,66 @@ export class KnowledgePoolService {
             } catch (statusError) {
                 this.logger.error(`❌ Failed to mark source ${id} FAILED after enqueue error: ${statusError.message}`, statusError.stack);
             }
+            try {
+                await this.prisma.knowledgeSourceSyncLog.create({
+                    data: {
+                        sourceId: id,
+                        status: 'FAILED',
+                        error: 'KNOWLEDGE_SYNC_ENQUEUE_FAILED',
+                        syncFinishedAt: new Date(),
+                    },
+                });
+            } catch (logError) {
+                this.logger.error(`❌ Failed to persist enqueue error for source ${id}: ${logError.message}`, logError.stack);
+            }
             this.logger.error(`❌ Failed to enqueue sync job for source ${id}: ${error.message}`, error.stack);
             throw error;
         }
 
         this.logger.log(`🔄 Enqueued sync job for source: ${source.name} (${id})${delay > 0 ? ` with ${delay}ms pacing delay` : ''}`);
+    }
+
+    private async enqueueOrResumeSync(sourceId: string, delay: number): Promise<void> {
+        const jobId = `knowledge-sync-${sourceId}`;
+        const existingJob = await this.syncQueue.getJob(jobId);
+
+        if (existingJob) {
+            const state = await existingJob.getState();
+            if (state === 'failed' || state === 'completed') {
+                try {
+                    await existingJob.remove();
+                } catch (removeError) {
+                    // A concurrent operator retry may already have replaced the
+                    // retained job. Re-read before treating the source as failed.
+                    const replacementJob = await this.syncQueue.getJob(jobId);
+                    if (!replacementJob) {
+                        // The old job disappeared between calls; adding below is safe.
+                    } else {
+                        const replacementState = await replacementJob.getState();
+                        if (!['failed', 'completed', 'unknown'].includes(replacementState)) {
+                            return;
+                        }
+                        if (replacementState !== 'unknown') {
+                            throw removeError;
+                        }
+                    }
+                }
+            } else if (state !== 'unknown') {
+                // An existing deterministic job is already queued or running.
+                // Treat repeated operator clicks as an idempotent request.
+                return;
+            }
+        }
+
+        await this.syncQueue.add('sync-source', { sourceId }, {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 5000 },
+            removeOnComplete: true,
+            delay,
+            // BullMQ custom job IDs cannot contain a colon. Keep this
+            // deterministic so repeated sync requests remain idempotent.
+            jobId,
+        });
     }
 
     async syncLocalDataset() {

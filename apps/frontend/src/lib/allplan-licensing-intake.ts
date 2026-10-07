@@ -1,7 +1,9 @@
-export type AllplanReleaseFamily = 'LEGACY_PRE_2016' | 'CODEMETER_2016_2024_1_10' | 'CLOUD_2024_2_PLUS' | 'UNKNOWN';
+export type AllplanReleaseFamily = 'LEGACY_PRE_2016' | 'CODEMETER_2016_2024_1_10' | 'TRANSITION_2024' | 'CLOUD_2024_2_PLUS' | 'UNKNOWN';
+export type Allplan2024ReleaseBand = 'UP_TO_2024_1_10' | 'FROM_2024_2_0' | 'UNKNOWN';
 
 export type AllplanLicensingIntakeValues = {
     allplanVersion?: string;
+    allplan2024ReleaseBand?: Allplan2024ReleaseBand;
     licenseTopology?: 'SINGLE_USER' | 'LICENSE_SERVER' | 'UNKNOWN';
     licenseIssueType?: 'ACTIVATION' | 'TRANSFER' | 'LOGIN' | 'INVITATION' | 'SEAT' | 'OFFLINE' | 'OTHER';
     licenseUserRole?: 'END_USER' | 'LICENSE_ADMIN' | 'UNKNOWN';
@@ -14,6 +16,7 @@ type Translate = (key: string) => string;
 
 export type AllplanLicensingDiagnosisField =
     | 'allplanVersion'
+    | 'allplan2024ReleaseBand'
     | 'licenseTopology'
     | 'licenseIssueType'
     | 'licenseUserRole'
@@ -35,7 +38,10 @@ export const extractAllplanVersion = (value?: string): string => {
     return [match[1], match[2], match[3]].filter(part => part !== undefined).join('-');
 };
 
-export const classifyAllplanRelease = (value?: string): AllplanReleaseFamily => {
+export const classifyAllplanRelease = (
+    value?: string,
+    allplan2024ReleaseBand?: Allplan2024ReleaseBand,
+): AllplanReleaseFamily => {
     const version = extractAllplanVersion(value);
     if (!version) return 'UNKNOWN';
     const match = /^(20\d{2})(?:[-.]([0-9]+)(?:[-.]([0-9]+))?)?$/.exec(version);
@@ -47,6 +53,11 @@ export const classifyAllplanRelease = (value?: string): AllplanReleaseFamily => 
     if (year <= 2015) return 'LEGACY_PRE_2016';
     if (year >= 2025) return 'CLOUD_2024_2_PLUS';
     if (year >= 2016 && year <= 2023) return 'CODEMETER_2016_2024_1_10';
+    if (year === 2024 && minor === undefined) {
+        if (allplan2024ReleaseBand === 'UP_TO_2024_1_10') return 'CODEMETER_2016_2024_1_10';
+        if (allplan2024ReleaseBand === 'FROM_2024_2_0') return 'CLOUD_2024_2_PLUS';
+        return 'TRANSITION_2024';
+    }
     if (year !== 2024 || minor === undefined || match[3] === undefined) return 'UNKNOWN';
     if (minor < 1 || (minor === 1 && patch <= 10)) return 'CODEMETER_2016_2024_1_10';
     if (minor >= 2) return 'CLOUD_2024_2_PLUS';
@@ -64,7 +75,7 @@ export const getAllowedAllplanLicenseIssueTypes = (family: AllplanReleaseFamily)
 };
 
 export const getOfficialAllplanLicensingResources = (values: AllplanLicensingIntakeValues) => {
-    const family = classifyAllplanRelease(values.allplanVersion);
+    const family = classifyAllplanRelease(values.allplanVersion, values.allplan2024ReleaseBand);
     if (family === 'CODEMETER_2016_2024_1_10' && values.licenseIssueType === 'ACTIVATION' && values.licenseTopology === 'SINGLE_USER') {
         return [{ id: 'CODEMETER_SINGLE', url: ALLPLAN_LICENSING_RESOURCES.CODEMETER_SINGLE }];
     }
@@ -87,11 +98,12 @@ export const getMissingAllplanLicensingDiagnosisFields = (
     if (options.isApplicable === false) return [];
     const effectiveVersion = extractAllplanVersion(values.allplanVersion)
         || (options.hasConfirmedHotinfo ? extractAllplanVersion(options.confirmedHotinfoVersion) : '');
-    const family = classifyAllplanRelease(effectiveVersion);
+    const family = classifyAllplanRelease(effectiveVersion, values.allplan2024ReleaseBand);
     const allowedIssueTypes = getAllowedAllplanLicenseIssueTypes(family);
     const missing: AllplanLicensingDiagnosisField[] = [];
 
     if (family === 'UNKNOWN') return ['allplanVersion'];
+    if (family === 'TRANSITION_2024') return ['allplan2024ReleaseBand'];
     if (family === 'LEGACY_PRE_2016' || family === 'CODEMETER_2016_2024_1_10') {
         if (!values.licenseTopology || values.licenseTopology === 'UNKNOWN') missing.push('licenseTopology');
         if (!values.licenseIssueType || !allowedIssueTypes.includes(values.licenseIssueType)) missing.push('licenseIssueType');
@@ -107,13 +119,16 @@ export const getMissingAllplanLicensingDiagnosisFields = (
 };
 
 export const buildAllplanLicensingDescription = (description: string, values: AllplanLicensingIntakeValues, translate: Translate): string => {
-    const family = classifyAllplanRelease(values.allplanVersion);
+    const family = classifyAllplanRelease(values.allplanVersion, values.allplan2024ReleaseBand);
     const lines = [
         `[${translate('licensing_intake.context_title')}]`,
         `${translate('licensing_intake.release_family_label')}: ${translate(`licensing_intake.release_family.${family}`)}`,
         `${translate('licensing_intake.version_label')}: ${extractAllplanVersion(values.allplanVersion) || translate('licensing_intake.unknown')}`,
         `${translate('licensing_intake.issue_label')}: ${translate(`licensing_intake.issue.${values.licenseIssueType || 'OTHER'}`)}`,
     ];
+    if (extractAllplanVersion(values.allplanVersion) === '2024') {
+        lines.push(`${translate('licensing_intake.release_band_label')}: ${translate(`licensing_intake.release_band.${values.allplan2024ReleaseBand || 'UNKNOWN'}`)}`);
+    }
     if (family === 'LEGACY_PRE_2016' || family === 'CODEMETER_2016_2024_1_10') {
         lines.push(`${translate('licensing_intake.topology_label')}: ${translate(`licensing_intake.topology.${values.licenseTopology || 'UNKNOWN'}`)}`);
     }

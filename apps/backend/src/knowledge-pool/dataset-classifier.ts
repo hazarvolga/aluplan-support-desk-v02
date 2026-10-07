@@ -20,6 +20,7 @@ export const DATASET_CATEGORY_BY_SLUG = {
 } as const;
 
 export type DatasetCategory = typeof DATASET_CATEGORY_BY_SLUG[keyof typeof DATASET_CATEGORY_BY_SLUG];
+export type DatasetCategorySlug = keyof typeof DATASET_CATEGORY_BY_SLUG;
 export type DatasetSourceClass = 'support' | 'manual' | 'review';
 export type LicenseVersionFamily =
     | AllplanLicenseEra
@@ -48,6 +49,43 @@ const TURKISH_CHARS = /[çğıöşüİÇĞÖŞÜ]/;
 
 const hasAny = (value: string, needles: string[]): boolean =>
     needles.some((needle) => value.includes(needle));
+
+export const isDatasetCategorySlug = (value: unknown): value is DatasetCategorySlug =>
+    typeof value === 'string'
+    && Object.prototype.hasOwnProperty.call(DATASET_CATEGORY_BY_SLUG, value);
+
+export const resolveDatasetCategory = (
+    text: string,
+    preferredSlug?: unknown,
+): { category: DatasetCategory; categorySlug: DatasetCategorySlug } => {
+    const normalized = text
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+    let inferred: DatasetCategorySlug | null = null;
+    if (/(codemeter|license[\s_-]*server|licence[\s_-]*server|lizenzserver|server access rights|zugriffsrechte)/.test(normalized)) {
+        inferred = 'license-server-codemeter';
+    } else if (/(licen[cs]e|licensing|lizenz|lisans|activation|aktivier|product[\s_-]*key|allplan[\s_-]*id|cloud-based licensing|cloud licensing)/.test(normalized)) {
+        inferred = 'license-activation';
+    } else if (/(workgroup|checkout|home[\s_-]*office|offline|wgm|network|netzwerk)/.test(normalized)) {
+        inferred = 'network-workgroup';
+    } else if (/(install|setup|kurulum|installation|system requirements)/.test(normalized)) {
+        inferred = 'installation-setup';
+    } else if (/(ifc|dwg|dxf|export|import|data exchange)/.test(normalized)) {
+        inferred = 'export-import-ifc-dwg';
+    } else if (/(performance|graphics|grafikkarte|driver|slow|scanner|hardware)/.test(normalized)) {
+        inferred = 'performance-hardware';
+    } else if (/(bimplus|allplan share|cloud project)/.test(normalized)) {
+        inferred = 'allplan-share-cloud';
+    }
+
+    const canonicalPreferred = isDatasetCategorySlug(preferredSlug) ? preferredSlug : null;
+    const categorySlug = canonicalPreferred && canonicalPreferred !== 'review-backlog'
+        ? canonicalPreferred
+        : inferred ?? canonicalPreferred ?? 'review-backlog';
+    return { categorySlug, category: DATASET_CATEGORY_BY_SLUG[categorySlug] };
+};
 
 const normalizedPathSegments = (filePath: string): string[] =>
     filePath

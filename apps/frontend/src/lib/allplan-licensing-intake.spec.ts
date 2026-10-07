@@ -133,12 +133,52 @@ describe('buildAllplanLicensingDescription', () => {
         expect(classifyAllplanRelease(version)).toBe(expectedFamily);
     });
 
-    it.each(['2024', '2024-1', '2024-1-11', 'vNext', 'v2026', 'foo2026bar', '']) (
+    it('recognizes a bare 2024 year as an explicit transition release without guessing CodeMeter or Cloud', () => {
+        expect(classifyAllplanRelease('2024')).toBe('TRANSITION_2024');
+    });
+
+    it.each(['2024-1', '2024-1-11', 'vNext', 'v2026', 'foo2026bar', '']) (
         'keeps unsafe or incomplete release %s unknown',
         (version) => {
             expect(classifyAllplanRelease(version)).toBe('UNKNOWN');
         },
     );
+
+    it('asks for the 2024 transition band as soon as the user enters only the year', () => {
+        expect(getMissingAllplanLicensingDiagnosisFields({
+            allplanVersion: '2024',
+        }, {
+            hasConfirmedHotinfo: false,
+            isApplicable: true,
+        })).toEqual(['allplan2024ReleaseBand']);
+    });
+
+    it('routes a user-selected pre-2024-2 transition band to CodeMeter follow-up questions', () => {
+        expect(getMissingAllplanLicensingDiagnosisFields({
+            allplanVersion: '2024',
+            allplan2024ReleaseBand: 'UP_TO_2024_1_10',
+            licenseTopology: 'UNKNOWN',
+        }, {
+            hasConfirmedHotinfo: false,
+            isApplicable: true,
+        })).toEqual(['licenseTopology', 'licenseIssueType']);
+    });
+
+    it('routes a user-selected 2024-2-or-newer transition band to Cloud follow-up questions', () => {
+        expect(getMissingAllplanLicensingDiagnosisFields({
+            allplanVersion: '2024',
+            allplan2024ReleaseBand: 'FROM_2024_2_0',
+        }, {
+            hasConfirmedHotinfo: false,
+            isApplicable: true,
+        })).toEqual([
+            'licenseIssueType',
+            'allplanIdStatus',
+            'organizationInviteStatus',
+            'licenseGroupStatus',
+            'licenseUserRole',
+        ]);
+    });
 
     it('requires license type and issue intent after a strict legacy release is known', () => {
         expect(getMissingAllplanLicensingDiagnosisFields({
@@ -204,7 +244,7 @@ describe('buildAllplanLicensingDescription', () => {
         })).toEqual([]);
     });
 
-    it('blocks AI diagnosis for an unknown release while leaving direct ticket creation independent', () => {
+    it('blocks AI diagnosis for an unresolved 2024 transition while leaving direct ticket creation independent', () => {
         expect(getMissingAllplanLicensingDiagnosisFields({
             allplanVersion: '2024',
             licenseTopology: 'SINGLE_USER',
@@ -212,7 +252,7 @@ describe('buildAllplanLicensingDescription', () => {
         }, {
             hasConfirmedHotinfo: false,
             isApplicable: true,
-        })).toContain('allplanVersion');
+        })).toContain('allplan2024ReleaseBand');
     });
 
     it('selects the official standalone CodeMeter activation article', () => {

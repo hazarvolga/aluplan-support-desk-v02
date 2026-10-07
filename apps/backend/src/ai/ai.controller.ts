@@ -33,6 +33,7 @@ import { AllplanLicensingPolicyService, canonicalizeAllplanRelease } from './all
 export class AllplanLicensingIntakeDto {
     @IsIn(['licensing']) categoryKey: 'licensing';
     @IsString() @MaxLength(32) allplanVersion: string;
+    @IsOptional() @IsIn(['UP_TO_2024_1_10', 'FROM_2024_2_0', 'UNKNOWN']) allplan2024ReleaseBand?: 'UP_TO_2024_1_10' | 'FROM_2024_2_0' | 'UNKNOWN';
     @IsOptional() @IsIn(['SINGLE_USER', 'LICENSE_SERVER', 'UNKNOWN']) licenseTopology?: 'SINGLE_USER' | 'LICENSE_SERVER' | 'UNKNOWN';
     @IsOptional() @IsIn(['ACTIVATION', 'TRANSFER', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER']) licenseIssueType?: 'ACTIVATION' | 'TRANSFER' | 'LOGIN' | 'INVITATION' | 'SEAT' | 'OFFLINE' | 'OTHER';
     @IsOptional() @IsIn(['END_USER', 'LICENSE_ADMIN', 'UNKNOWN']) licenseUserRole?: 'END_USER' | 'LICENSE_ADMIN' | 'UNKNOWN';

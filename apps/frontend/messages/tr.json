@@ -953,23 +953,31 @@
       },
       "licensing_intake": {
         "title": "Doğru lisans yönlendirmesi için",
-        "description": "Önce tam ALLPLAN sürümünüzü yazın. Sonraki sorular sürümünüzün lisans yöntemine göre otomatik değişir. Hotinfo isteğe bağlıdır; bilmiyorsanız doğrudan destek talebi açabilirsiniz.",
+        "description": "Bildiğiniz ALLPLAN sürümünü yazın; yalnızca yıl bilgisi de yeterlidir. Sonraki sorular lisans yöntemine göre otomatik değişir. Hotinfo isteğe bağlıdır; bilmiyorsanız doğrudan destek talebi açabilirsiniz.",
         "context_title": "ALLPLAN LİSANSLAMA BİLGİLERİ",
         "unknown": "Bilinmiyor",
-        "version_label": "Tam ALLPLAN sürümü / build",
-        "version_placeholder": "Örn. 2024-1-10 veya 2024-2-0",
+        "version_label": "ALLPLAN sürümü / build",
+        "version_placeholder": "Örn. 2024 veya 2024-2-0",
         "release_family_label": "Lisanslama yöntemi",
         "release_family": {
           "LEGACY_PRE_2016": "2015 ve öncesi eski lisanslama",
           "CODEMETER_2016_2024_1_10": "CodeMeter / Product Key (2016–2024-1-10)",
+          "TRANSITION_2024": "2024 geçiş sürümü — sürüm aralığını seçin",
           "CLOUD_2024_2_PLUS": "ALLPLAN ID / Cloud lisanslama (2024-2-0 ve sonrası)",
           "UNKNOWN": "Sürüm doğrulanamadı"
+        },
+        "release_band_label": "ALLPLAN 2024 sürüm aralığı",
+        "release_band_placeholder": "Bildiğiniz sürüm aralığını seçin",
+        "release_band": {
+          "UP_TO_2024_1_10": "2024-1-10 veya daha eski",
+          "FROM_2024_2_0": "2024-2-0 veya daha yeni",
+          "UNKNOWN": "Bilmiyorum"
         },
         "topology_label": "Lisans kullanım biçimi",
         "topology_placeholder": "Lisans kullanım biçimini seçin",
         "issue_label": "Yapmak istediğiniz işlem / sorun",
         "issue_placeholder": "İşlem veya sorun türünü seçin",
-        "ai_gate_notice": "Yapay zeka ile çözüm aramak için tam sürüm/build, lisans kullanım biçimi ve sorun türü gereklidir. Bu bilgileri bilmiyorsanız talebinizi doğrudan destek ekibine iletebilirsiniz.",
+        "ai_gate_notice": "Yapay zeka ile çözüm aramak için sürüm ailesi, lisans kullanım biçimi ve sorun türü gereklidir. 2024 build bilgisini bilmiyorsanız sürüm aralığını seçebilir veya talebinizi doğrudan destek ekibine iletebilirsiniz.",
         "allplan_id_label": "ALLPLAN ID erişimi",
         "user_role_label": "Lisans işlemindeki rolünüz",
         "invite_label": "Kuruluş daveti",
@@ -1024,13 +1032,14 @@
           "CLOUD_VIDEO": "Cloud lisanslama videosunu izle"
         },
         "items": [
-          "Tam ALLPLAN sürümü ve build (ör. 2024-1-10 veya 2024-2-0)",
+          "ALLPLAN sürümü; build bilinmiyorsa yalnızca yıl (ör. 2024)",
           "Tek kullanıcı lisansı mı, lisans sunucusu/ağ lisansı mı?",
           "Görünen hata mesajı ve yapmak istediğiniz işlem",
           "2024-2-0 ve sonrası için ALLPLAN ID, kuruluş daveti ve koltuk durumu"
         ],
         "validation": {
-          "allplanVersion": "Yapay zeka teşhisi için tam ALLPLAN sürümünü/build bilgisini yazın veya güncel Hotinfo'yu onaylayın.",
+          "allplanVersion": "Yapay zeka teşhisi için bildiğiniz ALLPLAN sürümünü yazın veya güncel Hotinfo'yu onaylayın.",
+          "allplan2024ReleaseBand": "2024 lisans yöntemini belirlemek için sürüm aralığını seçin.",
           "licenseTopology": "Yapay zeka teşhisi için lisans kullanım biçimini seçin.",
           "licenseIssueType": "Yapay zeka teşhisi için yapmak istediğiniz işlemi veya sorun türünü seçin.",
           "allplanIdStatus": "ALLPLAN ID erişim durumunuzu seçin.",

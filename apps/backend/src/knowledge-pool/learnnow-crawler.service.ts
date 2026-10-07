@@ -11,6 +11,11 @@ import { DiscoverLearnNowDto, LearnNowCrawlFormat } from './dto/learnnow-crawl.d
 import { CrawlService } from './crawl.service';
 import { OutboundUrlSafetyService } from './outbound-url-safety.service';
 import { LearnNowRequestPacer } from './learnnow-request-pacer.service';
+import {
+    DATASET_CATEGORY_BY_SLUG,
+    isDatasetCategorySlug,
+    resolveDatasetCategory,
+} from './dataset-classifier';
 
 type CandidateStatus =
     | 'PENDING_REVIEW'
@@ -701,7 +706,12 @@ export class LearnNowCrawlerService {
                     ...candidate,
                     title: result.title || candidate.title,
                     language: this.authoritativeLanguage(learnNow, candidate.language),
-                    categorySlug: this.authoritativeCategorySlug(learnNow, candidate.categorySlug),
+                    categorySlug: this.authoritativeCategorySlug(
+                        learnNow,
+                        candidate.categorySlug,
+                        result.title,
+                        result.content,
+                    ),
                     contentHash: result.hash,
                     metadata: {
                         ...candidate.metadata,
@@ -977,13 +987,23 @@ export class LearnNowCrawlerService {
         const candidateSourceType = typeof candidateMetadata.sourceType === 'string'
             ? candidateMetadata.sourceType
             : sourceType;
+        const inferredCategory = resolveDatasetCategory(
+            `${candidate.title} ${candidate.source_url}`,
+        );
+        const categorySlug = inferredCategory.categorySlug !== 'review-backlog'
+            ? inferredCategory.categorySlug
+            : isDatasetCategorySlug(candidate.category_slug)
+                ? candidate.category_slug
+                : 'review-backlog';
+        const category = DATASET_CATEGORY_BY_SLUG[categorySlug];
 
         return {
             ...candidateMetadata,
             source: candidate.source,
             sourceType: candidateSourceType,
             sourceUrl: candidate.source_url,
-            categorySlug: candidate.category_slug ?? 'uncategorized',
+            category,
+            categorySlug,
             crawlFilter: candidate.crawl_filter ?? sourceType,
             ingestionMode: 'bulk-safe',
             useAiPreprocessing: false,
@@ -1038,23 +1058,29 @@ export class LearnNowCrawlerService {
         return /^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$/.test(value) ? value : fallback;
     }
 
-    private authoritativeCategorySlug(learnNow: Record<string, unknown>, fallback: string): string {
+    private authoritativeCategorySlug(
+        learnNow: Record<string, unknown>,
+        fallback: string,
+        title = '',
+        content = '',
+    ): string {
         const categories = Array.isArray(learnNow.humanReadableCategories)
             ? learnNow.humanReadableCategories
             : Array.isArray(learnNow.categories)
                 ? learnNow.categories
                 : [];
-        const authoritative = categories
+        const authoritativeText = categories
             .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
             .join(' ')
-            .replace(/::/g, ' ')
-            .normalize('NFKD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '')
-            .slice(0, 100);
-        return authoritative || fallback;
+            .replace(/::/g, ' ');
+        const primary = resolveDatasetCategory(`${title} ${authoritativeText}`);
+        if (primary.categorySlug !== 'review-backlog') {
+            return primary.categorySlug;
+        }
+        const bodyFallback = resolveDatasetCategory(content.slice(0, 32768));
+        return bodyFallback.categorySlug === 'review-backlog'
+            ? fallback
+            : bodyFallback.categorySlug;
     }
 
     private async getWithSafeRedirects<T>(
@@ -1095,19 +1121,9 @@ export class LearnNowCrawlerService {
     }
 
     private inferCategorySlug(text: string): string {
-        const normalized = text.toLowerCase();
-        if (/(codemeter|license server|lizenzserver|licen[cs]e|access rights|zugriffsrechte)/.test(normalized)) {
-            return 'license-server-codemeter';
-        }
-        if (/(workgroup|checkout|home-office|home office|offline|wgm)/.test(normalized)) {
-            return 'network-workgroup';
-        }
-        if (/(install|setup|kurulum|installation)/.test(normalized)) {
-            return 'installation-setup';
-        }
-        if (/(ifc|dwg|export|import)/.test(normalized)) {
-            return 'export-import-ifc-dwg';
-        }
-        return 'uncategorized';
+        const resolved = resolveDatasetCategory(text);
+        return resolved.categorySlug === 'review-backlog'
+            ? 'uncategorized'
+            : resolved.categorySlug;
     }
 }

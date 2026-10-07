@@ -346,7 +346,7 @@ describe('LearnNowCrawlerService', () => {
             'NEUERUNG 2024 - IFC Verbesserungen Infrastruktur',
             'KNOWLEDGE_ARTICLE',
             'de',
-            'allplan-general-interface',
+            'export-import-ifc-dwg',
             'video-content-hash',
             'explaining_video',
             expect.stringContaining('"transcriptStatus":"AVAILABLE"'),
@@ -530,6 +530,8 @@ describe('LearnNowCrawlerService', () => {
                 metadata: expect.objectContaining({
                     source: 'allplan_learnnow',
                     sourceType: 'knowledge_article',
+                    category: 'License Server & CodeMeter',
+                    categorySlug: 'license-server-codemeter',
                     ingestionMode: 'bulk-safe',
                 }),
             }),
@@ -537,6 +539,58 @@ describe('LearnNowCrawlerService', () => {
         expect(pool.triggerSync).not.toHaveBeenCalled();
         expect(result).toEqual({ imported: true, candidateId: '7c0ee310-32d5-47d0-bf19-286b8839b4db', sourceId: 'source-1' });
     });
+
+    it.each([
+        ['Activating ALLPLAN license using Product Key', 'license-activation'],
+        ['Cloud-based licensing with ALLPLAN ID', 'license-activation'],
+        ['Installing and configuring the License Server', 'license-server-codemeter'],
+        ['CodeMeter server access rights', 'license-server-codemeter'],
+    ])('maps LearnNow category signals in %s to %s', (text, expected) => {
+        const { service } = makeService();
+
+        expect((service as any).inferCategorySlug(text)).toBe(expected);
+    });
+
+    it('does not turn broad LearnNow taxonomy labels into an arbitrary category slug', () => {
+        const { service } = makeService();
+
+        expect((service as any).authoritativeCategorySlug(
+            { humanReadableCategories: ['ALLPLAN', 'General', 'Licensing'] },
+            'license-activation',
+        )).toBe('license-activation');
+    });
+
+    it('keeps an IFC title authoritative when a generic page footer mentions licensing', () => {
+        const { service } = makeService();
+
+        expect((service as any).authoritativeCategorySlug(
+            { humanReadableCategories: ['ALLPLAN', 'General', 'Interface'] },
+            'uncategorized',
+            'IFC Improvements for Infrastructure',
+            'Generic footer: visit the licensing portal for account help.',
+        )).toBe('export-import-ifc-dwg');
+    });
+
+    it.each(['review-backlog', 'license-server-codemeter'])(
+        'repairs stale %s metadata when an imported candidate is clearly license activation content',
+        (categorySlug) => {
+            const { service } = makeService();
+
+            const metadata = (service as any).buildImportMetadata({
+                title: 'Activating ALLPLAN license using Product Key',
+                source_url: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=11873',
+                source: 'allplan_learnnow',
+                category_slug: categorySlug,
+                crawl_filter: 'knowledge_article',
+                metadata: {},
+            }, 'knowledge_article');
+
+            expect(metadata).toEqual(expect.objectContaining({
+                category: 'License & Activation',
+                categorySlug: 'license-activation',
+            }));
+        },
+    );
 
     it.each(['PENDING_REVIEW', 'FAILED', 'REJECTED'])(
         'rejects import while candidate status is %s',

@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export type AllplanLicensingIntake = {
     categoryKey: 'licensing';
     allplanVersion: string;
+    allplan2024ReleaseBand?: 'UP_TO_2024_1_10' | 'FROM_2024_2_0' | 'UNKNOWN';
     licenseTopology?: 'SINGLE_USER' | 'LICENSE_SERVER' | 'UNKNOWN';
     licenseIssueType?: 'ACTIVATION' | 'TRANSFER' | 'LOGIN' | 'INVITATION' | 'SEAT' | 'OFFLINE' | 'OTHER';
     licenseUserRole?: 'END_USER' | 'LICENSE_ADMIN' | 'UNKNOWN';
@@ -14,10 +15,10 @@ export type AllplanLicensingIntake = {
 
 export type ValidatedAllplanLicensingContext = { allplanVersion: string; promptContext: string };
 
-type ReleaseFamily = 'LEGACY' | 'CODEMETER' | 'CLOUD' | 'UNKNOWN';
+type ReleaseFamily = 'LEGACY' | 'CODEMETER' | 'TRANSITION_2024' | 'CLOUD' | 'UNKNOWN';
 type LicenseIssueType = NonNullable<AllplanLicensingIntake['licenseIssueType']>;
 
-const ALLOWED_ISSUES: Record<Exclude<ReleaseFamily, 'UNKNOWN'>, readonly LicenseIssueType[]> = {
+const ALLOWED_ISSUES: Record<Exclude<ReleaseFamily, 'UNKNOWN' | 'TRANSITION_2024'>, readonly LicenseIssueType[]> = {
     LEGACY: ['ACTIVATION', 'TRANSFER', 'OFFLINE', 'OTHER'],
     CODEMETER: ['ACTIVATION', 'TRANSFER', 'OFFLINE', 'OTHER'],
     CLOUD: ['ACTIVATION', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER'],
@@ -31,7 +32,10 @@ export const canonicalizeAllplanRelease = (raw?: string): string | undefined => 
     return [match[1], match[2], match[3]].filter(part => part !== undefined).join('-');
 };
 
-const classifyStrictRelease = (raw: string): ReleaseFamily => {
+const classifyStrictRelease = (
+    raw: string,
+    allplan2024ReleaseBand?: AllplanLicensingIntake['allplan2024ReleaseBand'],
+): ReleaseFamily => {
     const version = canonicalizeAllplanRelease(raw);
     if (!version) return 'UNKNOWN';
     const match = /^(20\d{2})(?:-([0-9]+)(?:-([0-9]+))?)?$/.exec(version);
@@ -42,6 +46,11 @@ const classifyStrictRelease = (raw: string): ReleaseFamily => {
     if (year <= 2015) return 'LEGACY';
     if (year >= 2025) return 'CLOUD';
     if (year >= 2016 && year <= 2023) return 'CODEMETER';
+    if (year === 2024 && minor === undefined) {
+        if (allplan2024ReleaseBand === 'UP_TO_2024_1_10') return 'CODEMETER';
+        if (allplan2024ReleaseBand === 'FROM_2024_2_0') return 'CLOUD';
+        return 'TRANSITION_2024';
+    }
     if (year !== 2024 || minor === undefined || match[3] === undefined) return 'UNKNOWN';
     if (minor < 1 || (minor === 1 && patch <= 10)) return 'CODEMETER';
     if (minor >= 2) return 'CLOUD';
@@ -72,9 +81,15 @@ export class AllplanLicensingPolicyService {
             throw new BadRequestException('The ALLPLAN licensing workflow is only available for the ALLPLAN product.');
         }
 
-        const family = classifyStrictRelease(intake.allplanVersion);
+        const family = classifyStrictRelease(intake.allplanVersion, intake.allplan2024ReleaseBand);
         if (family === 'UNKNOWN') {
             throw new BadRequestException({ message: 'Exact ALLPLAN release/build is required.', missingFields: ['allplanVersion'] });
+        }
+        if (family === 'TRANSITION_2024') {
+            throw new BadRequestException({
+                message: 'The ALLPLAN 2024 release range is required.',
+                missingFields: ['allplan2024ReleaseBand'],
+            });
         }
 
         const missingFields: string[] = [];
@@ -98,6 +113,7 @@ export class AllplanLicensingPolicyService {
             '[VALIDATED ALLPLAN LICENSING INTAKE - use this data when routing the answer]',
             `Release: ${allplanVersion}`,
             `Release family: ${family}`,
+            ...(allplanVersion === '2024' ? [`2024 release range: ${intake.allplan2024ReleaseBand}`] : []),
             `Issue: ${intake.licenseIssueType}`,
             family === 'CLOUD' ? `User role: ${intake.licenseUserRole}` : `License topology: ${intake.licenseTopology}`,
             ...(family === 'CLOUD' ? [

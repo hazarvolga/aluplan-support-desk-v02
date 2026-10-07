@@ -166,7 +166,7 @@ describe('KnowledgePoolProcessor file sync', () => {
         const crawlService = {
             fetch: jest.fn().mockResolvedValue({
                 content: 'Crawl4AI markdown content with enough detail for URL indexing.',
-                title: 'Crawled URL',
+                title: 'Activating ALLPLAN license using Product Key',
                 provider: 'crawl4ai',
                 metadata: { crawl4aiSuccess: true },
             }),
@@ -195,21 +195,29 @@ describe('KnowledgePoolProcessor file sync', () => {
             id: '8551f74c-e2e1-432c-af47-8ee988f86d14',
             url: 'https://example.com/help',
             name: 'Help',
-            metadata: { category: 'Installation & Setup' },
+            metadata: {
+                source: 'allplan_learnnow',
+                categorySlug: 'license-server-codemeter',
+            },
         }, 'log-2');
 
         expect(embeddingService.indexPoolContent).toHaveBeenCalledWith(
             '8551f74c-e2e1-432c-af47-8ee988f86d14',
             expect.stringContaining('Crawl4AI markdown content'),
-            expect.objectContaining({ crawlerProvider: 'crawl4ai' }),
+            expect.objectContaining({
+                crawlerProvider: 'crawl4ai',
+                category: 'License & Activation',
+                categorySlug: 'license-activation',
+            }),
         );
         expect(prisma.knowledgeSource.update).toHaveBeenCalledWith({
             where: { id: '8551f74c-e2e1-432c-af47-8ee988f86d14' },
             data: expect.objectContaining({
                 name: 'Help',
                 metadata: expect.objectContaining({
-                    category: 'Installation & Setup',
-                    pageTitle: 'Crawled URL',
+                    category: 'License & Activation',
+                    categorySlug: 'license-activation',
+                    pageTitle: 'Activating ALLPLAN license using Product Key',
                     displayNameSource: 'user_provided_name',
                     crawlerProvider: 'crawl4ai',
                     crawler: { crawl4aiSuccess: true },

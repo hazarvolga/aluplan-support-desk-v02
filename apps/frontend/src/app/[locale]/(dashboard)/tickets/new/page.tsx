@@ -55,6 +55,7 @@ const getTicketSchema = (t: any) => z.object({
     description: z.string().min(10, t('errors.description_min')).max(MAX_TICKET_DESCRIPTION_LENGTH, t('errors.description_max')),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
     allplanVersion: z.string().max(64).optional(),
+    allplan2024ReleaseBand: z.enum(['UP_TO_2024_1_10', 'FROM_2024_2_0', 'UNKNOWN']).optional(),
     licenseTopology: z.enum(['SINGLE_USER', 'LICENSE_SERVER', 'UNKNOWN']).optional(),
     licenseIssueType: z.enum(['ACTIVATION', 'TRANSFER', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER']).optional(),
     licenseUserRole: z.enum(['END_USER', 'LICENSE_ADMIN', 'UNKNOWN']).optional(),
@@ -259,6 +260,7 @@ export default function NewTicketPage() {
             description: '',
             priority: undefined,
             allplanVersion: '',
+            allplan2024ReleaseBand: undefined,
             licenseTopology: undefined,
             licenseIssueType: undefined,
             licenseUserRole: 'UNKNOWN',
@@ -439,6 +441,9 @@ export default function NewTicketPage() {
             const licensingIntake = isLicensingIntakeVisible ? {
                 categoryKey: 'licensing' as const,
                 allplanVersion: canonicalAllplanVersion,
+                allplan2024ReleaseBand: canonicalAllplanVersion === '2024'
+                    ? values.allplan2024ReleaseBand
+                    : undefined,
                 licenseTopology: values.licenseTopology,
                 licenseIssueType: values.licenseIssueType,
                 licenseUserRole: values.licenseUserRole,
@@ -504,6 +509,7 @@ export default function NewTicketPage() {
             const effectiveDescription = buildTicketDescription(values);
             const {
                 allplanVersion: _allplanVersion,
+                allplan2024ReleaseBand: _allplan2024ReleaseBand,
                 licenseTopology: _licenseTopology,
                 licenseIssueType: _licenseIssueType,
                 licenseUserRole: _licenseUserRole,
@@ -561,15 +567,23 @@ export default function NewTicketPage() {
     const isAllplanSelected = selectedProductDetails?.name?.trim().toUpperCase() === 'ALLPLAN';
     const isLicensingIntakeVisible = Boolean(isAllplanSelected && selectedCategoryOption?.isLicensing);
     const watchedAllplanVersion = form.watch('allplanVersion');
+    const watchedAllplan2024ReleaseBand = form.watch('allplan2024ReleaseBand');
     const watchedLicenseTopology = form.watch('licenseTopology');
     const effectiveAllplanVersion = watchedAllplanVersion || (isHotinfoConfirmed ? hotinfoData?.allplanVersion : '');
-    const allplanReleaseFamily = classifyAllplanRelease(effectiveAllplanVersion);
+    const isBare2024Version = extractAllplanVersion(effectiveAllplanVersion) === '2024';
+    const allplanReleaseFamily = classifyAllplanRelease(effectiveAllplanVersion, watchedAllplan2024ReleaseBand);
     const allowedLicenseIssueTypes = getAllowedAllplanLicenseIssueTypes(allplanReleaseFamily);
     const officialLicensingResources = getOfficialAllplanLicensingResources({
         allplanVersion: effectiveAllplanVersion,
+        allplan2024ReleaseBand: watchedAllplan2024ReleaseBand,
         licenseTopology: watchedLicenseTopology,
         licenseIssueType: form.watch('licenseIssueType'),
     });
+    useEffect(() => {
+        if (isBare2024Version || form.getValues('allplan2024ReleaseBand') === undefined) return;
+        form.setValue('allplan2024ReleaseBand', undefined, { shouldDirty: true });
+        form.clearErrors('allplan2024ReleaseBand');
+    }, [form, isBare2024Version]);
     const watchedSubject = form.watch('subject');
     const watchedDescription = form.watch('description');
     const selectedDepartmentName = selectedDepartmentDetails
@@ -694,6 +708,32 @@ export default function NewTicketPage() {
                                                 </FormItem>
                                             )}
                                         />
+                                        {isBare2024Version && (
+                                            <FormField
+                                                control={form.control}
+                                                name="allplan2024ReleaseBand"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>{t('licensing_intake.release_band_label')}</FormLabel>
+                                                        <Select value={field.value} onValueChange={field.onChange}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="border-white/10 bg-slate-950/60">
+                                                                    <SelectValue placeholder={t('licensing_intake.release_band_placeholder')} />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {(['UP_TO_2024_1_10', 'FROM_2024_2_0', 'UNKNOWN'] as const).map(value => (
+                                                                    <SelectItem key={value} value={value}>
+                                                                        {t(`licensing_intake.release_band.${value}`)}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        )}
                                         {allplanReleaseFamily !== 'UNKNOWN' && (
                                             <div className="flex items-end rounded-lg border border-brand-500/15 bg-slate-950/40 px-3 py-2 text-xs text-slate-300">
                                                 {t(`licensing_intake.release_family.${allplanReleaseFamily}`)}
@@ -715,7 +755,7 @@ export default function NewTicketPage() {
                                                 </FormItem>
                                             )}
                                         />}
-                                        {allplanReleaseFamily !== 'UNKNOWN' && <FormField
+                                        {allowedLicenseIssueTypes.length > 0 && <FormField
                                             control={form.control}
                                             name="licenseIssueType"
                                             render={({ field }) => (

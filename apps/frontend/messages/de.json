@@ -929,23 +929,31 @@
       },
       "licensing_intake": {
         "title": "Für die richtige Lizenzanleitung",
-        "description": "Geben Sie zuerst Ihre exakte ALLPLAN-Version ein. Die nächsten Fragen passen sich der Lizenzmethode an. Hotinfo ist optional; eine direkte Support-Anfrage bleibt immer möglich.",
+        "description": "Geben Sie die bekannte ALLPLAN-Version ein; die Jahreszahl allein genügt. Die nächsten Fragen passen sich der Lizenzmethode an. Hotinfo ist optional; eine direkte Support-Anfrage bleibt immer möglich.",
         "context_title": "ALLPLAN LIZENZINFORMATIONEN",
         "unknown": "Unbekannt",
-        "version_label": "Exakte ALLPLAN-Version / Build",
-        "version_placeholder": "Beispiel: 2024-1-10 oder 2024-2-0",
+        "version_label": "ALLPLAN-Version / Build",
+        "version_placeholder": "Beispiel: 2024 oder 2024-2-0",
         "release_family_label": "Lizenzmethode",
         "release_family": {
           "LEGACY_PRE_2016": "Alte Lizenzierung (2015 und früher)",
           "CODEMETER_2016_2024_1_10": "CodeMeter / Product Key (2016–2024-1-10)",
+          "TRANSITION_2024": "Übergangsversion 2024 — Versionsbereich auswählen",
           "CLOUD_2024_2_PLUS": "ALLPLAN ID / Cloud-Lizenzierung (ab 2024-2-0)",
           "UNKNOWN": "Version konnte nicht geprüft werden"
+        },
+        "release_band_label": "ALLPLAN-2024-Versionsbereich",
+        "release_band_placeholder": "Bekannten Versionsbereich auswählen",
+        "release_band": {
+          "UP_TO_2024_1_10": "2024-1-10 oder älter",
+          "FROM_2024_2_0": "2024-2-0 oder neuer",
+          "UNKNOWN": "Ich weiß es nicht"
         },
         "topology_label": "Lizenznutzungsmodell",
         "topology_placeholder": "Lizenznutzungsmodell auswählen",
         "issue_label": "Gewünschter Vorgang / Problem",
         "issue_placeholder": "Vorgang oder Problemtyp auswählen",
-        "ai_gate_notice": "Für eine KI-Anleitung sind die exakte Version/Build, das Lizenznutzungsmodell und der Problemtyp erforderlich. Falls Sie diese Angaben nicht kennen, können Sie die Anfrage direkt an den Support senden.",
+        "ai_gate_notice": "Für eine KI-Anleitung sind Versionsfamilie, Lizenznutzungsmodell und Problemtyp erforderlich. Wenn der 2024-Build unbekannt ist, wählen Sie den Versionsbereich oder senden Sie die Anfrage direkt an den Support.",
         "allplan_id_label": "Zugriff auf ALLPLAN ID",
         "user_role_label": "Ihre Rolle bei der Lizenzierung",
         "invite_label": "Organisationseinladung",
@@ -1000,13 +1008,14 @@
           "CLOUD_VIDEO": "Video zur Cloud-Lizenzierung ansehen"
         },
         "items": [
-          "Exakte ALLPLAN-Version und Build (zum Beispiel 2024-1-10 oder 2024-2-0)",
+          "ALLPLAN-Version; bei unbekanntem Build genügt das Jahr (zum Beispiel 2024)",
           "Einzelplatzlizenz oder Lizenzserver/Netzwerklizenz",
           "Sichtbare Fehlermeldung und gewünschter Vorgang",
           "Ab 2024-2-0: ALLPLAN ID, Organisationseinladung und Arbeitsplatzstatus"
         ],
         "validation": {
-          "allplanVersion": "Geben Sie vor der KI-Diagnose die exakte ALLPLAN-Version/Build ein oder bestätigen Sie das aktuelle Hotinfo.",
+          "allplanVersion": "Geben Sie vor der KI-Diagnose die bekannte ALLPLAN-Version ein oder bestätigen Sie das aktuelle Hotinfo.",
+          "allplan2024ReleaseBand": "Wählen Sie den Versionsbereich, damit die 2024-Lizenzmethode bestimmt werden kann.",
           "licenseTopology": "Wählen Sie vor der KI-Diagnose das Lizenznutzungsmodell aus.",
           "licenseIssueType": "Wählen Sie vor der KI-Diagnose den gewünschten Vorgang oder Problemtyp aus.",
           "allplanIdStatus": "Wählen Sie den Status Ihres ALLPLAN-ID-Zugriffs.",

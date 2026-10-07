@@ -18,6 +18,11 @@ import { OnModuleInit } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
 import { countTokens } from '../ai/utils/token-counter';
 import { VisualContentService } from './visual-content.service';
+import {
+    DATASET_CATEGORY_BY_SLUG,
+    isDatasetCategorySlug,
+    resolveDatasetCategory,
+} from './dataset-classifier';
 
 const parseWorkerNumber = (value: string | undefined, fallback: number): number => {
     const parsed = Number.parseInt(value ?? '', 10);
@@ -160,17 +165,46 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
         this.logger.log(`🧩 Content split into ${hierarchies.length} hierarchies for ${source.url}`);
 
         const totalChunks = hierarchies.reduce((sum, h) => sum + h.children.length, 0);
+        const existingCategorySlug = isDatasetCategorySlug(sourceMetadata.categorySlug)
+            ? sourceMetadata.categorySlug
+            : undefined;
+        const crawlerMetadata = metadata && typeof metadata === 'object'
+            ? metadata as Record<string, unknown>
+            : {};
+        const learnNowMetadata = crawlerMetadata.learnNow && typeof crawlerMetadata.learnNow === 'object'
+            ? crawlerMetadata.learnNow as Record<string, unknown>
+            : {};
+        const taxonomyValues = [learnNowMetadata.humanReadableCategories, learnNowMetadata.categories]
+            .flatMap(value => Array.isArray(value) ? value : [])
+            .filter((value): value is string => typeof value === 'string')
+            .join(' ');
+        const autoCategorized = sourceMetadata.source === 'allplan_learnnow';
+        const preferredCategorySlug = autoCategorized ? undefined : existingCategorySlug;
+        const primaryCategory = resolveDatasetCategory(
+            `${title} ${taxonomyValues}`,
+            preferredCategorySlug,
+        );
+        const inferredCategory = primaryCategory.categorySlug === 'review-backlog'
+            ? resolveDatasetCategory(enrichedContent.slice(0, 32768), preferredCategorySlug)
+            : primaryCategory;
+        const categorySlug = inferredCategory.categorySlug !== 'review-backlog'
+            ? inferredCategory.categorySlug
+            : existingCategorySlug;
+        const category = categorySlug
+            ? DATASET_CATEGORY_BY_SLUG[categorySlug]
+            : (typeof sourceMetadata.category === 'string' ? sourceMetadata.category : 'General');
         await this.reserveEmbeddingBudgetOrPause(enrichedContent, source.id);
         await this.embeddingService.indexPoolContent(source.id, enrichedContent, {
             url: source.url,
             title,
             sourceType: 'url',
+            language: source.language,
+            category,
+            ...(categorySlug ? { categorySlug } : {}),
             crawlerProvider: provider ?? 'basic',
             status: isMajorChange ? 'PENDING_REVIEW' : 'ACTIVE',
             visualSummaryCount: visualResult.summaries.length,
         });
-
-        const category = (source.metadata as any)?.category || 'General';
 
         await this.prisma.knowledgeSource.update({
             where: { id: source.id },
@@ -183,7 +217,8 @@ export class KnowledgePoolProcessor extends WorkerHost implements OnModuleInit {
                     ...sourceMetadata,
                     lastContentLength: newLength,
                     isMajorChange,
-                    category: category,
+                    category,
+                    ...(categorySlug ? { categorySlug } : {}),
                     pageTitle: title,
                     crawlerTitle: title,
                     displayNameSource: displayName === title ? 'crawler_title' : 'user_provided_name',
