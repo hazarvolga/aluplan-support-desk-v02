@@ -21,7 +21,11 @@ import { toast } from 'sonner';
 import { useTranslations, useLocale } from 'next-intl';
 import { HotinfoGrid } from '@/components/ui/hotinfo-grid';
 import { getDepartmentDisplayName } from '@/lib/department-display';
-import { buildTicketCategoryOptions, getTicketCategoryCreateFields } from '@/lib/ticket-category-options';
+import {
+    buildTicketCategoryOptions,
+    getTicketCategoryCreateFields,
+    isHotinfoRequiredForTicket,
+} from '@/lib/ticket-category-options';
 import { AiVisualEvidence, type AiVisualEvidenceItem } from '@/components/ai/AiVisualEvidence';
 import { isTicketDetailsReady } from '@/lib/ticket-intake-visibility';
 import {
@@ -242,6 +246,10 @@ export default function NewTicketPage() {
     const [hotinfoData, setHotinfoData] = useState<any | null>(null);
     const [isHotinfoConfirmed, setIsHotinfoConfirmed] = useState(false);
     const [isHotinfoHelpOpen, setIsHotinfoHelpOpen] = useState(false);
+    const isHotinfoRequired = isHotinfoRequiredForTicket(
+        products.find(product => product.id === selectedProductId)?.name,
+        selectedCategoryOption,
+    );
 
     // AI RAG States
     const [isDiagnosing, setIsDiagnosing] = useState(false);
@@ -321,6 +329,13 @@ export default function NewTicketPage() {
         }, 420);
     };
 
+    const hasRequiredHotinfo = (): boolean => {
+        if (!isHotinfoRequired || (isHotinfoConfirmed && hotinfoData)) return true;
+        setCurrentStep(1);
+        toast.error(t('toasts.hotinfo_required'));
+        return false;
+    };
+
     const handleProductChange = async (value: string) => {
         setSelectedProductId(value);
         setHotinfoData(null);
@@ -388,6 +403,7 @@ export default function NewTicketPage() {
             toast.error(t('errors.description_min'));
             return;
         }
+        if (!hasRequiredHotinfo()) return;
 
         if (isLicensingIntakeVisible) {
             const missingFields = getMissingAllplanLicensingDiagnosisFields(values, {
@@ -500,10 +516,12 @@ export default function NewTicketPage() {
             toast.error(t('errors.description_min'));
             return;
         }
+        if (!hasRequiredHotinfo()) return;
         setCurrentStep(3);
     };
 
     const onSubmit = async (values: TicketFormValues) => {
+        if (!hasRequiredHotinfo()) return;
         setLoading(true);
         try {
             const effectiveDescription = buildTicketDescription(values);
@@ -866,7 +884,9 @@ export default function NewTicketPage() {
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="flex items-center gap-2">
                                             <Monitor className="h-5 w-5 text-brand-400" />
-                                            <h3 className="font-semibold text-lg">{t('sections.system_info')}</h3>
+                                            <h3 className="font-semibold text-lg">
+                                                {t(isHotinfoRequired ? 'sections.system_info_required' : 'sections.system_info')}
+                                            </h3>
                                         </div>
                                         <Button
                                             type="button"
@@ -882,7 +902,9 @@ export default function NewTicketPage() {
                                     {!hotinfoData ? (
                                         <div className="flex flex-col items-center justify-center p-8 rounded-xl bg-orange-500/5 border border-orange-500/20 space-y-4 text-center">
                                             <AlertTriangle className="h-8 w-8 text-orange-400" />
-                                            <p className="text-sm text-muted-foreground">{t('sections.hotinfo_needed')}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {t(isHotinfoRequired ? 'sections.hotinfo_required' : 'sections.hotinfo_needed')}
+                                            </p>
                                             <button
                                                 type="button"
                                                 onClick={() => setIsHotinfoHelpOpen(true)}
@@ -1103,7 +1125,7 @@ export default function NewTicketPage() {
                         <Button
                             disabled={!form.getValues('subject') || form.getValues('subject').length < 5 || form.getValues('subject').length > MAX_TICKET_SUBJECT_LENGTH}
                             onClick={async () => {
-                                if (await form.trigger('subject')) {
+                                if (await form.trigger('subject') && hasRequiredHotinfo()) {
                                     setCurrentStep(2);
                                 }
                             }}

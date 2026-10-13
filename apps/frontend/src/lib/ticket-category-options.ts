@@ -12,6 +12,8 @@ export type TicketCategoryOption = {
 };
 
 export const LICENSING_CATEGORY_VALUE = 'licensing';
+const ALLPLAN_PRODUCT_NAME = 'ALLPLAN';
+const TECHNICAL_SUPPORT_DEPARTMENT_SLUG = 'technical-support';
 
 export const buildTicketCategoryOptions = (departments: DepartmentOption[]): TicketCategoryOption[] =>
     departments.flatMap(department => {
@@ -36,3 +38,9 @@ export const getTicketCategoryCreateFields = (option?: TicketCategoryOption) => 
     departmentId: option?.departmentId,
     ...(option?.isLicensing ? { tags: ['licensing'] } : {}),
 });
+
+export const isHotinfoRequiredForTicket = (
+    productName: string | null | undefined,
+    option?: TicketCategoryOption,
+): boolean => productName?.trim().toUpperCase() === ALLPLAN_PRODUCT_NAME
+    && option?.department.slug === TECHNICAL_SUPPORT_DEPARTMENT_SLUG;

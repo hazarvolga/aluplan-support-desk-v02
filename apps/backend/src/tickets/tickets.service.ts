@@ -28,6 +28,15 @@ import { MaintenanceWorkService } from '../common/services/maintenance-work.serv
 import { ResolutionDecisionDto } from './dto/ticket-lifecycle.dto';
 import { sanitizeHotinfoContext } from '../common/utils/hotinfo-context';
 
+const ALLPLAN_PRODUCT_NAME = 'ALLPLAN';
+const TECHNICAL_SUPPORT_DEPARTMENT_SLUG = 'technical-support';
+
+const isAllplanTechnicalSupportTicket = (
+    productName: string | null | undefined,
+    departmentSlug: string | null | undefined,
+): boolean => productName?.trim().toUpperCase() === ALLPLAN_PRODUCT_NAME
+    && departmentSlug === TECHNICAL_SUPPORT_DEPARTMENT_SLUG;
+
 const ALLOWED_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
     NEW: [TicketStatus.OPEN, TicketStatus.DRAFT, TicketStatus.PENDING_CUSTOMER_REVIEW],
     OPEN: [TicketStatus.IN_PROGRESS, TicketStatus.PENDING_CUSTOMER, TicketStatus.RESOLVED, TicketStatus.PENDING_CUSTOMER_REVIEW],
@@ -89,18 +98,44 @@ export class TicketsService {
             }
         }
 
+        let productName: string | undefined;
         if (dto.productId) {
             const activeProduct = await this.prisma.product.findFirst({
                 where: { id: dto.productId, isActive: true, deletedAt: null },
-                select: { id: true },
+                select: { id: true, name: true },
             });
             if (!activeProduct) {
                 throw new BadRequestException('Selected product is not active');
             }
+            productName = activeProduct.name;
         }
 
         const priority = dto.priority ?? TicketPriority.MEDIUM;
-        const hotinfoContext = sanitizeHotinfoContext(dto.hotinfoContext);
+        let hotinfoContext = sanitizeHotinfoContext(dto.hotinfoContext);
+        const department = productName?.trim().toUpperCase() === ALLPLAN_PRODUCT_NAME && dto.departmentId
+            ? await this.prisma.department.findFirst({
+                where: {
+                    id: dto.departmentId,
+                    isActive: true,
+                    isArchived: false,
+                    deletedAt: null,
+                },
+                select: { slug: true },
+            })
+            : null;
+        if (productName?.trim().toUpperCase() === ALLPLAN_PRODUCT_NAME && dto.departmentId && !department) {
+            throw new BadRequestException('Selected department is not active');
+        }
+        if (isAllplanTechnicalSupportTicket(productName, department?.slug)) {
+            const profile = await this.prisma.customerProfile.findFirst({
+                where: { userId: createdByUserId, deletedAt: null },
+                select: { hotinfoData: true, hotinfoUpdatedAt: true },
+            });
+            hotinfoContext = sanitizeHotinfoContext(profile?.hotinfoData);
+            if (!hotinfoContext || !profile?.hotinfoUpdatedAt) {
+                throw new BadRequestException('Hotinfo is required for ALLPLAN technical support tickets');
+            }
+        }
         const [ticketNumber, slaDeadlines] = await Promise.all([
             this.generateTicketNumber(),
             this.slaService.calculateDeadlines(priority, dto.departmentId),
