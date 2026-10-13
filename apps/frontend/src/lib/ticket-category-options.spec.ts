@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildTicketCategoryOptions, getTicketCategoryCreateFields, LICENSING_CATEGORY_VALUE } from './ticket-category-options';
+import {
+    buildTicketCategoryOptions,
+    getTicketCategoryCreateFields,
+    isHotinfoRequiredForTicket,
+    LICENSING_CATEGORY_VALUE,
+} from './ticket-category-options';
 
 const departments = [
     { id: 'billing-id', slug: 'billing-payments', name: 'Billing & Payments' },
@@ -32,5 +37,23 @@ describe('buildTicketCategoryOptions', () => {
         const options = buildTicketCategoryOptions(departments.slice(1));
 
         expect(options.map(option => option.value)).toEqual(['technical-id']);
+    });
+});
+
+describe('isHotinfoRequiredForTicket', () => {
+    const technicalOption = buildTicketCategoryOptions(departments).find(option => option.value === 'technical-id');
+    const licensingOption = buildTicketCategoryOptions(departments).find(option => option.value === LICENSING_CATEGORY_VALUE);
+    const billingOption = buildTicketCategoryOptions(departments).find(option => option.value === 'billing-id');
+
+    it('requires Hotinfo only for ALLPLAN technical support tickets', () => {
+        expect(isHotinfoRequiredForTicket('ALLPLAN', technicalOption)).toBe(true);
+        expect(isHotinfoRequiredForTicket(' allplan ', technicalOption)).toBe(true);
+    });
+
+    it('keeps Hotinfo optional for licensing, other categories, and other products', () => {
+        expect(isHotinfoRequiredForTicket('ALLPLAN', licensingOption)).toBe(false);
+        expect(isHotinfoRequiredForTicket('ALLPLAN', billingOption)).toBe(false);
+        expect(isHotinfoRequiredForTicket('SCIA', technicalOption)).toBe(false);
+        expect(isHotinfoRequiredForTicket(undefined, technicalOption)).toBe(false);
     });
 });

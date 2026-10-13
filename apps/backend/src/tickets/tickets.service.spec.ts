@@ -32,7 +32,7 @@ describe('TicketsService', () => {
     };
 
     const mockAiQueryService = {
-        smartTagTicket: jest.fn(),
+        smartTagTicket: jest.fn().mockResolvedValue({ tags: [] }),
     };
 
     const mockRedisService = {
@@ -102,10 +102,154 @@ describe('TicketsService', () => {
 
             expect(prisma.product.findFirst).toHaveBeenCalledWith({
                 where: { id: dto.productId, isActive: true, deletedAt: null },
-                select: { id: true },
+                select: { id: true, name: true },
             });
             expect(prisma.ticket.create).not.toHaveBeenCalled();
             expect(mockAiQueryService.smartTagTicket).not.toHaveBeenCalled();
+        });
+
+        it('should require Hotinfo for ALLPLAN technical support tickets', async () => {
+            const dto = {
+                subject: 'Allplan crash',
+                description: 'Allplan closes while opening the project',
+                productId: '11111111-1111-4111-8111-111111111111',
+                departmentId: '22222222-2222-4222-8222-222222222222',
+            };
+            prisma.product.findFirst.mockResolvedValue({ id: dto.productId, name: 'ALLPLAN' });
+            prisma.department.findFirst.mockResolvedValue({ slug: 'technical-support' });
+            prisma.customerProfile.findFirst.mockResolvedValue(null);
+
+            await expect(service.create(dto, 'user1')).rejects.toThrow(
+                new BadRequestException('Hotinfo is required for ALLPLAN technical support tickets'),
+            );
+
+            expect(prisma.ticket.create).not.toHaveBeenCalled();
+            expect(mockSlaService.calculateDeadlines).not.toHaveBeenCalled();
+        });
+
+        it('should reject uploaded profile Hotinfo that sanitizes to an empty payload', async () => {
+            const dto = {
+                subject: 'Allplan crash',
+                description: 'Allplan closes while opening the project',
+                productId: '11111111-1111-4111-8111-111111111111',
+                departmentId: '22222222-2222-4222-8222-222222222222',
+            };
+            prisma.product.findFirst.mockResolvedValue({ id: dto.productId, name: 'ALLPLAN' });
+            prisma.department.findFirst.mockResolvedValue({ slug: 'technical-support' });
+            prisma.customerProfile.findFirst.mockResolvedValue({
+                hotinfoData: { unknownField: 'not accepted' },
+                hotinfoUpdatedAt: new Date('2026-10-13T12:00:00.000Z'),
+            });
+
+            await expect(service.create(dto, 'user1')).rejects.toThrow(BadRequestException);
+            expect(prisma.ticket.create).not.toHaveBeenCalled();
+        });
+
+        it('should reject profile Hotinfo without an upload timestamp', async () => {
+            const dto = {
+                subject: 'Allplan crash',
+                description: 'Allplan closes while opening the project',
+                productId: '11111111-1111-4111-8111-111111111111',
+                departmentId: '22222222-2222-4222-8222-222222222222',
+            };
+            prisma.product.findFirst.mockResolvedValue({ id: dto.productId, name: 'ALLPLAN' });
+            prisma.department.findFirst.mockResolvedValue({ slug: 'technical-support' });
+            prisma.customerProfile.findFirst.mockResolvedValue({
+                hotinfoData: { allplanVersion: '2026-1-2' },
+                hotinfoUpdatedAt: null,
+            });
+
+            await expect(service.create(dto, 'user1')).rejects.toThrow(BadRequestException);
+            expect(prisma.ticket.create).not.toHaveBeenCalled();
+        });
+
+        it('should keep Hotinfo optional for ALLPLAN licensing tickets', async () => {
+            const dto = {
+                subject: 'License activation',
+                description: 'The license cannot be activated',
+                productId: '11111111-1111-4111-8111-111111111111',
+                departmentId: '22222222-2222-4222-8222-222222222222',
+                tags: ['licensing'],
+            };
+            prisma.product.findFirst.mockResolvedValue({ id: dto.productId, name: 'ALLPLAN' });
+            prisma.department.findFirst.mockResolvedValue({ slug: 'billing-payments' });
+            prisma.$queryRaw = jest.fn().mockResolvedValue([{ nextval: 1n }]);
+            mockSlaService.calculateDeadlines.mockResolvedValue({
+                slaResponseDue: new Date(),
+                slaResolveDue: new Date(),
+            });
+            prisma.ticket.create.mockResolvedValue({ id: 'tik1', ticketNumber: 'SUP-00001' });
+
+            await expect(service.create(dto, 'user1')).resolves.toMatchObject({ id: 'tik1' });
+            expect(prisma.ticket.create).toHaveBeenCalled();
+        });
+
+        it('should use uploaded profile Hotinfo for ALLPLAN technical support tickets', async () => {
+            const dto = {
+                subject: 'Allplan crash',
+                description: 'Allplan closes while opening the project',
+                productId: '11111111-1111-4111-8111-111111111111',
+                departmentId: '22222222-2222-4222-8222-222222222222',
+                hotinfoContext: { allplanVersion: 'spoofed-client-value' },
+            };
+            prisma.product.findFirst.mockResolvedValue({ id: dto.productId, name: 'ALLPLAN' });
+            prisma.department.findFirst.mockResolvedValue({ slug: 'technical-support' });
+            prisma.customerProfile.findFirst.mockResolvedValue({
+                hotinfoData: { allplanVersion: '2026-1-2' },
+                hotinfoUpdatedAt: new Date('2026-10-13T12:00:00.000Z'),
+            });
+            prisma.$queryRaw = jest.fn().mockResolvedValue([{ nextval: 1n }]);
+            mockSlaService.calculateDeadlines.mockResolvedValue({
+                slaResponseDue: new Date(),
+                slaResolveDue: new Date(),
+            });
+            prisma.ticket.create.mockResolvedValue({ id: 'tik1', ticketNumber: 'SUP-00001' });
+
+            await expect(service.create(dto, 'user1')).resolves.toMatchObject({ id: 'tik1' });
+            expect(prisma.customerProfile.findFirst).toHaveBeenCalledWith({
+                where: { userId: 'user1', deletedAt: null },
+                select: { hotinfoData: true, hotinfoUpdatedAt: true },
+            });
+            expect(prisma.ticket.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    hotinfoSnapshot: { allplanVersion: '2026-1-2' },
+                }),
+            }));
+        });
+
+        it('should reject client-supplied Hotinfo when no uploaded profile Hotinfo exists', async () => {
+            const dto = {
+                subject: 'Allplan crash',
+                description: 'Allplan closes while opening the project',
+                productId: '11111111-1111-4111-8111-111111111111',
+                departmentId: '22222222-2222-4222-8222-222222222222',
+                hotinfoContext: { allplanVersion: 'spoofed-client-value' },
+            };
+            prisma.product.findFirst.mockResolvedValue({ id: dto.productId, name: 'ALLPLAN' });
+            prisma.department.findFirst.mockResolvedValue({ slug: 'technical-support' });
+            prisma.customerProfile.findFirst.mockResolvedValue(null);
+
+            await expect(service.create(dto, 'user1')).rejects.toThrow(BadRequestException);
+            expect(prisma.ticket.create).not.toHaveBeenCalled();
+        });
+
+        it('should keep Hotinfo optional for other products in technical support', async () => {
+            const dto = {
+                subject: 'SCIA issue',
+                description: 'SCIA closes while opening the project',
+                productId: '11111111-1111-4111-8111-111111111111',
+                departmentId: '22222222-2222-4222-8222-222222222222',
+            };
+            prisma.product.findFirst.mockResolvedValue({ id: dto.productId, name: 'SCIA' });
+            prisma.$queryRaw = jest.fn().mockResolvedValue([{ nextval: 1n }]);
+            mockSlaService.calculateDeadlines.mockResolvedValue({
+                slaResponseDue: new Date(),
+                slaResolveDue: new Date(),
+            });
+            prisma.ticket.create.mockResolvedValue({ id: 'tik1', ticketNumber: 'SUP-00001' });
+
+            await expect(service.create(dto, 'user1')).resolves.toMatchObject({ id: 'tik1' });
+            expect(prisma.department.findFirst).not.toHaveBeenCalled();
         });
 
         it('should reuse an existing ticket for the same AI interaction', async () => {
