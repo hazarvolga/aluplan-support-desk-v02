@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import {
     Brain,
     Bot,
-    Cpu,
     Zap,
     CheckCircle2,
     AlertCircle,
@@ -22,18 +21,20 @@ import {
     EyeOff,
     Terminal,
     Search,
-    Cloud,
     type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getErrorMessage, type Setting } from '../settings-types';
+import { SPECIALIZED_PROVIDER_OPTIONS, normalizeSpecializedProvider, toCredentialOverride } from '@/lib/ai-provider-policy';
 
-interface ProviderStatus {
-    name: string;
-    active: boolean;
+interface ProviderHealth {
     available: boolean;
-    priority: number;
-    error?: string;
+    message: string;
+}
+
+interface AiHealthResponse {
+    chatProvider: string;
+    providers: Record<string, ProviderHealth>;
 }
 
 interface ProviderCardProps {
@@ -48,9 +49,16 @@ interface ProviderCardProps {
     secret?: boolean;
 }
 
+const formatProviderName = (provider: string) => {
+    if (provider === 'llmapi') return 'LLMAPI';
+    if (provider === 'xai') return 'xAI';
+    return provider.charAt(0).toUpperCase() + provider.slice(1);
+};
+
 export function AiSettings() {
     const t = useTranslations('settings.ai');
-    const [status, setStatus] = useState<ProviderStatus[]>([]);
+    const [status, setStatus] = useState<Record<string, ProviderHealth>>({});
+    const [activeProvider, setActiveProvider] = useState('');
     const [loading, setLoading] = useState(true);
     const [testing, setTesting] = useState<string | null>(null);
     const [showKey, setShowKey] = useState<string | null>(null);
@@ -59,17 +67,8 @@ export function AiSettings() {
     // Form states
     const [openaiKey, setOpenaiKey] = useState('');
     const [openaiModel, setOpenaiModel] = useState('gpt-4o-mini');
-    const [anthropicKey, setAnthropicKey] = useState('');
-    const [anthropicModel, setAnthropicModel] = useState('claude-3-opus-20240229');
     const [llmapiKey, setLlmApiKey] = useState('');
     const [llmapiModel, setLlmApiModel] = useState('gpt-4o');
-    const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434');
-    const [ollamaModel, setOllamaModel] = useState('llama3');
-
-    const [vertexProjectId, setVertexProjectId] = useState('');
-    const [vertexCredentials, setVertexCredentials] = useState('');
-    const [vertexModel, setVertexModel] = useState('gemini-1.5-pro-preview-0409');
-
     // Specialized mappings
     const [specializedCategorization, setSpecializedCategorization] = useState('global');
     const [specializedSummarization, setSpecializedSummarization] = useState('global');
@@ -81,11 +80,12 @@ export function AiSettings() {
         setLoading(true);
         try {
             const [healthData, settingsData] = await Promise.all([
-                api.get<{ providers: ProviderStatus[] }>('/ai/health-status'),
-                api.settings.list(true)
+                api.get<AiHealthResponse>('/ai/health-status'),
+                api.settings.list(false)
             ]);
 
-            setStatus(healthData.providers || []);
+            setStatus(healthData.providers || {});
+            setActiveProvider(healthData.chatProvider || '');
 
             // Map settings
             const typedSettings = settingsData as Setting[];
@@ -93,24 +93,14 @@ export function AiSettings() {
 
             setOpenaiKey(findValue('ai.openai.api_key'));
             setOpenaiModel(findValue('ai.openai.chat_model') || 'gpt-4o-mini');
-            setAnthropicKey(findValue('ai.anthropic.api_key'));
-            setAnthropicModel(findValue('ai.anthropic.chat_model') || 'claude-3-5-sonnet-latest');
             setLlmApiKey(findValue('ai.llmapi.api_key'));
             setLlmApiModel(findValue('ai.llmapi.chat_model') || 'gpt-4o');
-            setOllamaUrl(findValue('ai.ollama.url') || 'http://localhost:11434');
-            setOllamaModel(findValue('ai.ollama.chat_model') || 'llama3');
-
-            // Vertex Map
-            setVertexProjectId(findValue('ai.vertex.project_id'));
-            setVertexCredentials(findValue('ai.vertex.credentials_json'));
-            setVertexModel(findValue('ai.vertex.chat_model') || 'gemini-1.5-pro-preview-0409');
-
             // Specialized
-            setSpecializedCategorization(findValue('ai.specialized.categorization_provider') || 'global');
-            setSpecializedSummarization(findValue('ai.specialized.summarization_provider') || 'global');
-            setSpecializedReformatting(findValue('ai.specialized.reformatting_provider') || 'global');
-            setSpecializedSentiment(findValue('ai.specialized.analyze_sentiment_provider') || 'global');
-            setSpecializedTranslation(findValue('ai.specialized.translate_provider') || 'global');
+            setSpecializedCategorization(normalizeSpecializedProvider(findValue('ai.specialized.categorization_provider')));
+            setSpecializedSummarization(normalizeSpecializedProvider(findValue('ai.specialized.summarization_provider')));
+            setSpecializedReformatting(normalizeSpecializedProvider(findValue('ai.specialized.reformatting_provider')));
+            setSpecializedSentiment(normalizeSpecializedProvider(findValue('ai.specialized.analyze_sentiment_provider')));
+            setSpecializedTranslation(normalizeSpecializedProvider(findValue('ai.specialized.translate_provider')));
 
         } catch (error: unknown) {
             toast.error(t('toasts.load_error', { message: getErrorMessage(error) }));
@@ -144,22 +134,21 @@ export function AiSettings() {
         setSaving(true);
         try {
             const updates = [];
+            let maskSavedCredential: (() => void) | undefined;
             if (provider === 'OpenAI') {
-                updates.push(api.settings.upsert({ key: 'ai.openai.api_key', value: openaiKey, isSecret: true }));
+                const credential = toCredentialOverride(openaiKey);
+                if (credential) {
+                    updates.push(api.settings.upsert({ key: 'ai.openai.api_key', value: credential, isSecret: true }));
+                }
                 updates.push(api.settings.upsert({ key: 'ai.openai.chat_model', value: openaiModel }));
-            } else if (provider === 'Anthropic') {
-                updates.push(api.settings.upsert({ key: 'ai.anthropic.api_key', value: anthropicKey, isSecret: true }));
-                updates.push(api.settings.upsert({ key: 'ai.anthropic.chat_model', value: anthropicModel }));
+                if (credential) maskSavedCredential = () => setOpenaiKey('********');
             } else if (provider === 'LLMAPI') {
-                updates.push(api.settings.upsert({ key: 'ai.llmapi.api_key', value: llmapiKey, isSecret: true }));
+                const credential = toCredentialOverride(llmapiKey);
+                if (credential) {
+                    updates.push(api.settings.upsert({ key: 'ai.llmapi.api_key', value: credential, isSecret: true }));
+                }
                 updates.push(api.settings.upsert({ key: 'ai.llmapi.chat_model', value: llmapiModel }));
-            } else if (provider === 'Ollama') {
-                updates.push(api.settings.upsert({ key: 'ai.ollama.url', value: ollamaUrl }));
-                updates.push(api.settings.upsert({ key: 'ai.ollama.chat_model', value: ollamaModel }));
-            } else if (provider === 'Vertex') {
-                updates.push(api.settings.upsert({ key: 'ai.vertex.project_id', value: vertexProjectId }));
-                updates.push(api.settings.upsert({ key: 'ai.vertex.credentials_json', value: vertexCredentials, isSecret: true }));
-                updates.push(api.settings.upsert({ key: 'ai.vertex.chat_model', value: vertexModel }));
+                if (credential) maskSavedCredential = () => setLlmApiKey('********');
             } else if (provider === 'Specialized') {
                 updates.push(api.settings.upsert({ key: 'ai.specialized.categorization_provider', value: specializedCategorization }));
                 updates.push(api.settings.upsert({ key: 'ai.specialized.summarization_provider', value: specializedSummarization }));
@@ -169,6 +158,7 @@ export function AiSettings() {
             }
 
             await Promise.all(updates);
+            maskSavedCredential?.();
             toast.success(t('toasts.save_success', { provider }));
             loadData();
         } catch (error: unknown) {
@@ -189,8 +179,9 @@ export function AiSettings() {
         setModelValue,
         secret = true
     }: ProviderCardProps) => {
-        const providerStatus = status.find(s => s.name === name);
-        const isActive = providerStatus?.active;
+        const providerKey = name.toLowerCase();
+        const providerStatus = status[providerKey];
+        const isActive = activeProvider === providerKey;
         const isAvailable = providerStatus?.available;
 
         return (
@@ -249,7 +240,7 @@ export function AiSettings() {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('ollama.chat_model')}</Label>
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('chat_model')}</Label>
                         <Input
                             value={modelValue}
                             onChange={(e) => setModelValue(e.target.value)}
@@ -332,15 +323,6 @@ export function AiSettings() {
                     setModelValue={setOpenaiModel}
                 />
                 <ProviderCard
-                    name="Anthropic"
-                    icon={Zap}
-                    color="orange"
-                    keyValue={anthropicKey}
-                    setKeyValue={setAnthropicKey}
-                    modelValue={anthropicModel}
-                    setModelValue={setAnthropicModel}
-                />
-                <ProviderCard
                     name="LLMAPI"
                     icon={Brain}
                     color="blue"
@@ -348,28 +330,6 @@ export function AiSettings() {
                     setKeyValue={setLlmApiKey}
                     modelValue={llmapiModel}
                     setModelValue={setLlmApiModel}
-                />
-                <ProviderCard
-                    name="Ollama"
-                    icon={Cpu}
-                    color="purple"
-                    keyLabel="Server URL"
-                    keyValue={ollamaUrl}
-                    setKeyValue={setOllamaUrl}
-                    modelValue={ollamaModel}
-                    setModelValue={setOllamaModel}
-                    secret={false}
-                />
-                <ProviderCard
-                    name="Vertex"
-                    icon={Cloud}
-                    color="blue"
-                    keyLabel="GCP Project ID"
-                    keyValue={vertexProjectId}
-                    setKeyValue={setVertexProjectId}
-                    modelValue={vertexModel}
-                    setModelValue={setVertexModel}
-                    secret={false}
                 />
             </div>
 
@@ -395,10 +355,9 @@ export function AiSettings() {
                                 className="w-full bg-slate-900/50 border border-white/10 rounded-md p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                             >
                                 <option value="global">{t('global_default')}</option>
-                                <option value="openai">OpenAI</option>
-                                <option value="anthropic">Anthropic</option>
-                                <option value="gemini">Gemini</option>
-                                <option value="ollama">{t('ollama_local')}</option>
+                                {SPECIALIZED_PROVIDER_OPTIONS.map(provider => (
+                                    <option key={provider} value={provider}>{formatProviderName(provider)}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-2">
@@ -409,10 +368,9 @@ export function AiSettings() {
                                 className="w-full bg-slate-900/50 border border-white/10 rounded-md p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                             >
                                 <option value="global">{t('global_default')}</option>
-                                <option value="openai">OpenAI</option>
-                                <option value="anthropic">Anthropic</option>
-                                <option value="gemini">Gemini</option>
-                                <option value="ollama">{t('ollama_local')}</option>
+                                {SPECIALIZED_PROVIDER_OPTIONS.map(provider => (
+                                    <option key={provider} value={provider}>{formatProviderName(provider)}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-2">
@@ -423,10 +381,9 @@ export function AiSettings() {
                                 className="w-full bg-slate-900/50 border border-white/10 rounded-md p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                             >
                                 <option value="global">{t('global_default')}</option>
-                                <option value="openai">OpenAI</option>
-                                <option value="anthropic">Anthropic</option>
-                                <option value="gemini">Gemini</option>
-                                <option value="ollama">{t('ollama_local')}</option>
+                                {SPECIALIZED_PROVIDER_OPTIONS.map(provider => (
+                                    <option key={provider} value={provider}>{formatProviderName(provider)}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -439,10 +396,9 @@ export function AiSettings() {
                                 className="w-full bg-slate-900/50 border border-white/10 rounded-md p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                             >
                                 <option value="global">{t('global_default')}</option>
-                                <option value="openai">OpenAI</option>
-                                <option value="anthropic">Anthropic</option>
-                                <option value="gemini">Gemini</option>
-                                <option value="ollama">{t('ollama_local')}</option>
+                                {SPECIALIZED_PROVIDER_OPTIONS.map(provider => (
+                                    <option key={provider} value={provider}>{formatProviderName(provider)}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-2">
@@ -453,10 +409,9 @@ export function AiSettings() {
                                 className="w-full bg-slate-900/50 border border-white/10 rounded-md p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                             >
                                 <option value="global">{t('global_default')}</option>
-                                <option value="openai">OpenAI</option>
-                                <option value="anthropic">Anthropic</option>
-                                <option value="gemini">Gemini</option>
-                                <option value="ollama">{t('ollama_local')}</option>
+                                {SPECIALIZED_PROVIDER_OPTIONS.map(provider => (
+                                    <option key={provider} value={provider}>{formatProviderName(provider)}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="pt-4 flex justify-end">

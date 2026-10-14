@@ -164,7 +164,7 @@ export default function KbAnalyticsPage() {
                             <h2 className="text-xl font-bold">AI Kategori Önerici</h2>
                         </div>
                         <p className="text-brand-100 text-sm max-w-md">
-                            Ollama entegrasyonu ile makale içeriğine göre en uygun kategoriyi otomatik belirleyin.
+                            Yapay zeka entegrasyonu ile makale içeriğine göre en uygun kategoriyi otomatik belirleyin.
                         </p>
                         <div className="space-y-3">
                             <input

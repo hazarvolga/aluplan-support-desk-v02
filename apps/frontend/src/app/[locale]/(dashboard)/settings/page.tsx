@@ -24,6 +24,7 @@ import { AiSettings } from './components/AiSettings';
 import { StorageSettings } from './components/StorageSettings';
 import { CrmSettings } from './components/CrmSettings';
 import { getErrorMessage, type Macro, type Setting } from './settings-types';
+import { toCredentialOverride } from '@/lib/ai-provider-policy';
 
 export default function SettingsPage() {
     const t = useTranslations('settings');
@@ -50,7 +51,7 @@ export default function SettingsPage() {
         const load = async () => {
             try {
                 const [settingsData, macrosData] = await Promise.all([
-                    api.settings.list(true),
+                    api.settings.list(false),
                     api.macros.list()
                 ]);
                 const typedSettings = settingsData as Setting[];
@@ -76,8 +77,10 @@ export default function SettingsPage() {
         try {
             await api.settings.upsert({ key, value, isSecret });
             toast.success(t('toasts.save_success', { key }));
+            return true;
         } catch (error: unknown) {
             toast.error(t('toasts.save_error', { message: getErrorMessage(error) }));
+            return false;
         } finally {
             setSaving(false);
         }
@@ -187,7 +190,8 @@ export default function SettingsPage() {
                                     saveSetting('email.smtp.host', smtpHost);
                                     saveSetting('email.smtp.port', smtpPort);
                                     saveSetting('email.smtp.user', smtpUser);
-                                    if (smtpPass) saveSetting('email.smtp.pass', smtpPass, true);
+                                    const credential = toCredentialOverride(smtpPass);
+                                    if (credential) void saveSetting('email.smtp.pass', credential, true).then((saved) => saved && setSmtpPass('********'));
                                 }} disabled={saving} className="bg-brand-600 ml-auto">{t('email_forms.save')}</Button>
                             </CardFooter>
                         </Card>
@@ -216,7 +220,8 @@ export default function SettingsPage() {
                                 <Button size="sm" onClick={() => {
                                     saveSetting('email.imap.host', imapHost);
                                     saveSetting('email.imap.user', imapUser);
-                                    if (imapPass) saveSetting('email.imap.pass', imapPass, true);
+                                    const credential = toCredentialOverride(imapPass);
+                                    if (credential) void saveSetting('email.imap.pass', credential, true).then((saved) => saved && setImapPass('********'));
                                 }} disabled={saving} className="bg-brand-600 ml-auto">{t('email_forms.save')}</Button>
                             </CardFooter>
                         </Card>

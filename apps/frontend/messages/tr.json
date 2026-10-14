@@ -1255,7 +1255,7 @@
     },
     "system_info": {
       "infrastructure": "ALTYAPI",
-      "node": "Ollama-VEC Hesaplama Düğümü",
+      "node": "Vektör Hesaplama Düğümü",
       "latency": "GECİKME",
       "lookup": "{ms}ms Anlamsal Arama"
     }
@@ -1563,8 +1563,6 @@
       "connection_success": "Bağlantı başarılı",
       "connection_failed": "Bağlantı başarısız",
       "connection_error": "Bağlantı hatası",
-      "ollama_ok": "Ollama ile iletişim sağlandı.",
-      "ollama_fail": "Ollama servisine ulaşılamadı.",
       "openai_ok": "OpenAI anahtarları doğrulandı.",
       "openai_fail": "API anahtarı geçersiz veya eksik.",
       "xai_ok": "xAI bağlantısı başarılı.",
@@ -1655,7 +1653,7 @@
     },
     "ai": {
       "title": "Yapay Zeka Entegrasyonu",
-      "description": "Grok (xAI), DeepSeek, OpenAI veya Ollama servislerini yapılandırın.",
+      "description": "Grok (xAI), DeepSeek, OpenAI veya Gemini servislerini yapılandırın.",
       "api_key": "API Anahtarı",
       "base_url": "Bağlantı URL",
       "base_url_optional": "Özel URL (Opsiyonel)",
@@ -1685,7 +1683,6 @@
       "rag_desc": "Bilgi havuzunuzu vektörleştiren ve arama kalitesini belirleyen temel ayarlar.",
       "advanced_params": "Gelişmiş Parametreler",
       "global_default": "Global Varsayılan",
-      "ollama_local": "Ollama (Lokal)",
       "status_active": "Aktif",
       "status_inactive": "Pasif",
       "hide_key": "{name} anahtarını gizle",
@@ -1697,6 +1694,7 @@
       "total_latency": "Toplam Gecikme",
       "validation": {
         "missing_fields": "Eksik alanlar: {fields}",
+        "embed_provider_required": "Bir vektör sağlayıcısı seçin ve yapılandırmasını tamamlayın.",
         "fields": {
           "api_key": "API Anahtarı",
           "chat_model": "Sohbet Modeli",
@@ -1712,18 +1710,12 @@
         "save_success": "{provider} ayarları kaydedildi.",
         "save_error": "Kaydetme hatası: {message}"
       },
-      "ollama": {
-        "title": "Ollama (Yerel)",
-        "chat_model": "Sohbet Modeli",
-        "embed_model": "Vektör Modeli"
-      },
       "openai": {
         "title": "OpenAI (Bulut)",
         "chat_model": "Sohbet Modeli",
         "embed_model": "Vektör Modeli"
       },
       "providers": {
-        "ollama": "Ollama (Yerel)",
         "openai": "OpenAI (Bulut)",
         "openai_cloud": "OpenAI (Bulut - Önerilen)",
         "xai": "xAI (Grok)",
@@ -1747,7 +1739,6 @@
       "description": "Sistem bildirimleri ve müşteri yazışmaları için sağlayıcı yapılandırması.",
       "active_provider": "Aktif Sağlayıcı",
       "from_address": "Gönderen E-posta Adresi",
-      "ollama_title": "Ollama (Yerel) Yapılandırması",
       "openai_title": "OpenAI Altyapı Yapılandırması",
       "azure_title": "Azure OpenAI Yapılandırması",
       "status_active": "Aktif",
@@ -2622,7 +2613,7 @@
           "view_title": "Topoloji Görünümü",
           "view_desc": "Bu sayfa, sistem yöneticilerine altyapının genel sağlık durumunu gösterir. Aşağıdaki bileşenler izlenir:",
           "view_ai_name": "AI Node'ları",
-          "view_ai_desc": "Ollama ve vektör hesaplama node'larının durumu",
+          "view_ai_desc": "Yapay zeka ve vektör hesaplama düğümlerinin durumu",
           "view_db_name": "Veritabanı",
           "view_db_desc": "Aktif DB node sayısı ve bağlantı durumu",
           "view_api_name": "API Servisleri",
@@ -4393,7 +4384,7 @@
       },
       "ai": {
         "title": "Yapay Zeka Entegrasyonu",
-        "description": "Grok (xAI), DeepSeek, OpenAI veya Ollama servislerini yapılandırın.",
+        "description": "Grok (xAI), DeepSeek, OpenAI veya Gemini servislerini yapılandırın.",
         "chat_provider": "Varsayılan Sohbet Sağlayıcısı",
         "chat_provider_desc": "Talep yanıtları ve asistan işlevleri için kullanılır.",
         "embed_provider": "Varsayılan Vektörleştirme Sağlayıcısı",
@@ -4416,7 +4407,6 @@
         "rag_desc": "Bilgi havuzunuzu vektörleştiren ve arama kalitesini belirleyen temel ayarlar.",
         "advanced_params": "Gelişmiş Parametreler",
         "global_default": "Global Varsayılan",
-        "ollama_local": "Ollama (Lokal)",
         "status_active": "Aktif",
         "status_inactive": "Pasif",
         "hide_key": "{name} anahtarını gizle",
@@ -4443,11 +4433,6 @@
           "save_success": "{provider} ayarları kaydedildi.",
           "save_error": "Kaydetme hatası: {message}"
         },
-        "ollama": {
-          "title": "Ollama (Yerel)",
-          "chat_model": "Sohbet Modeli",
-          "embed_model": "Vektör Modeli"
-        },
         "openai": {
           "title": "OpenAI (Bulut)",
           "chat_model": "Sohbet Modeli",
@@ -4460,7 +4445,6 @@
           "connection_error": "Vertex endpoint ulaşılamıyor"
         },
         "providers": {
-          "ollama": "Ollama (Yerel)",
           "openai": "OpenAI (Bulut)",
           "openai_cloud": "OpenAI (Bulut - Önerilen)",
           "xai": "xAI (Grok)",
@@ -4478,7 +4462,6 @@
         "description": "Sistem bildirimleri ve müşteri yazışmaları için sağlayıcı yapılandırması.",
         "active_provider": "Aktif Sağlayıcı",
         "from_address": "Gönderen E-posta Adresi",
-        "ollama_title": "Ollama (Yerel) Yapılandırması",
         "openai_title": "OpenAI Altyapı Yapılandırması",
         "azure_title": "Azure OpenAI Yapılandırması",
         "status_active": "Aktif",
@@ -4684,8 +4667,6 @@
         "connection_success": "Bağlantı başarılı",
         "connection_failed": "Bağlantı başarısız",
         "connection_error": "Bağlantı hatası",
-        "ollama_ok": "Ollama ile iletişim sağlandı.",
-        "ollama_fail": "Ollama servisine ulaşılamadı.",
         "openai_ok": "OpenAI anahtarları doğrulandı.",
         "openai_fail": "API anahtarı geçersiz veya eksik.",
         "xai_ok": "xAI bağlantısı başarılı.",

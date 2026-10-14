@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { HardDrive, Lock, Eye, EyeOff, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getErrorMessage, type Setting } from '../settings-types';
+import { toCredentialOverride } from '@/lib/ai-provider-policy';
 
 export function StorageSettings() {
     const t = useTranslations('settings.storage');
@@ -25,7 +26,7 @@ export function StorageSettings() {
     useEffect(() => {
         const load = async () => {
             try {
-                const settings = await api.settings.list(true);
+                const settings = await api.settings.list(false);
                 const typedSettings = settings as Setting[];
                 setAccessKey(typedSettings.find((setting) => setting.key === 'r2_access_key_id')?.value || '');
                 setSecretKey(typedSettings.find((setting) => setting.key === 'r2_secret_access_key')?.value || '');
@@ -43,12 +44,21 @@ export function StorageSettings() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await Promise.all([
-                api.settings.upsert({ key: 'r2_access_key_id', value: accessKey, isSecret: true }),
-                api.settings.upsert({ key: 'r2_secret_access_key', value: secretKey, isSecret: true }),
+            const accessKeyOverride = toCredentialOverride(accessKey);
+            const secretKeyOverride = toCredentialOverride(secretKey);
+            const updates = [
                 api.settings.upsert({ key: 'r2_endpoint', value: endpoint, isSecret: false }),
                 api.settings.upsert({ key: 'r2_bucket_name', value: bucket, isSecret: false })
-            ]);
+            ];
+            if (accessKeyOverride) {
+                updates.push(api.settings.upsert({ key: 'r2_access_key_id', value: accessKeyOverride, isSecret: true }));
+            }
+            if (secretKeyOverride) {
+                updates.push(api.settings.upsert({ key: 'r2_secret_access_key', value: secretKeyOverride, isSecret: true }));
+            }
+            await Promise.all(updates);
+            if (accessKeyOverride) setAccessKey('********');
+            if (secretKeyOverride) setSecretKey('********');
             toast.success(t('save_success'));
         } catch (error: unknown) {
             toast.error(t('save_error', { message: getErrorMessage(error) }));
@@ -72,6 +82,7 @@ export function StorageSettings() {
                     <Label htmlFor="r2-access-key">{t('access_key')}</Label>
                     <Input
                         id="r2-access-key"
+                        type="password"
                         value={accessKey}
                         onChange={(e) => setAccessKey(e.target.value)}
                         className="bg-slate-900/50"
