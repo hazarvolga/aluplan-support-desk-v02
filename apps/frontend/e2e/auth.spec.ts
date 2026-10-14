@@ -4,6 +4,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { TEST_USERS } from './helpers/auth';
 
 test.describe('Authentication Flow', () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
 
     test('should load login page with correct elements', async ({ page }) => {
         const loginPage = new LoginPage(page);

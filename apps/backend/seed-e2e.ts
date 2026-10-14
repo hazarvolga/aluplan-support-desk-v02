@@ -45,7 +45,18 @@ const CUSTOMER = {
     fullName: 'E2E Customer',
     roleName: 'CUSTOMER',
 };
+const CUSTOMER_TWO = {
+    email: process.env.E2E_CUSTOMER_TWO_EMAIL || 'e2e-customer-two@aluplan.test',
+    password: process.env.E2E_CUSTOMER_TWO_PASSWORD || 'E2eCustomerTwo!Pass123',
+    fullName: 'E2E Customer Two',
+    roleName: 'CUSTOMER',
+};
 const CUSTOMER_PHONE = process.env.E2E_CUSTOMER_PHONE || '905550009988';
+const SYSTEM_REQUIREMENTS_FIXTURE = JSON.stringify({
+    tr: [{ title: 'ALLPLAN 2026', sections: [{ name: 'Sentetik E2E', items: ['Desteklenen test ortamı'] }] }],
+    en: [{ title: 'ALLPLAN 2026', sections: [{ name: 'Synthetic E2E', items: ['Supported test environment'] }] }],
+    de: [{ title: 'ALLPLAN 2026', sections: [{ name: 'Synthetischer E2E-Test', items: ['Unterstützte Testumgebung'] }] }],
+});
 
 async function ensureRole(name: string) {
     const existing = await prisma.role.findFirst({ where: { name } });
@@ -108,30 +119,47 @@ async function assertRoleHasPermissions(roleName: string, requiredPermissions: s
 
 async function main() {
     const created: Array<{ role: string; email: string }> = [];
-    for (const spec of [ADMIN, AGENT, CUSTOMER]) {
+    for (const spec of [ADMIN, AGENT, CUSTOMER, CUSTOMER_TWO]) {
         const user = await ensureUser(spec);
         created.push({ role: spec.roleName, email: user.email });
-        if (spec === CUSTOMER) {
+        if (spec === CUSTOMER || spec === CUSTOMER_TWO) {
             await prisma.customerProfile.upsert({
                 where: { userId: user.id },
                 update: {
                     firstName: 'E2E',
-                    lastName: 'Customer',
+                    lastName: spec === CUSTOMER ? 'Customer' : 'Customer Two',
                     customerNo: `E2E-${user.id}`,
                     companyName: 'E2E Test Company',
-                    phoneNumber: CUSTOMER_PHONE,
+                    phoneNumber: spec === CUSTOMER ? CUSTOMER_PHONE : '905550001122',
+                    contractStatus: 'ACTIVE',
                 },
                 create: {
                     userId: user.id,
                     firstName: 'E2E',
-                    lastName: 'Customer',
+                    lastName: spec === CUSTOMER ? 'Customer' : 'Customer Two',
                     customerNo: `E2E-${user.id}`,
                     companyName: 'E2E Test Company',
-                    phoneNumber: CUSTOMER_PHONE,
+                    phoneNumber: spec === CUSTOMER ? CUSTOMER_PHONE : '905550001122',
+                    contractStatus: 'ACTIVE',
                 },
             });
         }
     }
+
+    const e2eAccount = await prisma.crmAccount.upsert({
+        where: { externalAccountId: 'e2e-pii-masking-account' },
+        update: { name: 'E2E PII Masking Account', deletedAt: null },
+        create: {
+            externalAccountId: 'e2e-pii-masking-account',
+            name: 'E2E PII Masking Account',
+            crmVerified: true,
+        },
+    });
+    const primaryCustomer = await prisma.user.findUniqueOrThrow({ where: { email: CUSTOMER.email } });
+    await prisma.customerProfile.update({
+        where: { userId: primaryCustomer.id },
+        data: { accountId: e2eAccount.id },
+    });
 
     // The admin wildcard exists only for the synthetic user in an isolated _e2e database.
     await ensurePermissionGrant('ADMIN', '*');
@@ -140,6 +168,12 @@ async function main() {
         'ticket:read', 'ticket:create', 'ticket:update', 'ticket:assign', 'ticket:close', 'ticket:escalate',
     ]);
     await assertRoleHasPermissions('CUSTOMER', ['kb:read', 'ticket:create', 'ticket:read', 'ticket:update']);
+
+    await prisma.setting.upsert({
+        where: { key: 'SYSTEM_REQUIREMENTS' },
+        update: { value: SYSTEM_REQUIREMENTS_FIXTURE, isSecret: false },
+        create: { key: 'SYSTEM_REQUIREMENTS', value: SYSTEM_REQUIREMENTS_FIXTURE, isSecret: false },
+    });
 
     console.log('\nE2E test users seeded:');
     for (const u of created) {

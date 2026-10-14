@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { TEST_USERS } from './helpers/auth';
 
+// These diagnostics exercise the login boundary itself. They must not inherit
+// the chromium project's persisted admin session or /login redirects before
+// the form can be exercised.
+test.use({ storageState: { cookies: [], origins: [] } });
+
 test.describe('Full System Diagnostic E2E Test', () => {
 
     test('1. System Boot & Landing Page', async ({ page }) => {
@@ -36,8 +41,10 @@ test.describe('Full System Diagnostic E2E Test', () => {
         await page.waitForURL('**/dashboard', { timeout: 120000 });
         expect(page.url()).toContain('/dashboard');
 
-        // Wait for UI to mount
-        await expect(page.locator('text=Bilet Kuyruğu').first()).toBeVisible({ timeout: 20000 });
+        // Verify the authenticated admin dashboard itself mounted. The legacy
+        // "Bilet Kuyruğu" label was removed when the dashboard became the
+        // operations control center, so assert the current semantic heading.
+        await expect(page.getByRole('heading', { name: 'Kontrol Merkezi' })).toBeVisible({ timeout: 20000 });
     });
 
     test('3. New Customer Registration & Ticket Creation Flow', async ({ browser }) => {
@@ -82,9 +89,9 @@ test.describe('Full System Diagnostic E2E Test', () => {
         await page.getByTestId('login-submit').click({ force: true });
         await page.waitForURL('**/dashboard', { timeout: 120000 });
 
-        // Check Ticket Queue page
+        // Check Ticket Queue navigation
         await page.goto('/tr/dashboard');
-        await expect(page.locator('text=Bilet')).toBeVisible();
+        await expect(page.getByRole('link', { name: 'Destek Talepleri' })).toBeVisible();
 
         // Check Settings Page
         await page.goto('/tr/admin/settings');

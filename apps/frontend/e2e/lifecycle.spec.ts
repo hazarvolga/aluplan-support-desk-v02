@@ -15,9 +15,18 @@ import { TEST_USERS } from './helpers/auth';
 
 const BASE_API = 'http://localhost:4000/api/v1';
 
-async function apiPost(url: string, body: any, token?: string) {
+// This scenario exercises an explicit customer login and must not inherit the
+// chromium project's persisted admin session.
+test.use({ storageState: { cookies: [], origins: [] } });
+
+async function apiPost(url: string, body: any, token?: string, csrfToken?: string) {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (csrfToken) {
+        headers.Cookie = `XSRF-TOKEN=${encodeURIComponent(csrfToken)}`;
+        headers['X-XSRF-TOKEN'] = csrfToken;
+        headers['X-Requested-With'] = 'XMLHttpRequest';
+    }
     const res = await fetch(`${BASE_API}${url}`, {
         method: 'POST',
         headers,
@@ -28,21 +37,47 @@ async function apiPost(url: string, body: any, token?: string) {
         throw new Error(`API POST ${url} failed (${res.status}): ${err}`);
     }
     const payload = await res.json();
+    const setCookie = res.headers.get('set-cookie');
+    const csrfMatch = setCookie?.match(/(?:^|[,;]\s*)XSRF-TOKEN=([^;,]+)/);
     return url === '/auth/login'
-        ? { ...payload, access_token: extractAccessTokenFromSetCookie(res.headers.get('set-cookie')) }
+        ? {
+            ...payload,
+            access_token: extractAccessTokenFromSetCookie(setCookie),
+            csrf_token: csrfMatch ? decodeURIComponent(csrfMatch[1]) : undefined,
+        }
         : payload;
 }
 
-async function apiPatch(url: string, token: string) {
+async function apiPatch(url: string, token: string, csrfToken: string) {
     const res = await fetch(`${BASE_API}${url}`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Cookie: `XSRF-TOKEN=${encodeURIComponent(csrfToken)}`,
+            'X-XSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+        }
     });
     if (!res.ok) {
         const err = await res.text();
         throw new Error(`API PATCH ${url} failed (${res.status}): ${err}`);
     }
     return res.json();
+}
+
+async function apiPostMessage(url: string, body: unknown, token: string, csrfToken: string) {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            return await apiPost(url, body, token, csrfToken);
+        } catch (error) {
+            lastError = error;
+            if (!(error instanceof Error) || !error.message.includes('failed (409)') || attempt === 3) throw error;
+            await new Promise(resolve => setTimeout(resolve, 150 * attempt));
+        }
+    }
+    throw lastError;
 }
 
 test.describe('Ticket Lifecycle Orchestration', () => {
@@ -57,21 +92,22 @@ test.describe('Ticket Lifecycle Orchestration', () => {
         const customerAuth = await apiPost('/auth/login', { email: customerEmail, password: customerPassword });
         const customerToken = customerAuth.access_token;
         expect(customerToken).toBeTruthy();
+        expect(customerAuth.csrf_token).toBeTruthy();
         console.log('✅ Customer authenticated');
 
         const ticket = await apiPost('/tickets', {
             subject,
             description: 'E2E Lifecycle Test: Ticket oluşturuldu.',
             priority: 'HIGH',
-        }, customerToken);
+        }, customerToken, customerAuth.csrf_token);
         const ticketId = ticket.id;
         expect(ticketId).toBeTruthy();
         console.log('✅ Ticket created:', ticketId);
 
-        await apiPost(`/tickets/${ticketId}/messages`, {
+        await apiPostMessage(`/tickets/${ticketId}/messages`, {
             message: 'Musteri ek mesaji: sorun devam ediyor.',
             isInternal: false,
-        }, customerToken);
+        }, customerToken, customerAuth.csrf_token);
         console.log('✅ Customer follow-up message posted');
 
         // ── SETUP: Admin replies & sets PENDING_CUSTOMER_REVIEW ───────────
@@ -79,21 +115,22 @@ test.describe('Ticket Lifecycle Orchestration', () => {
         const adminAuth = await apiPost('/auth/login', { email: adminEmail, password: adminPassword });
         const adminToken = adminAuth.access_token;
         expect(adminToken).toBeTruthy();
+        expect(adminAuth.csrf_token).toBeTruthy();
         console.log('✅ Admin authenticated');
 
         const adminReplyText = 'Admin API Reply 12345 system updated resolved';
-        await apiPost(`/tickets/${ticketId}/messages`, {
+        await apiPostMessage(`/tickets/${ticketId}/messages`, {
             message: adminReplyText,
             isInternal: false,
-        }, adminToken);
+        }, adminToken, adminAuth.csrf_token);
         console.log('✅ Admin reply posted');
 
         // State machine: NEW → OPEN (first)
-        await apiPatch(`/tickets/${ticketId}/status/OPEN`, adminToken);
+        await apiPatch(`/tickets/${ticketId}/status/OPEN`, adminToken, adminAuth.csrf_token);
         console.log('✅ Ticket status set to OPEN');
 
         // Transition ticket to PENDING_CUSTOMER_REVIEW so the customer CSAT block appears
-        await apiPatch(`/tickets/${ticketId}/status/PENDING_CUSTOMER_REVIEW`, adminToken);
+        await apiPatch(`/tickets/${ticketId}/status/PENDING_CUSTOMER_REVIEW`, adminToken, adminAuth.csrf_token);
         console.log('✅ Ticket status set to PENDING_CUSTOMER_REVIEW');
 
         // ── UI PHASE: Customer logs in and completes CSAT + close ─────────
@@ -105,6 +142,7 @@ test.describe('Ticket Lifecycle Orchestration', () => {
         await page.getByTestId('login-submit').click();
 
         await page.waitForURL(/.*\/(my-tickets|dashboard)/, { timeout: 45000 });
+        await expect(page.getByRole('link', { name: 'Destek Taleplerim' })).toBeVisible();
         console.log('✅ Customer UI login. URL:', page.url());
 
         // Navigate directly to ticket detail page

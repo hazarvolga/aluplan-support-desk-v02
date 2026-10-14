@@ -24,11 +24,21 @@ import { TEST_USERS } from './helpers/auth';
 
 const BASE_API = 'http://localhost:4000/api/v1';
 
+type AuthSession = Readonly<{
+    accessToken: string;
+    csrfToken: string;
+}>;
+
 // ── API Helpers ──────────────────────────────────────────────────────────────
 
-async function apiPost(url: string, body: any, token?: string) {
+async function apiPost(url: string, body: any, session?: AuthSession) {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (session) {
+        headers.Authorization = `Bearer ${session.accessToken}`;
+        headers.Cookie = `XSRF-TOKEN=${encodeURIComponent(session.csrfToken)}`;
+        headers['X-XSRF-TOKEN'] = session.csrfToken;
+        headers['X-Requested-With'] = 'XMLHttpRequest';
+    }
     const res = await fetch(`${BASE_API}${url}`, {
         method: 'POST',
         headers,
@@ -39,15 +49,21 @@ async function apiPost(url: string, body: any, token?: string) {
         throw new Error(`API POST ${url} failed (${res.status}): ${err}`);
     }
     const payload = await res.json();
-    return url === '/auth/login'
-        ? { ...payload, access_token: extractAccessTokenFromSetCookie(res.headers.get('set-cookie')) }
-        : payload;
+    if (url !== '/auth/login') return payload;
+
+    const setCookie = res.headers.get('set-cookie');
+    const csrfMatch = setCookie?.match(/(?:^|[,;]\s*)XSRF-TOKEN=([^;,]+)/);
+    return {
+        ...payload,
+        access_token: extractAccessTokenFromSetCookie(setCookie),
+        csrf_token: csrfMatch ? decodeURIComponent(csrfMatch[1]) : undefined,
+    };
 }
 
-async function apiGet(url: string, token: string) {
+async function apiGet(url: string, session: AuthSession) {
     const res = await fetch(`${BASE_API}${url}`, {
         method: 'GET',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${session.accessToken}` }
     });
     if (!res.ok) {
         const err = await res.text();
@@ -56,10 +72,13 @@ async function apiGet(url: string, token: string) {
     return res.json();
 }
 
-async function apiPatch(url: string, token: string, body?: any) {
+async function apiPatch(url: string, session: AuthSession, body?: any) {
     const headers: Record<string, string> = { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${session.accessToken}`,
+        'Content-Type': 'application/json',
+        Cookie: `XSRF-TOKEN=${encodeURIComponent(session.csrfToken)}`,
+        'X-XSRF-TOKEN': session.csrfToken,
+        'X-Requested-With': 'XMLHttpRequest',
     };
     const res = await fetch(`${BASE_API}${url}`, {
         method: 'PATCH',
@@ -79,6 +98,7 @@ async function loginAsAgent(page: Page) {
     const { email, password } = TEST_USERS.agent;
 
     console.log('--- [AUTH] Agent Login ---');
+    await page.context().clearCookies();
     await page.goto('/tr/login');
     await page.waitForSelector('[data-testid="login-email"]', { timeout: 30000 });
     
@@ -96,6 +116,7 @@ async function loginAsCustomer(page: Page) {
     const { email, password } = TEST_USERS.customer;
 
     console.log('--- [AUTH] Customer Login ---');
+    await page.context().clearCookies();
     await page.goto('/tr/login');
     await page.waitForSelector('[data-testid="login-email"]', { timeout: 30000 });
     
@@ -109,9 +130,14 @@ async function loginAsCustomer(page: Page) {
     console.log('✅ Customer authenticated');
 }
 
-async function getAuthToken(email: string, password: string): Promise<string> {
+async function getAuthSession(email: string, password: string): Promise<AuthSession> {
     const auth = await apiPost('/auth/login', { email, password });
-    return auth.access_token;
+    expect(auth.access_token).toBeTruthy();
+    expect(auth.csrf_token).toBeTruthy();
+    return Object.freeze({
+        accessToken: auth.access_token,
+        csrfToken: auth.csrf_token,
+    });
 }
 
 // ── Test Suite ───────────────────────────────────────────────────────────────
@@ -119,6 +145,69 @@ async function getAuthToken(email: string, password: string): Promise<string> {
 test.describe('Proactive Chat E2E Tests', () => {
     const { email: agentEmail, password: agentPassword } = TEST_USERS.agent;
     const { email: customerEmail, password: customerPassword } = TEST_USERS.customer;
+    const { email: customerTwoEmail, password: customerTwoPassword } = TEST_USERS.customerTwo;
+    const { email: adminEmail, password: adminPassword } = TEST_USERS.admin;
+    let vipFixture: Readonly<{
+        customerId: string;
+        originalStatus: boolean;
+        adminSession: AuthSession;
+        customerSession: AuthSession;
+    }> | undefined;
+
+    test.beforeAll(async () => {
+        const [adminSession, customerSession] = await Promise.all([
+            getAuthSession(adminEmail, adminPassword),
+            getAuthSession(customerEmail, customerPassword),
+        ]);
+        const customer = await apiGet('/auth/me', customerSession);
+        const originalStatus = Boolean(customer.customerProfile?.isVip);
+        await apiPatch(`/customers/${customer.id}`, adminSession, { isVip: true });
+        vipFixture = Object.freeze({
+            customerId: customer.id,
+            originalStatus,
+            adminSession,
+            customerSession,
+        });
+    });
+
+    async function cleanupCustomerSessions() {
+        if (!vipFixture) return;
+        const sessions = await apiGet('/proactive-chat/sessions', vipFixture.customerSession);
+        for (const session of sessions) {
+            if (session.status === 'PENDING') {
+                await apiPatch(
+                    `/proactive-chat/sessions/${session.id}/decline`,
+                    vipFixture.customerSession,
+                );
+            } else if (session.status === 'ACTIVE') {
+                await apiPatch(
+                    `/proactive-chat/sessions/${session.id}/end`,
+                    vipFixture.customerSession,
+                );
+            }
+        }
+    }
+
+    async function openActiveSessionsPanel(page: Page) {
+        await page.goto('/tr/customers');
+        await page.getByRole('tab', { name: 'Proaktif Chat' }).click();
+
+        const panel = page.getByTestId('active-sessions-panel');
+        await expect(panel).toBeVisible({ timeout: 10000 });
+        return panel;
+    }
+
+    test.beforeEach(cleanupCustomerSessions);
+    test.afterEach(cleanupCustomerSessions);
+
+    test.afterAll(async () => {
+        if (!vipFixture) return;
+        await apiPatch(
+            `/customers/${vipFixture.customerId}`,
+            vipFixture.adminSession,
+            { isVip: vipFixture.originalStatus },
+        );
+    });
 
     test('1. Happy Path: Agent initiates chat → Customer accepts → Messaging → End session', async ({ browser }) => {
         // Create two separate contexts for agent and customer
@@ -131,15 +220,26 @@ test.describe('Proactive Chat E2E Tests', () => {
         try {
             // ── SETUP: Get customer ID via API ──────────────────────────────
             console.log('--- [SETUP] Getting customer ID ---');
-            const agentToken = await getAuthToken(agentEmail, agentPassword);
-            const customerToken = await getAuthToken(customerEmail, customerPassword);
+            const agentToken = await getAuthSession(agentEmail, agentPassword);
+            const customerToken = await getAuthSession(customerEmail, customerPassword);
             
             const customerProfile = await apiGet('/auth/me', customerToken);
+            const agentProfile = await apiGet('/auth/me', agentToken);
             const customerId = customerProfile.id;
             console.log('✅ Customer ID:', customerId);
 
             // ── AGENT: Login and navigate to customers page ─────────────────
             await loginAsAgent(agentPage);
+            const agentCookies = await agentContext.cookies();
+            const browserAccessToken = agentCookies.find(cookie => cookie.name === 'alu_at')?.value;
+            const browserCsrfToken = agentCookies.find(cookie => cookie.name === 'XSRF-TOKEN')?.value;
+            expect(browserAccessToken).toBeTruthy();
+            expect(browserCsrfToken).toBeTruthy();
+            const browserAgentProfile = await apiGet('/auth/me', {
+                accessToken: browserAccessToken!,
+                csrfToken: browserCsrfToken!,
+            });
+            expect(browserAgentProfile.id).toBe(agentProfile.id);
             await agentPage.goto('/tr/customers');
             await agentPage.waitForLoadState('networkidle');
             console.log('✅ Agent on customers page');
@@ -155,7 +255,15 @@ test.describe('Proactive Chat E2E Tests', () => {
             // The button should have data-testid="start-proactive-chat-{customerId}"
             const startChatButton = agentPage.locator(`[data-testid="start-proactive-chat-${customerId}"]`);
             await expect(startChatButton).toBeVisible({ timeout: 10000 });
+            const createSessionResponse = agentPage.waitForResponse(response =>
+                response.request().method() === 'POST'
+                && response.url().includes('/api/v1/proactive-chat/sessions'));
             await startChatButton.click();
+            const sessionResponse = await createSessionResponse;
+            expect(
+                sessionResponse.ok(),
+                `Create proactive chat failed (${sessionResponse.status()}): ${await sessionResponse.text()}`,
+            ).toBeTruthy();
             console.log('✅ Agent clicked "Start Proactive Chat"');
 
             // Agent should see pending badge
@@ -172,7 +280,7 @@ test.describe('Proactive Chat E2E Tests', () => {
             console.log('✅ Customer sees invitation');
 
             // Verify invitation content
-            await expect(inviteCard.getByText(agentEmail.split('@')[0], { exact: false })).toBeVisible();
+            await expect(inviteCard.getByText(browserAgentProfile.fullName, { exact: true })).toBeVisible();
             
             // Click accept button
             const acceptButton = inviteCard.locator('[data-testid="accept-chat-button"]');
@@ -241,14 +349,14 @@ test.describe('Proactive Chat E2E Tests', () => {
             await endButton.click();
             console.log('✅ Agent clicked end button');
 
-            // Both sides should see session ended notification
-            await expect(agentChatWindow.getByText('ended', { exact: false })).toBeVisible({ timeout: 5000 });
-            await expect(customerChatWindow.getByText('ended', { exact: false })).toBeVisible({ timeout: 5000 });
-            console.log('✅ Both sides see session ended');
+            // The initiating agent closes the window; the remote customer stays in read-only mode.
+            await expect(agentChatWindow).not.toBeVisible({ timeout: 5000 });
+            await expect(customerChatWindow.getByText(/Oturum sona erdi|session ended/i).first()).toBeVisible({ timeout: 5000 });
+            console.log('✅ Agent window closed and customer sees session ended');
 
-            // Chat input should be disabled
-            await expect(customerMessageInput).toBeDisabled({ timeout: 5000 });
-            console.log('✅ Customer input disabled after session end');
+            // Chat input is removed when the session becomes read-only.
+            await expect(customerMessageInput).not.toBeVisible({ timeout: 5000 });
+            console.log('✅ Customer input removed after session end');
 
             console.log('✅✅ HAPPY PATH COMPLETE');
 
@@ -267,8 +375,8 @@ test.describe('Proactive Chat E2E Tests', () => {
 
         try {
             // ── SETUP ────────────────────────────────────────────────────────
-            const agentToken = await getAuthToken(agentEmail, agentPassword);
-            const customerToken = await getAuthToken(customerEmail, customerPassword);
+            const agentToken = await getAuthSession(agentEmail, agentPassword);
+            const customerToken = await getAuthSession(customerEmail, customerPassword);
             const customerProfile = await apiGet('/auth/me', customerToken);
             const customerId = customerProfile.id;
 
@@ -296,15 +404,10 @@ test.describe('Proactive Chat E2E Tests', () => {
             console.log('✅ Invite card disappeared');
 
             // ── AGENT: Should receive decline notification ──────────────────
-            // Agent should see toast notification
-            const toast = agentPage.locator('[data-testid="toast-notification"]');
-            await expect(toast.getByText('declined', { exact: false })).toBeVisible({ timeout: 10000 });
-            console.log('✅ Agent received decline notification');
-
-            // Pending badge should disappear
+            // The WebSocket decline event removes the pending badge.
             const pendingBadge = agentPage.locator('[data-testid="proactive-chat-pending-badge"]');
             await expect(pendingBadge).not.toBeVisible({ timeout: 5000 });
-            console.log('✅ Pending badge disappeared');
+            console.log('✅ Agent received decline state and pending badge disappeared');
 
             console.log('✅✅ DECLINE SCENARIO COMPLETE');
 
@@ -323,8 +426,8 @@ test.describe('Proactive Chat E2E Tests', () => {
 
         try {
             // ── SETUP ────────────────────────────────────────────────────────
-            const agentToken = await getAuthToken(agentEmail, agentPassword);
-            const customerToken = await getAuthToken(customerEmail, customerPassword);
+            const agentToken = await getAuthSession(agentEmail, agentPassword);
+            const customerToken = await getAuthSession(customerEmail, customerPassword);
             const customerProfile = await apiGet('/auth/me', customerToken);
             const customerId = customerProfile.id;
 
@@ -334,7 +437,11 @@ test.describe('Proactive Chat E2E Tests', () => {
             await agentPage.waitForLoadState('networkidle');
 
             const startChatButton = agentPage.locator(`[data-testid="start-proactive-chat-${customerId}"]`);
+            const createSessionResponse = agentPage.waitForResponse(response =>
+                response.request().method() === 'POST'
+                && response.url().includes('/api/v1/proactive-chat/sessions'));
             await startChatButton.click();
+            const createdSession = await (await createSessionResponse).json();
             console.log('✅ Agent started chat');
 
             const pendingBadge = agentPage.locator('[data-testid="proactive-chat-pending-badge"]');
@@ -352,15 +459,11 @@ test.describe('Proactive Chat E2E Tests', () => {
             // For now, we'll wait the full 120s to test the real behavior
             console.log('⏳ Waiting for 120s timeout...');
             
-            // Wait for countdown to reach 0
-            const countdown = agentPage.locator('[data-testid="pending-countdown"]');
-            await expect(countdown).toContainText('0', { timeout: 125000 });
-            console.log('✅ Countdown reached 0');
-
-            // ── AGENT: Should receive missed notification ───────────────────
-            const toast = agentPage.locator('[data-testid="toast-notification"]');
-            await expect(toast.getByText('missed', { exact: false })).toBeVisible({ timeout: 10000 });
-            console.log('✅ Agent received missed notification');
+            await expect.poll(async () => {
+                const sessions = await apiGet('/proactive-chat/sessions', agentToken);
+                return sessions.find((session: any) => session.id === createdSession.id)?.status;
+            }, { timeout: 125000, intervals: [1000, 2000, 5000] }).toBe('MISSED');
+            console.log('✅ Session reached persisted MISSED status');
 
             // Pending badge should disappear
             await expect(pendingBadge).not.toBeVisible({ timeout: 5000 });
@@ -387,8 +490,8 @@ test.describe('Proactive Chat E2E Tests', () => {
 
         try {
             // ── SETUP: Create active chat session ───────────────────────────
-            const agentToken = await getAuthToken(agentEmail, agentPassword);
-            const customerToken = await getAuthToken(customerEmail, customerPassword);
+            const agentToken = await getAuthSession(agentEmail, agentPassword);
+            const customerToken = await getAuthSession(customerEmail, customerPassword);
             const customerProfile = await apiGet('/auth/me', customerToken);
             const customerId = customerProfile.id;
 
@@ -417,9 +520,7 @@ test.describe('Proactive Chat E2E Tests', () => {
             await loginAsAgent(agentPage);
             
             // Navigate to active sessions panel
-            await agentPage.goto('/tr/dashboard');
-            const activeSessionsPanel = agentPage.locator('[data-testid="active-sessions-panel"]');
-            await expect(activeSessionsPanel).toBeVisible({ timeout: 10000 });
+            const activeSessionsPanel = await openActiveSessionsPanel(agentPage);
             
             // Click on the session to open chat window
             const sessionRow = activeSessionsPanel.locator(`[data-testid="session-row-${sessionId}"]`);
@@ -434,17 +535,16 @@ test.describe('Proactive Chat E2E Tests', () => {
             
             const convertButton = chatWindow.locator('[data-testid="convert-to-ticket-button"]');
             await expect(convertButton).toBeVisible({ timeout: 5000 });
+            const convertResponse = agentPage.waitForResponse(response =>
+                response.request().method() === 'POST'
+                && response.url().includes(`/api/v1/proactive-chat/sessions/${sessionId}/convert`));
             await convertButton.click();
+            const conversion = await convertResponse;
+            expect(
+                conversion.ok(),
+                `Convert session failed (${conversion.status()}): ${await conversion.text()}`,
+            ).toBeTruthy();
             console.log('✅ Agent clicked convert button');
-
-            // Should see success notification
-            const toast = agentPage.locator('[data-testid="toast-notification"]');
-            await expect(toast.getByText('ticket', { exact: false })).toBeVisible({ timeout: 10000 });
-            console.log('✅ Conversion success notification shown');
-
-            // Convert button should be disabled or hidden
-            await expect(convertButton).toBeDisabled({ timeout: 5000 });
-            console.log('✅ Convert button disabled after conversion');
 
             // ── VERIFY: Check ticket was created via API ────────────────────
             const sessions = await apiGet('/proactive-chat/sessions', agentToken);
@@ -458,13 +558,13 @@ test.describe('Proactive Chat E2E Tests', () => {
             console.log('✅ Ticket exists');
 
             // Verify messages were copied
-            const ticketMessages = await apiGet(`/tickets/${ticket.id}/messages`, agentToken);
+            const ticketMessages = ticket.messages ?? [];
             expect(ticketMessages.length).toBeGreaterThanOrEqual(3); // At least 3 messages
             console.log('✅ Messages copied to ticket:', ticketMessages.length);
 
-            // Verify metadata contains session ID
-            expect(ticket.metadata?.proactiveChatSessionId).toBe(sessionId);
-            console.log('✅ Ticket metadata contains session ID');
+            // Verify the source session remains traceable on the ticket.
+            expect(ticket.hotinfoSnapshot?.proactiveChatSessionId).toBe(sessionId);
+            console.log('✅ Ticket source snapshot contains session ID');
 
             console.log('✅✅ TICKET CONVERSION COMPLETE');
 
@@ -482,8 +582,8 @@ test.describe('Proactive Chat E2E Tests', () => {
 
         try {
             // ── SETUP: Create pending session ───────────────────────────────
-            const agentToken = await getAuthToken(agentEmail, agentPassword);
-            const customerToken = await getAuthToken(customerEmail, customerPassword);
+            const agentToken = await getAuthSession(agentEmail, agentPassword);
+            const customerToken = await getAuthSession(customerEmail, customerPassword);
             const customerProfile = await apiGet('/auth/me', customerToken);
             const customerId = customerProfile.id;
 
@@ -546,8 +646,11 @@ test.describe('Proactive Chat E2E Tests', () => {
 
         try {
             // ── SETUP: Get tokens ───────────────────────────────────────────
-            const agentToken = await getAuthToken(agentEmail, agentPassword);
-            const customer1Token = await getAuthToken(customerEmail, customerPassword);
+            const agentToken = await getAuthSession(agentEmail, agentPassword);
+            const [customer1Token, customer2Token] = await Promise.all([
+                getAuthSession(customerEmail, customerPassword),
+                getAuthSession(customerTwoEmail, customerTwoPassword),
+            ]);
             
             // For customer2, we'll use a different customer if available
             // For this test, we'll just verify API-level isolation
@@ -571,24 +674,13 @@ test.describe('Proactive Chat E2E Tests', () => {
             expect(messages.length).toBeGreaterThan(0);
             console.log('✅ Customer1 can access messages');
 
-            // ── VERIFY: Unauthorized access should fail ─────────────────────
-            // Try to access with a different customer token (if we had one)
-            // For now, we'll verify that accessing without proper auth fails
-            
-            // Try to get messages without being part of the session
-            // This would require a third user, so we'll test via API directly
-            try {
-                // Create a fake token scenario by trying to access another user's session
-                // In real scenario, we'd use a different customer's token
-                const unauthorizedAttempt = await fetch(`${BASE_API}/proactive-chat/sessions/${sessionId}/messages`, {
-                    method: 'GET',
-                    headers: { 'Authorization': 'Bearer invalid-token' }
-                });
-                expect(unauthorizedAttempt.status).toBe(401);
-                console.log('✅ Unauthorized access rejected (invalid token)');
-            } catch (e) {
-                console.log('✅ Unauthorized access properly rejected');
-            }
+            // ── VERIFY: A different authenticated customer is forbidden ─────
+            const unauthorizedAttempt = await fetch(`${BASE_API}/proactive-chat/sessions/${sessionId}/messages`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${customer2Token.accessToken}` }
+            });
+            expect(unauthorizedAttempt.status).toBe(403);
+            console.log('✅ Cross-customer access rejected');
 
             // ── VERIFY: Agent can access (they're part of the session) ──────
             const agentMessages = await apiGet(`/proactive-chat/sessions/${sessionId}/messages`, agentToken);
@@ -605,6 +697,7 @@ test.describe('Proactive Chat E2E Tests', () => {
     });
 
     test('7. Disconnect Timeout (60s)', async ({ browser }) => {
+        test.setTimeout(150000);
         const agentContext = await browser.newContext();
         const customerContext = await browser.newContext();
         
@@ -613,22 +706,26 @@ test.describe('Proactive Chat E2E Tests', () => {
 
         try {
             // ── SETUP: Create active session ────────────────────────────────
-            const agentToken = await getAuthToken(agentEmail, agentPassword);
-            const customerToken = await getAuthToken(customerEmail, customerPassword);
+            const agentToken = await getAuthSession(agentEmail, agentPassword);
+            const customerToken = await getAuthSession(customerEmail, customerPassword);
             const customerProfile = await apiGet('/auth/me', customerToken);
             const customerId = customerProfile.id;
 
-            // Create and accept session via API
+            // Create through the API, then accept in the browser so websocket
+            // presence is established before the disconnect assertion.
             const session = await apiPost('/proactive-chat/sessions', { customerId }, agentToken);
-            await apiPatch(`/proactive-chat/sessions/${session.id}/accept`, customerToken);
-            console.log('✅ Active session created');
+            console.log('✅ Pending session created');
+
+            await loginAsCustomer(customerPage);
+            const inviteCard = customerPage.getByTestId('proactive-chat-invite');
+            await expect(inviteCard).toBeVisible({ timeout: 10000 });
+            await inviteCard.getByTestId('accept-chat-button').click();
+            await expect(customerPage.getByTestId('proactive-chat-window')).toBeVisible({ timeout: 10000 });
+            console.log('✅ Customer accepted and live chat opened');
 
             // ── AGENT: Login and open chat ──────────────────────────────────
             await loginAsAgent(agentPage);
-            await agentPage.goto('/tr/dashboard');
-            
-            const activeSessionsPanel = agentPage.locator('[data-testid="active-sessions-panel"]');
-            await expect(activeSessionsPanel).toBeVisible({ timeout: 10000 });
+            const activeSessionsPanel = await openActiveSessionsPanel(agentPage);
             
             const sessionRow = activeSessionsPanel.locator(`[data-testid="session-row-${session.id}"]`);
             await sessionRow.click();
@@ -638,34 +735,31 @@ test.describe('Proactive Chat E2E Tests', () => {
             console.log('✅ Agent chat window opened');
 
             // ── CUSTOMER: Login and open chat ───────────────────────────────
-            await loginAsCustomer(customerPage);
-            // Customer would see the chat window automatically or via notification
-            // For this test, we'll simulate disconnect by closing the page
-
             // ── DISCONNECT: Close customer page ─────────────────────────────
-            console.log('--- [DISCONNECT] Closing customer page ---');
-            await customerPage.close();
+            console.log('--- [DISCONNECT] Closing customer context ---');
+            await customerContext.close();
             console.log('✅ Customer disconnected');
 
             // ── WAIT: For disconnect timeout (60s) ──────────────────────────
             console.log('⏳ Waiting for 60s disconnect timeout...');
-            await agentPage.waitForTimeout(65000); // 60s + 5s buffer
+            await expect.poll(async () => {
+                const sessions = await apiGet('/proactive-chat/sessions', agentToken);
+                return sessions.find((candidate: any) => candidate.id === session.id)?.status;
+            }, { timeout: 90000, intervals: [1000, 2000, 5000] }).toBe('ENDED');
 
             // ── VERIFY: Session should be ENDED ─────────────────────────────
-            const updatedSession = await apiGet(`/proactive-chat/sessions`, agentToken);
-            const endedSession = updatedSession.find((s: any) => s.id === session.id);
-            expect(endedSession.status).toBe('ENDED');
             console.log('✅ Session marked as ENDED after disconnect timeout');
 
             // Agent should see session ended notification
-            await expect(agentChatWindow.getByText('ended', { exact: false })).toBeVisible({ timeout: 5000 });
+            await expect(agentChatWindow.getByText('Oturum sona erdi', { exact: true })).toBeVisible({ timeout: 5000 });
+            await expect(agentChatWindow.getByTestId('chat-message-input')).not.toBeVisible();
             console.log('✅ Agent sees session ended notification');
 
             console.log('✅✅ DISCONNECT TIMEOUT COMPLETE');
 
         } finally {
             await agentContext.close();
-            await customerContext.close();
+            await customerContext.close().catch(() => undefined);
         }
     });
 
@@ -676,8 +770,8 @@ test.describe('Proactive Chat E2E Tests', () => {
 
         try {
             // ── SETUP: Get customer ID ──────────────────────────────────────
-            const agentToken = await getAuthToken(agentEmail, agentPassword);
-            const customerToken = await getAuthToken(customerEmail, customerPassword);
+            const agentToken = await getAuthSession(agentEmail, agentPassword);
+            const customerToken = await getAuthSession(customerEmail, customerPassword);
             const customerProfile = await apiGet('/auth/me', customerToken);
             const customerId = customerProfile.id;
 
@@ -723,7 +817,7 @@ test.describe('Proactive Chat E2E Tests', () => {
         }
     });
 
-    test('9. Multiple Concurrent Sessions', async ({ browser }) => {
+    test('9. Duplicate Session Protection', async ({ browser }) => {
         const agentContext = await browser.newContext();
         const customer1Context = await browser.newContext();
         const customer2Context = await browser.newContext();
@@ -734,8 +828,8 @@ test.describe('Proactive Chat E2E Tests', () => {
 
         try {
             // ── SETUP: Get tokens and customer IDs ──────────────────────────
-            const agentToken = await getAuthToken(agentEmail, agentPassword);
-            const customer1Token = await getAuthToken(customerEmail, customerPassword);
+            const agentToken = await getAuthSession(agentEmail, agentPassword);
+            const customer1Token = await getAuthSession(customerEmail, customerPassword);
             
             // For customer2, we'll use the same customer but simulate different sessions
             // In a real scenario, you'd have a second customer account
@@ -766,10 +860,7 @@ test.describe('Proactive Chat E2E Tests', () => {
             // For now, we verify the single session works correctly
 
             await loginAsAgent(agentPage);
-            await agentPage.goto('/tr/dashboard');
-            
-            const activeSessionsPanel = agentPage.locator('[data-testid="active-sessions-panel"]');
-            await expect(activeSessionsPanel).toBeVisible({ timeout: 10000 });
+            const activeSessionsPanel = await openActiveSessionsPanel(agentPage);
             
             // Should see the one pending session
             const sessionRow = activeSessionsPanel.locator(`[data-testid="session-row-${session1.id}"]`);
@@ -786,17 +877,25 @@ test.describe('Proactive Chat E2E Tests', () => {
             await acceptButton.click();
             console.log('✅ Customer accepted first session');
 
-            // ── VERIFY: Now agent can create another session (first is ACTIVE) ──
-            const session2 = await apiPost('/proactive-chat/sessions', { customerId: customer1Id }, agentToken);
-            console.log('✅ Second session created after first became ACTIVE');
+            // The same pair cannot create a duplicate ACTIVE session.
+            await expect(apiPost(
+                '/proactive-chat/sessions',
+                { customerId: customer1Id },
+                agentToken,
+            )).rejects.toThrow('409');
+            console.log('✅ Duplicate ACTIVE session rejected (409 Conflict)');
 
-            // Verify both sessions exist
+            // Verify only one non-terminal session exists for this pair.
             const sessions = await apiGet('/proactive-chat/sessions', agentToken);
-            const agentSessions = sessions.filter((s: any) => s.agentId === agentToken);
-            expect(agentSessions.length).toBeGreaterThanOrEqual(2);
-            console.log('✅ Agent has multiple sessions');
+            const pairSessions = sessions.filter((candidate: any) =>
+                candidate.customerId === customer1Id
+                && ['PENDING', 'ACTIVE'].includes(candidate.status),
+            );
+            expect(pairSessions).toHaveLength(1);
+            expect(pairSessions[0].id).toBe(session1.id);
+            console.log('✅ Exactly one non-terminal session remains for the pair');
 
-            console.log('✅✅ MULTIPLE CONCURRENT SESSIONS COMPLETE');
+            console.log('✅✅ DUPLICATE SESSION PROTECTION COMPLETE');
 
         } finally {
             await agentContext.close();

@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../../src/prisma/prisma.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { ProductsService } from '../../src/products/products.service';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 describe('ProductsService archive concurrency (Integration)', () => {
     let testModule: TestingModule;
@@ -12,7 +13,11 @@ describe('ProductsService archive concurrency (Integration)', () => {
 
     beforeAll(async () => {
         testModule = await Test.createTestingModule({
-            imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule],
+            imports: [
+                ConfigModule.forRoot({ isGlobal: true }),
+                EventEmitterModule.forRoot(),
+                PrismaModule,
+            ],
             providers: [ProductsService],
         }).compile();
         service = testModule.get(ProductsService);
@@ -28,7 +33,9 @@ describe('ProductsService archive concurrency (Integration)', () => {
     });
 
     afterAll(async () => {
-        await testModule.close();
+        if (testModule) {
+            await testModule.close();
+        }
     });
 
     it('never leaves an active category under a concurrently archived product', async () => {
