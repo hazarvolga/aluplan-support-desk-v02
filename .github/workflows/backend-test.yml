@@ -63,6 +63,15 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm --filter @aluplan/database db:generate
 
+      - name: Generate disposable test credentials
+        run: |
+          node - <<'NODE' >> "$GITHUB_ENV"
+          const { randomBytes } = require('node:crypto');
+          for (const name of ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'ENCRYPTION_KEY']) {
+            process.stdout.write(`${name}=${randomBytes(32).toString('hex')}\n`);
+          }
+          NODE
+
       - name: Lint
         run: pnpm --filter @aluplan/backend lint
 
@@ -71,8 +80,6 @@ jobs:
           NODE_ENV: test
           DATABASE_URL: postgresql://postgres:testpassword@localhost:5433/aluplan_test?schema=public
           REDIS_URL: redis://localhost:6380
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
           NODE_OPTIONS: "--experimental-vm-modules --no-warnings"
         run: pnpm --filter @aluplan/backend test:cov
 
@@ -81,8 +88,6 @@ jobs:
           NODE_ENV: test
           DATABASE_URL: postgresql://postgres:testpassword@localhost:5433/aluplan_test?schema=public
           REDIS_URL: redis://localhost:6380
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
           NODE_OPTIONS: "--experimental-vm-modules --no-warnings"
         run: |
           pnpm --filter @aluplan/backend exec jest \

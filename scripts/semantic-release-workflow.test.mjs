@@ -7,6 +7,10 @@ const workflowUrl = new URL(
   import.meta.url,
 );
 const ciWorkflowUrl = new URL("../.github/workflows/ci.yml", import.meta.url);
+const backendWorkflowUrl = new URL(
+  "../.github/workflows/backend-test.yml",
+  import.meta.url,
+);
 const packageUrl = new URL("../package.json", import.meta.url);
 
 test("semantic release has the repository permissions required to tag and report failures", async () => {
@@ -70,4 +74,13 @@ test("release-unlocking CI fails closed on staging and high-severity image findi
     source,
     /^  deploy-staging:\s*\n(?:.*\n)*?    needs: \[[^\]]*\bcustomer-security-rehearsal\b[^\]]*\]/m,
   );
+});
+
+test("backend CI uses disposable authentication credentials and honest coverage labels", async () => {
+  const source = await readFile(backendWorkflowUrl, "utf8");
+
+  assert.match(source, /Generate disposable test credentials/);
+  assert.doesNotMatch(source, /secrets\.JWT_SECRET/);
+  assert.doesNotMatch(source, /secrets\.JWT_REFRESH_SECRET/);
+  assert.doesNotMatch(source, /≥80%/);
 });
