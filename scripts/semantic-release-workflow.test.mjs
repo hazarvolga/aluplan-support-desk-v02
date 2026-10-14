@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 
 const workflowUrl = new URL(
@@ -12,6 +12,7 @@ const backendWorkflowUrl = new URL(
   import.meta.url,
 );
 const packageUrl = new URL("../package.json", import.meta.url);
+const workflowsUrl = new URL("../.github/workflows/", import.meta.url);
 
 test("semantic release has the repository permissions required to tag and report failures", async () => {
   const source = await readFile(workflowUrl, "utf8");
@@ -68,6 +69,10 @@ test("release-unlocking CI fails closed on staging and high-severity image findi
   assert.match(source, /^  customer-security-rehearsal:\s*$/m);
   assert.match(
     source,
+    /NODE_OPTIONS: ["'][^"']*--experimental-vm-modules[^"']*["']/,
+  );
+  assert.match(
+    source,
     /pnpm --filter @aluplan\/backend exec jest --config \.\/test\/jest-security-rehearsal\.json/,
   );
   assert.match(
@@ -83,4 +88,23 @@ test("backend CI uses disposable authentication credentials and honest coverage 
   assert.doesNotMatch(source, /secrets\.JWT_SECRET/);
   assert.doesNotMatch(source, /secrets\.JWT_REFRESH_SECRET/);
   assert.doesNotMatch(source, /≥80%/);
+});
+
+test("workflows pin every third-party action to an immutable commit", async () => {
+  const workflowFiles = (await readdir(workflowsUrl)).filter((name) =>
+    /\.ya?ml$/.test(name),
+  );
+  const sources = await Promise.all(
+    workflowFiles.map((name) => readFile(new URL(name, workflowsUrl), "utf8")),
+  );
+
+  for (const source of sources) {
+    const actionRefs = [...source.matchAll(/^\s*-?\s*uses:\s*([^\s#]+)/gm)].map(
+      ([, actionRef]) => actionRef,
+    );
+    assert.ok(actionRefs.length > 0);
+    for (const actionRef of actionRefs) {
+      assert.match(actionRef, /@[0-9a-f]{40}$/);
+    }
+  }
 });
