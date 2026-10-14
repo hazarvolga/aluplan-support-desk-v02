@@ -20,7 +20,7 @@ export const RAG_CONFIG = {
     CACHE:      { DEFAULT_TTL: 3600, VERSION: 'v9' },
     RERANK:     { FACTORS: { ARTICLE: 1.30, FAQ: 1.35, DOCUMENT: 1.15, URL: 0.60, TICKET: 0.50 }, WEIGHTS: { SEMANTIC: 0.70, RECENCY: 0.15, RATING: 0.15 }, RECENCY_DECAY_DAYS: 30 },
     SEARCH:     { DEFAULT_LIMIT: 5, PRE_RERANK_LIMIT: 20 },
-    EMBEDDING:  { DEFAULT_VERSION: 'v1', CLEANUP_DELAY_MS: 24*60*60*1000, MIGRATION_BATCH_SIZE: 50, GEMINI_DIM: 3072, OPENAI_DIM: 1536, OLLAMA_DIM: 768 },
+    EMBEDDING:  { DEFAULT_VERSION: 'v1', CLEANUP_DELAY_MS: 24*60*60*1000, MIGRATION_BATCH_SIZE: 50, GEMINI_DIM: 3072, OPENAI_DIM: 1536 },
 } as const;
 ```
 
@@ -63,7 +63,6 @@ This is **never a hot swap.**
 |---|---|---|
 | Gemini | `3072` | **Active embedding production** (`v2_2 / 3072`) |
 | OpenAI | `1536` | **Chat fallback only** (ADR-006 forbids embedding fallback) |
-| Ollama | `768` | Local fallback |
 
 pgvector HNSW supports up to ~2000 dim, so the Gemini path uses **exact search** when dim exceeds HNSW compatibility (ADR-004). `RagMaintenanceService` handles index recreation when the active dim changes.
 

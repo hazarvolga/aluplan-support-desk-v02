@@ -8,7 +8,6 @@ Read this when proposing infrastructure changes, deployment strategies, security
 |---|---|---|
 | **Postgres 16** | pgvector enabled, `pg_stat_statements`, `log_min_duration_statement=500` | Single instance (single-tenant) |
 | **Redis** | AOF persistence, LRU eviction 256MB | BullMQ, semantic cache, Socket.io adapter, throttle |
-| **Ollama** | Optional local LLM | Fallback provider — not primary |
 | **Coolify** | Container orchestration | Target deployment platform |
 | **Cloudflare** | DNS + proxy | CDN, DDoS mitigation |
 
@@ -125,7 +124,7 @@ Cost per call recorded on `AiInteraction.estimatedCost @db.Decimal(10, 6)`.
 
 ## 9. Provider resilience
 
-Chat fallback: OpenAI → Groq → Ollama, via `opossum` circuit breaker (`ai-provider-router.service.ts`).
+Chat routing: Gemini primary → OpenAI/Groq fallback, via `opossum` circuit breaker (`ai-provider-router.service.ts`).
 
 Embedding: **no fallback** (ADR-006). Gemini quota exhaustion pauses ingestion.
 
