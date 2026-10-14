@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../utils/crypto.service';
@@ -30,6 +30,7 @@ export class SettingsService {
     ) { }
 
     async upsert(dto: UpsertSettingDto, userId?: string) {
+        this.assertProviderIsSupported(dto.key, dto.value);
         if (isEmbeddingModelSetting(dto.key) && dto.value !== '********') {
             assertEmbeddingMigrationApproved();
         }
@@ -153,14 +154,6 @@ export class SettingsService {
         if (key === 'ai.chat_provider' || key === 'ai.embed_provider' || key.startsWith('ai.specialized.')) {
             const providerToValidate = value;
 
-            if (providerToValidate === 'ollama') {
-                const url = await getVal('ai.ollama.url');
-                const chatModel = await getVal('ai.ollama.chat_model');
-                const embedModel = await getVal('ai.ollama.embed_model');
-                if (!url || !chatModel || !embedModel) {
-                    throw new Error(`Ollama yapılandırması eksik (URL, Chat Model veya Embed Model).`);
-                }
-            }
             if (providerToValidate === 'openai') {
                 const apiKey = await getVal('ai.openai.api_key');
                 const chatModel = await getVal('ai.openai.chat_model');
@@ -317,6 +310,8 @@ export class SettingsService {
     async bulkUpsert(dto: BulkUpsertSettingDto, userId?: string) {
         const settings = this.withLegacyAiProviderSync(dto.settings);
 
+        for (const item of settings) this.assertProviderIsSupported(item.key, item.value);
+
         if (settings.some((item) => isEmbeddingModelSetting(item.key) && item.value !== '********')) {
             assertEmbeddingMigrationApproved();
         }
@@ -404,6 +399,18 @@ export class SettingsService {
             ...settings,
             { key: 'ai.active_provider', value: chatProvider, isSecret: false } as T,
         ];
+    }
+
+    private assertProviderIsSupported(key: string, value: string): void {
+        const isProviderSelection = key === 'ai.chat_provider'
+            || key === 'ai.embed_provider'
+            || key === 'ai.active_provider'
+            || key === 'ai.fallback_provider'
+            || key === 'ai.embed_fallback_provider'
+            || key.startsWith('ai.specialized.');
+        if (isProviderSelection && value.trim().toLowerCase() === 'ollama') {
+            throw new BadRequestException('Ollama sağlayıcısı artık desteklenmiyor. Desteklenen bir AI sağlayıcısı seçin.');
+        }
     }
 
     async delete(key: string) {

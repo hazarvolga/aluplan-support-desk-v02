@@ -1,6 +1,6 @@
 /**
  * Accurate token counting using js-tiktoken for OpenAI-compatible models.
- * Falls back to ceil(text.length / 4) for Groq/Ollama and unknown models.
+ * Falls back to ceil(text.length / 4) for Groq and unknown models.
  */
 import { encodingForModel, type TiktokenModel } from 'js-tiktoken';
 
@@ -41,7 +41,7 @@ export function countTokens(text: string, model?: string): number {
         }
     }
 
-    // Heuristic fallback: ~4 chars per token (suitable for Groq/Ollama/unknown)
+    // Heuristic fallback: ~4 chars per token (suitable for Groq/unknown)
     return Math.ceil(text.length / 4);
 }
 
@@ -50,7 +50,7 @@ export function countTokens(text: string, model?: string): number {
  * Mirrors AiBudgetMonitor.estimateCost() as a pure function so call
  * sites without DI access can use it.
  *
- * @param provider  "openai" | "groq" | "ollama"
+ * @param provider  "openai" | "groq" (historical records may contain removed providers)
  * @param model     Model name (e.g. "gpt-4o-mini")
  * @param inputTokens
  * @param outputTokens
@@ -69,10 +69,6 @@ const TOKEN_COSTS: Record<string, { input: number; output: number }> = {
     'groq:llama-3.1-8b-instant':        { input: 0.05,  output: 0.08  },
     'groq:mixtral-8x7b-32768':          { input: 0.24,  output: 0.24  },
     'groq:gemma2-9b-it':                { input: 0.20,  output: 0.20  },
-    // Ollama (local — no cost)
-    'ollama:bge-m3':                    { input: 0.00,  output: 0.00  },
-    'ollama:llama3':                    { input: 0.00,  output: 0.00  },
-    'ollama:mistral':                   { input: 0.00,  output: 0.00  },
 };
 
 export function estimateTokenCost(

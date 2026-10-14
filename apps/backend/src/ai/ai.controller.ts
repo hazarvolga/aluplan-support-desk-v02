@@ -1,6 +1,6 @@
 import {
     Controller, Post, Get, Body, Param, Request, Query,
-    UseGuards, HttpCode, HttpStatus, Sse, MessageEvent, NotFoundException,
+    UseGuards, HttpCode, HttpStatus, Sse, MessageEvent, NotFoundException, BadRequestException,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -9,7 +9,6 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
-import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { AiService } from './ai.service';
@@ -136,7 +135,6 @@ export class AiController {
         private readonly embeddingService: EmbeddingService,
         private readonly aiService: AiService,
         private readonly aiCopilotService: AiCopilotService,
-        private readonly ollamaService: OllamaService,
         private readonly openAiService: OpenAiService,
         private readonly genericOpenAiService: GenericOpenAiService,
         private readonly aiReportingService: AiReportingService,
@@ -415,8 +413,6 @@ export class AiController {
                 return this.geminiService.listModels(dto.apiKey);
             case 'openai':
                 return this.openAiService.listModels(dto.apiKey);
-            case 'ollama':
-                return this.ollamaService.listModels(undefined, dto.baseUrl);
             case 'groq':
             case 'generic':
             case 'lmstudio':
@@ -425,7 +421,7 @@ export class AiController {
             case 'deepseek':
                 return this.genericOpenAiService.listModels(dto.apiKey, dto.baseUrl);
             default:
-                return { chatModels: [], embedModels: [] };
+                throw new BadRequestException(`Unsupported AI provider: ${dto.provider}`);
         }
     }
 

@@ -1,6 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { SettingsService } from '../settings/settings.service';
-import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
@@ -19,7 +18,6 @@ export class AiProviderRouter {
 
     constructor(
         private readonly settings: SettingsService,
-        private readonly ollama: OllamaService,
         private readonly openai: OpenAiService,
         private readonly custom: GenericOpenAiService,
         private readonly llmapi: LlmApiService,
@@ -38,13 +36,10 @@ export class AiProviderRouter {
         
         if (['custom', 'xai', 'deepseek', 'groq', 'grok'].includes(name)) {
             const providerKey = (name === 'grok') ? 'xai' : name;
-            this.custom.setProvider(providerKey as any);
-            return this.custom;
+            return this.custom.forProvider(providerKey as 'custom' | 'xai' | 'deepseek' | 'groq');
         }
         
         if (name === 'llmapi') return this.llmapi;
-        
-        if (name === 'ollama') return this.ollama;
         
         if (name === 'gemini') return this.gemini;
         
@@ -59,14 +54,18 @@ export class AiProviderRouter {
         const chatProvider = await this.settings.getValue('ai.chat_provider');
         const legacyProvider = await this.settings.getValue('ai.active_provider');
 
-        const provider = await this.getProviderByName(chatProvider || legacyProvider);
-        if (provider) return provider;
+        const configured = chatProvider || legacyProvider;
+        if (configured) {
+            const provider = await this.getProviderByName(configured);
+            if (provider) return provider;
+            throw this.unavailable(configured);
+        }
 
         // Auto-upgrade logic for production
         if (process.env.OPENAI_API_KEY) return this.openai;
         if (process.env.GEMINI_API_KEY) return this.llmapi;
 
-        return this.ollama;
+        throw this.unavailable();
     }
 
     /**
@@ -79,18 +78,23 @@ export class AiProviderRouter {
         // Env check (Priority)
         const envProvider = process.env.EMBEDDING_PROVIDER?.toLowerCase();
         if (envProvider === 'openai') return this.openai;
-        if (envProvider === 'ollama') return this.ollama;
         if (envProvider === 'llmapi') return this.llmapi;
         if (envProvider === 'gemini') return this.gemini;
 
-        const provider = await this.getProviderByName(embedProvider || legacyProvider);
-        if (provider) return provider;
+        if (envProvider) throw this.unavailable(envProvider);
+
+        const configured = embedProvider || legacyProvider;
+        if (configured) {
+            const provider = await this.getProviderByName(configured);
+            if (provider) return provider;
+            throw this.unavailable(configured);
+        }
 
 // Auto-upgrade logic for production
         if (process.env.OPENAI_API_KEY) return this.openai;
         if (process.env.GEMINI_API_KEY) return this.llmapi;
 
-        return this.ollama;
+        throw this.unavailable();
     }
 
     /**
@@ -132,27 +136,43 @@ export class AiProviderRouter {
         if (type === 'chat') {
             const chatProvider = await this.settings.getValue('ai.chat_provider');
             const legacyProvider = await this.settings.getValue('ai.active_provider');
-            const primary = chatProvider || legacyProvider || 
+            const primary = chatProvider || legacyProvider ||
                 (process.env.OPENAI_API_KEY ? 'openai' : 
-                 process.env.GEMINI_API_KEY ? 'llmapi' : 'ollama');
-            chain.push(primary);
+                 process.env.GEMINI_API_KEY ? 'llmapi' : null);
+            if (primary) {
+                if (!await this.getProviderByName(primary)) throw this.unavailable(primary);
+                chain.push(primary);
+            }
         } else {
             const embedProvider = await this.settings.getValue('ai.embed_provider');
             const envProvider = process.env.EMBEDDING_PROVIDER?.toLowerCase();
-            const primary = embedProvider || envProvider || 
+            const primary = embedProvider || envProvider ||
                 (process.env.OPENAI_API_KEY ? 'openai' : 
-                 process.env.GEMINI_API_KEY ? 'llmapi' : 'ollama');
-            chain.push(primary);
+                 process.env.GEMINI_API_KEY ? 'llmapi' : null);
+            if (primary) {
+                if (!await this.getProviderByName(primary)) throw this.unavailable(primary);
+                chain.push(primary);
+            }
         }
 
         const fallbacks = await this.getFallbackProviders(type);
         for (const fallback of fallbacks) {
-            if (!chain.includes(fallback)) {
-                chain.push(fallback);
+            const normalizedFallback = fallback.toLowerCase();
+            if (!await this.getProviderByName(normalizedFallback)) {
+                throw this.unavailable(normalizedFallback);
+            }
+            if (!chain.includes(normalizedFallback)) {
+                chain.push(normalizedFallback);
             }
         }
 
         return chain;
+    }
+
+    private unavailable(provider?: string): ServiceUnavailableException {
+        return new ServiceUnavailableException(provider
+            ? `AI provider "${provider}" is unavailable or unsupported.`
+            : 'No supported AI provider is configured.');
     }
 
     /**

@@ -15,11 +15,12 @@ import { VisualContentService } from './visual-content.service';
 import { LearnNowCrawlRunService } from './learnnow-crawl-run.service';
 import { LearnNowCrawlProcessor } from './learnnow-crawl.processor';
 import { LearnNowRequestPacer } from './learnnow-request-pacer.service';
-import { OutboundUrlSafetyService } from './outbound-url-safety.service';
+import { OutboundHttpModule } from '../common/http/outbound-http.module';
 
 @Module({
     imports: [
         PrismaModule,
+        OutboundHttpModule,
         forwardRef(() => AiModule),
         BullModule.registerQueue({
             name: 'knowledge-sync',
@@ -35,7 +36,7 @@ import { OutboundUrlSafetyService } from './outbound-url-safety.service';
         }),
     ],
     controllers: [KnowledgePoolController],
-    providers: [KnowledgePoolService, KnowledgePoolProcessor, KnowledgePoolParserService, CrawlService, LearnNowCrawlerService, GenericWebCrawlerService, AllplanHelpCrawlerService, VisualContentService, LearnNowCrawlRunService, LearnNowCrawlProcessor, LearnNowRequestPacer, OutboundUrlSafetyService],
+    providers: [KnowledgePoolService, KnowledgePoolProcessor, KnowledgePoolParserService, CrawlService, LearnNowCrawlerService, GenericWebCrawlerService, AllplanHelpCrawlerService, VisualContentService, LearnNowCrawlRunService, LearnNowCrawlProcessor, LearnNowRequestPacer],
     exports: [KnowledgePoolService, KnowledgePoolParserService],
 })
 export class KnowledgePoolModule { }

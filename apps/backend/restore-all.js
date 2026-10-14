@@ -27,13 +27,15 @@ async function run() {
         { key: 'email.from_address', value: process.env.MAIL_FROM || 'noreply@allplan.net.tr', is_secret: false },
         { key: 'email.resend.api_key', value: process.env.RESEND_API_KEY || '', is_secret: true },
 
-        // AI (From .env)
-        { key: 'ai.active_provider', value: 'custom', is_secret: false }, // Use custom for Groq/OpenAI flow
+        // AI — Gemini is the supported default; API credentials stay in environment variables.
+        { key: 'ai.chat_provider', value: 'gemini', is_secret: false },
+        { key: 'ai.active_provider', value: 'gemini', is_secret: false },
+        { key: 'ai.embed_provider', value: 'gemini', is_secret: false },
+        { key: 'ai.gemini.chat_model', value: process.env.GEMINI_CHAT_MODEL || 'gemini-2.5-flash', is_secret: false },
+        { key: 'ai.gemini.embed_model', value: process.env.GEMINI_EMBED_MODEL || 'gemini-embedding-2', is_secret: false },
+        { key: 'ai.fallback_provider', value: 'openai', is_secret: false },
         { key: 'ai.openai.api_key', value: process.env.OPENAI_API_KEY || '', is_secret: true },
-        { key: 'ai.groq.api_key', value: process.env.GROQ_API_KEY || '', is_secret: true },
-        { key: 'ai.ollama.url', value: process.env.OLLAMA_BASE_URL || 'http://localhost:11434', is_secret: false },
-        { key: 'ai.ollama.chat_model', value: process.env.OLLAMA_CHAT_MODEL || 'llama3.2:1b', is_secret: false },
-        { key: 'ai.ollama.embed_model', value: process.env.OLLAMA_MODEL || 'nomic-embed-text', is_secret: false }
+        { key: 'ai.groq.api_key', value: process.env.GROQ_API_KEY || '', is_secret: true }
     ];
 
     for (const s of settings) {

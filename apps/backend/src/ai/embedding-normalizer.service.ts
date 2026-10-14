@@ -5,7 +5,7 @@ import { EmbeddingResult } from './interfaces/ai-provider.interface';
  * Canonical Embedding Normalizer
  *
  * Ensures vector DB consistency across different embedding providers.
- * Different providers (OpenAI, Anthropic, Ollama) produce embeddings in
+ * Different providers can produce embeddings in
  * different vector spaces. This service normalizes them to a canonical space.
  *
  * Normalization Strategies:
@@ -17,7 +17,6 @@ import { EmbeddingResult } from './interfaces/ai-provider.interface';
  *
  * Implementation Notes:
  * - OpenAI embeddings are already normalized (L2 ≈ 1.0)
- * - Ollama embeddings may need L2 normalization
  * - Future: Anthropic embedding projection matrix
  * - Dimensionality reduction handled by targetDimensions config
  */
