@@ -74,10 +74,6 @@ describe('AiBudgetMonitor', () => {
             expect(cost).toBeCloseTo((2000 * 2.50 + 1000 * 10.00) / 1_000_000, 10);
         });
 
-        it('returns 0 for ollama (free local inference)', () => {
-            expect(service.estimateCost('ollama', 'llama3', 10_000, 5_000)).toBe(0);
-        });
-
         it('returns 0 for groq:llama-3.1-8b-instant with 0 tokens', () => {
             expect(service.estimateCost('groq', 'llama-3.1-8b-instant', 0, 0)).toBe(0);
         });

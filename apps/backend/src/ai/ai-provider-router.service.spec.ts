@@ -4,7 +4,6 @@ import { AiProviderRegistry } from './ai-provider-registry.service';
 import { SettingsService } from '../settings/settings.service';
 import { RedisService } from '../redis/redis.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
@@ -22,11 +21,10 @@ describe('AiProviderRouter', () => {
     };
 
     // Mock AI provider services
-    const mockOllamaService = { getName: () => 'ollama', isAvailable: jest.fn() };
     const mockOpenAiService = { getName: () => 'openai', isAvailable: jest.fn() };
     const mockGenericOpenAiService = { 
         getName: () => 'custom', 
-        setProvider: jest.fn(),
+        forProvider: jest.fn(function () { return this; }),
         isAvailable: jest.fn() 
     };
     const mockLlmApiService = { getName: () => 'llmapi', isAvailable: jest.fn() };
@@ -56,7 +54,6 @@ describe('AiProviderRouter', () => {
                 { provide: SettingsService, useValue: mockSettingsService },
                 { provide: RedisService, useValue: mockRedisService },
                 { provide: PrismaService, useValue: mockPrismaService },
-                { provide: OllamaService, useValue: mockOllamaService },
                 { provide: OpenAiService, useValue: mockOpenAiService },
                 { provide: GenericOpenAiService, useValue: mockGenericOpenAiService },
                 { provide: LlmApiService, useValue: mockLlmApiService },
@@ -78,10 +75,6 @@ describe('AiProviderRouter', () => {
             providerId: 'groq', displayName: 'Groq', type: 'cloud',
             enabled: true, priority: 2, models: { chat: 'llama-3.3-70b' },
         });
-        registry.register('ollama', mockAiProvider as any, {
-            providerId: 'ollama', displayName: 'Ollama', type: 'self-hosted',
-            enabled: true, priority: 3, models: { chat: 'llama3.2', embed: 'nomic-embed-text' },
-        });
 
         jest.clearAllMocks();
     });
@@ -99,15 +92,12 @@ describe('AiProviderRouter', () => {
             expect(provider.getName()).toBe('openai');
         });
 
-        it('should fallback to ollama when no provider is configured', async () => {
+        it('fails explicitly when no provider is configured', async () => {
             mockSettingsService.getValue.mockResolvedValue(null);
             delete process.env.OPENAI_API_KEY;
             delete process.env.GEMINI_API_KEY;
 
-            const provider = await router.getActiveChatProvider();
-
-            expect(provider).toBeDefined();
-            expect(provider.getName()).toBe('ollama');
+            await expect(router.getActiveChatProvider()).rejects.toMatchObject({ status: 503 });
         });
 
         it('kill switch is detectable via isManualOverride', async () => {
@@ -131,14 +121,24 @@ describe('AiProviderRouter', () => {
             expect(chain).toContain('openai');
         });
 
-        it('provider chain defaults to ollama when unconfigured', async () => {
+        it('provider chain is empty when unconfigured', async () => {
             mockSettingsService.getValue.mockResolvedValue(null);
             delete process.env.OPENAI_API_KEY;
             delete process.env.GEMINI_API_KEY;
 
             const chain = await router.buildProviderChain('chat');
 
-            expect(chain).toContain('ollama');
+            expect(chain).toEqual([]);
+        });
+
+        it('fails closed when a stale Ollama fallback remains', async () => {
+            mockSettingsService.getValue.mockImplementation((key: string) => {
+                if (key === 'ai.chat_provider') return 'openai';
+                if (key === 'ai.fallback_provider') return 'ollama';
+                return null;
+            });
+
+            await expect(router.buildProviderChain('chat')).rejects.toMatchObject({ status: 503 });
         });
     });
 
@@ -156,16 +156,13 @@ describe('AiProviderRouter', () => {
             expect(provider.getName()).toBe('openai');
         });
 
-        it('should fallback to ollama when no embed provider configured', async () => {
+        it('fails explicitly when no embed provider is configured', async () => {
             mockSettingsService.getValue.mockResolvedValue(null);
             delete process.env.EMBEDDING_PROVIDER;
             delete process.env.OPENAI_API_KEY;
             delete process.env.GEMINI_API_KEY;
 
-            const provider = await router.getActiveEmbedProvider();
-
-            expect(provider).toBeDefined();
-            expect(provider.getName()).toBe('ollama');
+            await expect(router.getActiveEmbedProvider()).rejects.toMatchObject({ status: 503 });
         });
     });
 
@@ -222,6 +219,10 @@ describe('AiProviderRouter', () => {
             expect(provider).toBeNull();
         });
 
+        it('returns null for removed Ollama instead of substituting another provider', async () => {
+            await expect(router.getProviderByName('ollama')).resolves.toBeNull();
+        });
+
         it('should return null when null is passed', async () => {
             const provider = await router.getProviderByName(null);
             expect(provider).toBeNull();
@@ -242,13 +243,12 @@ describe('AiProviderRouter', () => {
             expect(provider).toBeDefined();
         });
 
-        it('should fallback to default when no setting', async () => {
+        it('fails unavailable when no chat provider can be selected', async () => {
             mockSettingsService.getValue.mockResolvedValue(null);
             mockAiProvider.isAvailable.mockResolvedValue(true);
             mockRedisService.get.mockResolvedValue(null);
 
-            const provider = await router.getActiveChatProvider();
-            expect(provider).toBeDefined();
+            await expect(router.getActiveChatProvider()).rejects.toMatchObject({ status: 503 });
         });
     });
 
@@ -265,12 +265,21 @@ describe('AiProviderRouter', () => {
             expect(provider).toBeDefined();
         });
 
-        it('should fallback to default when no setting', async () => {
+        it('fails unavailable when no embedding provider can be selected', async () => {
             mockSettingsService.getValue.mockResolvedValue(null);
             mockAiProvider.isAvailable.mockResolvedValue(true);
 
-            const provider = await router.getActiveEmbedProvider();
-            expect(provider).toBeDefined();
+            await expect(router.getActiveEmbedProvider()).rejects.toMatchObject({ status: 503 });
+        });
+
+        it('fails closed when a stale Ollama env selection remains', async () => {
+            mockSettingsService.getValue.mockResolvedValue(null);
+            process.env.EMBEDDING_PROVIDER = 'ollama';
+            try {
+                await expect(router.getActiveEmbedProvider()).rejects.toMatchObject({ status: 503 });
+            } finally {
+                delete process.env.EMBEDDING_PROVIDER;
+            }
         });
     });
 

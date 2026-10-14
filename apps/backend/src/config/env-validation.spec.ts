@@ -32,6 +32,8 @@ describe('validateEnv', () => {
             'FRONTEND_URL', 'SWAGGER_PASSWORD', 'ADMIN_BYPASS_EMAILS',
             'ALLOWED_ORIGINS', 'API_URL', 'LLMAPI_BASE_URL', 'LLMAPI_CHAT_MODEL',
             'LLMAPI_EMBED_MODEL', 'GEMINI_CHAT_MODEL', 'GEMINI_EMBED_MODEL',
+            'OLLAMA_BASE_URL', 'OLLAMA_MODEL', 'OLLAMA_CHAT_MODEL',
+            'EMBED_PROVIDER', 'EMBEDDING_PROVIDER',
             'KNOWLEDGE_SYNC_BULK_DELAY_MS', 'SIMILARITY_THRESHOLD',
             'LOW_CONFIDENCE_THRESHOLD',
             'LEARNNOW_CRAWL_ENABLED', 'LEARNNOW_CRAWL_PACING_MS',
@@ -115,6 +117,19 @@ describe('validateEnv', () => {
             KNOWLEDGE_SYNC_BULK_DELAY_MS: 15000,
             EMBEDDING_DIMENSIONS: 3072,
         });
+    });
+
+    it('rejects removed Ollama provider selection and ignores no Ollama defaults', () => {
+        setEnv({ ...VALID_ENV, EMBEDDING_PROVIDER: 'OLLAMA' });
+        expect(validateEnv()).toBeUndefined();
+
+        setEnv({ ...VALID_ENV, EMBED_PROVIDER: 'OLLAMA' });
+        expect(validateEnv()).toBeUndefined();
+
+        setEnv(VALID_ENV);
+        expect(validateEnv()).not.toHaveProperty('OLLAMA_BASE_URL');
+        expect(validateEnv()).not.toHaveProperty('OLLAMA_MODEL');
+        expect(validateEnv()).not.toHaveProperty('OLLAMA_CHAT_MODEL');
     });
 
     it('keeps Learn Now crawling disabled by default and parses explicit false safely', () => {

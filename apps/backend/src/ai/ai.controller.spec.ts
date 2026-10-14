@@ -5,7 +5,6 @@ import * as fc from 'fast-check';
 import { AiController } from './ai.controller';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
-import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { AiService } from './ai.service';
@@ -42,7 +41,6 @@ function makeMockJob(state: string, returnvalue: unknown = null, failedReason = 
 
 const mockAiQueryService = { query: jest.fn(), getTelemetryMetrics: jest.fn() };
 const mockEmbeddingService = { search: jest.fn(), reindexAll: jest.fn() };
-const mockOllamaService = {};
 const mockOpenAiService = {};
 const mockGenericOpenAiService = {};
 const mockAiService = { isAvailable: jest.fn(), getHealthStatus: jest.fn(), testProvider: jest.fn(), translate: jest.fn() };
@@ -65,7 +63,6 @@ async function buildModule(): Promise<TestingModule> {
         providers: [
             { provide: AiQueryService, useValue: mockAiQueryService },
             { provide: EmbeddingService, useValue: mockEmbeddingService },
-            { provide: OllamaService, useValue: mockOllamaService },
             { provide: OpenAiService, useValue: mockOpenAiService },
             { provide: GenericOpenAiService, useValue: mockGenericOpenAiService },
             { provide: AiService, useValue: mockAiService },
@@ -287,6 +284,16 @@ describe('AiController — Hotinfo consent forwarding', () => {
                 installedModules: Array.from({ length: 20 }, (_, index) => `Module ${index}`),
             },
         }));
+    });
+});
+
+describe('AiController — removed provider boundary', () => {
+    it('rejects stale Ollama model-list requests with HTTP 400', async () => {
+        const module = await buildModule();
+        const controller = module.get<AiController>(AiController);
+
+        await expect(controller.listModels({ provider: 'ollama' }))
+            .rejects.toMatchObject({ status: 400 });
     });
 });
 

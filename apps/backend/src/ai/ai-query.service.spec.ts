@@ -60,7 +60,7 @@ describe('AiQueryService', () => {
         generate: jest.fn(),
         reformat: jest.fn(),
         streamReformat: jest.fn(),
-        getActiveProviderName: jest.fn().mockResolvedValue('ollama'),
+        getActiveProviderName: jest.fn().mockResolvedValue('openai'),
         getActiveModelName: jest.fn().mockResolvedValue('llama3'),
         translate: jest.fn(),
     };
@@ -176,7 +176,7 @@ describe('AiQueryService', () => {
         mockAiService.streamReformat.mockReset();
         mockPrismaService.aiInteraction.create.mockResolvedValue(mockInteraction);
         mockRedisService.get.mockResolvedValue(null);
-        mockAiService.getActiveProviderName.mockResolvedValue('ollama');
+        mockAiService.getActiveProviderName.mockResolvedValue('openai');
         mockAiService.getActiveModelName.mockResolvedValue('llama3');
         mockLangfuseService.traceRetrieval.mockReset().mockResolvedValue(undefined);
         mockPrismaService.trainingQueue.create.mockReset().mockResolvedValue(undefined);

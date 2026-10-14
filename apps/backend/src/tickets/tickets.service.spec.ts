@@ -64,6 +64,7 @@ describe('TicketsService', () => {
         eventEmitter = module.get<EventEmitter2>(EventEmitter2);
 
         jest.clearAllMocks();
+        mockAiQueryService.smartTagTicket.mockResolvedValue({ tags: [] });
     });
 
     describe('create', () => {
@@ -87,6 +88,27 @@ describe('TicketsService', () => {
             // Assert
             expect(result).toEqual(expectedTicket);
             expect(mockEventEmitter.emitAsync).toHaveBeenCalledWith('ticket.created', expectedTicket);
+            expect(prisma.ticket.create).toHaveBeenCalled();
+        });
+
+        it('creates the core ticket when the AI provider is unavailable', async () => {
+            const dto = {
+                subject: 'SCIA issue',
+                description: 'The model cannot be opened',
+                productId: '11111111-1111-4111-8111-111111111111',
+            };
+            prisma.product.findFirst.mockResolvedValue({ id: dto.productId, name: 'SCIA' });
+            prisma.$queryRaw = jest.fn().mockResolvedValue([{ nextval: 1n }]);
+            mockSlaService.calculateDeadlines.mockResolvedValue({
+                slaResponseDue: new Date(),
+                slaResolveDue: new Date(),
+            });
+            prisma.ticket.create.mockResolvedValue({ id: 'tik1', ticketNumber: 'SUP-00001' });
+            mockAiQueryService.smartTagTicket.mockRejectedValue(
+                new Error('No supported AI provider is configured'),
+            );
+
+            await expect(service.create(dto, 'user1')).resolves.toMatchObject({ id: 'tik1' });
             expect(prisma.ticket.create).toHaveBeenCalled();
         });
 

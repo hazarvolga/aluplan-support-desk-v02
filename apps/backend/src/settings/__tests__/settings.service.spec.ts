@@ -100,6 +100,19 @@ describe('SettingsService', () => {
             });
         });
 
+        it.each([
+            'ai.chat_provider',
+            'ai.embed_provider',
+            'ai.active_provider',
+            'ai.fallback_provider',
+            'ai.embed_fallback_provider',
+            'ai.specialized.summarization_provider',
+        ])('rejects removed Ollama selection for %s before persistence', async (key) => {
+            await expect(service.upsert({ key, value: 'ollama', isSecret: false }))
+                .rejects.toMatchObject({ status: 400 });
+            expect(prisma.setting.upsert).not.toHaveBeenCalled();
+        });
+
         it('should coerce stale active provider during bulk AI save', async () => {
             prisma.setting.findMany.mockResolvedValue([]);
             prisma.setting.findUnique.mockResolvedValue(null);
