@@ -131,7 +131,7 @@ jobs:
       - name: Run Backend Tests
         env:
           NODE_OPTIONS: "--experimental-vm-modules --no-warnings"
-        run: cd apps/backend && pnpm test -- --coverage
+        run: cd apps/backend && pnpm test --coverage
       - name: Lint Backend
         run: pnpm --filter @aluplan/backend lint
       - name: Run Frontend Unit Tests with Coverage

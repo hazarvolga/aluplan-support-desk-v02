@@ -64,6 +64,8 @@ test("release-unlocking CI fails closed on staging and high-severity image findi
     /^  deploy-staging:\s*\n(?:.*\n)*?    needs: \[[^\]]*\bsecurity\b[^\]]*\]/m,
   );
   assert.match(source, /pnpm --filter @aluplan\/backend lint/);
+  assert.match(source, /pnpm test --coverage/);
+  assert.doesNotMatch(source, /pnpm test -- --coverage/);
   assert.match(source, /pnpm --filter @aluplan\/frontend test:unit:cov/);
   assert.match(source, /pnpm --filter @aluplan\/frontend lint/);
   assert.match(source, /^  customer-security-rehearsal:\s*$/m);
