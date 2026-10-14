@@ -5,18 +5,18 @@ export const dynamic = "force-dynamic";
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, useMemo } from 'react';
 import {
-    Search, Mail, ShieldCheck, ShieldAlert,
-    ShieldQuestion, Globe, Server, CheckCircle2,
-    XCircle, AlertCircle, Loader2, Info, Brain,
+    Search, Mail, ShieldCheck,
+    Globe, Server, CheckCircle2,
+    XCircle, AlertCircle, Loader2, Info,
     Users, ArrowUpDown, Building2, Eye, Filter,
-    Activity, ChevronRight, Hash, Tag, RefreshCw
+    Activity, Tag, RefreshCw
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -33,7 +33,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface CustomerItem {
     id: string;
@@ -56,12 +56,20 @@ interface CustomerItem {
 
 type SortField = 'fullName' | 'companyName' | 'email' | 'status';
 type SortOrder = 'asc' | 'desc';
+type ValidationResult = {
+    email?: string;
+    summary?: { score?: number };
+    status?: string; score?: number;
+    syntax: { isRoleBased?: boolean; isValid?: boolean; error?: string; suggestion?: string };
+    dns: { isCatchAll?: boolean; isDisposable?: boolean; mxRecords?: string[]; isValid?: boolean };
+    smtp: { canConnect?: boolean; error?: string; isValid?: boolean; isGreyListed?: boolean };
+};
 
 export default function EmailValidationPage() {
     const t = useTranslations('admin.email_validation');
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<ValidationResult | null>(null);
     const [activeTab, setActiveTab] = useState('single');
 
     // Customer List State (Ported from CustomersPage)
@@ -72,7 +80,7 @@ export default function EmailValidationPage() {
     const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [validatingBulk, setValidatingBulk] = useState(false);
-    const [bulkResults, setBulkResults] = useState<Record<string, any>>({});
+    const [bulkResults, setBulkResults] = useState<Record<string, ValidationResult>>({});
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerItem | null>(null);
     const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
@@ -94,7 +102,7 @@ export default function EmailValidationPage() {
         setCustomersLoading(true);
         api.customers
             .list()
-            .then((res) => setCustomers(res.data))
+            .then((res) => setCustomers(res.data as CustomerItem[]))
             .catch(console.error)
             .finally(() => setCustomersLoading(false));
     };
@@ -113,9 +121,9 @@ export default function EmailValidationPage() {
         setResult(null);
         try {
             const data = await api.emailValidator.verify(email);
-            setResult(data);
-        } catch (err: any) {
-            toast.error(err.message || t('toasts.verify_error'));
+            setResult(data as ValidationResult);
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : t('toasts.verify_error'));
         } finally {
             setLoading(false);
         }
@@ -132,13 +140,13 @@ export default function EmailValidationPage() {
         try {
             const results = await api.emailValidator.verifyBulk(emailsToVerify);
             const resultMap = { ...bulkResults };
-            results.forEach((r: any) => {
-                resultMap[r.email] = r;
+            (results as ValidationResult[]).forEach((validationResult) => {
+                if (validationResult.email) resultMap[validationResult.email] = validationResult;
             });
             setBulkResults(resultMap);
             toast.success(t('toasts.verified_count', { count: emailsToVerify.length }));
-        } catch (error: any) {
-            toast.error(error.message || t('toasts.bulk_verify_error'));
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : t('toasts.bulk_verify_error'));
         } finally {
             setValidatingBulk(false);
         }
@@ -204,11 +212,6 @@ export default function EmailValidationPage() {
         else setSelectedIds(prev => prev.filter(item => item !== id));
     };
 
-    const handleSort = (field: SortField) => {
-        if (sortField === field) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-        else { setSortField(field); setSortOrder('asc'); }
-    };
-
     const toggleSort = (field: SortField) => {
         if (sortField === field) {
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -232,10 +235,10 @@ export default function EmailValidationPage() {
         setLoading(true);
         try {
             const data = await api.emailValidator.verify(email);
-            setBulkResults(prev => ({ ...prev, [email]: data }));
+            setBulkResults(prev => ({ ...prev, [email]: data as ValidationResult }));
             toast.success(t('toasts.reverified', { email: email }));
-        } catch (err: any) {
-            toast.error(err.message || t('toasts.verify_error'));
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : t('toasts.verify_error'));
         } finally {
             setLoading(false);
         }
@@ -276,21 +279,6 @@ export default function EmailValidationPage() {
             <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
         </div>
     );
-
-    const handleSingleVerify = async () => {
-        if (!email) return;
-
-        setLoading(true);
-        setResult(null);
-        try {
-            const data = await api.emailValidator.verify(email);
-            setResult(data);
-        } catch (err: any) {
-            toast.error(err.message || t('toasts.verify_error'));
-        } finally {
-            setLoading(false);
-        }
-    };
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -365,7 +353,7 @@ export default function EmailValidationPage() {
                                         size="sm"
                                         className="text-xs font-bold text-amber-400 hover:bg-amber-500/10"
                                         onClick={() => {
-                                            setEmail(result.syntax.suggestion);
+                                            setEmail(result.syntax.suggestion || '');
                                             // Trigger verify if needed or just set email
                                         }}
                                     >
@@ -675,7 +663,7 @@ export default function EmailValidationPage() {
                                                     { label: 'Role-Based (Kurumsal)', value: bulkResults[selectedCustomer.email]?.syntax?.isRoleBased, icon: Users },
                                                     { label: 'Catch-All (Genel Alıcı)', value: bulkResults[selectedCustomer.email]?.dns?.isCatchAll, icon: Globe },
                                                     { label: 'SMTP Connection', value: bulkResults[selectedCustomer.email]?.smtp?.canConnect, icon: Server }
-                                                ].map((item, idx) => (
+                                                ].map((item) => (
                                                     <div key={item.label} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5">
                                                         <div className="flex items-center gap-3">
                                                             <item.icon className="h-4 w-4 text-muted-foreground" />
@@ -697,7 +685,7 @@ export default function EmailValidationPage() {
                                                 <div className="flex items-center gap-2 text-blue-400 font-bold mb-2">
                                                     <Activity className="h-3 w-3" /> {t('detail.mx_data')}
                                                 </div>
-                                                {(bulkResults[selectedCustomer.email]?.dns?.mxRecords || []).map((mx: any, i: number) => (
+                                                {(bulkResults[selectedCustomer.email]?.dns?.mxRecords || []).map((mx, i) => (
                                                     <div key={i} className="flex justify-between border-b border-white/5 pb-1">
                                                         <span className="text-white/40">{mx}</span>
                                                     </div>

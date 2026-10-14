@@ -29,15 +29,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { api } from '@/lib/api';
+import { api, type UserDetails } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { UserCheck, Info } from 'lucide-react';
+import { UserCheck } from 'lucide-react';
 
 interface UserDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    user?: any; // If provided, edit mode
+    user?: UserDetails; // If provided, edit mode
     onSuccess: () => void;
 }
 
@@ -46,7 +46,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
     const tc = useTranslations('common');
     const { toast } = useToast();
     const isEdit = !!user;
-    const [foundUser, setFoundUser] = useState<any>(null);
+    const [foundUser, setFoundUser] = useState<UserDetails | null>(null);
     const [isLookingUp, setIsLookingUp] = useState(false);
 
     const formSchema = z.object({
@@ -100,7 +100,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
-            const payload: any = {
+            const payload: { fullName: string; email: string; roles: string[]; password?: string } = {
                 fullName: values.fullName,
                 email: values.email,
                 roles: [values.role],
@@ -114,7 +114,8 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
             }
 
             if (isEdit || foundUser) {
-                const targetId = isEdit ? user.id : foundUser.id;
+                const targetId = isEdit ? user.id : foundUser?.id;
+                if (!targetId) return;
                 await api.users.update(targetId, payload);
                 toast({ title: foundUser && !isEdit ? 'Kullanıcı yükseltildi/güncellendi' : t('toasts.updated') });
             } else {

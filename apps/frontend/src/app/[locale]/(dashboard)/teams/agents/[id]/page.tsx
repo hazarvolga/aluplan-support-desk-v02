@@ -17,8 +17,6 @@ import {
     UserCircle2,
     ShieldCheck,
     Trophy,
-    Target,
-    Zap,
     Users
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -29,12 +27,20 @@ import { AgentStatusBadge } from '@/components/team/AgentStatusBadge';
 import { RoleBadge } from '@/components/team/RoleBadge';
 import { useTranslations } from 'next-intl';
 
+type AgentProfile = {
+    id: string; fullName: string; email: string; avatarUrl?: string; agentStatus?: string; role?: string;
+    title?: string; timezone?: string; bio?: string; _count?: { ticketsAssigned?: number };
+    teamMembers?: Array<{ joinedAt: string; roleOverride?: string; team: { id: string; name: string; department?: { name?: string } } }>;
+    agentSkills?: Array<{ proficiency: number; skill: { id: string; name: string } }>;
+    shifts?: Array<{ dayOfWeek: number; startTime: string; endTime: string }>;
+};
+
 export default function AgentProfilePage() {
     const t = useTranslations('teams');
     const tc = useTranslations('common');
     const { id } = useParams();
     const router = useRouter();
-    const [agent, setAgent] = useState<any>(null);
+    const [agent, setAgent] = useState<AgentProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
 
@@ -42,8 +48,8 @@ export default function AgentProfilePage() {
         const fetchAgent = async () => {
             try {
                 const res = await api.teams.getAgentProfile(id as string);
-                setAgent(res);
-            } catch (error) {
+                setAgent(res as AgentProfile);
+            } catch {
                 toast({ title: tc('error_title'), description: t('errors.fetch_profile'), variant: 'destructive' });
                 router.push('/teams');
             } finally {
@@ -81,7 +87,7 @@ export default function AgentProfilePage() {
                             </div>
                         </div>
                         <div className="absolute -bottom-2 -right-2">
-                            <AgentStatusBadge status={agent.agentStatus} className="rounded-2xl px-3 border-4 border-background shadow-lg" />
+                            <AgentStatusBadge status={agent.agentStatus || 'OFFLINE'} className="rounded-2xl px-3 border-4 border-background shadow-lg" />
                         </div>
                     </div>
 
@@ -89,7 +95,7 @@ export default function AgentProfilePage() {
                     <div className="flex-1 space-y-3">
                         <div className="flex flex-wrap items-center gap-3">
                             <h1 className="text-4xl font-extrabold tracking-tight">{agent.fullName}</h1>
-                            <RoleBadge role={agent.role} className="h-7 px-3 rounded-full text-xs font-black uppercase tracking-wider" />
+                            <RoleBadge role={agent.role || 'agent'} className="h-7 px-3 rounded-full text-xs font-black uppercase tracking-wider" />
                         </div>
                         <div className="flex flex-wrap gap-x-6 gap-y-2 text-muted-foreground font-medium">
                             <span className="flex items-center gap-1.5"><Mail className="h-4 w-4" /> {agent.email}</span>
@@ -155,7 +161,7 @@ export default function AgentProfilePage() {
                 {/* Teams */}
                 <TabsContent value="teams" className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {agent.teamMembers?.map((tm: any) => (
+                        {agent.teamMembers?.map((tm) => (
                             <Card key={tm.team.id} className="hover:border-primary/40 transition-all border-border/40 group overflow-hidden rounded-3xl">
                                 <CardHeader className="bg-muted/30 pb-4">
                                     <div className="flex justify-between items-start">
@@ -182,7 +188,7 @@ export default function AgentProfilePage() {
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                                {agent.agentSkills?.map((as: any) => (
+                                {agent.agentSkills?.map((as) => (
                                     <div key={as.skill.id} className="space-y-2">
                                         <div className="flex justify-between items-end">
                                             <span className="font-bold text-lg">{as.skill.name}</span>
@@ -206,7 +212,7 @@ export default function AgentProfilePage() {
                 <TabsContent value="schedule" className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
                         {days.map((day, idx) => {
-                            const shift = agent.shifts?.find((s: any) => s.dayOfWeek === (idx + 1) % 7);
+                            const shift = agent.shifts?.find((schedule) => schedule.dayOfWeek === (idx + 1) % 7);
                             return (
                                 <Card key={day} className={`rounded-2xl border-border/40 shadow-none ${shift ? 'bg-primary/5 border-primary/20' : 'bg-muted/20 opacity-50'}`}>
                                     <CardHeader className="p-4 text-center border-b border-border/30">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ChevronDown, ChevronRight, Copy, Check, Monitor, HardDrive, Printer, Database, User, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { ChevronDown, ChevronRight, Copy, Check, Monitor, HardDrive, Printer, Database, User, AlertTriangle, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -9,18 +9,54 @@ import { toast } from 'sonner';
  * Ensures mixed XML parsed data is rendered as a clean string.
  * Extracts nested text fields if parsed by fast-xml-parser.
  */
-const sr = (val: any): string | null => {
+const sr = (val: unknown): string | null => {
     if (!val) return null;
-    if (typeof val === 'object') {
-        return val['@_version'] || val['@_name'] || val['#text'] || JSON.stringify(val);
+    if (typeof val === 'object' && val !== null) {
+        const record = val as Record<string, unknown>;
+        return sr(record['@_version']) || sr(record['@_name']) || sr(record['#text']) || JSON.stringify(val);
     }
     return String(val);
 };
 
 export interface HotinfoGridProps {
-    data: any; // The hotinfo parsed JSON object
+    data: HotinfoData;
     variant?: 'grid' | 'compact';
 }
+
+type HotinfoDrive = { root?: string; fs?: string; free?: string; total?: string };
+export type HotinfoData = {
+    [key: string]: unknown;
+    hotinfoLicense?: unknown;
+    hotinfoContactPhone?: unknown;
+    hotinfoContactEmail?: unknown;
+    hotinfoContactName?: unknown;
+    allplanVersion?: string;
+    allplanEdition?: string;
+    allplanBuildId?: string;
+    allplanHotfix?: string;
+    osVersion?: string;
+    cpu?: string;
+    ram?: string;
+    gpu?: unknown;
+    vram?: unknown;
+    gpuRam?: unknown;
+    screenResolution?: unknown;
+    gpuDriverDate?: unknown;
+    gpuDriverVersion?: unknown;
+    openglVersion?: unknown;
+    diskInfo?: unknown;
+    licenseType?: unknown;
+    licenseNumber?: unknown;
+    dotnetVersion?: unknown;
+    graphicsCards?: Array<Record<string, unknown>>;
+    drives?: HotinfoDrive[];
+    printers?: string[];
+    registryPaths?: Record<string, unknown>;
+    conflictingProcesses?: string[];
+    securityServices?: string[];
+    envVars?: { COMPUTERNAME?: string; USERNAME?: string };
+    defaultPrinter?: string;
+};
 
 type GraphicsCardSummary = {
     name: string | null;
@@ -65,10 +101,10 @@ const expandCombinedGpuCards = (cards: GraphicsCardSummary[]): GraphicsCardSumma
     });
 };
 
-const normalizeGraphicsCards = (data: any): GraphicsCardSummary[] => {
+const normalizeGraphicsCards = (data: HotinfoData): GraphicsCardSummary[] => {
     const cards = Array.isArray(data?.graphicsCards)
         ? data.graphicsCards
-            .map((card: any) => ({
+            .map((card) => ({
                 name: sr(card?.name),
                 vram: sr(card?.vram),
                 ram: sr(card?.ram),
@@ -77,7 +113,7 @@ const normalizeGraphicsCards = (data: any): GraphicsCardSummary[] => {
                 driverVersion: sr(card?.driverVersion),
                 openglVersion: sr(card?.openglVersion),
             }))
-            .filter((card: any) => card.name)
+            .filter((card) => Boolean(card.name)) as GraphicsCardSummary[]
         : [];
 
     if (cards.length > 0) return expandCombinedGpuCards(cards).slice(0, 2);
@@ -162,7 +198,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
     const detailTextClass = "text-[12px] leading-6 text-slate-200 dark:text-cyan-100/90";
     const detailLabelClass = "font-semibold text-slate-400 dark:text-cyan-300/80";
 
-    const SectionHeader = ({ id, label, icon: Icon }: any) => (
+    const SectionHeader = ({ id, label, icon: Icon }: { id: string; label: string; icon: LucideIcon }) => (
         <button 
             onClick={() => toggleSection(id)}
             className="w-full flex items-center justify-between p-2 rounded bg-white/5 hover:bg-white/10 transition-colors mt-2"
@@ -254,7 +290,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
                 {/* GPU & Video Details */}
                 <div className={`${itemWrapperClass} ${!isCompact ? 'md:col-span-3' : ''} ${isCompact ? 'flex-col items-start gap-1 py-2' : ''}`}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                        {(graphicsCards.length > 0 ? graphicsCards : [{ name: '-' }]).map((card: any, index: number) => (
+                        {(graphicsCards.length > 0 ? graphicsCards : [{ name: '-' }]).map((card, index) => (
                             <div key={`${card.name}-${index}`} className="border border-cyan-900/25 bg-cyan-950/10 p-4">
                                 <div className={`${labelClass} ${isCompact ? 'w-full mb-1' : ''}`}>
                                     <Monitor size={12} className="hidden md:inline mr-1" />
@@ -313,7 +349,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
                                 <HardDrive size={14} /> {t('drives')}
                             </div>
                             <div className="bg-white/5 border border-white/10 rounded-md overflow-hidden">
-                                {data.drives.map((drive: any, idx: number) => (
+                                {data.drives.map((drive, idx) => (
                                     <div key={idx} className="flex justify-between items-center p-2 border-b border-white/5 last:border-0">
                                         <div className="flex items-center gap-2">
                                             <span className="font-bold text-xs text-brand-400 dark:text-cyan-400">{drive.root}</span>
@@ -365,10 +401,10 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
                     <SectionHeader id="registry" label={t('registry_paths')} icon={Database} />
                     {expandedSections['registry'] && (
                         <div className="mt-2 p-3 bg-black/20 border border-white/5 rounded-md space-y-2 font-mono">
-                            {Object.entries(data.registryPaths).map(([key, val]: any) => (
+                            {Object.entries(data.registryPaths).map(([key, val]) => (
                                 <div key={key} className="text-[10px] flex flex-col sm:flex-row sm:items-start border-b border-white/5 pb-1.5 last:border-0 last:pb-0">
                                     <span className="text-brand-400/80 dark:text-cyan-600/80 w-full sm:w-32 shrink-0">{key}:</span>
-                                    <span className="text-slate-400 break-all">{val}</span>
+                                    <span className="text-slate-400 break-all">{sr(val)}</span>
                                 </div>
                             ))}
                         </div>
@@ -378,7 +414,7 @@ export function HotinfoGrid({ data, variant = 'grid' }: HotinfoGridProps) {
 
             {/* Conflicting Processes */}
             {/* Conflicting Processes & Security */}
-            {!isCompact && (data.conflictingProcesses?.length > 0 || data.securityServices?.length > 0) && (
+            {!isCompact && ((data.conflictingProcesses?.length ?? 0) > 0 || (data.securityServices?.length ?? 0) > 0) && (
                 <div className="mt-4 p-3 bg-red-950/10 border border-red-900/20 rounded-md">
                     <div className="text-[10px] font-bold text-red-500 uppercase mb-2 flex items-center gap-2">
                         ⚠ OLASI ÇAKIŞAN SÜREÇLER & GÜVENLİK

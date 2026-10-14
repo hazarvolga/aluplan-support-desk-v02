@@ -6,17 +6,6 @@
  * the application fails fast with clear error messages.
  */
 
-function getRequiredEnvVar(name: string, fallback?: string): string {
-    const value = process.env[name] ?? fallback;
-    if (!value) {
-        throw new Error(
-            `[ENV] Missing required environment variable: ${name}. ` +
-            `Please set it in .env.local or your deployment environment.`
-        );
-    }
-    return value;
-}
-
 function getOptionalEnvVar(name: string, fallback: string = ''): string {
     return process.env[name] ?? fallback;
 }

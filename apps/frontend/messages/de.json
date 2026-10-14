@@ -139,6 +139,10 @@
     "reset_password": {
       "new_password_label": "NEUES PASSWORT",
       "confirm_password_label": "PASSWORT BESTÄTIGEN",
+      "show_new_password": "Neues Passwort anzeigen",
+      "hide_new_password": "Neues Passwort ausblenden",
+      "show_confirm_password": "Passwortbestätigung anzeigen",
+      "hide_confirm_password": "Passwortbestätigung ausblenden",
       "submit_btn": "PASSWORT AKTUALISIEREN",
       "title": "NEUES PASSWORT FESTLEGEN",
       "subtitle": "Legen Sie zu Ihrer Sicherheit ein neues Passwort fest",
@@ -173,6 +177,7 @@
     "logout": "Abmelden",
     "loading": "Laden...",
     "error": "Ein Fehler ist aufgetreten",
+    "close_notification": "Benachrichtigung schließen",
     "session_expired": "Sitzung abgelaufen. Bitte melden Sie sich erneut an.",
     "realtime_session_ended": "Live-Aktualisierungen wurden beendet. Lassen Sie diese Seite geöffnet, melden Sie sich in einem neuen Tab erneut an und verbinden Sie sich danach erneut. Ihr ungesendeter Entwurf bleibt auf dieser Seite erhalten.",
     "realtime_sign_in": "In neuem Tab anmelden",
@@ -717,6 +722,9 @@
       "empty": "Warteschlange leer",
       "load_error": "Support-Anfragen konnten nicht geladen werden",
       "retry": "Erneut versuchen",
+      "select_all": "Alle Anfragen auswählen",
+      "select_ticket": "Anfrage {ticket} auswählen",
+      "delete_ticket": "Anfrage {ticket} löschen",
       "header": {
         "system_id": "ID",
         "company": "Unternehmen",
@@ -726,7 +734,8 @@
         "status": "Status",
         "priority": "Priorität",
         "assignee": "Zugewiesen",
-        "timestamp": "Erstellt"
+        "timestamp": "Erstellt",
+        "actions": "Aktionen"
       },
       "category": {
         "licensing": "Lizenz & Aktivierung"

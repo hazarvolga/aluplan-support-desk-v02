@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type Dispatch, type SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
     Brain,
     Bot,
@@ -23,9 +22,11 @@ import {
     EyeOff,
     Terminal,
     Search,
-    Cloud
+    Cloud,
+    type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getErrorMessage, type Setting } from '../settings-types';
 
 interface ProviderStatus {
     name: string;
@@ -33,6 +34,18 @@ interface ProviderStatus {
     available: boolean;
     priority: number;
     error?: string;
+}
+
+interface ProviderCardProps {
+    name: string;
+    icon: LucideIcon;
+    color: string;
+    keyLabel?: string;
+    keyValue: string;
+    setKeyValue: Dispatch<SetStateAction<string>>;
+    modelValue: string;
+    setModelValue: Dispatch<SetStateAction<string>>;
+    secret?: boolean;
 }
 
 export function AiSettings() {
@@ -48,8 +61,6 @@ export function AiSettings() {
     const [openaiModel, setOpenaiModel] = useState('gpt-4o-mini');
     const [anthropicKey, setAnthropicKey] = useState('');
     const [anthropicModel, setAnthropicModel] = useState('claude-3-opus-20240229');
-    const [geminiKey, setGeminiKey] = useState('');
-    const [geminiModel, setGeminiModel] = useState('gemini-1.5-pro');
     const [llmapiKey, setLlmApiKey] = useState('');
     const [llmapiModel, setLlmApiModel] = useState('gpt-4o');
     const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434');
@@ -70,14 +81,15 @@ export function AiSettings() {
         setLoading(true);
         try {
             const [healthData, settingsData] = await Promise.all([
-                api.get('/ai/health-status'),
+                api.get<{ providers: ProviderStatus[] }>('/ai/health-status'),
                 api.settings.list(true)
             ]);
 
             setStatus(healthData.providers || []);
 
             // Map settings
-            const findValue = (key: string) => settingsData.find((s: any) => s.key === key)?.value || '';
+            const typedSettings = settingsData as Setting[];
+            const findValue = (key: string) => typedSettings.find((setting) => setting.key === key)?.value || '';
 
             setOpenaiKey(findValue('ai.openai.api_key'));
             setOpenaiModel(findValue('ai.openai.chat_model') || 'gpt-4o-mini');
@@ -100,8 +112,8 @@ export function AiSettings() {
             setSpecializedSentiment(findValue('ai.specialized.analyze_sentiment_provider') || 'global');
             setSpecializedTranslation(findValue('ai.specialized.translate_provider') || 'global');
 
-        } catch (error: any) {
-            toast.error(t('toasts.load_error', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('toasts.load_error', { message: getErrorMessage(error) }));
         } finally {
             setLoading(false);
         }
@@ -121,8 +133,8 @@ export function AiSettings() {
             } else {
                 toast.error(t('toasts.test_error', { provider, message: result.message }));
             }
-        } catch (error: any) {
-            toast.error(t('toasts.test_failed', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('toasts.test_failed', { message: getErrorMessage(error) }));
         } finally {
             setTesting(null);
         }
@@ -159,8 +171,8 @@ export function AiSettings() {
             await Promise.all(updates);
             toast.success(t('toasts.save_success', { provider }));
             loadData();
-        } catch (error: any) {
-            toast.error(t('toasts.save_error', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('toasts.save_error', { message: getErrorMessage(error) }));
         } finally {
             setSaving(false);
         }
@@ -176,7 +188,7 @@ export function AiSettings() {
         modelValue,
         setModelValue,
         secret = true
-    }: any) => {
+    }: ProviderCardProps) => {
         const providerStatus = status.find(s => s.name === name);
         const isActive = providerStatus?.active;
         const isAvailable = providerStatus?.available;

@@ -5,7 +5,6 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import {
-    BarChart3,
     TrendingUp,
     TrendingDown,
     Eye,
@@ -19,8 +18,13 @@ import {
 import Link from 'next/link';
 import { toast } from 'sonner';
 
+type AnalyticsData = {
+    mostViewed?: Array<{ id: string; title: string; status: string; viewCount: number }>;
+    performance?: Array<{ id: string; helpful: number; unhelpful: number; score: number }>;
+};
+
 export default function KbAnalyticsPage() {
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [suggestTitle, setSuggestTitle] = useState('');
     const [suggestContent, setSuggestContent] = useState('');
@@ -31,8 +35,8 @@ export default function KbAnalyticsPage() {
         setLoading(true);
         try {
             const res = await api.kb.getGlobalAnalytics();
-            setData(res);
-        } catch (err) {
+            setData(res as AnalyticsData);
+        } catch {
             toast.error('Analitik verileri yüklenemedi');
         }
         setLoading(false);
@@ -92,7 +96,7 @@ export default function KbAnalyticsPage() {
                         <h2 className="text-lg font-bold">En Çok Görüntülenenler</h2>
                     </div>
                     <div className="p-6 flex-1 space-y-4">
-                        {data?.mostViewed?.map((a: any) => (
+                        {data?.mostViewed?.map((a) => (
                             <Link
                                 key={a.id}
                                 href={`/knowledge-base/${a.id}`}
@@ -122,7 +126,7 @@ export default function KbAnalyticsPage() {
                         <h2 className="text-lg font-bold">Geliştirilmesi Gerekenler</h2>
                     </div>
                     <div className="p-6 flex-1 space-y-4">
-                        {data?.performance?.map((p: any) => (
+                        {data?.performance?.map((p) => (
                             <Link
                                 key={p.id}
                                 href={`/knowledge-base/${p.id}`}

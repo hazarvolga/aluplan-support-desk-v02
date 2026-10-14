@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import KnowledgeBasePage from './page';
 import { useAuth } from '@/components/auth/role-guard';
@@ -12,6 +12,15 @@ vi.mock('@/components/auth/role-guard', () => ({
 }));
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+const mockedUseAuth = vi.mocked(useAuth);
+const setAuthUser = (role: string) => mockedUseAuth.mockReturnValue({
+    user: { id: 'user-1', fullName: 'Test User', email: 'test@example.com', role },
+    loading: false,
+    backendUnavailable: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    retryAuth: vi.fn(),
+});
 
 describe('KnowledgeBasePage', () => {
     beforeEach(() => {
@@ -20,13 +29,13 @@ describe('KnowledgeBasePage', () => {
     });
 
     it('renders loading state initially', () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        setAuthUser('ADMIN');
         render(<KnowledgeBasePage />);
         expect(screen.getByText(/empty.loading/i)).toBeDefined();
     });
 
     it('renders articles list after loading', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        setAuthUser('ADMIN');
 
         render(<KnowledgeBasePage />);
 
@@ -38,7 +47,7 @@ describe('KnowledgeBasePage', () => {
     });
 
     it('shows action buttons for staff members', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        setAuthUser('ADMIN');
 
         render(<KnowledgeBasePage />);
 
@@ -48,7 +57,7 @@ describe('KnowledgeBasePage', () => {
     });
 
     it('hides action buttons for customer members', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
+        setAuthUser('CUSTOMER');
 
         render(<KnowledgeBasePage />);
 
@@ -58,7 +67,7 @@ describe('KnowledgeBasePage', () => {
     });
 
     it('handles empty state correctly', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        setAuthUser('ADMIN');
 
         // Override MSW for empty state
         server.use(
@@ -75,7 +84,7 @@ describe('KnowledgeBasePage', () => {
     });
 
     it('reloads when the review status query changes on the same route', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        setAuthUser('ADMIN');
         vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams('status=REVIEW') as never);
         const requestedStatuses: Array<string | null> = [];
         server.use(

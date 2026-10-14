@@ -2,11 +2,11 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAiHealthSocket } from './useAiHealthSocket';
 
-const mock = vi.hoisted(() => ({ handlers: new Map<string, (...args: any[]) => void>(), connect: vi.fn() }));
+const mock = vi.hoisted(() => ({ handlers: new Map<string, (...args: unknown[]) => void>(), connect: vi.fn() }));
 vi.mock('@/lib/socket', () => {
     const socket = {
         connect: mock.connect,
-        on: (event: string, callback: (...args: any[]) => void) => { mock.handlers.set(event, callback); return socket; },
+        on: (event: string, callback: (...args: unknown[]) => void) => { mock.handlers.set(event, callback); return socket; },
         off: () => socket,
     };
     return { getSocket: () => socket };

@@ -12,9 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import {
-    Mail, Shield, Settings as SettingsIcon,
-    Zap, Save, Loader2, Key, Server,
-    Globe, Clock, Terminal, Plus, Trash2, Edit, CheckCircle2, Brain
+    Mail, Shield,
+    Zap, Server,
+    Globe, Terminal, Plus, Trash2, CheckCircle2, Brain
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -23,14 +23,13 @@ import { EmailTemplates } from './components/EmailTemplates';
 import { AiSettings } from './components/AiSettings';
 import { StorageSettings } from './components/StorageSettings';
 import { CrmSettings } from './components/CrmSettings';
+import { getErrorMessage, type Macro, type Setting } from './settings-types';
 
 export default function SettingsPage() {
     const t = useTranslations('settings');
-    const tc = useTranslations('common');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [settings, setSettings] = useState<any[]>([]);
-    const [macros, setMacros] = useState<any[]>([]);
+    const [macros, setMacros] = useState<Macro[]>([]);
 
     // SMTP Form State
     const [smtpHost, setSmtpHost] = useState('');
@@ -54,17 +53,17 @@ export default function SettingsPage() {
                     api.settings.list(true),
                     api.macros.list()
                 ]);
-                setSettings(settingsData);
-                setMacros(macrosData);
+                const typedSettings = settingsData as Setting[];
+                setMacros(macrosData as Macro[]);
 
                 // Populate form states
-                setSmtpHost(settingsData.find(s => s.key === 'email.smtp.host')?.value || '');
-                setSmtpPort(settingsData.find(s => s.key === 'email.smtp.port')?.value || '');
-                setSmtpUser(settingsData.find(s => s.key === 'email.smtp.user')?.value || '');
-                setImapHost(settingsData.find(s => s.key === 'email.imap.host')?.value || '');
-                setImapUser(settingsData.find(s => s.key === 'email.imap.user')?.value || '');
-            } catch (error: any) {
-                toast.error(t('toasts.load_error', { message: error.message }));
+                setSmtpHost(typedSettings.find((setting) => setting.key === 'email.smtp.host')?.value || '');
+                setSmtpPort(typedSettings.find((setting) => setting.key === 'email.smtp.port')?.value || '');
+                setSmtpUser(typedSettings.find((setting) => setting.key === 'email.smtp.user')?.value || '');
+                setImapHost(typedSettings.find((setting) => setting.key === 'email.imap.host')?.value || '');
+                setImapUser(typedSettings.find((setting) => setting.key === 'email.imap.user')?.value || '');
+            } catch (error: unknown) {
+                toast.error(t('toasts.load_error', { message: getErrorMessage(error) }));
             } finally {
                 setLoading(false);
             }
@@ -77,8 +76,8 @@ export default function SettingsPage() {
         try {
             await api.settings.upsert({ key, value, isSecret });
             toast.success(t('toasts.save_success', { key }));
-        } catch (error: any) {
-            toast.error(t('toasts.save_error', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('toasts.save_error', { message: getErrorMessage(error) }));
         } finally {
             setSaving(false);
         }
@@ -88,13 +87,13 @@ export default function SettingsPage() {
         if (!macroName || !macroContent) return;
         setSaving(true);
         try {
-            const newMacro = await api.macros.create({ name: macroName, content: macroContent });
+            const newMacro = await api.macros.create({ name: macroName, content: macroContent }) as Macro;
             setMacros([...macros, newMacro]);
             setMacroName('');
             setMacroContent('');
             toast.success(t('macros.create_success'));
-        } catch (error: any) {
-            toast.error(t('toasts.save_error', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('toasts.save_error', { message: getErrorMessage(error) }));
         } finally {
             setSaving(false);
         }
@@ -105,8 +104,8 @@ export default function SettingsPage() {
             await api.macros.delete(id);
             setMacros(macros.filter(m => m.id !== id));
             toast.success(t('macros.delete_success'));
-        } catch (error: any) {
-            toast.error(t('macros.delete_error', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('macros.delete_error', { message: getErrorMessage(error) }));
         }
     };
 

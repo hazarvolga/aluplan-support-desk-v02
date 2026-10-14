@@ -10,9 +10,18 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 
+type EmailLog = {
+    id: string;
+    to: string;
+    messageId?: string | null;
+    templateName: string;
+    status: string;
+    createdAt: string;
+};
+
 export function EmailLogs() {
     const t = useTranslations('settings.email.logs');
-    const [logs, setLogs] = useState<any[]>([]);
+    const [logs, setLogs] = useState<EmailLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
@@ -21,9 +30,9 @@ export function EmailLogs() {
         try {
             setLoading(true);
             const res = await api.email.logs(page, 10);
-            setLogs(res.data);
+            setLogs(res.data as EmailLog[]);
             setTotal(res.total);
-        } catch (error: any) {
+        } catch {
             toast.error(t('toasts.logs_load_error'));
         } finally {
             setLoading(false);

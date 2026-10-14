@@ -47,15 +47,16 @@ export default function LoginPage() {
                 } else {
                     router.push('/dashboard');
                 }
-            } catch (err) {
+            } catch {
                 // Fallback route - cookies are set, just navigate
                 router.push('/dashboard');
             }
 
-        } catch (err: any) {
-            const errorMsg = err.message === 'common.session_expired'
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : undefined;
+            const errorMsg = message === 'common.session_expired'
                 ? tc('session_expired')
-                : (err.message ?? t('error_default'));
+                : (message ?? t('error_default'));
             setError(errorMsg);
         } finally {
             setLoading(false);

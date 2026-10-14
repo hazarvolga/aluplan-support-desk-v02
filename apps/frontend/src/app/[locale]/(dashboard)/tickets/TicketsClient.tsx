@@ -8,7 +8,6 @@ import {
     AlertCircle,
     CheckCircle2,
     Search,
-    Check,
     Square,
     CheckSquare,
     Loader2,
@@ -22,6 +21,7 @@ import {
     ArrowDown,
     ArrowUp,
     ArrowUpDown,
+    type LucideIcon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -46,13 +46,13 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-    LOW: 'text-slate-500',
+    LOW: 'text-slate-400',
     MEDIUM: 'text-amber-500',
     HIGH: 'text-orange-500',
     URGENT: 'text-red-600',
 };
 
-const CHANNEL_ICONS: Record<string, any> = {
+const CHANNEL_ICONS: Record<string, LucideIcon> = {
     WEB: Globe,
     WHATSAPP: MessageCircle,
     EMAIL: Mail,
@@ -67,9 +67,44 @@ const CHANNEL_COLORS: Record<string, string> = {
 };
 
 interface TicketsClientProps {
-    initialTickets: any[];
+    initialTickets: TicketListItem[];
     initialTotal: number;
 }
+
+interface TicketListItem {
+    id: string;
+    ticketNumber: string;
+    subject: string;
+    status: string;
+    priority: string;
+    channel: string;
+    createdAt: string;
+    knowledgeBaseAdded?: boolean;
+    isSlaBreached?: boolean;
+    creator?: {
+        fullName?: string;
+        customerProfile?: { companyName?: string; contractStatus?: string };
+    };
+    assignee?: { fullName?: string };
+    department?: { slug?: string | null; name?: string | null } | null;
+    tags?: string[] | null;
+    suggestedCategories?: unknown[] | null;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null;
+
+const isTicketListItem = (value: unknown): value is TicketListItem =>
+    isRecord(value)
+    && typeof value.id === 'string'
+    && typeof value.ticketNumber === 'string'
+    && typeof value.subject === 'string'
+    && typeof value.status === 'string'
+    && typeof value.priority === 'string'
+    && typeof value.channel === 'string'
+    && typeof value.createdAt === 'string';
+
+const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'Unknown error';
 
 type TicketScope = 'mine' | 'all';
 type StatusCounts = Record<string, number>;
@@ -83,8 +118,8 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const tc = useTranslations('common');
     const pt = useTranslations('profile');
     const locale = useLocale();
-    const [tickets, setTickets] = useState<any[]>(initialTickets);
-    const [total, setTotal] = useState(initialTotal);
+    const [tickets, setTickets] = useState<TicketListItem[]>(initialTickets);
+    const [, setTotal] = useState(initialTotal);
     const [loading, setLoading] = useState(initialTickets.length === 0);
     const [loadError, setLoadError] = useState(false);
     const [filter, setFilter] = useState('');
@@ -131,7 +166,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     };
 
     const sortedTickets = useMemo(() => {
-        const getValue = (ticket: any): string | number => {
+        const getValue = (ticket: TicketListItem): string | number => {
             switch (sortKey) {
                 case 'system_id': return ticket.ticketNumber ?? '';
                 case 'company': return ticket.creator?.customerProfile?.companyName ?? '';
@@ -198,7 +233,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
             }
             const res = await api.tickets.list(params);
             if (requestId !== loadRequestIdRef.current) return;
-            setTickets(res.data ?? []);
+            setTickets((res.data ?? []).filter(isTicketListItem));
             setTotal(res.total ?? 0);
             setStatusCounts(res.statusCounts ?? null);
         } catch {
@@ -249,8 +284,8 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
             toast.success(t('bulk.success', { count: selectedIds.length }));
             setSelectedIds([]);
             load(filter, scope, search);
-        } catch (err: any) {
-            toast.error(t('bulk.error', { message: err.message }));
+        } catch (err: unknown) {
+            toast.error(t('bulk.error', { message: errorMessage(err) }));
         } finally {
             setBulkLoading(false);
         }
@@ -264,8 +299,8 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
             toast.success(t('bulk.delete_success', { count: selectedIds.length }) || `${selectedIds.length} tickets deleted.`);
             setSelectedIds([]);
             load(filter, scope, search);
-        } catch (err: any) {
-            toast.error(err.message);
+        } catch (err: unknown) {
+            toast.error(errorMessage(err));
         } finally {
             setBulkLoading(false);
         }
@@ -278,8 +313,8 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
             await api.tickets.delete(id);
             toast.success(t('delete_success', { number }) || `Ticket #${number} deleted.`);
             load(filter, scope, search);
-        } catch (err: any) {
-            toast.error(err.message);
+        } catch (err: unknown) {
+            toast.error(errorMessage(err));
         }
     };
 
@@ -326,7 +361,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                         </div>
                         {t('title')}
                     </h2>
-                    <p className="text-sm text-muted-foreground mt-1 ml-14 font-medium opacity-70">
+                    <p className="text-sm text-muted-foreground mt-1 ml-14 font-medium">
                         {t('subtitle')}
                     </p>
                 </div>
@@ -408,7 +443,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                         </button>
                     ))}
                 </div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     {t('filters.summary', { scope: activeScopeLabel, status: activeStatusLabel })}
                 </div>
             </div>
@@ -490,7 +525,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                             </Button>
                         </div>
                     ) : tickets.length === 0 ? (
-                        <div className="p-20 text-center min-w-[1000px] opacity-30">
+                        <div className="p-20 text-center min-w-[1000px]">
                             <Ticket className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.3em]">{t('table.empty')}</p>
                         </div>
@@ -499,7 +534,12 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                             <thead>
                                 <tr className="border-b border-white/5 bg-white/[0.03] h-12">
                                     <th className="px-6 w-12">
-                                        <button onClick={toggleSelectAll} className="hover:text-primary transition-colors">
+                                        <button
+                                            type="button"
+                                            onClick={toggleSelectAll}
+                                            className="hover:text-primary transition-colors"
+                                            aria-label={t('table.select_all')}
+                                        >
                                             {selectedIds.length === tickets.length && tickets.length > 0 ?
                                                 <CheckSquare className="h-4 w-4 text-primary" /> :
                                                 <Square className="h-4 w-4 text-muted-foreground/30" />
@@ -515,7 +555,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                                     {sortableHeader('priority', t('table.header.priority'), 'text-center')}
                                     {sortableHeader('assignee', t('table.header.assignee'))}
                                     {sortableHeader('timestamp', t('table.header.timestamp'), 'text-right')}
-                                    {isAdmin && <th className="px-6 w-12"></th>}
+                                    {isAdmin && <th className="px-6 w-12"><span className="sr-only">{t('table.header.actions')}</span></th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
@@ -530,8 +570,10 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                                         >
                                             <td className="px-6">
                                                 <button
+                                                    type="button"
                                                     onClick={(e) => toggleSelect(e, ticket.id)}
                                                     className={`transition-colors ${isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
+                                                    aria-label={t('table.select_ticket', { ticket: ticket.ticketNumber })}
                                                 >
                                                     {isSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4 opacity-10 group-hover:opacity-100" />}
                                                 </button>
@@ -626,6 +668,7 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
                                                         size="sm"
                                                         onClick={(e) => handleDelete(e, ticket.id, ticket.ticketNumber)}
                                                         className="h-8 w-8 p-0 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                                                        aria-label={t('table.delete_ticket', { ticket: ticket.ticketNumber })}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>

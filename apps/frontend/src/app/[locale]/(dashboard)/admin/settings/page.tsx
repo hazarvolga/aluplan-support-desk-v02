@@ -16,12 +16,12 @@ import { useToast } from '@/hooks/use-toast';
 import {
     Loader2, Bot, Globe, Mail, ShieldCheck, Palette, CheckCircle2,
     XCircle, ExternalLink, Plus, Trash2, Edit2, AlertCircle, Clock,
-    Upload, Trash, MessageSquare, Phone, Monitor, Database, Sparkles, Copy
+    Upload, Trash, MessageSquare, Monitor, Database, Sparkles
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
-    Dialog, DialogContent, DialogDescription, DialogFooter,
-    DialogHeader, DialogTitle, DialogTrigger
+    Dialog, DialogContent, DialogFooter,
+    DialogHeader, DialogTitle
 } from '@/components/ui/dialog';
 import {
     Table, TableBody, TableCell, TableHead,
@@ -31,12 +31,24 @@ import { AiTelemetryDashboard } from '@/components/admin/AiTelemetryDashboard';
 import { useTranslations } from 'next-intl';
 import { SystemRequirementsForm } from '@/components/admin/settings/SystemRequirementsForm';
 
-enum TicketPriority {
-    LOW = 'LOW',
-    MEDIUM = 'MEDIUM',
-    HIGH = 'HIGH',
-    CRITICAL = 'CRITICAL'
-}
+type Setting = { key: string; value: string; isSecret?: boolean };
+type AiHealth = {
+    chatProvider?: string;
+    providers?: Record<string, { available?: boolean }>;
+};
+type SlaPolicy = {
+    id: string;
+    name: string;
+    priority: string;
+    departmentId?: string;
+    department?: { name?: string | null } | null;
+    firstResponseMinutes: number;
+    resolutionMinutes: number;
+    businessHoursOnly: boolean;
+};
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error && error.message ? error.message : fallback;
 
 export default function AdminSettingsPage() {
     const t = useTranslations('settings');
@@ -45,11 +57,11 @@ export default function AdminSettingsPage() {
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [settings, setSettings] = useState<any[]>([]);
+    const [settings, setSettings] = useState<Setting[]>([]);
     const [gmailAuthorizing, setGmailAuthorizing] = useState(false);
     const [imapTesting, setImapTesting] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
-    const [aiHealth, setAiHealth] = useState<any>(null);
+    const [aiHealth, setAiHealth] = useState<AiHealth | null>(null);
     type ModelList = {
         chatModels: Array<{ id: string; displayName: string; recommended: boolean }>;
         embedModels: Array<{ id: string; displayName: string; recommended: boolean }>;
@@ -87,10 +99,9 @@ export default function AdminSettingsPage() {
     };
 
     // SLA States
-    const [policies, setPolicies] = useState<any[]>([]);
-    const [departments, setDepartments] = useState<any[]>([]);
+    const [policies, setPolicies] = useState<SlaPolicy[]>([]);
     const [isAddingPolicy, setIsAddingPolicy] = useState(false);
-    const [editingPolicy, setEditingPolicy] = useState<any>(null);
+    const [editingPolicy, setEditingPolicy] = useState<SlaPolicy | null>(null);
     const [newPolicy, setNewPolicy] = useState({
         name: '',
         priority: 'MEDIUM',
@@ -102,6 +113,9 @@ export default function AdminSettingsPage() {
 
     // Derived: check if refresh token exists in loaded settings
     const gmailTokenStatus = settings.find(s => s.key === 'mail.gmail.refresh_token')?.value ? 'ok' : 'missing';
+    const primaryProviderAvailable = Boolean(
+        aiHealth?.chatProvider && aiHealth.providers?.[aiHealth.chatProvider]?.available,
+    );
 
     useEffect(() => {
         loadSettings();
@@ -110,7 +124,6 @@ export default function AdminSettingsPage() {
 
         // Read Gmail OAuth2 callback result from URL params
         const gmailStatus = searchParams.get('gmail_status');
-        const gmailEmail = searchParams.get('gmail_email');
         const gmailError = searchParams.get('gmail_error');
         if (gmailStatus === 'success') {
             toast({ title: '✅ ' + t('email.authorized'), description: t('toasts.gmail_success') });
@@ -122,19 +135,16 @@ export default function AdminSettingsPage() {
     const loadSettings = async () => {
         try {
             setLoading(true);
-            const data = await api.settings.list(true);
-            const chatProvider = data.find((s: any) => s.key === 'ai.chat_provider')?.value;
-            const activeProvider = data.find((s: any) => s.key === 'ai.active_provider')?.value;
-            if (chatProvider && activeProvider !== chatProvider) {
-                const activeIndex = data.findIndex((s: any) => s.key === 'ai.active_provider');
-                if (activeIndex > -1) {
-                    data[activeIndex] = { ...data[activeIndex], value: chatProvider };
-                } else {
-                    data.push({ key: 'ai.active_provider', value: chatProvider });
-                }
-            }
-            setSettings(data);
-        } catch (error: any) {
+            const data = await api.settings.list(true) as Setting[];
+            const chatProvider = data.find((setting) => setting.key === 'ai.chat_provider')?.value;
+            const activeProvider = data.find((setting) => setting.key === 'ai.active_provider')?.value;
+            const nextSettings = chatProvider && activeProvider !== chatProvider
+                ? data.some((setting) => setting.key === 'ai.active_provider')
+                    ? data.map((setting) => setting.key === 'ai.active_provider' ? { ...setting, value: chatProvider } : setting)
+                    : [...data, { key: 'ai.active_provider', value: chatProvider }]
+                : data;
+            setSettings(nextSettings);
+        } catch {
             toast({
                 title: t('toasts.load_error').split(':')[0],
                 description: t('toasts.load_error'),
@@ -148,7 +158,7 @@ export default function AdminSettingsPage() {
     const loadAiHealth = async () => {
         try {
             const res = await api.ai.getHealthStatus();
-            setAiHealth(res);
+            setAiHealth(res as AiHealth);
         } catch (e) {
             console.error('Failed to load AI health', e);
         }
@@ -177,10 +187,10 @@ export default function AdminSettingsPage() {
             const res = await api.branding.uploadLogo(file);
             updateValue('branding.logo_url', res.publicUrl || res.url);
             toast({ title: '✅ ' + t('branding.logo_title'), description: t('toasts.logo_success') });
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast({
                 title: t('toasts.save_error').split(':')[0],
-                description: t('toasts.logo_error') + ': ' + error.message,
+                description: t('toasts.logo_error') + ': ' + getErrorMessage(error, t('toasts.save_error')),
                 variant: 'destructive',
             });
         } finally {
@@ -282,10 +292,10 @@ export default function AdminSettingsPage() {
                 title: t('toasts.success'),
                 description: t('toasts.save_success', { key: 'Settings' }),
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast({
                 title: t('toasts.generic_error'),
-                description: error.message || t('toasts.save_error'),
+                description: getErrorMessage(error, t('toasts.save_error')),
                 variant: 'destructive',
             });
         } finally {
@@ -295,13 +305,9 @@ export default function AdminSettingsPage() {
 
     const loadSlaData = async () => {
         try {
-            const [policiesData, deptsData] = await Promise.all([
-                api.sla.list(),
-                api.teams.departments()
-            ]);
-            setPolicies(policiesData);
-            setDepartments(deptsData);
-        } catch (err: any) {
+            const policiesData = await api.sla.list();
+            setPolicies(policiesData as SlaPolicy[]);
+        } catch (err: unknown) {
             console.error(t('sla.load_error'), err);
         }
     };
@@ -319,8 +325,8 @@ export default function AdminSettingsPage() {
             setIsAddingPolicy(false);
             setEditingPolicy(null);
             loadSlaData();
-        } catch (err: any) {
-            toast({ title: t('toasts.save_error').split(':')[0], description: err.message, variant: 'destructive' });
+        } catch (err: unknown) {
+            toast({ title: t('toasts.save_error').split(':')[0], description: getErrorMessage(err, t('toasts.save_error')), variant: 'destructive' });
         } finally {
             setSaving(false);
         }
@@ -332,17 +338,17 @@ export default function AdminSettingsPage() {
             await api.sla.delete(id);
             toast({ title: t('toasts.success'), description: t('toasts.policy_delete_success') });
             loadSlaData();
-        } catch (err: any) {
-            toast({ title: t('toasts.save_error').split(':')[0], description: err.message, variant: 'destructive' });
+        } catch (err: unknown) {
+            toast({ title: t('toasts.save_error').split(':')[0], description: getErrorMessage(err, t('toasts.save_error')), variant: 'destructive' });
         }
     };
 
-    const openEditPolicy = (policy: any) => {
+    const openEditPolicy = (policy: SlaPolicy) => {
         setEditingPolicy(policy);
         setNewPolicy({
             name: policy.name,
             priority: policy.priority,
-            departmentId: policy.departmentId,
+            departmentId: policy.departmentId ?? '',
             firstResponseMinutes: policy.firstResponseMinutes,
             resolutionMinutes: policy.resolutionMinutes,
             businessHoursOnly: policy.businessHoursOnly
@@ -351,7 +357,7 @@ export default function AdminSettingsPage() {
     };
 
     const getPriorityBadge = (priority: string) => {
-        const styles: any = {
+        const styles: Record<string, string> = {
             URGENT: 'bg-red-500/10 text-red-500 border-red-500/20',
             CRITICAL: 'bg-red-500/10 text-red-500 border-red-500/20',
             HIGH: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
@@ -463,14 +469,14 @@ export default function AdminSettingsPage() {
                                             <>
                                                 <div className="flex flex-col items-center">
                                                     <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Primary</span>
-                                                    <Badge variant="outline" className={`text-[10px] relative ${aiHealth?.providers?.[aiHealth?.chatProvider]?.available ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/20' : 'bg-red-500/15 text-red-500 border-red-500/20'}`}>
-                                                        {aiHealth?.providers?.[aiHealth?.chatProvider]?.available && (
+                                                    <Badge variant="outline" className={`text-[10px] relative ${primaryProviderAvailable ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/20' : 'bg-red-500/15 text-red-500 border-red-500/20'}`}>
+                                                        {primaryProviderAvailable && (
                                                             <span className="absolute -left-1 -top-1 flex h-2 w-2">
                                                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                                             </span>
                                                         )}
-                                                        {aiHealth?.providers?.[aiHealth?.chatProvider]?.available ? 'ONLINE' : 'DOWN'}
+                                                        {primaryProviderAvailable ? 'ONLINE' : 'DOWN'}
                                                     </Badge>
                                                 </div>
                                                 <div className="h-6 w-px bg-border"></div>
@@ -514,12 +520,12 @@ export default function AdminSettingsPage() {
                                                 <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-500 border-blue-500/20">ACTIVE</Badge>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-[12px] font-bold tracking-widest uppercase">{t('ai.chat_provider')}</Label>
+                                                <Label htmlFor="ai-chat-provider" className="text-[12px] font-bold tracking-widest uppercase">{t('ai.chat_provider')}</Label>
                                                 <Select value={getSetting('ai.chat_provider') || getSetting('ai.active_provider') || 'ollama'} onValueChange={v => {
                                                     updateValue('ai.chat_provider', v);
                                                     updateValue('ai.active_provider', v);
                                                 }}>
-                                                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                                                    <SelectTrigger id="ai-chat-provider" className="w-full"><SelectValue /></SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
                                                         <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
@@ -620,8 +626,8 @@ export default function AdminSettingsPage() {
                                                                     const rec = result.embedModels.find((m: { recommended: boolean }) => m.recommended);
                                                                     if (rec) updateValue('ai.ollama.embed_model', rec.id);
                                                                 }
-                                                            } catch (e: any) {
-                                                                toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                                toast({ title: t('ai.model_list_error'), description: getErrorMessage(e, t('toasts.generic_error')), variant: 'destructive' });
                                                             } finally {
                                                                 setLoadingOllamaModels(false);
                                                             }
@@ -633,8 +639,8 @@ export default function AdminSettingsPage() {
                                                         try {
                                                             const res = await api.ai.testConnection('ollama');
                                                             toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || (res.success ? t('toasts.ollama_ok') : t('toasts.ollama_fail')), variant: res.success ? 'default' : 'destructive' });
-                                                        } catch (e: any) {
-                                                            toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                        } catch (e: unknown) {
+                                                            toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                         }
                                                     }}>{t('ai.test_btn')}</Button>
                                                 </div>
@@ -710,8 +716,8 @@ export default function AdminSettingsPage() {
                                                                     const rec = result.embedModels.find((m: { recommended: boolean }) => m.recommended);
                                                                     if (rec) updateValue('ai.openai.embed_model', rec.id);
                                                                 }
-                                                            } catch (e: any) {
-                                                                toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                                toast({ title: t('ai.model_list_error'), description: getErrorMessage(e, t('toasts.generic_error')), variant: 'destructive' });
                                                             } finally {
                                                                 setLoadingOpenaiModels(false);
                                                             }
@@ -723,8 +729,8 @@ export default function AdminSettingsPage() {
                                                         try {
                                                             const res = await api.ai.testConnection('openai');
                                                             toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || (res.success ? t('toasts.openai_ok') : t('toasts.openai_fail')), variant: res.success ? 'default' : 'destructive' });
-                                                        } catch (e: any) {
-                                                            toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                        } catch (e: unknown) {
+                                                            toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                         }
                                                     }}>{t('ai.test_btn')}</Button>
                                                 </div>
@@ -785,7 +791,7 @@ export default function AdminSettingsPage() {
                                                     try {
                                                         const res = await api.ai.testConnection('vertex');
                                                         toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || t('ai.vertex.connection_success'), variant: res.success ? 'default' : 'destructive' });
-                                                    } catch (e: any) {
+                                                    } catch {
                                                         toast({ title: t('toasts.connection_error'), description: t('ai.vertex.connection_error'), variant: 'destructive' });
                                                     }
                                                 }}>{t('ai.test_btn')}</Button>
@@ -837,8 +843,8 @@ export default function AdminSettingsPage() {
                                                                 const nextEmbedModel = chooseDefaultModel(result.embedModels, getSetting('ai.gemini.embed_model'));
                                                                 if (nextChatModel) updateValue('ai.gemini.chat_model', nextChatModel);
                                                                 if (nextEmbedModel) updateValue('ai.gemini.embed_model', nextEmbedModel);
-                                                            } catch (e: any) {
-                                                                toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                                toast({ title: t('ai.model_list_error'), description: getErrorMessage(e, t('toasts.generic_error')), variant: 'destructive' });
                                                             } finally {
                                                                 setLoadingGeminiModels(false);
                                                             }
@@ -850,7 +856,7 @@ export default function AdminSettingsPage() {
                                                         try {
                                                             const res = await api.ai.testConnection('gemini');
                                                             toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || 'Google Gemini Studio bağlantısı başarılı.', variant: res.success ? 'default' : 'destructive' });
-                                                        } catch (e: any) {
+                                                        } catch {
                                                             toast({ title: t('toasts.connection_error'), description: 'Gemini API ulaşılamıyor', variant: 'destructive' });
                                                         }
                                                     }}>{t('ai.test_btn')}</Button>
@@ -973,8 +979,8 @@ export default function AdminSettingsPage() {
                                                             description: res.message || (res.success ? t('toasts.xai_ok') : t('toasts.xai_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                        toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                     }
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
@@ -1021,8 +1027,8 @@ export default function AdminSettingsPage() {
                                                                     const rec = result.chatModels.find((m: { recommended: boolean }) => m.recommended);
                                                                     if (rec) updateValue('ai.groq.chat_model', rec.id);
                                                                 }
-                                                            } catch (e: any) {
-                                                                toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                                toast({ title: t('ai.model_list_error'), description: getErrorMessage(e, t('toasts.generic_error')), variant: 'destructive' });
                                                             } finally {
                                                                 setLoadingGroqModels(false);
                                                             }
@@ -1038,8 +1044,8 @@ export default function AdminSettingsPage() {
                                                                 description: res.message || (res.success ? t('toasts.groq_ok') : t('toasts.groq_fail')),
                                                                 variant: res.success ? 'default' : 'destructive'
                                                             });
-                                                        } catch (e: any) {
-                                                            toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                            toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                         }
                                                     }}>{t('ai.test_btn')}</Button>
                                                 </div>
@@ -1094,8 +1100,8 @@ export default function AdminSettingsPage() {
                                                             description: res.message || (res.success ? t('toasts.deepseek_ok') : t('toasts.deepseek_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                        toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                     }
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
@@ -1135,8 +1141,8 @@ export default function AdminSettingsPage() {
                                                             description: res.message || (res.success ? t('toasts.llmapi_ok') : t('toasts.llmapi_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                        toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                     }
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
@@ -1176,8 +1182,8 @@ export default function AdminSettingsPage() {
                                                             description: res.message || (res.success ? t('toasts.custom_ok') : t('toasts.custom_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                        toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                     }
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
@@ -1435,8 +1441,8 @@ export default function AdminSettingsPage() {
                                                             setGmailAuthorizing(true);
                                                             const { url } = await api.email.getGmailAuthUrl();
                                                             window.open(url, '_blank');
-                                                        } catch (err: any) {
-                                                            toast({ title: t('toasts.connection_error'), description: err.message || t('toasts.gmail_credentials_hint'), variant: 'destructive' });
+                                                        } catch (err: unknown) {
+                                                            toast({ title: t('toasts.connection_error'), description: getErrorMessage(err, t('toasts.gmail_credentials_hint')), variant: 'destructive' });
                                                         } finally {
                                                             setGmailAuthorizing(false);
                                                         }
@@ -1472,8 +1478,8 @@ export default function AdminSettingsPage() {
                                                             description: res.message,
                                                             variant: res.available ? 'default' : 'destructive'
                                                         });
-                                                    } catch (err: any) {
-                                                        toast({ title: tc('error_title'), description: err.message, variant: 'destructive' });
+                                                        } catch (err: unknown) {
+                                                        toast({ title: tc('error_title'), description: getErrorMessage(err, t('toasts.generic_error')), variant: 'destructive' });
                                                     } finally {
                                                         setImapTesting(false);
                                                     }
@@ -1567,8 +1573,8 @@ export default function AdminSettingsPage() {
                                                 } else {
                                                     toast({ title: t('toasts.connection_failed'), description: t('toasts.generic_fail_hint'), variant: 'destructive' });
                                                 }
-                                            } catch (err: any) {
-                                                toast({ title: t('toasts.error') || t('toasts.generic_error'), description: err.message || t('toasts.generic_error'), variant: 'destructive' });
+                                                        } catch (err: unknown) {
+                                                toast({ title: t('toasts.error') || t('toasts.generic_error'), description: getErrorMessage(err, t('toasts.generic_error')), variant: 'destructive' });
                                             }
                                         }}
                                     >
@@ -1684,7 +1690,7 @@ export default function AdminSettingsPage() {
                                         </div>
                                         <div className="space-y-2">
                                             <Label>{t('sla.form.department_label')}</Label>
-                                            <Input id="sla_department" placeholder={t('sla.form.placeholders.department')} defaultValue={editingPolicy?.department || ''} />
+                                            <Input id="sla_department" placeholder={t('sla.form.placeholders.department')} defaultValue={editingPolicy?.department?.name || ''} />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
@@ -2040,16 +2046,20 @@ export default function AdminSettingsPage() {
                                                     accessKey: getSetting('storage.access_key'),
                                                     secretKey: getSetting('storage.secret_key'),
                                                 };
-                                                const res = await api.settings.testStorage(config);
+                                                const res = await api.settings.testStorage(config) as {
+                                                    success: boolean;
+                                                    message: string;
+                                                    details?: { advice?: string };
+                                                };
                                                 toast({
                                                     title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'),
                                                     description: res.message + (res.details?.advice ? `\n\n${res.details.advice}` : ''),
                                                     variant: res.success ? 'default' : 'destructive'
                                                 });
-                                            } catch (error: any) {
+                                            } catch (error: unknown) {
                                                 toast({
                                                     title: t('toasts.connection_error'),
-                                                    description: error.message,
+                                                    description: getErrorMessage(error, t('toasts.generic_error')),
                                                     variant: 'destructive'
                                                 });
                                             }

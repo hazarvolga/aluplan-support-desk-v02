@@ -129,7 +129,7 @@ function UnsubscribeContent() {
                 setStatus('error');
                 setMessage(data.message || t.genericError);
             }
-        } catch (error) {
+        } catch {
             setStatus('error');
             setMessage(t.connectionError);
         }

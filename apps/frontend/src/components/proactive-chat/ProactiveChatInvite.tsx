@@ -21,7 +21,6 @@ interface ProactiveChatInviteProps {
 }
 
 const BROADCAST_CHANNEL = 'proactive_chat_invite';
-const STORAGE_KEY = 'proactive_chat_active_invite';
 const TIMEOUT_SECONDS = 120;
 
 export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
@@ -30,12 +29,13 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
     const [loading, setLoading] = useState<'accept' | 'decline' | null>(null);
     const countdownRef = useRef<NodeJS.Timeout | null>(null);
     const channelRef = useRef<BroadcastChannel | null>(null);
+    const inviteRef = useRef<IncomingPayload | null>(null);
 
     const clearInvite = useCallback(() => {
+        inviteRef.current = null;
         setInvite(null);
         setCountdown(TIMEOUT_SECONDS);
         if (countdownRef.current) clearInterval(countdownRef.current);
-        localStorage.removeItem(STORAGE_KEY);
         channelRef.current?.postMessage({ type: 'INVITE_CLEARED' });
     }, []);
 
@@ -64,20 +64,20 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
         };
     }, []);
 
-    // Multi-tab sync & initial cleanup
+    // Multi-tab sync. The backend API is the source of truth for pending sessions;
+    // no session identifier is persisted in script-readable browser storage.
     useEffect(() => {
-        // Clear any old session locks on mount to prevent deadlocks
-        localStorage.removeItem(STORAGE_KEY);
-
         // Listen for channel messages
         const channel = channelRef.current;
         if (!channel) return;
 
         const handleChannelMessage = (event: MessageEvent) => {
             if (event.data.type === 'INVITE_CLAIMED') {
+                inviteRef.current = null;
                 setInvite(null);
                 if (countdownRef.current) clearInterval(countdownRef.current);
             } else if (event.data.type === 'INVITE_CLEARED') {
+                inviteRef.current = null;
                 setInvite(null);
                 if (countdownRef.current) clearInterval(countdownRef.current);
             }
@@ -86,7 +86,6 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
         channel.addEventListener('message', handleChannelMessage);
         return () => {
             channel.removeEventListener('message', handleChannelMessage);
-            localStorage.removeItem(STORAGE_KEY); // Cleanup on full unmount
         };
     }, []);
 
@@ -100,21 +99,16 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
             const handleIncoming = (payload: IncomingPayload) => {
                 if (!isSubscribed) return;
 
-                // Multi-tab: check if another tab is already handling a session
-                const existing = localStorage.getItem(STORAGE_KEY);
-                if (existing) return;
-
+                inviteRef.current = payload;
                 setInvite(payload);
                 startCountdown();
 
-                // Block other tabs from showing this invite
-                localStorage.setItem(STORAGE_KEY, payload.sessionId);
                 channelRef.current?.postMessage({ type: 'INVITE_CLAIMED', sessionId: payload.sessionId });
             };
 
             const handleMissed = (payload: { sessionId: string }) => {
                 if (!isSubscribed) return;
-                if (invite?.sessionId === payload.sessionId) {
+                if (inviteRef.current?.sessionId === payload.sessionId) {
                     clearInvite();
                 }
             };
@@ -151,7 +145,7 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
         } catch (err) {
             console.error('[ProactiveChatInvite] Socket error:', err);
         }
-    }, [invite?.sessionId, startCountdown, clearInvite]);
+    }, [startCountdown, clearInvite]);
 
     const handleAccept = async () => {
         if (!invite) return;
@@ -160,8 +154,8 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
             await api.proactiveChat.acceptSession(invite.sessionId);
             clearInvite();
             onAccepted?.(invite.sessionId);
-        } catch (err: any) {
-            toast.error(err.message || 'Chat kabul edilemedi');
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : 'Chat kabul edilemedi');
         } finally {
             setLoading(null);
         }
@@ -173,8 +167,8 @@ export function ProactiveChatInvite({ onAccepted }: ProactiveChatInviteProps) {
         try {
             await api.proactiveChat.declineSession(invite.sessionId);
             clearInvite();
-        } catch (err: any) {
-            toast.error(err.message || 'Chat reddedilemedi');
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : 'Chat reddedilemedi');
         } finally {
             setLoading(null);
         }

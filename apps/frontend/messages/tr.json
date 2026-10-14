@@ -139,6 +139,10 @@
     "reset_password": {
       "new_password_label": "YENİ ŞİFRE",
       "confirm_password_label": "ŞİFREYİ DOĞRULA",
+      "show_new_password": "Yeni şifreyi göster",
+      "hide_new_password": "Yeni şifreyi gizle",
+      "show_confirm_password": "Şifre doğrulamasını göster",
+      "hide_confirm_password": "Şifre doğrulamasını gizle",
       "submit_btn": "ŞİFREYİ GÜNCELLE",
       "title": "YENİ ŞİFRE BELİRLE",
       "subtitle": "Güvenliğiniz için yeni bir şifre girin",
@@ -173,6 +177,7 @@
     "logout": "Çıkış Yap",
     "loading": "Yükleniyor...",
     "error": "Bir hata oluştu",
+    "close_notification": "Bildirimi kapat",
     "session_expired": "Oturum süresi doldu. Lütfen tekrar giriş yapın.",
     "realtime_session_ended": "Canlı güncellemeler durdu. Bu sayfayı kapatmadan yeni sekmede tekrar giriş yapın, sonra yeniden bağlanın. Gönderilmemiş taslağınız bu sayfada korunur.",
     "realtime_sign_in": "Yeni sekmede giriş yap",
@@ -741,6 +746,9 @@
       "empty": "Kuyruk Boş",
       "load_error": "Destek talepleri yüklenemedi",
       "retry": "Tekrar Dene",
+      "select_all": "Tüm talepleri seç",
+      "select_ticket": "{ticket} numaralı talebi seç",
+      "delete_ticket": "{ticket} numaralı talebi sil",
       "header": {
         "system_id": "ID",
         "company": "Şirket",
@@ -750,7 +758,8 @@
         "status": "Durum",
         "priority": "Öncelik",
         "assignee": "Atanan",
-        "timestamp": "Oluşturma"
+        "timestamp": "Oluşturma",
+        "actions": "İşlemler"
       },
       "category": {
         "licensing": "Lisans ve Aktivasyon"

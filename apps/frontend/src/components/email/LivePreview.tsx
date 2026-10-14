@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Smartphone, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -12,18 +12,6 @@ interface LivePreviewProps {
 
 export function LivePreview({ html, isLoading }: LivePreviewProps) {
     const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
-    const iframeRef = useRef<HTMLIFrameElement>(null);
-
-    useEffect(() => {
-        if (iframeRef.current && html) {
-            const doc = iframeRef.current.contentDocument;
-            if (doc) {
-                doc.open();
-                doc.write(html);
-                doc.close();
-            }
-        }
-    }, [html]);
 
     return (
         <div className="flex flex-col h-full bg-white/[0.02] border border-white/5 rounded-lg overflow-hidden">
@@ -64,7 +52,8 @@ export function LivePreview({ html, isLoading }: LivePreviewProps) {
                         </div>
                     )}
                     <iframe
-                        ref={iframeRef}
+                        sandbox="allow-popups"
+                        srcDoc={html}
                         className="w-full h-full min-h-[600px] border-none"
                         title="Email Preview"
                     />

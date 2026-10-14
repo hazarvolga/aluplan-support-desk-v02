@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { HardDrive, Lock, Eye, EyeOff, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getErrorMessage, type Setting } from '../settings-types';
 
 export function StorageSettings() {
     const t = useTranslations('settings.storage');
@@ -25,11 +26,12 @@ export function StorageSettings() {
         const load = async () => {
             try {
                 const settings = await api.settings.list(true);
-                setAccessKey(settings.find((s: any) => s.key === 'r2_access_key_id')?.value || '');
-                setSecretKey(settings.find((s: any) => s.key === 'r2_secret_access_key')?.value || '');
-                setEndpoint(settings.find((s: any) => s.key === 'r2_endpoint')?.value || '');
-                setBucket(settings.find((s: any) => s.key === 'r2_bucket_name')?.value || 'aluplan-docs');
-            } catch (error: any) {
+                const typedSettings = settings as Setting[];
+                setAccessKey(typedSettings.find((setting) => setting.key === 'r2_access_key_id')?.value || '');
+                setSecretKey(typedSettings.find((setting) => setting.key === 'r2_secret_access_key')?.value || '');
+                setEndpoint(typedSettings.find((setting) => setting.key === 'r2_endpoint')?.value || '');
+                setBucket(typedSettings.find((setting) => setting.key === 'r2_bucket_name')?.value || 'aluplan-docs');
+            } catch (error: unknown) {
                 console.error('Failed to load storage settings:', error);
             } finally {
                 setLoading(false);
@@ -48,8 +50,8 @@ export function StorageSettings() {
                 api.settings.upsert({ key: 'r2_bucket_name', value: bucket, isSecret: false })
             ]);
             toast.success(t('save_success'));
-        } catch (error: any) {
-            toast.error(t('save_error', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('save_error', { message: getErrorMessage(error) }));
         } finally {
             setSaving(false);
         }

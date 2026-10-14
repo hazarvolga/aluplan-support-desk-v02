@@ -3,9 +3,11 @@ import { api, isBackendUnavailableError } from './api';
 
 describe('api.ts', () => {
     const originalFetch = global.fetch;
+    const fetchMock = vi.fn();
 
     beforeEach(() => {
-        global.fetch = vi.fn();
+        fetchMock.mockReset();
+        global.fetch = fetchMock as typeof fetch;
     });
 
     afterEach(() => {
@@ -14,7 +16,7 @@ describe('api.ts', () => {
     });
 
     it('should make a GET request successfully', async () => {
-        (global.fetch as any).mockResolvedValueOnce({
+        fetchMock.mockResolvedValueOnce({
             ok: true,
             status: 200,
             text: async () => JSON.stringify({ success: true }),
@@ -30,7 +32,7 @@ describe('api.ts', () => {
     });
 
     it('should make a POST request successfully with payload', async () => {
-        (global.fetch as any).mockResolvedValueOnce({
+        fetchMock.mockResolvedValueOnce({
             ok: true,
             status: 200,
             text: async () => JSON.stringify({ id: 1 }),
@@ -47,21 +49,21 @@ describe('api.ts', () => {
 
     it('should handle 401 response and trigger refresh logic', async () => {
         // Step 1: 401 Unauthorized
-        (global.fetch as any).mockResolvedValueOnce({
+        fetchMock.mockResolvedValueOnce({
             ok: false,
             status: 401,
             json: async () => ({ message: 'Unauthorized' })
         });
 
         // Step 2: Refresh token succeeds
-        (global.fetch as any).mockResolvedValueOnce({
+        fetchMock.mockResolvedValueOnce({
             ok: true,
             status: 200,
             json: async () => ({})
         });
 
         // Step 3: Retry original request succeeds
-        (global.fetch as any).mockResolvedValueOnce({
+        fetchMock.mockResolvedValueOnce({
             ok: true,
             status: 200,
             text: async () => JSON.stringify({ retry: 'success' }),
@@ -75,7 +77,7 @@ describe('api.ts', () => {
 
     it('should refresh once on stale permission 403 and retry request', async () => {
         // Step 1: Stale JWT still has an old permission payload
-        (global.fetch as any).mockResolvedValueOnce({
+        fetchMock.mockResolvedValueOnce({
             ok: false,
             status: 403,
             clone: () => ({
@@ -85,14 +87,14 @@ describe('api.ts', () => {
         });
 
         // Step 2: Refresh token succeeds and issues a JWT with current permissions
-        (global.fetch as any).mockResolvedValueOnce({
+        fetchMock.mockResolvedValueOnce({
             ok: true,
             status: 200,
             json: async () => ({}),
         });
 
         // Step 3: Retry original request succeeds
-        (global.fetch as any).mockResolvedValueOnce({
+        fetchMock.mockResolvedValueOnce({
             ok: true,
             status: 200,
             text: async () => JSON.stringify({ data: [] }),
@@ -103,11 +105,11 @@ describe('api.ts', () => {
 
         expect(response).toEqual({ data: [] });
         expect(global.fetch).toHaveBeenCalledTimes(3);
-        expect((global.fetch as any).mock.calls[1][0]).toContain('/auth/refresh');
+        expect(fetchMock.mock.calls[1][0]).toContain('/auth/refresh');
     });
 
     it('should fail if fetch throws non-ok status without 401', async () => {
-        (global.fetch as any).mockResolvedValueOnce({
+        fetchMock.mockResolvedValueOnce({
             ok: false,
             status: 500,
             statusText: 'Internal Server Error',
@@ -120,7 +122,7 @@ describe('api.ts', () => {
     it('does not log an expected knowledge URL duplicate conflict as a console error', async () => {
         const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
         try {
-            (global.fetch as any).mockResolvedValueOnce({
+            fetchMock.mockResolvedValueOnce({
                 ok: false,
                 status: 409,
                 statusText: 'Conflict',
@@ -139,7 +141,7 @@ describe('api.ts', () => {
     });
 
     it('classifies network failures as backend unavailable', async () => {
-        (global.fetch as any).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+        fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
         const promise = api.get('/offline');
 
@@ -154,10 +156,10 @@ describe('api.ts', () => {
 
     describe('api.pool', () => {
         it('should list pools', async () => {
-            (global.fetch as any).mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify([{ id: 1 }]) });
+            fetchMock.mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify([{ id: 1 }]) } as Response);
             const list = await api.pool.list();
             expect(list).toEqual([{ id: 1 }]);
-            expect((global.fetch as any).mock.calls[0][0]).toContain('/knowledge-pool/sources');
+            expect(fetchMock.mock.calls[0][0]).toContain('/knowledge-pool/sources');
         });
 
         it('returns null when the latest LearnNow crawl run response has an empty body', async () => {
@@ -203,14 +205,14 @@ describe('api.ts', () => {
             expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining(`/tickets/t1${path}`), expect.objectContaining({ method, body: JSON.stringify(body) }));
         });
         it('should get a ticket', async () => {
-            (global.fetch as any).mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify({ id: 't1' }) });
+            fetchMock.mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify({ id: 't1' }) } as Response);
             const item = await api.tickets.get('t1');
             expect(item).toEqual({ id: 't1' });
-            expect((global.fetch as any).mock.calls[0][0]).toContain('/tickets/t1');
+            expect(fetchMock.mock.calls[0][0]).toContain('/tickets/t1');
         });
 
         it('should fetch sla stats', async () => {
-            (global.fetch as any).mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify({ stats: true }) });
+            fetchMock.mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify({ stats: true }) } as Response);
             const item = await api.tickets.getSlaStats();
             expect(item).toEqual({ stats: true });
         });
@@ -218,7 +220,7 @@ describe('api.ts', () => {
 
     describe('api.ai', () => {
         it('should fetch status', async () => {
-            (global.fetch as any).mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify({ status: 'HEALTHY' }) });
+            fetchMock.mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify({ status: 'HEALTHY' }) } as Response);
             const item = await api.ai.status();
             expect(item).toEqual({ status: 'HEALTHY' });
         });

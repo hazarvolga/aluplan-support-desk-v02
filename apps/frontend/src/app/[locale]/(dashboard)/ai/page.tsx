@@ -66,7 +66,6 @@ function AiPageContent() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(false);
     const [streamingText, setStreamingText] = useState('');
-    const [activeJobId, setActiveJobId] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<Record<string, 'positive' | 'negative' | null>>({});
 
     useEffect(() => {
@@ -77,14 +76,13 @@ function AiPageContent() {
             setStreamingText(prev => prev + data.chunk);
         };
 
-        const handleCompleted = (data: { jobId: string; result: any }) => {
+        const handleCompleted = (data: { jobId: string; result: QueryResult & { response?: string } }) => {
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: data.result.answer || data.result.response || '',
                 result: data.result
             }]);
             setStreamingText('');
-            setActiveJobId(null);
             setLoading(false);
         };
 
@@ -146,9 +144,7 @@ function AiPageContent() {
             const apiHistory = newMessages.map(m => ({ role: m.role, content: m.content }));
             const res = await api.ai.query(userMsg, null, null, locale as string, apiHistory, attachments);
 
-            if (res.jobId) {
-                setActiveJobId(res.jobId);
-            } else {
+            if (!res.jobId) {
                 setMessages(prev => [...prev, {
                     role: 'assistant',
                     content: res.answer || 'No response',
@@ -253,7 +249,7 @@ function AiPageContent() {
                                     {msg.result?.sources && msg.result.sources.length > 0 && (
                                         <div className="mt-6 pt-4 border-t border-white/5">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                {msg.result.sources.map((s: any) => (
+                                                {msg.result.sources.map((s) => (
                                                     <div key={s.articleId} className="flex items-center justify-between p-2 rounded-lg border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] transition-all">
                                                         <span className="text-[11px] font-bold text-white/70 truncate mr-2">{s.title}</span>
                                                         <span className="text-[9px] font-mono text-orange-500/60 font-bold shrink-0">%{Math.round(s.similarity * 100)}</span>

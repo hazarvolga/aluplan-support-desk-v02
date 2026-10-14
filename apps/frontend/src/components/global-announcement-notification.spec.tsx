@@ -17,7 +17,7 @@ vi.mock('@/lib/socket', () => ({
 // ── Mock sonner toast ─────────────────────────────────────────────────
 const mockToast = vi.fn();
 vi.mock('sonner', () => ({
-    toast: (...args: any[]) => mockToast(...args),
+    toast: (...args: unknown[]) => mockToast(...args),
     Toaster: () => null,
 }));
 

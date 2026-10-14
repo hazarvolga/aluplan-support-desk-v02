@@ -4,6 +4,15 @@ import { handlers } from './handlers';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import React from 'react';
 
+type MockElementProps = React.HTMLAttributes<HTMLElement> & {
+    children?: React.ReactNode;
+};
+
+type MockLinkProps = React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    children?: React.ReactNode;
+    href: React.AnchorHTMLAttributes<HTMLAnchorElement>['href'];
+};
+
 // ── Next.js Mocks ──────────────────────────────────────────────────────
 vi.mock('next/navigation', () => ({
     useRouter: vi.fn(() => ({
@@ -42,12 +51,12 @@ vi.mock('framer-motion', async (importOriginal) => {
     const actual = await importOriginal<typeof import('framer-motion')>();
     return {
         ...actual,
-        AnimatePresence: ({ children }: any) => children,
+        AnimatePresence: ({ children }: Pick<MockElementProps, 'children'>) => children,
         motion: {
-            div: ({ children, ...props }: any) => React.createElement('div', props, children),
-            span: ({ children, ...props }: any) => React.createElement('span', props, children),
-            h1: ({ children, ...props }: any) => React.createElement('h1', props, children),
-            p: ({ children, ...props }: any) => React.createElement('p', props, children),
+            div: ({ children, ...props }: MockElementProps) => React.createElement('div', props, children),
+            span: ({ children, ...props }: MockElementProps) => React.createElement('span', props, children),
+            h1: ({ children, ...props }: MockElementProps) => React.createElement('h1', props, children),
+            p: ({ children, ...props }: MockElementProps) => React.createElement('p', props, children),
         }
     };
 });
@@ -55,7 +64,7 @@ vi.mock('framer-motion', async (importOriginal) => {
 // ── i18n Routing Mock ──────────────────────────────────────────────────
 vi.mock('@/i18n/routing', () => ({
     routing: { locales: ['tr', 'en', 'de'] },
-    Link: ({ children, href, ...props }: any) => React.createElement('a', { href, ...props }, children),
+    Link: ({ children, href, ...props }: MockLinkProps) => React.createElement('a', { href, ...props }, children),
     redirect: vi.fn(),
     usePathname: () => '/',
     useRouter: () => ({

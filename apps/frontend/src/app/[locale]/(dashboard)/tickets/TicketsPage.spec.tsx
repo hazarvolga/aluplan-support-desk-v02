@@ -13,6 +13,10 @@ vi.mock('@/components/auth/role-guard', () => ({
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
+const mockUseAuth = (user: unknown) => {
+    vi.mocked(useAuth).mockReturnValue({ user } as ReturnType<typeof useAuth>);
+};
+
 describe('TicketsPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -22,7 +26,7 @@ describe('TicketsPage', () => {
     });
 
     it('renders empty state when no tickets', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
+        mockUseAuth({ role: 'CUSTOMER' } );
 
         // Mock the tickets API to return empty list so loading resolves
         server.use(
@@ -38,7 +42,7 @@ describe('TicketsPage', () => {
     });
 
     it('renders tickets list after loading', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
+        mockUseAuth({ role: 'CUSTOMER' } );
 
         const tickets = [
             { id: 't1', ticketNumber: 'SUP-00001', subject: 'Test ticket', status: 'OPEN', priority: 'MEDIUM', channel: 'WEB', createdAt: new Date().toISOString() }
@@ -51,7 +55,7 @@ describe('TicketsPage', () => {
     });
 
     it('shows the short table headers and ticket category', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        mockUseAuth({ role: 'ADMIN' } );
 
         const tickets = [
             {
@@ -77,7 +81,7 @@ describe('TicketsPage', () => {
     });
 
     it('sorts the current ticket page by category when the category header is clicked', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        mockUseAuth({ role: 'ADMIN' } );
 
         const tickets = [
             {
@@ -105,9 +109,7 @@ describe('TicketsPage', () => {
     });
 
     it('shows bulk actions only when tickets are selected (Admin)', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { role: 'ADMIN', fullName: 'Admin' }
-        });
+        mockUseAuth({ role: 'ADMIN', fullName: 'Admin' });
 
         const tickets = [
             { id: 't1', ticketNumber: 'SUP-00001', subject: 'Test ticket', status: 'OPEN', priority: 'MEDIUM', channel: 'WEB', createdAt: new Date().toISOString() }
@@ -141,7 +143,7 @@ describe('TicketsPage', () => {
     });
 
     it('updates list when filter changes', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        mockUseAuth({ role: 'ADMIN' } );
 
         const tickets = [
             { id: 't1', ticketNumber: 'SUP-00001', subject: 'Test ticket', status: 'OPEN', priority: 'MEDIUM', channel: 'WEB', createdAt: new Date().toISOString() }
@@ -175,7 +177,7 @@ describe('TicketsPage', () => {
     });
 
     it('renders draft status as a first-class filter option', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        mockUseAuth({ role: 'ADMIN' } );
 
         server.use(
             http.get(`${API_BASE}/tickets`, () => {
@@ -197,7 +199,7 @@ describe('TicketsPage', () => {
     });
 
     it('does not show misleading zero counts when an older backend omits statusCounts', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        mockUseAuth({ role: 'ADMIN' } );
 
         server.use(
             http.get(`${API_BASE}/tickets`, () => {
@@ -216,9 +218,7 @@ describe('TicketsPage', () => {
     });
 
     it('loads the support agent queue scoped to the signed-in user', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { id: 'agent-1', role: 'ADMIN', isSupportTeamMember: true },
-        });
+        mockUseAuth({ id: 'agent-1', role: 'ADMIN', isSupportTeamMember: true });
 
         let requestedUrl = '';
         server.use(
@@ -241,9 +241,7 @@ describe('TicketsPage', () => {
     });
 
     it('keeps support scope when status chip changes', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { id: 'agent-1', role: 'ADMIN', isSupportTeamMember: true },
-        });
+        mockUseAuth({ id: 'agent-1', role: 'ADMIN', isSupportTeamMember: true });
 
         const requestedUrls: string[] = [];
         server.use(
@@ -269,9 +267,7 @@ describe('TicketsPage', () => {
     });
 
     it('loads the full queue by default for admins outside support teams', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { id: 'admin-1', role: 'ADMIN', isSupportTeamMember: false },
-        });
+        mockUseAuth({ id: 'admin-1', role: 'ADMIN', isSupportTeamMember: false });
 
         let requestedUrl = '';
         server.use(
@@ -293,9 +289,7 @@ describe('TicketsPage', () => {
     });
 
     it('reloads when the review-center query changes on the same route', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { id: 'agent-1', role: 'SUPPORT_AGENT', isSupportTeamMember: true },
-        });
+        mockUseAuth({ id: 'agent-1', role: 'SUPPORT_AGENT', isSupportTeamMember: true });
         vi.mocked(useSearchParams).mockReturnValue(
             new URLSearchParams('chatStatus=REQUESTED&activeOnly=true') as never,
         );
@@ -323,7 +317,7 @@ describe('TicketsPage', () => {
     });
 
     it('handles empty state', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
+        mockUseAuth({ role: 'CUSTOMER' } );
 
         server.use(
             http.get(`${API_BASE}/tickets`, () => {
@@ -339,7 +333,7 @@ describe('TicketsPage', () => {
     });
 
     it('distinguishes a loading failure from an empty queue and retries', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
+        mockUseAuth({ role: 'CUSTOMER' } );
         let attempts = 0;
 
         server.use(
@@ -368,7 +362,7 @@ describe('TicketsPage', () => {
     });
 
     it('ignores a stale failed request after a newer filtered request succeeds', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        mockUseAuth({ role: 'ADMIN' } );
         let staleRequestCompleted = false;
 
         server.use(

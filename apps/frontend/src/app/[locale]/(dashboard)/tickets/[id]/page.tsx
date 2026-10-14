@@ -6,10 +6,10 @@ import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
 import { subscribeTicketRoom } from '@/lib/socket-room';
 import {
-    Ticket, Clock, Shield, User as UserIcon, Send,
-    Paperclip, Download, MoreVertical,
-    AlertTriangle, MessageSquare, Loader2, Bot, X,
-    MessageCircle, Mail, Globe, Cpu, ExternalLink, User
+    Shield, Send, Paperclip, Download,
+    AlertTriangle, Loader2, Bot, X,
+    MessageCircle, Mail, Globe, Cpu, ExternalLink,
+    type LucideIcon,
 } from 'lucide-react';
 import { HotinfoGrid } from "@/components/ui/hotinfo-grid";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
@@ -63,7 +62,229 @@ const PRIORITY_COLORS: Record<string, string> = {
     URGENT: 'text-red-600 font-black italic',
 };
 
-const CHANNEL_ICONS: Record<string, any> = {
+interface TicketAttachment {
+    id: string;
+    fileName?: string;
+}
+
+interface TicketUser {
+    id: string;
+    fullName?: string;
+    email?: string;
+    role?: string | { name?: string };
+    roles?: string[];
+    permissions?: string[];
+    customerProfile?: { isVip?: boolean; hotinfoData?: unknown };
+}
+
+interface TicketMessage {
+    id: string;
+    message: string;
+    senderId?: string;
+    sender?: TicketUser;
+    createdAt: string;
+    isInternal?: boolean;
+    isOptimistic?: boolean;
+    attachments?: TicketAttachment[];
+    metadata?: { action?: string; previousClosedAt?: string | null } | null;
+}
+
+interface TicketDetailData {
+    id: string;
+    ticketNumber: string;
+    subject: string;
+    description: string;
+    status: string;
+    priority: string;
+    channel: string;
+    createdAt: string;
+    closedAt?: string | null;
+    resolvedAt?: string | null;
+    satisfactionScore?: number | null;
+    satisfactionComment?: string | null;
+    userId: string;
+    assignedTo?: string;
+    chatStatus?: string;
+    creator?: TicketUser;
+    assignee?: TicketUser;
+    messages: TicketMessage[];
+    hotinfoSnapshot?: unknown;
+    department?: { slug?: string | null; name?: string | null } | null;
+    tags?: string[] | null;
+}
+
+interface AssignableAgent {
+    id: string;
+    fullName?: string;
+    email?: string;
+}
+
+interface AiTrace {
+    interaction?: {
+        provider?: string;
+        model?: string;
+        confidenceBand?: string;
+        userQuery?: string;
+        responseGenerated?: string;
+        userContext?: { visuals?: AiVisualEvidenceItem[] };
+    };
+    quality?: {
+        responseLanguage?: string;
+        requestLocale?: string;
+        routeLocale?: string;
+        profileLanguage?: string;
+        sourceLeakDetected?: boolean;
+        mixedLanguageRisk?: boolean;
+        ticketCreatedFlagMatches?: boolean;
+        contractSections?: Record<string, boolean | number | undefined> & { isComplete?: boolean; passed?: number };
+    };
+}
+
+const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'Unknown error';
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const optionalString = (value: unknown) => typeof value === 'string' ? value : undefined;
+
+const toTicketUser = (value: unknown): TicketUser | undefined => {
+    if (!isRecord(value) || typeof value.id !== 'string') return undefined;
+    const customerProfile = isRecord(value.customerProfile)
+        ? {
+            isVip: typeof value.customerProfile.isVip === 'boolean' ? value.customerProfile.isVip : undefined,
+            hotinfoData: value.customerProfile.hotinfoData,
+        }
+        : undefined;
+    return {
+        id: value.id,
+        fullName: optionalString(value.fullName),
+        email: optionalString(value.email),
+        role: typeof value.role === 'string' || isRecord(value.role) ? value.role as string | { name?: string } : undefined,
+        roles: Array.isArray(value.roles) ? value.roles.filter((role): role is string => typeof role === 'string') : undefined,
+        permissions: Array.isArray(value.permissions) ? value.permissions.filter((permission): permission is string => typeof permission === 'string') : undefined,
+        customerProfile,
+    };
+};
+
+const toTicketMessage = (value: unknown): TicketMessage | null => {
+    if (!isRecord(value) || typeof value.id !== 'string' || typeof value.message !== 'string' || typeof value.createdAt !== 'string') return null;
+    const attachments = Array.isArray(value.attachments)
+        ? value.attachments.flatMap(attachment => isRecord(attachment) && typeof attachment.id === 'string'
+            ? [{ id: attachment.id, fileName: optionalString(attachment.fileName) }]
+            : [])
+        : undefined;
+    const metadata = isRecord(value.metadata)
+        ? {
+            action: optionalString(value.metadata.action),
+            previousClosedAt: typeof value.metadata.previousClosedAt === 'string'
+                ? value.metadata.previousClosedAt
+                : null,
+        }
+        : null;
+    return {
+        id: value.id,
+        message: value.message,
+        senderId: optionalString(value.senderId),
+        sender: toTicketUser(value.sender),
+        createdAt: value.createdAt,
+        isInternal: typeof value.isInternal === 'boolean' ? value.isInternal : undefined,
+        isOptimistic: typeof value.isOptimistic === 'boolean' ? value.isOptimistic : undefined,
+        attachments,
+        metadata,
+    };
+};
+
+const toTicketDetail = (value: unknown): TicketDetailData | null => {
+    if (!isRecord(value)) return null;
+    const requiredKeys = ['id', 'ticketNumber', 'subject', 'description', 'status', 'priority', 'channel', 'createdAt'] as const;
+    if (requiredKeys.some(key => typeof value[key] !== 'string')) return null;
+    const creator = toTicketUser(value.creator);
+    const department = isRecord(value.department)
+        ? { slug: optionalString(value.department.slug) ?? null, name: optionalString(value.department.name) ?? null }
+        : null;
+    return {
+        id: value.id as string,
+        ticketNumber: value.ticketNumber as string,
+        subject: value.subject as string,
+        description: value.description as string,
+        status: value.status as string,
+        priority: value.priority as string,
+        channel: value.channel as string,
+        createdAt: value.createdAt as string,
+        closedAt: typeof value.closedAt === 'string' ? value.closedAt : null,
+        resolvedAt: typeof value.resolvedAt === 'string' ? value.resolvedAt : null,
+        satisfactionScore: typeof value.satisfactionScore === 'number' ? value.satisfactionScore : null,
+        satisfactionComment: typeof value.satisfactionComment === 'string' ? value.satisfactionComment : null,
+        userId: optionalString(value.userId) ?? creator?.id ?? '',
+        assignedTo: optionalString(value.assignedTo),
+        chatStatus: optionalString(value.chatStatus),
+        creator,
+        assignee: toTicketUser(value.assignee),
+        messages: Array.isArray(value.messages) ? value.messages.flatMap(message => {
+            const normalized = toTicketMessage(message);
+            return normalized ? [normalized] : [];
+        }) : [],
+        hotinfoSnapshot: value.hotinfoSnapshot,
+        department,
+        tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string') : null,
+    };
+};
+
+const toAssignableAgent = (value: unknown): AssignableAgent | null =>
+    isRecord(value) && typeof value.id === 'string'
+        ? { id: value.id, fullName: optionalString(value.fullName), email: optionalString(value.email) }
+        : null;
+
+const toVisualEvidence = (value: unknown): AiVisualEvidenceItem | null => {
+    if (!isRecord(value) || typeof value.url !== 'string' || typeof value.summary !== 'string'
+        || typeof value.sourceTitle !== 'string' || typeof value.sourceId !== 'string') return null;
+    return {
+        url: value.url,
+        summary: value.summary,
+        sourceTitle: value.sourceTitle,
+        sourceId: value.sourceId,
+        alt: optionalString(value.alt),
+        caption: optionalString(value.caption),
+    };
+};
+
+const toAiTrace = (value: unknown): AiTrace | null => {
+    if (!isRecord(value)) return null;
+    const interaction = isRecord(value.interaction) ? value.interaction : null;
+    const userContext = interaction && isRecord(interaction.userContext) ? interaction.userContext : null;
+    const visuals = userContext && Array.isArray(userContext.visuals)
+        ? userContext.visuals.flatMap(item => {
+            const normalized = toVisualEvidence(item);
+            return normalized ? [normalized] : [];
+        })
+        : undefined;
+    const quality = isRecord(value.quality) ? value.quality : null;
+    const contractSections = quality && isRecord(quality.contractSections)
+        ? Object.fromEntries(Object.entries(quality.contractSections).filter((entry): entry is [string, boolean | number] =>
+            typeof entry[1] === 'boolean' || typeof entry[1] === 'number'))
+        : undefined;
+    return {
+        interaction: interaction ? {
+            provider: optionalString(interaction.provider),
+            model: optionalString(interaction.model),
+            confidenceBand: optionalString(interaction.confidenceBand),
+            userQuery: optionalString(interaction.userQuery),
+            responseGenerated: optionalString(interaction.responseGenerated),
+            userContext: visuals ? { visuals } : undefined,
+        } : undefined,
+        quality: quality ? {
+            responseLanguage: optionalString(quality.responseLanguage),
+            requestLocale: optionalString(quality.requestLocale),
+            routeLocale: optionalString(quality.routeLocale),
+            profileLanguage: optionalString(quality.profileLanguage),
+            sourceLeakDetected: typeof quality.sourceLeakDetected === 'boolean' ? quality.sourceLeakDetected : undefined,
+            mixedLanguageRisk: typeof quality.mixedLanguageRisk === 'boolean' ? quality.mixedLanguageRisk : undefined,
+            ticketCreatedFlagMatches: typeof quality.ticketCreatedFlagMatches === 'boolean' ? quality.ticketCreatedFlagMatches : undefined,
+            contractSections,
+        } : undefined,
+    };
+};
+
+const CHANNEL_ICONS: Record<string, LucideIcon> = {
     WEB: Globe,
     WHATSAPP: MessageCircle,
     EMAIL: Mail,
@@ -89,8 +310,8 @@ function TicketDetail({ id }: { id: string }) {
     const tp = useTranslations('tickets.priority');
     const tc = useTranslations('common');
     const locale = useLocale();
-    const [ticket, setTicket] = useState<any>(null);
-    const [user, setUser] = useState<any>(null);
+    const [ticket, setTicket] = useState<TicketDetailData | null>(null);
+    const [user, setUser] = useState<TicketUser | null>(null);
     const [reply, setReply] = useState('');
     const [files, setFiles] = useState<File[]>([]);
     const [sending, setSending] = useState(false);
@@ -105,8 +326,8 @@ function TicketDetail({ id }: { id: string }) {
     const [drafting, setDrafting] = useState(false);
     const [draftVisuals, setDraftVisuals] = useState<AiVisualEvidenceItem[]>([]);
     const [downloadingHotinfo, setDownloadingHotinfo] = useState(false);
-    const [aiTrace, setAiTrace] = useState<any>(null);
-    const [agents, setAgents] = useState<any[]>([]);
+    const [aiTrace, setAiTrace] = useState<AiTrace | null>(null);
+    const [agents, setAgents] = useState<AssignableAgent[]>([]);
     const [assigning, setAssigning] = useState(false);
 
     // Live chat states
@@ -141,9 +362,11 @@ function TicketDetail({ id }: { id: string }) {
                 api.tickets.get(id),
                 api.auth.me()
             ]);
-            setTicket(ticketRes);
+            const resolvedTicket = toTicketDetail(ticketRes);
+            if (!resolvedTicket) throw new Error('Invalid ticket response');
+            setTicket(resolvedTicket);
             setUser(userRes);
-            const resolvedUser = userRes as any;
+            const resolvedUser = userRes as TicketUser;
             const userRoleName = (typeof resolvedUser?.role === 'string' ? resolvedUser.role : resolvedUser?.role?.name)?.toLowerCase();
             const resolvedUserRoles = (resolvedUser?.roles || []).map((r: string) => r.toLowerCase());
             const isCustomerRole = resolvedUserRoles.includes('customer') || resolvedUserRoles.includes('viewer') || userRoleName === 'customer' || userRoleName === 'viewer';
@@ -156,16 +379,19 @@ function TicketDetail({ id }: { id: string }) {
                     console.warn('[TicketDetail] AI trace unavailable:', err);
                     return null;
                     }),
-                    api.tickets.assignableAgents(id).then(setAgents).catch((err) => {
+                    api.tickets.assignableAgents(id).then(items => setAgents(items.flatMap(item => {
+                        const normalized = toAssignableAgent(item);
+                        return normalized ? [normalized] : [];
+                    }))).catch((err) => {
                         console.warn('[TicketDetail] Assignable agent list unavailable:', err);
                         setAgents([]);
                     }),
                 ]);
-                setAiTrace(trace);
+                setAiTrace(toAiTrace(trace));
             }
             // Initial scroll to bottom
             setTimeout(() => scrollToBottom('auto'), 100);
-        } catch (err) {
+        } catch {
             toast.error(t('load_error'));
         } finally {
             setLoading(false);
@@ -188,7 +414,7 @@ function TicketDetail({ id }: { id: string }) {
             link.remove();
             URL.revokeObjectURL(url);
             toast.success(t('hotinfo_download_started'));
-        } catch (error) {
+        } catch {
             toast.error(t('hotinfo_download_error'));
         } finally {
             setDownloadingHotinfo(false);
@@ -205,7 +431,7 @@ function TicketDetail({ id }: { id: string }) {
         const socket = getSocket();
         const leaveTicketRoom = subscribeTicketRoom(socket, id);
 
-        const handleNewMessage = (data: any) => {
+        const handleNewMessage = (data: { ticketId: string; message: TicketMessage }) => {
             if (data.ticketId === id && data.message.senderId !== user.id) {
                 // Smart Buffer: Emit read event immediately if user is viewing the bilet
                 getSocket().emit('ticket:message_read', {
@@ -213,7 +439,7 @@ function TicketDetail({ id }: { id: string }) {
                     messageId: data.message.id
                 });
 
-                setTicket((prev: any) => {
+                setTicket((prev) => {
                     if (!prev) return prev;
                     // Prevent duplicate if optimistic message already exists with same content (unlikely but safe)
                     return {
@@ -225,14 +451,14 @@ function TicketDetail({ id }: { id: string }) {
             }
         };
 
-        const handleTyping = (data: any) => {
+        const handleTyping = (data: { userId: string; isTyping: boolean }) => {
             if (data.userId !== user.id) {
                 setSomeoneTyping(data.isTyping);
             }
         };
 
-        const handleTicketUpdated = (updatedTicket: any) => {
-            setTicket((prev: any) => ({ ...prev, ...updatedTicket, messages: prev.messages }));
+        const handleTicketUpdated = (updatedTicket: Partial<TicketDetailData>) => {
+            setTicket((prev) => prev ? { ...prev, ...updatedTicket, messages: prev.messages } : prev);
         };
 
         const handlePresence = (data: { ticketId: string, userIds: string[] }) => {
@@ -241,14 +467,14 @@ function TicketDetail({ id }: { id: string }) {
             }
         };
 
-        const handleAttachmentAdded = (data: { messageId: string, attachment: any }) => {
-            setTicket((prev: any) => {
+        const handleAttachmentAdded = (data: { messageId: string, attachment: TicketAttachment }) => {
+            setTicket((prev) => {
                 if (!prev) return prev;
                 return {
                     ...prev,
-                    messages: prev.messages.map((m: any) => {
+                    messages: prev.messages.map((m) => {
                         if (m.id === data.messageId) {
-                            if (m.attachments?.some((attachment: any) => attachment.id === data.attachment.id)) return m;
+                            if (m.attachments?.some((attachment) => attachment.id === data.attachment.id)) return m;
                             return {
                                 ...m,
                                 attachments: [...(m.attachments || []), data.attachment]
@@ -301,7 +527,7 @@ function TicketDetail({ id }: { id: string }) {
     const isReplyEffectivelyEmpty = ContentSanitizer.isEffectivelyEmpty(reply);
     const isComposerDisabled = ticket?.status === 'CLOSED';
     const isLiveChatEligible = !isCustomer || Boolean(ticket?.creator?.customerProfile?.isVip);
-    const aiTraceVisuals = (aiTrace?.interaction?.userContext?.visuals ?? []) as AiVisualEvidenceItem[];
+    const aiTraceVisuals = aiTrace?.interaction?.userContext?.visuals ?? [];
 
     const handleRequestLiveChat = async () => {
         try {
@@ -320,20 +546,20 @@ function TicketDetail({ id }: { id: string }) {
             await api.patch(`/tickets/${id}`, { chatStatus: 'LIVE' });
             toast.success(t('live_accept_success'));
             load(); // Refresh state to show LIVE_SESSION_ACTIVE UI
-        } catch (err) {
+        } catch {
             toast.error(t('chat_start_error'));
         }
     };
 
     const handleAssignTicket = async (assigneeId: string) => {
-        if (!assigneeId || assigneeId === ticket?.assignedTo || assigning) return;
+        if (!ticket || !assigneeId || assigneeId === ticket.assignedTo || assigning) return;
 
         setAssigning(true);
         try {
             await api.tickets.assign(ticket.id, assigneeId);
             toast.success(t('assign_success'));
             await load();
-        } catch (err) {
+        } catch {
             toast.error(t('assign_error'));
         } finally {
             setAssigning(false);
@@ -346,9 +572,9 @@ function TicketDetail({ id }: { id: string }) {
             try {
                 const attachment = await api.attachments.upload(messageId, uploadFiles[index]) as { id: string };
                 if (!activeRef.current) return;
-                setTicket((prev: any) => ({ ...prev, messages: prev.messages.map((message: any) =>
-                    message.id === messageId && !message.attachments?.some((existing: any) => existing.id === attachment.id)
-                        ? { ...message, attachments: [...(message.attachments || []), attachment] } : message) }));
+                setTicket((prev) => prev ? ({ ...prev, messages: prev.messages.map((message) =>
+                    message.id === messageId && !message.attachments?.some((existing) => existing.id === attachment.id)
+                        ? { ...message, attachments: [...(message.attachments || []), attachment] } : message) }) : prev);
             } catch {
                 if (!activeRef.current) return;
                 setPendingAttachments({ messageId, files: uploadFiles.slice(index) });
@@ -374,7 +600,7 @@ function TicketDetail({ id }: { id: string }) {
     };
 
     const handleSendReply = async () => {
-        if (replyOperationRef.current || pendingAttachments || isComposerDisabled) return;
+        if (!user || replyOperationRef.current || pendingAttachments || isComposerDisabled) return;
         const sanitizedReply = ContentSanitizer.sanitize(reply);
         if (ContentSanitizer.isEffectivelyEmpty(sanitizedReply) && files.length === 0) return;
 
@@ -398,10 +624,10 @@ function TicketDetail({ id }: { id: string }) {
             attachments: []
         };
 
-        setTicket((prev: any) => ({
+        setTicket((prev) => prev ? ({
             ...prev,
             messages: [...prev.messages, optimisticMessage]
-        }));
+        }) : prev);
 
         setTimeout(() => scrollToBottom(), 50);
 
@@ -414,23 +640,24 @@ function TicketDetail({ id }: { id: string }) {
 
             if (!activeRef.current) return;
             // Message persistence is independent of the following attachment uploads.
-            setTicket((prev: any) => ({
+            const persistedMessage = message as TicketMessage;
+            setTicket((prev) => prev ? ({
                 ...prev,
-                messages: prev.messages.map((m: any) => m.id === tempId ? { ...message, sender: user } : m)
-            }));
+                messages: prev.messages.map((m) => m.id === tempId ? { ...persistedMessage, sender: user ?? undefined } : m)
+            }) : prev);
 
             setReply((current) => current === previousReply ? '' : current);
             setDraftVisuals((current) => current === previousDraftVisuals ? [] : current);
             setFiles((current) => current.filter((file) => !uploadFiles.includes(file)));
             await uploadReplyAttachments(message.id, uploadFiles);
-        } catch (error: any) {
+        } catch (error: unknown) {
             if (!activeRef.current) return;
-            toast.error(t('send_error', { error: error.message }));
+            toast.error(t('send_error', { error: errorMessage(error) }));
             // Remove optimistic message on failure
-            setTicket((prev: any) => ({
+            setTicket((prev) => prev ? ({
                 ...prev,
-                messages: prev.messages.filter((m: any) => m.id !== tempId)
-            }));
+                messages: prev.messages.filter((m) => m.id !== tempId)
+            }) : prev);
         } finally {
             replyOperationRef.current = false;
             if (activeRef.current) setSending(false);
@@ -440,10 +667,11 @@ function TicketDetail({ id }: { id: string }) {
     const handleSummarize = async () => {
         if (!summarizing) setSummarizing(true);
         try {
-            const res = await api.get(`/ai/tickets/${id}/summarize`);
-            setSummary(res);
+            const generatedSummary = await api.get(`/ai/tickets/${id}/summarize`);
+            if (!generatedSummary) throw new Error('Invalid summary response');
+            setSummary(generatedSummary);
             toast.success(t('summary_success'));
-        } catch (err) {
+        } catch {
             toast.error(t('summary_error'));
         } finally {
             setSummarizing(false);
@@ -457,7 +685,7 @@ function TicketDetail({ id }: { id: string }) {
             let htmlDraft = markdownToHtml(res.draft);
 
             if (res.visuals && res.visuals.length > 0) {
-                const visualsHtml = res.visuals.map((v: any) => {
+                const visualsHtml = res.visuals.map((v) => {
                     const altText = v.alt || v.caption || v.sourceTitle || 'Visual';
                     const caption = v.sourceTitle || 'Source Visual';
                     return `<br/><br/><p><a href="${v.url}" target="_blank"><img src="${v.url}" alt="${altText}" style="max-width:100%; border-radius:8px; border:1px solid #ffffff20;" /></a><br/><small style="color:#ffffff70;"><em>${caption}</em></small></p>`;
@@ -468,8 +696,8 @@ function TicketDetail({ id }: { id: string }) {
             setReply(htmlDraft);
             setDraftVisuals([]);
             toast.success(t('draft_success'));
-        } catch (err: any) {
-            toast.error(t('draft_error', { error: err.message }));
+        } catch (err: unknown) {
+            toast.error(t('draft_error', { error: errorMessage(err) }));
         } finally {
             setDrafting(false);
         }
@@ -482,7 +710,7 @@ function TicketDetail({ id }: { id: string }) {
         try {
             const updated = await api.tickets.updateStatus(ticket.id, 'OPEN');
             if (!activeRef.current) return;
-            setTicket((previous: any) => ({ ...previous, ...updated }));
+            setTicket((previous) => previous ? ({ ...previous, ...(updated as Partial<TicketDetailData>) }) : previous);
             toast.success(t('reopen_success'));
             await load();
         } catch {
@@ -643,7 +871,23 @@ function TicketDetail({ id }: { id: string }) {
                         )}
 
                         <TicketLifecycle ticket={ticket} user={user} onUpdated={updated => {
-                            setTicket((previous: any) => ({ ...previous, ...updated }));
+                            // Apply the mutation response immediately so lifecycle-only
+                            // fields (for example satisfactionScore/comment) do not wait
+                            // for the follow-up fetch before becoming visible.
+                            setTicket((previous) => {
+                                if (!previous) return previous;
+                                return {
+                                    ...previous,
+                                    status: updated.status ?? previous.status,
+                                    closedAt: updated.closedAt === undefined ? previous.closedAt : updated.closedAt,
+                                    satisfactionScore: updated.satisfactionScore === undefined
+                                        ? previous.satisfactionScore
+                                        : updated.satisfactionScore,
+                                    satisfactionComment: updated.satisfactionComment === undefined
+                                        ? previous.satisfactionComment
+                                        : updated.satisfactionComment,
+                                };
+                            });
                             void load();
                         }} />
 
@@ -683,10 +927,10 @@ function TicketDetail({ id }: { id: string }) {
                                             <RichTextRenderer content={ticket.description} />
 
                                             {/* Show attachments from the first message here if it's the description duplicate */}
-                                            {ticket.messages?.[0]?.attachments?.length > 0 && (
+                                            {(ticket.messages[0]?.attachments?.length ?? 0) > 0 && (
                                                 <div className="mt-3 pt-2 border-t border-border/20 space-y-1">
                                                     <p className="text-[9px] uppercase font-bold text-muted-foreground/60 mb-1">{t('initial_attachments') || 'Bilet Ekleri'}</p>
-                                                    {ticket.messages[0].attachments.map((file: any) => (
+                                                    {ticket.messages[0]?.attachments?.map((file) => (
                                                         <a
                                                             key={file.id}
                                                             href={api.attachments.getDownloadUrl(file.id)}
@@ -705,7 +949,7 @@ function TicketDetail({ id }: { id: string }) {
                                 </div>
 
                                 {/* Thread */}
-                                {ticket.messages.map((msg: any) => {
+                                {ticket.messages.map((msg) => {
                                     const isMe = msg.senderId === user?.id;
                                     const isSystem = !msg.senderId;
 
@@ -716,7 +960,7 @@ function TicketDetail({ id }: { id: string }) {
                                                     <div className={`h-8 w-8 flex items-center justify-center border text-[10px] font-bold uppercase ${isMe ? 'bg-primary border-primary text-primary-foreground shadow-md shadow-primary/20' : 'bg-muted border-border'}`}>
                                                         {msg.sender?.fullName?.[0] || '??'}
                                                     </div>
-                                                    {onlineUsers.includes(msg.senderId) && (
+                                                    {msg.senderId && onlineUsers.includes(msg.senderId) && (
                                                         <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500 shadow-sm" />
                                                     )}
                                                 </div>
@@ -739,9 +983,9 @@ function TicketDetail({ id }: { id: string }) {
                                                     <RichTextRenderer content={msg.message} />
 
                                                     {/* Attachments for this message */}
-                                                    {msg.attachments?.length > 0 && (
+                                                    {(msg.attachments?.length ?? 0) > 0 && (
                                                         <div className="mt-3 pt-2 border-t border-border/20 space-y-1">
-                                                            {msg.attachments.map((file: any) => (
+                                                            {msg.attachments?.map((file) => (
                                                                 <a
                                                                     key={file.id}
                                                                     href={api.attachments.getDownloadUrl(file.id)}
@@ -1047,7 +1291,7 @@ function TicketDetail({ id }: { id: string }) {
                     </Card>
                 )}
 
-                {!isCustomer && ticket.hotinfoSnapshot && (
+                {!isCustomer && Boolean(ticket.hotinfoSnapshot) && (
                     <Dialog>
                         <DialogTrigger asChild>
                             <Button
@@ -1091,7 +1335,7 @@ function TicketDetail({ id }: { id: string }) {
                             </DialogHeader>
                             <ScrollArea className="max-h-[72vh] px-6 py-5">
                                 <div className="space-y-5">
-                                    {typeof ticket.hotinfoSnapshot === 'object' && ticket.hotinfoSnapshot !== null ? (
+                                    {isRecord(ticket.hotinfoSnapshot) ? (
                                         <HotinfoGrid data={ticket.hotinfoSnapshot} />
                                     ) : (
                                         <div className="text-[11px] font-mono text-cyan-200/90 leading-relaxed whitespace-pre-wrap break-all border border-cyan-900/30 bg-cyan-950/10 p-3">

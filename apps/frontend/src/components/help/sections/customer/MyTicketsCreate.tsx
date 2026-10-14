@@ -3,7 +3,6 @@
 import { Plus, Shield, ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { TipBox } from '@/components/help/TipBox';
-import { CodeBlock } from '@/components/help/CodeBlock';
 
 /**
  * customer.my_tickets.create

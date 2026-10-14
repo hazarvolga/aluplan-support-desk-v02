@@ -29,11 +29,15 @@ import { UserDialog } from '@/components/users/user-dialog';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
+type TeamMember = { roleOverride?: string; user: { id: string; fullName: string; email?: string; avatarUrl?: string; status?: string; role?: string | { name?: string }; agentStatus?: string; _count?: { ticketsAssigned?: number } } };
+type TeamItem = { id: string; name: string; autoAssignmentEnabled?: boolean; assignmentStrategy?: string; department?: { id?: string; name?: string }; members?: TeamMember[] };
+type DepartmentItem = { id: string; name: string; slug?: string; description?: string; _count?: { teams?: number }; teams?: TeamItem[]; slaPolicies?: Array<{ id: string; priority: string; firstResponseMinutes: number }> };
+
 export default function TeamsPage() {
     const t = useTranslations('teams');
     const tc = useTranslations('common');
-    const [teams, setTeams] = useState<any[]>([]);
-    const [departments, setDepartments] = useState<any[]>([]);
+    const [teams, setTeams] = useState<TeamItem[]>([]);
+    const [departments, setDepartments] = useState<DepartmentItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [createPanelOpen, setCreatePanelOpen] = useState(false);
@@ -48,9 +52,9 @@ export default function TeamsPage() {
                 api.teams.list(),
                 api.teams.departments()
             ]);
-            setTeams(teamsRes);
-            setDepartments(deptsRes);
-        } catch (error) {
+            setTeams(teamsRes as TeamItem[]);
+            setDepartments(deptsRes as DepartmentItem[]);
+        } catch {
             toast({ title: tc('error_title'), description: t('fetch_error'), variant: 'destructive' });
         } finally {
             setLoading(false);
@@ -63,7 +67,7 @@ export default function TeamsPage() {
 
     const filteredTeams = teams.filter(t =>
         t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.department?.name.toLowerCase().includes(searchQuery.toLowerCase())
+        t.department?.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -165,7 +169,7 @@ export default function TeamsPage() {
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap gap-1.5 pt-2">
-                                        {dept.slaPolicies?.slice(0, 2).map((sla: any) => (
+                                        {dept.slaPolicies?.slice(0, 2).map((sla) => (
                                             <Badge key={sla.id} variant="secondary" className="text-[10px] gap-1 px-2 py-0 h-6 bg-amber-500/10 text-amber-600 border-amber-500/20">
                                                 <Clock className="h-3 w-3" /> {sla.priority}: {sla.firstResponseMinutes}{t('min_suffix')}
                                             </Badge>
@@ -206,7 +210,7 @@ export default function TeamsPage() {
                                 </CardHeader>
                                 <CardContent className="pb-4">
                                     <div className="flex -space-x-2 overflow-hidden py-2 mb-4">
-                                        {team.members?.slice(0, 5).map((m: any) => (
+                                        {team.members?.slice(0, 5).map((m) => (
                                             <div key={m.user.id} className="inline-block h-8 w-8 rounded-full border-2 border-background bg-muted overflow-hidden ring-1 ring-border/50">
                                                 {m.user.avatarUrl ? (
                                                     <img src={m.user.avatarUrl} alt={`${m.user.fullName} ${t('profile_pic_alt')}`} />
@@ -217,9 +221,9 @@ export default function TeamsPage() {
                                                 )}
                                             </div>
                                         ))}
-                                        {team.members?.length > 5 && (
+                                        {(team.members?.length ?? 0) > 5 && (
                                             <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-slate-100 text-[10px] font-bold text-slate-500 ring-1 ring-border/50">
-                                                +{team.members.length - 5}
+                                                +{(team.members?.length ?? 0) - 5}
                                             </div>
                                         )}
                                     </div>
@@ -254,7 +258,7 @@ export default function TeamsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border/30">
-                                {teams.flatMap(t => t.members).map((m: any) => (
+                                {teams.flatMap(team => team.members ?? []).map((m) => (
                                     <tr key={m.user.id} className="hover:bg-muted/20 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -272,10 +276,10 @@ export default function TeamsPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <AgentStatusBadge status={m.user.agentStatus} className="shadow-none" />
+                                            <AgentStatusBadge status={m.user.agentStatus || 'OFFLINE'} className="shadow-none" />
                                         </td>
                                         <td className="px-6 py-4">
-                                            <RoleBadge role={m.roleOverride || m.user.role} />
+                                            <RoleBadge role={m.roleOverride || (typeof m.user.role === 'object' ? m.user.role.name : m.user.role) || 'agent'} />
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center gap-2">

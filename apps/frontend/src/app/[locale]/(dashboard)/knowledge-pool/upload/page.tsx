@@ -5,12 +5,12 @@ export const dynamic = "force-dynamic";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-    ArrowLeft, Upload, FileText, CheckCircle2,
-    XCircle, Clock, RefreshCw, Database,
+    ArrowLeft, Upload, FileText,
+    RefreshCw, Database,
     Info, ShieldCheck, Activity
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -99,10 +99,11 @@ export default function KnowledgePoolUploadPage() {
             setTimeout(() => {
                 router.push('/knowledge-pool');
             }, 2000);
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Dosya yüklenemedi.';
             setUploadStatus('FAILED');
-            addTelemetry(`CRITICAL_ERROR: ${err.message.toUpperCase()}`);
-            toast({ title: 'Hata', description: err.message, variant: 'destructive' });
+            addTelemetry(`CRITICAL_ERROR: ${message.toUpperCase()}`);
+            toast({ title: 'Hata', description: message, variant: 'destructive' });
         } finally {
             setLoading(false);
         }

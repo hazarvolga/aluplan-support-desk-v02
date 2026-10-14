@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect, use } from 'react';
-import { api } from '@/lib/api';
+import { api, type KnowledgeArticle } from '@/lib/api';
 import {
     BookOpen,
     ThumbsUp,
@@ -15,32 +15,34 @@ import {
     History,
     Eye,
     FileText,
-    X,
-    ArrowRight
+    X
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function ArticleDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
-    const [article, setArticle] = useState<any>(null);
+    type ArticleVersion = { id: string; version: number; title?: string; content: string; changeSummary?: string; createdAt: string; creator?: { fullName?: string } };
+    type Article = Omit<KnowledgeArticle, 'versions'> & { updatedAt: string; category?: { name?: string }; viewCount?: number; creator?: { fullName?: string }; tags?: string[]; versions: ArticleVersion[] };
+    type Comparison = { older: { version: number; content: string }; newer: { version: number; content: string } };
+    const [article, setArticle] = useState<Article | null>(null);
     const [loading, setLoading] = useState(true);
     const [feedbackSent, setFeedbackSent] = useState(false);
     const [feedbackLoading, setFeedbackLoading] = useState(false);
 
     // Versioning state
     const [showVersions, setShowVersions] = useState(false);
-    const [compData, setCompData] = useState<any>(null);
+    const [compData, setCompData] = useState<Comparison | null>(null);
     const [compLoading, setCompLoading] = useState(false);
 
     const load = async () => {
         setLoading(true);
         try {
             const data = await api.kb.get(id);
-            setArticle(data);
+            setArticle(data as unknown as Article);
             // Increment view count automatically
             api.kb.incrementView(id).catch(() => { });
-        } catch (err) {
+        } catch {
             toast.error('Makale yüklenemedi');
         }
         setLoading(false);
@@ -64,7 +66,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ id: st
         setCompLoading(true);
         try {
             const res = await api.kb.compare(id, v1, v2);
-            setCompData(res);
+            setCompData(res as Comparison);
         } catch {
             toast.error('Versiyon karşılaştırması yapılamadı');
         }
@@ -145,11 +147,11 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ id: st
                         <Calendar className="h-4 w-4" />
                         <span>{new Date(article.updatedAt).toLocaleDateString('tr-TR')}</span>
                     </div>
-                    {article.tags?.length > 0 && (
+                    {(article.tags?.length ?? 0) > 0 && (
                         <div className="flex items-center gap-2">
                             <Tag className="h-4 w-4" />
                             <div className="flex gap-1.5">
-                                {article.tags.map((tag: string) => (
+                                {article.tags?.map((tag: string) => (
                                     <span key={tag} className="hover:text-brand-500 cursor-default">#{tag}</span>
                                 ))}
                             </div>
@@ -217,7 +219,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ id: st
                         <div className="flex-1 overflow-y-auto p-6">
                             {!compData ? (
                                 <div className="space-y-3">
-                                    {article.versions.map((v: any, idx: number) => (
+                                    {article.versions.map((v, idx) => (
                                         <div key={v.id} className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-brand-200 dark:hover:border-brand-900/50 transition-colors bg-slate-50/50 dark:bg-slate-900/50">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-600 font-bold text-sm">

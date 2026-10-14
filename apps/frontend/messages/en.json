@@ -139,6 +139,10 @@
     "reset_password": {
       "new_password_label": "NEW PASSWORD",
       "confirm_password_label": "CONFIRM PASSWORD",
+      "show_new_password": "Show new password",
+      "hide_new_password": "Hide new password",
+      "show_confirm_password": "Show password confirmation",
+      "hide_confirm_password": "Hide password confirmation",
       "submit_btn": "UPDATE PASSWORD",
       "title": "SET NEW PASSWORD",
       "subtitle": "Enter a new password for your security",
@@ -173,6 +177,7 @@
     "logout": "Logout",
     "loading": "Loading...",
     "error": "An error occurred",
+    "close_notification": "Close notification",
     "session_expired": "Session expired. Please log in again.",
     "realtime_session_ended": "Live updates have stopped. Keep this page open, sign in again in a new tab, then reconnect. Your unsent draft stays on this page.",
     "realtime_sign_in": "Sign in in a new tab",
@@ -717,6 +722,9 @@
       "empty": "Queue_Empty",
       "load_error": "Support requests could not be loaded",
       "retry": "Retry",
+      "select_all": "Select all tickets",
+      "select_ticket": "Select ticket {ticket}",
+      "delete_ticket": "Delete ticket {ticket}",
       "header": {
         "system_id": "ID",
         "company": "Company",
@@ -726,7 +734,8 @@
         "status": "Status",
         "priority": "Priority",
         "assignee": "Assignee",
-        "timestamp": "Created"
+        "timestamp": "Created",
+        "actions": "Actions"
       },
       "category": {
         "licensing": "License & Activation"

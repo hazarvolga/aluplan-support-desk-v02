@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Save, CheckCircle2, AlertCircle, History, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { RefreshCw, Save, CheckCircle2, History, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -20,7 +20,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { FieldMapping } from './field-mapping';
+import { FieldMapping, type CrmFieldMetadata, type DisplaySetting } from './field-mapping';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslations, useLocale } from 'next-intl';
 import { getSocket } from '@/lib/socket';
@@ -57,6 +57,74 @@ interface CrmChangeLog {
     changedAt: string;
 }
 
+interface FieldDefinition {
+    key: string;
+    label: string;
+    defaultCrmField: string;
+    isRequired?: boolean;
+}
+
+type SyncSettings = {
+    accountMapping: Record<string, string>;
+    contactMapping: Record<string, string>;
+    displaySettings: {
+        account: DisplaySetting[];
+        contact: DisplaySetting[];
+    };
+};
+
+type CrmFormConfig = {
+    provider: 'DYNAMICS_365';
+    tenantId: string;
+    clientId: string;
+    clientSecret: string;
+    webhookSecret: string;
+    instanceUrl: string;
+    syncSettings: SyncSettings;
+};
+
+const defaultSyncSettings = (): SyncSettings => ({
+    accountMapping: {},
+    contactMapping: {},
+    displaySettings: { account: [], contact: [] },
+});
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const stringRecord = (value: unknown): Record<string, string> => {
+    if (!isRecord(value)) return {};
+    return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string'));
+};
+
+const displaySettings = (value: unknown): DisplaySetting[] => {
+    if (!Array.isArray(value)) return [];
+    return value.flatMap(item => isRecord(item) && typeof item.key === 'string'
+        ? [{ key: item.key, visible: item.visible !== false }]
+        : []);
+};
+
+const normalizeSyncSettings = (value: unknown): SyncSettings => {
+    if (!isRecord(value)) return defaultSyncSettings();
+    const displays = isRecord(value.displaySettings) ? value.displaySettings : {};
+    return {
+        accountMapping: stringRecord(value.accountMapping),
+        contactMapping: stringRecord(value.contactMapping),
+        displaySettings: {
+            account: displaySettings(displays.account),
+            contact: displaySettings(displays.contact),
+        },
+    };
+};
+
+const crmErrorMessage = (error: unknown, fallback: string) => {
+    if (!isRecord(error)) return fallback;
+    const response = isRecord(error.response) ? error.response : null;
+    const data = response && isRecord(response.data) ? response.data : null;
+    if (data && typeof data.message === 'string') return data.message;
+    return typeof error.message === 'string' ? error.message : fallback;
+};
+
 import { use } from 'react';
 
 export default function CrmManagementPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -64,7 +132,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
     const t = useTranslations('customers');
     const tc = useTranslations('common');
     const { toast } = useToast();
-    const [config, setConfig] = useState({
+    const [config, setConfig] = useState<CrmFormConfig>({
         provider: 'DYNAMICS_365' as const,
         tenantId: '',
         clientId: '',
@@ -72,23 +140,18 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
         webhookSecret: '',
         instanceUrl: '',
         syncSettings: {
-            accountMapping: {},
-            contactMapping: {},
-            displaySettings: {
-                account: [] as unknown as Array<{ key: string; visible?: boolean }>,
-                contact: [] as unknown as Array<{ key: string; visible?: boolean }>,
-            }
+            ...defaultSyncSettings(),
         },
     });
 
     const [fieldDefinitions, setFieldDefinitions] = useState<{
-        account: any[];
-        contact: any[];
+        account: FieldDefinition[];
+        contact: FieldDefinition[];
     } | null>(null);
 
     const [discoveryData, setDiscoveryData] = useState<{
-        account: any[];
-        contact: any[];
+        account: CrmFieldMetadata[];
+        contact: CrmFieldMetadata[];
     } | null>(null);
 
     const [connection, setConnection] = useState<CrmConnection | null>(null);
@@ -113,11 +176,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
                     clientSecret: conn.clientSecret || '',
                     webhookSecret: conn.webhookSecret || '',
                     instanceUrl: conn.instanceUrl || '',
-                    syncSettings: (conn as any).syncSettings || {
-                        accountMapping: {} as any,
-                        contactMapping: {} as any,
-                        displaySettings: { account: [], contact: [] },
-                    },
+                    syncSettings: normalizeSyncSettings(conn.syncSettings),
                 });
                 loadLogs(conn.id);
                 loadChanges(conn.id);
@@ -136,7 +195,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
     const loadLogs = async (id: string) => {
         try {
             const syncLogs = await api.crm.getLogs(id);
-            setLogs(syncLogs);
+            setLogs(syncLogs.map(log => ({ ...log, errorMessage: log.errorMessage ?? null })));
         } catch (error) {
             if (process.env.NODE_ENV === 'development') console.error('Failed to load logs', error);
         }
@@ -191,15 +250,15 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
         };
     }, [connection?.id]);
 
-    const handleSave = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSave = async (e?: Pick<React.FormEvent, 'preventDefault'>) => {
+        e?.preventDefault();
         setSaving(true);
         try {
             await api.crm.upsertConnection(config);
             toast({ title: '✅ ' + tc('success_title'), description: t('toasts.bulk_update_success', { count: 1 }) });
             loadData();
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: '❌ ' + t('crm.error'), description: error.response?.data?.message || error.message });
+        } catch (error: unknown) {
+            toast({ variant: 'destructive', title: '❌ ' + t('crm.error'), description: crmErrorMessage(error, t('crm.error')) });
         } finally {
             setSaving(false);
         }
@@ -239,7 +298,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
 
     const handleMappingChange = (entity: 'account' | 'contact', key: string, value: string) => {
         const mappingKey = entity === 'account' ? 'accountMapping' : 'contactMapping';
-        setConfig((prev: any) => {
+        setConfig((prev) => {
             const newMapping = { ...prev.syncSettings[mappingKey] };
             if (value === '') {
                 delete newMapping[key];
@@ -256,8 +315,8 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
         });
     };
 
-    const handleDisplaySettingsChange = (entity: 'account' | 'contact', settings: any[]) => {
-        setConfig((prev: any) => ({
+    const handleDisplaySettingsChange = (entity: 'account' | 'contact', settings: DisplaySetting[]) => {
+        setConfig((prev) => ({
             ...prev,
             syncSettings: {
                 ...prev.syncSettings,
@@ -271,7 +330,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
 
     const handleResetMapping = (entity: 'account' | 'contact') => {
         const mappingKey = entity === 'account' ? 'accountMapping' : 'contactMapping';
-        setConfig((prev: any) => ({
+        setConfig((prev) => ({
             ...prev,
             syncSettings: {
                 ...prev.syncSettings,
@@ -467,7 +526,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
                                 onMappingChange={(key, val) => handleMappingChange('account', key, val)}
                                 onDisplayChange={(settings) => handleDisplaySettingsChange('account', settings)}
                                 onReset={() => handleResetMapping('account')}
-                                onSave={() => handleSave({ preventDefault: () => { } } as unknown as React.FormEvent)}
+                                onSave={() => void handleSave()}
                                 saving={saving}
                             />
                         </TabsContent>
@@ -482,7 +541,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
                                 onMappingChange={(key, val) => handleMappingChange('contact', key, val)}
                                 onDisplayChange={(settings) => handleDisplaySettingsChange('contact', settings)}
                                 onReset={() => handleResetMapping('contact')}
-                                onSave={() => handleSave({ preventDefault: () => { } } as unknown as React.FormEvent)}
+                                onSave={() => void handleSave()}
                                 saving={saving}
                             />
                         </TabsContent>

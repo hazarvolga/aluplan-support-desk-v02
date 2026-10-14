@@ -44,13 +44,16 @@ export function LanguageSwitcher({ persistToProfile = false }: LanguageSwitcherP
                 return (
                     <button
                         key={loc.code}
+                        type="button"
                         onClick={() => setLocale(loc.code)}
                         title={t(loc.code)}
+                        aria-label={t(loc.code)}
+                        aria-pressed={isActive}
                         className={`
                             flex-1 px-3 py-1.5 text-[10px] font-bold tracking-widest rounded-md transition-all duration-300
                             ${isActive
                                 ? 'bg-primary/20 text-primary shadow-[0_0_10px_rgba(var(--primary),0.3)] border border-primary/20'
-                                : 'text-muted-foreground/60 hover:bg-white/5 hover:text-white border border-transparent'
+                                : 'text-muted-foreground hover:bg-white/5 hover:text-white border border-transparent'
                             }
                         `}
                     >

@@ -58,7 +58,13 @@ export const getTicketCategoryDisplayName = (value: unknown, labels: TicketSuppo
     return value.trim();
 };
 
-export const getTicketSupportCategoryNames = (ticket: any, labels: TicketSupportCategoryLabels): string[] => {
+type TicketCategorySource = {
+    department?: { slug?: string | null; name?: string | null } | null;
+    tags?: string[] | null;
+    suggestedCategories?: unknown[] | null;
+};
+
+export const getTicketSupportCategoryNames = (ticket: TicketCategorySource, labels: TicketSupportCategoryLabels): string[] => {
     const departmentValue = ticket.department?.slug || ticket.department?.name;
     const normalizedSlug = typeof ticket.department?.slug === 'string'
         ? normalizeTicketCategoryKey(ticket.department.slug)

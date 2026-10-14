@@ -8,7 +8,7 @@ export type AiHealthEvent = {
     task?: string;
     errorMessage?: string;
     latencyMs?: number;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     timestamp?: number;
     createdAt?: string;
     id?: string;

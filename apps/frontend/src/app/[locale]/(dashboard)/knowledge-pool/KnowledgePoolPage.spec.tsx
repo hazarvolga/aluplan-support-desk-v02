@@ -30,7 +30,7 @@ describe('KnowledgePoolPage review-center navigation', () => {
         ['de', deMessages],
         ['tr', trMessages],
     ])('keeps controlled crawler messages in the admin namespace for %s', (_locale, messages) => {
-        const crawler = (messages as any).admin.knowledge_pool.crawler;
+        const crawler = messages.admin.knowledge_pool.crawler;
         expect(crawler.buttons.start_slow_crawl).toBeTruthy();
         expect(crawler.buttons.approve).toBeTruthy();
         expect(crawler.run.status.queued).toBeTruthy();
@@ -167,12 +167,12 @@ describe('KnowledgePoolPage review-center navigation', () => {
         vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams('tab=crawler') as never);
         const scheduledPolls: Array<() => void | Promise<void>> = [];
         const nativeSetTimeout = window.setTimeout.bind(window);
-        const timeoutSpy = vi.spyOn(window, 'setTimeout').mockImplementation(((handler: TimerHandler, delay?: number, ...args: any[]) => {
+        const timeoutSpy = vi.spyOn(window, 'setTimeout').mockImplementation(((handler: TimerHandler, delay?: number) => {
             if (delay === 10_000 && typeof handler === 'function') {
                 scheduledPolls.push(handler as () => void | Promise<void>);
                 return 98765;
             }
-            return nativeSetTimeout(handler, delay, ...args);
+            return nativeSetTimeout(handler, delay);
         }) as typeof window.setTimeout);
         let statusPolls = 0;
         const runningRun = {

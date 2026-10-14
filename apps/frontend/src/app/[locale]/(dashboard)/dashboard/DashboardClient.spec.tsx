@@ -13,6 +13,19 @@ vi.mock('@/components/auth/role-guard', () => ({
 }));
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+const mockedUseAuth = vi.mocked(useAuth);
+type AuthUser = ReturnType<typeof useAuth>['user'];
+
+const mockAuth = (user: AuthUser) => {
+    mockedUseAuth.mockReturnValue({
+        user,
+        loading: false,
+        backendUnavailable: false,
+        login: vi.fn(),
+        logout: vi.fn(),
+        retryAuth: vi.fn(),
+    });
+};
 
 describe('DashboardClient', () => {
     beforeEach(() => {
@@ -20,16 +33,14 @@ describe('DashboardClient', () => {
     });
 
     it('renders loading state initially', () => {
-        (useAuth as any).mockReturnValue({ user: null });
+        mockAuth(null);
         render(<DashboardClient />);
         // The component renders an Activity icon while loading
         expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
     });
 
     it('renders customer dashboard for customer role', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { fullName: 'John Doe', roles: ['customer'] }
-        });
+        mockAuth({ id: 'customer-1', email: 'john@example.com', fullName: 'John Doe', role: 'customer', roles: ['customer'] });
         const opsSpy = vi.spyOn(api.dashboard, 'ops');
 
         render(<DashboardClient />);
@@ -45,9 +56,7 @@ describe('DashboardClient', () => {
     });
 
     it('renders admin dashboard for admin role', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { fullName: 'Admin User', roles: ['admin'] }
-        });
+        mockAuth({ id: 'admin-1', email: 'admin@example.com', fullName: 'Admin User', role: 'admin', roles: ['admin'] });
         const opsSpy = vi.spyOn(api.dashboard, 'ops');
 
         render(<DashboardClient />);
@@ -64,9 +73,7 @@ describe('DashboardClient', () => {
     });
 
     it('finishes loading when React Strict Mode replays mount effects', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { fullName: 'Admin User', roles: ['admin'] }
-        });
+        mockAuth({ id: 'admin-1', email: 'admin@example.com', fullName: 'Admin User', role: 'admin', roles: ['admin'] });
 
         render(
             <StrictMode>
@@ -80,9 +87,7 @@ describe('DashboardClient', () => {
     });
 
     it('handles API errors gracefully', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { fullName: 'Admin User', roles: ['admin'] }
-        });
+        mockAuth({ id: 'admin-1', email: 'admin@example.com', fullName: 'Admin User', role: 'admin', roles: ['admin'] });
 
         // Override MSW for this test to simulate failure
         server.use(
@@ -100,9 +105,7 @@ describe('DashboardClient', () => {
     });
 
     it('opens a real-data pulse detail modal from a pulse card', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { fullName: 'Admin User', roles: ['admin'] }
-        });
+        mockAuth({ id: 'admin-1', email: 'admin@example.com', fullName: 'Admin User', role: 'admin', roles: ['admin'] });
 
         render(<DashboardClient />);
 
@@ -118,9 +121,7 @@ describe('DashboardClient', () => {
     });
 
     it('switches pulse modal segments instead of rendering decorative filters', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { fullName: 'Admin User', roles: ['admin'] }
-        });
+        mockAuth({ id: 'admin-1', email: 'admin@example.com', fullName: 'Admin User', role: 'admin', roles: ['admin'] });
 
         render(<DashboardClient />);
 
@@ -136,9 +137,7 @@ describe('DashboardClient', () => {
     });
 
     it('shows selected pulse segment counts and empty-state for empty knowledge slices', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { fullName: 'Admin User', roles: ['admin'] }
-        });
+        mockAuth({ id: 'admin-1', email: 'admin@example.com', fullName: 'Admin User', role: 'admin', roles: ['admin'] });
 
         render(<DashboardClient />);
 
@@ -156,9 +155,7 @@ describe('DashboardClient', () => {
     });
 
     it('allows manual refresh of the operations payload', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { fullName: 'Admin User', roles: ['admin'] }
-        });
+        mockAuth({ id: 'admin-1', email: 'admin@example.com', fullName: 'Admin User', role: 'admin', roles: ['admin'] });
         const opsSpy = vi.spyOn(api.dashboard, 'ops');
 
         render(<DashboardClient />);

@@ -14,8 +14,8 @@ describe('email editor contract surface', () => {
         expect(apiSource).toContain('/email/admin/templates/${name}/source');
         expect(apiSource).toContain('/email/admin/templates/${name}/save');
         expect(apiSource).toContain('/email/admin/templates/${name}/preview');
-        expect(apiSource).toContain("request<any[]>('/announcement-templates')");
-        expect(apiSource).toContain("request<any[]>('/announcements')");
+        expect(apiSource).toContain("request<AnnouncementTemplate[]>('/announcement-templates')");
+        expect(apiSource).toContain("request<Announcement[]>('/announcements')");
 
         expect(apiSource).not.toContain('/email/admin/templates/${name}/content');
         expect(apiSource).not.toContain('/email/admin/announcements/');
@@ -23,5 +23,15 @@ describe('email editor contract surface', () => {
         expect(transactionalEditor).not.toContain('safeModeOpen');
         expect(announcementPage).toContain('api.announcementTemplates');
         expect(fs.existsSync(sourcePath('src/components/email/MjmlEditor.tsx'))).toBe(false);
+    });
+
+    it('isolates every HTML email preview from the authenticated parent origin', () => {
+        const settingsPreview = readSource('src/app/[locale]/(dashboard)/settings/components/EmailTemplates.tsx');
+        const livePreview = readSource('src/components/email/LivePreview.tsx');
+
+        expect(settingsPreview).toMatch(/<iframe[\s\S]*?sandbox="allow-popups"[\s\S]*?srcDoc=/);
+        expect(livePreview).toMatch(/<iframe[\s\S]*?sandbox="allow-popups"[\s\S]*?srcDoc=\{html\}/);
+        expect(livePreview).not.toContain('contentDocument');
+        expect(livePreview).not.toContain('doc.write');
     });
 });

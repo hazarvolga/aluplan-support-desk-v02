@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
 interface RecursiveDataViewerProps {
-    data: any;
+    data: unknown;
     name?: string;
     level?: number;
     className?: string;
@@ -24,7 +24,7 @@ export function RecursiveDataViewer({ data, name, level = 0, className }: Recurs
         );
     }
 
-    const isEmpty = isObject ? Object.keys(data).length === 0 : data.length === 0;
+    const isEmpty = isObject ? Object.keys(data).length === 0 : isArray && data.length === 0;
 
     if (isEmpty) {
         return (

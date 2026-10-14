@@ -19,7 +19,7 @@ import {
     UserCircle2,
     Mail
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { AgentStatusBadge } from '@/components/team/AgentStatusBadge';
@@ -30,18 +30,22 @@ import { useTranslations } from 'next-intl';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
+type TeamMember = { roleOverride?: string; user: { id: string; fullName: string; email?: string; avatarUrl?: string; status?: string; role?: string | { name?: string }; agentStatus?: string; _count?: { ticketsAssigned?: number } } };
+type TeamDetail = { id: string; name: string; description?: string; autoAssignmentEnabled?: boolean; assignmentStrategy?: string; department?: { name?: string }; members?: TeamMember[] };
+type TeamStats = { onlineRate?: number; waitingQueue?: number; resolvedToday?: number };
+
 const assignmentStrategies = ['MANUAL', 'ROUND_ROBIN', 'SKILL_BASED'] as const;
 
 export default function TeamDetailPage() {
     const t = useTranslations('teams');
     const { id } = useParams();
     const router = useRouter();
-    const [team, setTeam] = useState<any>(null);
-    const [stats, setStats] = useState<any>(null);
+    const [team, setTeam] = useState<TeamDetail | null>(null);
+    const [stats, setStats] = useState<TeamStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
     const [savingRouting, setSavingRouting] = useState(false);
-    const [memberToRemove, setMemberToRemove] = useState<any>(null);
+    const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
     const [routingConfig, setRoutingConfig] = useState({
         autoAssignmentEnabled: false,
         assignmentStrategy: 'MANUAL',
@@ -55,13 +59,13 @@ export default function TeamDetailPage() {
                     api.teams.get(id as string),
                     api.teams.getStats(id as string)
                 ]);
-                setTeam(teamRes);
+                setTeam(teamRes as TeamDetail);
                 setRoutingConfig({
                     autoAssignmentEnabled: Boolean(teamRes.autoAssignmentEnabled),
                     assignmentStrategy: teamRes.assignmentStrategy || 'MANUAL',
                 });
-                setStats(statsRes);
-            } catch (error) {
+                setStats(statsRes as TeamStats);
+            } catch {
                 toast({ title: 'Hata', description: 'Ekip bilgileri alınamadı.', variant: 'destructive' });
                 router.push('/teams');
             } finally {
@@ -72,31 +76,34 @@ export default function TeamDetailPage() {
     }, [id]);
 
     const handleRemoveMember = async (userId: string) => {
+        if (!team) return;
         try {
             await api.teams.removeMember(id as string, userId);
             setTeam({
                 ...team,
-                members: team.members.filter((m: any) => m.user.id !== userId)
+                members: team.members?.filter((member) => member.user.id !== userId) ?? []
             });
             setMemberToRemove(null);
             toast({ title: t('member_remove.success_title'), description: t('member_remove.success_desc') });
-        } catch (error) {
+        } catch {
             toast({ title: t('member_remove.error_title'), description: t('member_remove.error_desc'), variant: 'destructive' });
         }
     };
 
-    const assignableMembers = (team?.members || []).filter((m: any) => {
-        const roleName = String(m.user?.role?.name || m.user?.role || '').toLowerCase();
+    const assignableMembers = (team?.members || []).filter((m) => {
+        const role = m.user?.role;
+        const roleName = String(typeof role === 'object' ? role?.name : role || '').toLowerCase();
         return m.user?.status === 'ACTIVE' && roleName !== 'customer';
     });
 
     const handleSaveRouting = async () => {
+        if (!team) return;
         setSavingRouting(true);
         try {
             const updated = await api.teams.update(id as string, routingConfig);
-            setTeam({ ...team, ...updated });
+            setTeam({ ...team, ...(updated as Partial<TeamDetail>) });
             toast({ title: t('routing.success_title'), description: t('routing.success_desc') });
-        } catch (error) {
+        } catch {
             toast({ title: t('routing.error_title'), description: t('routing.error_desc'), variant: 'destructive' });
         } finally {
             setSavingRouting(false);
@@ -119,7 +126,7 @@ export default function TeamDetailPage() {
                 teamId={id as string}
                 existingMembers={team.members || []}
                 onSuccess={() => {
-                    api.teams.get(id as string).then(setTeam).catch(console.error);
+                    api.teams.get(id as string).then((updatedTeam) => setTeam(updatedTeam as TeamDetail)).catch(console.error);
                 }}
             />
             <Dialog open={Boolean(memberToRemove)} onOpenChange={(open) => !open && setMemberToRemove(null)}>
@@ -251,7 +258,7 @@ export default function TeamDetailPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {team.members?.map((m: any) => (
+                        {team.members?.map((m) => (
                             <Card key={m.user.id} className="group relative overflow-hidden hover:border-primary/30 transition-all shadow-none bg-card/40 border-border/50">
                                 <CardHeader className="flex flex-row items-center gap-4 pb-3">
                                     <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center border border-border/60 group-hover:scale-105 transition-transform overflow-hidden">
@@ -270,8 +277,8 @@ export default function TeamDetailPage() {
                                             </div>
                                         ) : null}
                                         <div className="flex items-center gap-2 mt-1">
-                                            <RoleBadge role={m.roleOverride || m.user.role} className="text-[10px] h-5" />
-                                            <AgentStatusBadge status={m.user.agentStatus} className="text-[10px] h-5" showIcon={false} />
+                                            <RoleBadge role={m.roleOverride || (typeof m.user.role === 'object' ? m.user.role.name : m.user.role) || 'agent'} className="text-[10px] h-5" />
+                                            <AgentStatusBadge status={m.user.agentStatus || 'OFFLINE'} className="text-[10px] h-5" showIcon={false} />
                                         </div>
                                     </div>
                                 </CardHeader>

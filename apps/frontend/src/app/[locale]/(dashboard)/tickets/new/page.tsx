@@ -54,7 +54,25 @@ const TICKET_ATTACHMENT_ACCEPT = [
 const HOTINFO_CREATE_HELP_URL = 'https://help.allplan.com/Allplan/2024-1/1034/Allmenu/index.htm#45160.htm';
 const HOTINFO_SERVICE_HELP_URL = 'https://help.allplan.com/Allplan/2024-1/1034/Allmenu/index.htm#31182.htm';
 
-const getTicketSchema = (t: any) => z.object({
+type TicketTranslator = ReturnType<typeof useTranslations>;
+
+interface ProductOption {
+    id: string;
+    name: string;
+}
+
+interface DepartmentOption {
+    id: string;
+    slug?: string | null;
+    name?: string | null;
+}
+
+interface HotinfoData {
+    allplanVersion?: string;
+    [key: string]: unknown;
+}
+
+const getTicketSchema = (t: TicketTranslator) => z.object({
     subject: z.string().min(5, t('errors.subject_min')).max(MAX_TICKET_SUBJECT_LENGTH, t('errors.subject_max')),
     description: z.string().min(10, t('errors.description_min')).max(MAX_TICKET_DESCRIPTION_LENGTH, t('errors.description_max')),
     priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
@@ -236,14 +254,14 @@ export default function NewTicketPage() {
     const [loadingProducts, setLoadingProducts] = useState(true);
     const [loadingDepartments, setLoadingDepartments] = useState(true);
     const [files, setFiles] = useState<File[]>([]);
-    const [products, setProducts] = useState<any[]>([]);
-    const [departments, setDepartments] = useState<any[]>([]);
+    const [products, setProducts] = useState<ProductOption[]>([]);
+    const [departments, setDepartments] = useState<DepartmentOption[]>([]);
     const [selectedCategoryValue, setSelectedCategoryValue] = useState<string>('');
     const categoryOptions = useMemo(() => buildTicketCategoryOptions(departments), [departments]);
     const selectedCategoryOption = categoryOptions.find(option => option.value === selectedCategoryValue);
     const selectedDepartmentId = selectedCategoryOption?.departmentId ?? '';
     const [selectedProductId, setSelectedProductId] = useState<string>('');
-    const [hotinfoData, setHotinfoData] = useState<any | null>(null);
+    const [hotinfoData, setHotinfoData] = useState<HotinfoData | null>(null);
     const [isHotinfoConfirmed, setIsHotinfoConfirmed] = useState(false);
     const [isHotinfoHelpOpen, setIsHotinfoHelpOpen] = useState(false);
     const isHotinfoRequired = isHotinfoRequiredForTicket(
@@ -262,7 +280,7 @@ export default function NewTicketPage() {
     const synthesisPanelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const form = useForm<TicketFormValues>({
-        resolver: zodResolver(getTicketSchema(t)) as any,
+        resolver: zodResolver(getTicketSchema(t)),
         defaultValues: {
             subject: '',
             description: '',
@@ -347,8 +365,9 @@ export default function NewTicketPage() {
         if (isAllplan) {
             try {
                 const user = await api.auth.me();
-                if (user?.customerProfile?.hotinfoData) {
-                    setHotinfoData(user.customerProfile.hotinfoData);
+                const profileHotinfo = user?.customerProfile?.hotinfoData;
+                if (typeof profileHotinfo === 'object' && profileHotinfo !== null && !Array.isArray(profileHotinfo)) {
+                    setHotinfoData(profileHotinfo);
                     setIsHotinfoConfirmed(false);
                     toast.info(t('toasts.hotinfo_loaded'));
                 }
@@ -390,7 +409,7 @@ export default function NewTicketPage() {
             setIsHotinfoConfirmed(false);
             setIsHotinfoHelpOpen(false);
             toast.success(t('toasts.hotinfo_success'));
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.error(t('toasts.upload_error'));
             console.error(error);
         }
@@ -398,7 +417,7 @@ export default function NewTicketPage() {
 
     const runDiagnosis = async () => {
         const values = form.getValues();
-        const { subject, description } = values;
+        const { subject } = values;
         if (!(await form.trigger('description'))) {
             toast.error(t('errors.description_min'));
             return;
@@ -468,7 +487,7 @@ export default function NewTicketPage() {
                 licenseGroupStatus: values.licenseGroupStatus,
             } : undefined;
             const resolvedResponse = await api.ai.query(buildDiagnosisQuery(subject, effectiveDescription), context, pId, locale, [], attachments, true, false, undefined, Boolean(context), canonicalAllplanVersion || undefined, licensingIntake, isLicensingIntakeVisible ? 'ALLPLAN_LICENSING' : 'GENERIC') as
-                { answer?: string; visuals?: AiVisualEvidenceItem[]; interactionId?: string; answerMode?: 'LLM' | 'FALLBACK'; languageMismatch?: boolean } | null;
+                { answer?: string; visuals?: AiVisualEvidenceItem[]; interactionId?: string; answerMode?: 'LLM' | 'FALLBACK'; languageMismatch?: boolean; confidence?: string } | null;
 
             if (!resolvedResponse || !resolvedResponse.answer) {
                 setDiagnosisState('failed');
@@ -488,16 +507,16 @@ export default function NewTicketPage() {
 
             if (resolvedResponse.languageMismatch) {
                 toast.info(t('toasts.ai_language_mismatch'));
-            } else if ((resolvedResponse as any).confidence === 'NO_MATCH') {
+            } else if (resolvedResponse.confidence === 'NO_MATCH') {
                 toast.info(t('toasts.ai_no_match'));
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Diagnosis failed', err);
             if (isBackendUnavailableError(err)) {
                 setDiagnosisState('backend_unavailable');
                 closeSynthesisPanel();
                 toast.error(t('toasts.ai_backend_unavailable'));
-            } else if (err.message === 'AI_TIMEOUT') {
+            } else if (err instanceof Error && err.message === 'AI_TIMEOUT') {
                 setDiagnosisState('failed');
                 closeSynthesisPanel();
                 toast.error(t('toasts.ai_timeout'));
@@ -525,17 +544,11 @@ export default function NewTicketPage() {
         setLoading(true);
         try {
             const effectiveDescription = buildTicketDescription(values);
-            const {
-                allplanVersion: _allplanVersion,
-                allplan2024ReleaseBand: _allplan2024ReleaseBand,
-                licenseTopology: _licenseTopology,
-                licenseIssueType: _licenseIssueType,
-                licenseUserRole: _licenseUserRole,
-                allplanIdStatus: _allplanIdStatus,
-                organizationInviteStatus: _organizationInviteStatus,
-                licenseGroupStatus: _licenseGroupStatus,
-                ...ticketValues
-            } = values;
+            const ticketValues = {
+                subject: values.subject,
+                description: values.description,
+                priority: values.priority,
+            };
             const ticket = await api.tickets.create({
                 ...ticketValues,
                 description: effectiveDescription,
@@ -568,12 +581,12 @@ export default function NewTicketPage() {
             }
 
             router.push(`/${locale}/tickets/${ticket.id}`);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Ticket creation failed', error);
             if (isBackendUnavailableError(error)) {
                 toast.error(t('toasts.ticket_backend_unavailable'));
             } else {
-                toast.error(error.message || ct('error'));
+                toast.error(error instanceof Error ? error.message : ct('error'));
             }
         } finally {
             setLoading(false);
