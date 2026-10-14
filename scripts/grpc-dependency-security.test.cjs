@@ -57,9 +57,9 @@ async function withGrpcServer(handler, run) {
     }
 }
 
-test('Document AI resolves google-gax and reviewed grpc-js 1.14.4', t => {
+test('Document AI resolves google-gax and reviewed grpc-js 1.14.5', t => {
     t.diagnostic(`Document AI gRPC entry: ${gaxRequire.resolve('@grpc/grpc-js')}`);
-    assert.equal(gaxRequire('@grpc/grpc-js/package.json').version, '1.14.4');
+    assert.equal(gaxRequire('@grpc/grpc-js/package.json').version, '1.14.5');
 });
 
 test('actual Google protos preserve Turkish content bytes and request fields', () => {

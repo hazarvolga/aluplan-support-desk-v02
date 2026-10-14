@@ -56,7 +56,7 @@ test('frontend removes only explicit global package manager paths from the runne
     assert.deepEqual(removals[0].split(/\s+/), ['RUN', 'rm', '-rf', ...expected]);
     assert.ok(runner.indexOf(removals[0]) < runner.indexOf('USER nextjs'));
     assert.equal(builder.filter(line => line.startsWith('RUN rm ')).length, 0);
-    assert.ok(instructions.includes('RUN npm install -g pnpm@9.15.4'));
+    assert.ok(instructions.includes('RUN npm install -g pnpm@11.17.0'));
     assert.ok(runner.includes('CMD ["node", "apps/frontend/server.js"]'));
 });
 

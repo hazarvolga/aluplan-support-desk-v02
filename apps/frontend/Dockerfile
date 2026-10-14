@@ -1,5 +1,5 @@
 FROM node:22.23.3-alpine3.23@sha256:baf676f7d0e552f3231945c2f979055ca121bce128c152f7a34e6bd1728b1c5a AS base
-RUN npm install -g pnpm@9.15.4
+RUN npm install -g pnpm@11.17.0
 
 FROM base AS builder
 # Set working directory

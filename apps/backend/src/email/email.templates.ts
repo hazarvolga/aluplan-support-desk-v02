@@ -1,17 +1,33 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-// Robust MJML import to handle ESM/CJS interop crashes
-
+import mjml2html from 'mjml-core';
+// The aggregate `mjml` package also installs its CLI and vulnerable legacy
+// minifier graph. Register the same reviewed core preset directly instead.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+const mjmlCore = require('mjml-core') as typeof import('mjml-core') & {
+  assignComponents: (target: Record<string, unknown>, source: readonly unknown[]) => void;
+  components: Record<string, unknown>;
+};
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const corePreset = require('mjml-preset-core') as {
+  components: readonly unknown[];
+  dependencies: Record<string, readonly string[]>;
+};
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const validator = require('mjml-validator') as {
+  assignDependencies: (target: Record<string, readonly string[]>, source: Record<string, readonly string[]>) => void;
+  dependencies: Record<string, readonly string[]>;
+};
 
-import mjmlModule from 'mjml';
-const mjml2html = typeof mjmlModule === 'function' ? mjmlModule : ((mjmlModule as { default?: typeof mjmlModule }).default || mjmlModule);
+mjmlCore.assignComponents(mjmlCore.components, corePreset.components);
+validator.assignDependencies(validator.dependencies, corePreset.dependencies);
 import * as Handlebars from 'handlebars';
 import { convert } from 'html-to-text';
 import { BaseEmailSchema } from './contracts/base.contract';
 import { Logger } from '@nestjs/common';
 import { normalizeEmailLogoUrl } from '../common/utils/public-url.util';
+import { assertSafeMjmlIncludes, resolveScreenTemplatePath } from './email-template-security';
 
 const logger = new Logger('EmailTemplates');
 
@@ -93,14 +109,15 @@ export class TemplateService {
   public static compile(templateName: string, data: any, brandDefaults?: any): { html: string; text: string; subject: string } {
     this.ensurePaths();
     let mjmlContent = this.cache.get(templateName) ?? '';
-    let mjmlPath = '';
+    const layoutPath = path.join(this.mjmlBaseDir, 'layouts', 'base.mjml');
+    const mjmlPath = templateName === 'raw'
+      ? layoutPath
+      : resolveScreenTemplatePath(this.getScreensDir(), templateName);
 
     if (!mjmlContent) {
       if (templateName === 'raw' && data.mjml) {
         const rawContent = data.mjml.trim();
         const isFullMjml = rawContent.toLowerCase().startsWith('<mjml>');
-        const layoutPath = path.join(this.mjmlBaseDir, 'layouts', 'base.mjml');
-        mjmlPath = layoutPath;
 
         if (!isFullMjml && fs.existsSync(layoutPath)) {
           const baseContent = fs.readFileSync(layoutPath, 'utf8');
@@ -110,9 +127,6 @@ export class TemplateService {
         }
       } else {
         // Find template in screens/
-        mjmlPath = path.join(this.mjmlBaseDir, 'screens', `${templateName}.mjml`);
-        const layoutPath = path.join(this.mjmlBaseDir, 'layouts', 'base.mjml');
-
         if (!fs.existsSync(mjmlPath)) {
           throw new Error(`Template formulation failed: ${mjmlPath} does not exist`);
         }
@@ -134,6 +148,8 @@ export class TemplateService {
         this.cache.set(templateName, mjmlContent);
       }
     }
+
+    assertSafeMjmlIncludes(mjmlContent, mjmlPath, this.mjmlBaseDir);
 
     // 1. Prepare Brand Context
     const rawBrand = {
@@ -204,12 +220,13 @@ export class TemplateService {
       // Pass 1: Handlebars on raw MJML resolves {{#if brand.primary_color}} etc.
       // Pass 2: MJML compiles resolved content, evaluating <mj-include>.
       const resolvedMjml = Handlebars.compile(mjmlContent, { noEscape: true })(renderContext);
+      assertSafeMjmlIncludes(resolvedMjml, mjmlPath, this.mjmlBaseDir);
 
       const { html, errors } = mjml2html(resolvedMjml, {
         minify: false, // Keep the vulnerable optional html-minifier path disabled.
         beautify: false,
         validationLevel: 'soft',
-        filePath: mjmlPath || path.join(this.mjmlBaseDir, 'layouts', 'base.mjml')
+        filePath: mjmlPath
       });
 
       if (errors && errors.length > 0) {
