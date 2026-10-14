@@ -11,6 +11,7 @@ import { Public } from './decorators/public.decorator';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { getLoginThrottleLimit } from './auth-throttle';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -22,7 +23,7 @@ export class AuthController {
 
     @Public()
     @Post('login')
-    @Throttle({ default: { limit: 20, ttl: 60000 } })
+    @Throttle({ default: { limit: getLoginThrottleLimit(process.env.NODE_ENV), ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Login with email and password' })
     @ApiResponse({ status: 200, description: 'Login successful. Sets HttpOnly cookies and returns non-secret user data.' })

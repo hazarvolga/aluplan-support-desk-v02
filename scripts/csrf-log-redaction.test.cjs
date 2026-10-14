@@ -85,6 +85,14 @@ test('valid protected writes, existing auth bypasses and safe reads remain uncha
   for (const route of ['login','refresh','logout','forgot-password','resend-verification','reset-password','verify-email']) {
     cases.push({ pathname: `/api/v1/auth/${route}` });
   }
+  for (const pathname of [
+    '/api/v1/crm/webhooks/dynamics365',
+    '/api/v1/whatsapp/webhook',
+    '/api/v1/omni-channel/webhook/email',
+    '/api/v1/email/webhook/resend',
+  ]) {
+    cases.push({ pathname });
+  }
   cases.push({pathname:'/api/v1/email/unsubscribe'}, ...['GET','HEAD','OPTIONS'].map(method=>({method})));
   for (const input of cases) {
     const result = exercise(input);
@@ -92,5 +100,22 @@ test('valid protected writes, existing auth bypasses and safe reads remain uncha
     assert.equal(result.status, undefined);
     assert.equal(result.body, undefined);
     assert.deepEqual(result.warnings, []);
+  }
+});
+
+test('signed webhook bypasses require POST and an exact normalized path', () => {
+  const protectedCases = [
+    { method: 'PUT', pathname: '/api/v1/whatsapp/webhook' },
+    { pathname: '/api/v1/whatsapp/webhook-admin' },
+    { pathname: '/api/v1/whatsapp/webhook/internal' },
+    { pathname: '/api/v1/email/webhook/resend/internal' },
+    { pathname: '/api/v1/crm/webhooks/dynamics365-shadow' },
+    { pathname: '/api/v1/omni-channel/webhook/email/internal' },
+  ];
+
+  for (const input of protectedCases) {
+    const result = exercise(input);
+    assert.equal(result.status, 403, `${input.method || 'POST'} ${input.pathname} must retain CSRF`);
+    assert.equal(result.nextCalls, 0);
   }
 });

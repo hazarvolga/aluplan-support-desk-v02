@@ -159,6 +159,14 @@ async function bootstrap() {
             '/api/v1/auth/verify-email',
             '/api/v1/email/unsubscribe',
         ];
+        // External providers cannot supply our browser CSRF cookie. These exact
+        // POST endpoints authenticate the raw payload with provider signatures.
+        const signedWebhookCsrfBypassPaths = [
+            '/api/v1/crm/webhooks/dynamics365',
+            '/api/v1/whatsapp/webhook',
+            '/api/v1/omni-channel/webhook/email',
+            '/api/v1/email/webhook/resend',
+        ];
 
         let csrfToken = req.cookies['XSRF-TOKEN'];
         const isProd = configService.get('NODE_ENV') === 'production';
@@ -176,7 +184,11 @@ async function bootstrap() {
         }
 
         const isCsatFeedbackRequest = req.method === 'POST' && /^\/api\/v1\/tickets\/csat\/[^/]+$/.test(req.path);
-        const isBypassed = isCsatFeedbackRequest || csrfBypassPaths.some(path => req.path.startsWith(path));
+        const isSignedWebhookRequest = req.method === 'POST'
+            && signedWebhookCsrfBypassPaths.includes(req.path);
+        const isBypassed = isCsatFeedbackRequest
+            || csrfBypassPaths.includes(req.path)
+            || isSignedWebhookRequest;
 
         if (!isBypassed && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
             const headerToken = req.headers['x-xsrf-token'];

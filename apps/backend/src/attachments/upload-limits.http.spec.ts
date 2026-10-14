@@ -45,7 +45,14 @@ const routes = [
     { path: '/knowledge-pool/sources/upload', max: 50 * 1024 * 1024, fields: 1 },
 ];
 
-async function upload(path: string, bytes: number, fields: string[] = [], allowed = true, extraFile = false) {
+async function upload(
+    path: string,
+    bytes: number,
+    fields: string[] = [],
+    allowed = true,
+    extraFile = false,
+    fixture?: { name: string; mimeType: string; content: Buffer },
+) {
     if (listeningPort <= 0) throw new Error('Upload test server is not listening');
     const client = request({
         hostname: '127.0.0.1', port: listeningPort, path, method: 'POST', agent: false,
@@ -70,10 +77,13 @@ async function upload(path: string, bytes: number, fields: string[] = [], allowe
     try {
         for (const name of fields) await write(`--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\nTest document\r\n`);
         for (let index = 0; index < (extraFile ? 2 : 1); index++) {
-            const metadata = path.includes('knowledge-pool') ? ['fixture.txt', 'text/plain'] : ['fixture.png', 'image/png'];
+            const metadata = fixture
+                ? [fixture.name, fixture.mimeType]
+                : path.includes('knowledge-pool') ? ['fixture.txt', 'text/plain'] : ['fixture.png', 'image/png'];
             await write(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${metadata[0]}"\r\nContent-Type: ${metadata[1]}\r\n\r\n`);
-            await write(png.subarray(0, Math.min(bytes, png.length)));
-            for (let remaining = bytes - png.length; remaining > 0; remaining -= 65536) {
+            const content = fixture?.content ?? png;
+            await write(content.subarray(0, Math.min(bytes, content.length)));
+            for (let remaining = bytes - content.length; remaining > 0; remaining -= 65536) {
                 await write(Buffer.alloc(Math.min(remaining, 65536), 97));
             }
             await write('\r\n');
@@ -159,6 +169,18 @@ describe('real HTTP upload boundary (isolated loopback test app)', () => {
         expect({ status: result.status, body: result.status === 201 ? 'success' : result.body }).toEqual({ status: 201, body: 'success' });
         expect(storage.uploadFile).toHaveBeenCalledTimes(1);
         if (fields) expect(knowledge.createFileSource).toHaveBeenCalledWith('Test document', 'FILE_TXT', expect.objectContaining({ originalname: 'fixture.txt' }));
+    });
+
+    it('accepts the text/plain attachment type exposed by the ticket composer', async () => {
+        const text = Buffer.from('Synthetic support attachment.\n');
+        const result = await upload(routes[0].path, text.length, [], true, false, {
+            name: 'fixture.txt',
+            mimeType: 'text/plain',
+            content: text,
+        });
+        expect({ status: result.status, body: result.status === 201 ? 'success' : result.body })
+            .toEqual({ status: 201, body: 'success' });
+        expect(storage.uploadFile).toHaveBeenCalledTimes(1);
     });
 
     it.each(routes)('returns a storage failure without metadata success at $path', async ({ path, fields }) => {

@@ -19,15 +19,42 @@ import { RedisService } from '../redis/redis.service';
 
 import { EmailInboundService } from './email-inbound.service';
 import { INBOUND_HOLD_PREFIX, summarizeInboundState } from './inbound-email-claim';
+import {
+  assertSafeMjmlIncludes,
+  resolveScreenTemplatePath,
+  writeScreenTemplateAtomically,
+} from './email-template-security';
 
 
 @Controller('email')
 export class EmailController {
   private readonly logger = new Logger(EmailController.name);
   private static readonly GMAIL_OAUTH_STATE_TTL_SECONDS = 10 * 60;
+  private static readonly RESEND_WEBHOOK_TOLERANCE_SECONDS = 5 * 60;
+  private static readonly RESEND_WEBHOOK_DEDUP_TTL_SECONDS = 10 * 60;
 
   private get screensDir() {
     return TemplateService.getScreensDir();
+  }
+
+  private getScreenTemplatePath(name: string): string {
+    try {
+      return resolveScreenTemplatePath(this.screensDir, name);
+    } catch {
+      throw new BadRequestException('Invalid email template name');
+    }
+  }
+
+  private validateTemplateContent(content: string, templatePath: string): void {
+    if (typeof content !== 'string') {
+      throw new BadRequestException('Template content must be a string');
+    }
+
+    try {
+      assertSafeMjmlIncludes(content, templatePath, path.dirname(this.screensDir));
+    } catch {
+      throw new BadRequestException('Template contains an unsafe MJML include path');
+    }
   }
 
   constructor(
@@ -107,6 +134,7 @@ export class EmailController {
   @Post('webhook/resend')
   async resendWebhook(@Req() req: any, @Body() payload: any, @Res() res: Response) {
     const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
+    let replayKey: string | undefined;
 
     if (!webhookSecret) {
       return res.status(HttpStatus.UNAUTHORIZED).send('Webhook secret is not configured');
@@ -118,6 +146,17 @@ export class EmailController {
       const svixSignature = req.headers['svix-signature'] as string;
 
       if (!svixId || !svixTimestamp || !svixSignature) {
+        return res.status(HttpStatus.UNAUTHORIZED).send();
+      }
+
+      if (!/^[A-Za-z0-9_-]{1,255}$/.test(svixId) || !/^\d{1,12}$/.test(svixTimestamp)) {
+        return res.status(HttpStatus.UNAUTHORIZED).send();
+      }
+
+      const timestampSeconds = Number(svixTimestamp);
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      if (!Number.isSafeInteger(timestampSeconds)
+        || Math.abs(nowSeconds - timestampSeconds) > EmailController.RESEND_WEBHOOK_TOLERANCE_SECONDS) {
         return res.status(HttpStatus.UNAUTHORIZED).send();
       }
 
@@ -135,8 +174,20 @@ export class EmailController {
       if (!isValid) {
         return res.status(HttpStatus.UNAUTHORIZED).send();
       }
+
+
+      replayKey = `webhook:resend:${svixId}`;
+      const isFirstDelivery = await this.redis.setIfAbsent(
+        replayKey,
+        '1',
+        EmailController.RESEND_WEBHOOK_DEDUP_TTL_SECONDS,
+      );
+      if (!isFirstDelivery) {
+        return res.status(HttpStatus.OK).send();
+      }
     } catch (err) {
-      return res.status(HttpStatus.UNAUTHORIZED).send();
+      this.logger.error('Resend webhook verification failed');
+      return res.status(HttpStatus.SERVICE_UNAVAILABLE).send();
     }
 
     const type = payload.type; // e.g. "email.delivered", "email.bounced"
@@ -147,27 +198,37 @@ export class EmailController {
     }
 
     try {
-      const log = await this.prisma.emailLog.findUnique({
-        where: { messageId }
-      });
-
-      if (log) {
-        await this.prisma.emailEvent.create({
-          data: {
-            emailLogId: log.id,
-            eventType: type.replace('email.', ''),
-            occurredAt: new Date(payload.created_at)
-          }
+      await this.prisma.$transaction(async (tx) => {
+        const log = await tx.emailLog.findUnique({
+          where: { messageId }
         });
-        // Auto Update parent log status
-        if (type === 'email.delivered') {
-          await this.prisma.emailLog.update({ where: { id: log.id }, data: { status: 'DELIVERED' } });
-        } else if (type === 'email.bounced') {
-          await this.prisma.emailLog.update({ where: { id: log.id }, data: { status: 'BOUNCED' } });
+
+        if (log) {
+          await tx.emailEvent.create({
+            data: {
+              emailLogId: log.id,
+              eventType: type.replace('email.', ''),
+              occurredAt: new Date(payload.created_at)
+            }
+          });
+          // Auto Update parent log status
+          if (type === 'email.delivered') {
+            await tx.emailLog.update({ where: { id: log.id }, data: { status: 'DELIVERED' } });
+          } else if (type === 'email.bounced') {
+            await tx.emailLog.update({ where: { id: log.id }, data: { status: 'BOUNCED' } });
+          }
+        }
+      });
+    } catch (_e) {
+      if (replayKey) {
+        try {
+          await this.redis.del(replayKey);
+        } catch {
+          this.logger.error('Resend webhook replay claim rollback failed');
         }
       }
-    } catch (_e) {
-      // Log but acknowledge webhook 
+      this.logger.error('Resend webhook processing failed');
+      return res.status(HttpStatus.SERVICE_UNAVAILABLE).send();
     }
 
     return res.status(HttpStatus.OK).send();
@@ -340,7 +401,7 @@ export class EmailController {
   @RequirePermissions('settings:read')
   @Get('admin/templates/:name/source')
   async getTemplateSource(@Param('name') name: string) {
-    const mjmlPath = path.join(this.screensDir, `${name}.mjml`);
+    const mjmlPath = this.getScreenTemplatePath(name);
     if (!fs.existsSync(mjmlPath)) throw new NotFoundException('Template not found');
 
     const content = fs.readFileSync(mjmlPath, 'utf8');
@@ -351,12 +412,13 @@ export class EmailController {
   @RequirePermissions('settings:write')
   @Post('admin/templates/:name/save')
   async saveTemplate(@Param('name') name: string, @Body() body: { content: string }) {
-    const mjmlPath = path.join(this.screensDir, `${name}.mjml`);
+    const mjmlPath = this.getScreenTemplatePath(name);
+    this.validateTemplateContent(body.content, mjmlPath);
 
     // Ensure dir exists
     if (!fs.existsSync(this.screensDir)) fs.mkdirSync(this.screensDir, { recursive: true });
 
-    fs.writeFileSync(mjmlPath, body.content, 'utf8');
+    writeScreenTemplateAtomically(this.screensDir, mjmlPath, body.content);
     TemplateService.resetCache(name);
 
     return { success: true };
@@ -428,10 +490,10 @@ export class EmailController {
 
       const compiled = TemplateService.compile(name, mockData, brandDefaults);
       return { success: true, subject: compiled.subject, html: compiled.html };
-    } catch (error: any) {
-      this.logger.error(`Preview compilation failed for "${name}": ${error.message}`, error.stack);
-      // Temporarily include the actual error message to diagnose the 400 Bad Request
-      throw new BadRequestException(`Compilation Error: ${error.message}. Name: ${name}. Internal Path: ${this.screensDir}`);
+    } catch (error: unknown) {
+      const errorName = error instanceof Error ? error.name : 'UnknownError';
+      this.logger.error(`Email template preview compilation failed (${errorName})`);
+      throw new BadRequestException('Email template preview could not be compiled');
     }
   }
 
