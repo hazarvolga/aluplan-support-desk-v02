@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../utils/crypto.service';
@@ -6,22 +6,35 @@ import { UpsertSettingDto } from './dto/upsert-setting.dto';
 import { BulkUpsertSettingDto } from './dto/bulk-upsert-setting.dto';
 import { assertEmbeddingMigrationApproved, isEmbeddingModelSetting } from '../ai/embedding-migration.guard';
 
+const EXACT_SECRET_SETTING_KEYS: ReadonlySet<string> = new Set([
+    'mail.gmail.access_token_cache',
+    'mail.gmail.refresh_token',
+    'r2_access_key_id',
+    'r2_secret_access_key',
+    'storage.access_key',
+    'storage.r2.access_key_id',
+    'storage.r2.secret_access_key',
+    'whatsapp.access_token',
+    'whatsapp.verify_token',
+]);
+
+const SECRET_SETTING_KEY_PATTERNS: readonly RegExp[] = [
+    /\.api_key$/,
+    /\.secret_key$/,
+    /\.client_secret$/,
+    /\.webhook_secret$/,
+    /\.credentials_json$/,
+    /\.token$/,
+    /^resend_api_key$/,
+    /^dynamics_api_key$/,
+    /^crm\.dynamics\.api_key$/,
+];
+
 @Injectable()
 export class SettingsService {
     private readonly logger = new Logger(SettingsService.name);
     private cache = new Map<string, string>();
     private secretCache = new Map<string, boolean>();
-    private readonly secretKeyPatterns = [
-        /\.api_key$/,
-        /\.secret_key$/,
-        /\.client_secret$/,
-        /\.webhook_secret$/,
-        /\.credentials_json$/,
-        /\.token$/,
-        /^resend_api_key$/,
-        /^dynamics_api_key$/,
-        /^crm\.dynamics\.api_key$/,
-    ];
 
     constructor(
         private prisma: PrismaService,
@@ -101,7 +114,9 @@ export class SettingsService {
     }
 
     private isSecretKey(key: string): boolean {
-        return this.isMailPasswordKey(key) || this.secretKeyPatterns.some((pattern) => pattern.test(key));
+        return this.isMailPasswordKey(key)
+            || EXACT_SECRET_SETTING_KEYS.has(key)
+            || SECRET_SETTING_KEY_PATTERNS.some((pattern) => pattern.test(key));
     }
 
     private isMailPasswordKey(key: string): boolean {
@@ -119,7 +134,7 @@ export class SettingsService {
             : setting;
     }
 
-    private async securePlaintextSecret<T extends { key: string; value: string; isSecret: boolean }>(setting: T): Promise<T> {
+    private async securePlaintextSecret<T extends { key: string; value: string; isSecret: boolean }>(setting: T, retryCount = 0): Promise<T> {
         // Legacy mail passwords remain readable without introducing a read-time DB rewrite.
         // Explicit saves encrypt them; API responses and caches still classify them as secrets.
         if (setting.isSecret || this.isMailPasswordKey(setting.key) || !this.isSecretKey(setting.key)) {
@@ -128,13 +143,28 @@ export class SettingsService {
 
         const plaintext = setting.value ?? '';
         const encryptedValue = this.crypto.encrypt(plaintext);
-        await this.prisma.setting.update({
-            where: { key: setting.key },
+        const migrated = await this.prisma.setting.updateMany({
+            where: {
+                key: setting.key,
+                value: plaintext,
+                isSecret: false,
+            },
             data: {
                 value: encryptedValue,
                 isSecret: true,
             },
         });
+
+        if (migrated.count !== 1) {
+            if (retryCount >= 1) {
+                throw new ServiceUnavailableException('Setting changed while securing legacy credentials. Please retry.');
+            }
+            const latest = await this.prisma.setting.findUnique({ where: { key: setting.key } });
+            if (!latest) {
+                throw new ServiceUnavailableException('Setting changed while securing legacy credentials. Please retry.');
+            }
+            return this.securePlaintextSecret({ ...setting, ...latest }, retryCount + 1);
+        }
 
         this.logger.warn(`Secured plaintext secret setting: ${setting.key}`);
         this.cache.set(setting.key, plaintext);
@@ -416,8 +446,9 @@ export class SettingsService {
     async delete(key: string) {
         this.cache.delete(key);
         this.secretCache.delete(key);
-        return this.prisma.setting.delete({
+        await this.prisma.setting.delete({
             where: { key },
         });
+        return { key, deleted: true };
     }
 }
