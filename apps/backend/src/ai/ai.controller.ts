@@ -28,6 +28,28 @@ import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { assertEmbeddingMigrationApproved } from './embedding-migration.guard';
 import { sanitizeHotinfoContext } from '../common/utils/hotinfo-context';
 import { AllplanLicensingPolicyService, canonicalizeAllplanRelease } from './allplan-licensing-policy.service';
+import type { JwtPayload } from '../auth/strategies/jwt.strategy';
+import { normalizeSessionRole } from '../auth/session-authority';
+import { createSafeAiQueryFailure } from './ai-job-error';
+
+type AiJobStatusRequest = {
+    user?: Pick<JwtPayload, 'sub' | 'role'>;
+};
+
+const AI_JOB_OPERATOR_ROLES = new Set(['ADMIN', 'SUPERUSER', 'SUPER_ADMIN']);
+
+function getJobOwnerId(job: { data?: unknown }): string | null {
+    if (!job.data || typeof job.data !== 'object') return null;
+    const options = (job.data as { options?: unknown }).options;
+    if (!options || typeof options !== 'object') return null;
+    const userId = (options as { userId?: unknown }).userId;
+    return typeof userId === 'string' && userId.trim() ? userId : null;
+}
+
+function isAiJobOperator(role: unknown): boolean {
+    if (typeof role !== 'string') return false;
+    return AI_JOB_OPERATOR_ROLES.has(normalizeSessionRole(role));
+}
 
 export class AllplanLicensingIntakeDto {
     @IsIn(['licensing']) categoryKey: 'licensing';
@@ -194,9 +216,19 @@ export class AiController {
     @ApiParam({ name: 'jobId', description: 'The unique ID of the AI query job' })
     @ApiResponse({ status: 200, description: 'Job status retrieved.' })
     @ApiResponse({ status: 404, description: 'Job not found.' })
-    async getJobStatus(@Param('jobId') jobId: string) {
+    async getJobStatus(
+        @Param('jobId') jobId: string,
+        @Request() req: AiJobStatusRequest,
+    ) {
         const job = await this.aiQueue.getJob(jobId);
         if (!job) {
+            throw new NotFoundException({ message: 'Job not found' });
+        }
+
+        const ownerId = getJobOwnerId(job);
+        const requesterId = req.user?.sub;
+        if (!ownerId || !requesterId || (ownerId !== requesterId && !isAiJobOperator(req.user?.role))) {
+            // Preserve resource non-enumerability for malformed, orphaned and foreign jobs.
             throw new NotFoundException({ message: 'Job not found' });
         }
 
@@ -217,7 +249,7 @@ export class AiController {
             jobId: job.id,
             status,
             ...(status === 'COMPLETED' && { result: job.returnvalue }),
-            ...(status === 'FAILED' && { error: job.failedReason }),
+            ...(status === 'FAILED' && { error: createSafeAiQueryFailure() }),
         };
     }
 

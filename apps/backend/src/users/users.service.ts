@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { ConfigService } from '@nestjs/config';
@@ -6,6 +6,81 @@ import * as bcrypt from 'bcryptjs';
 import { BCRYPT_ROUNDS } from '../auth/security.constants';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { normalizeEmailAddress } from '../common/utils/email-normalization.util';
+import { ASSIGNABLE_USER_ROLES, normalizeUserRole, type AssignableUserRole } from './dto/create-user.dto';
+
+export interface UserManagementActor {
+    id: string;
+    role: string;
+}
+
+const USER_MANAGEMENT_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'SUPERUSER']);
+const PROTECTED_USER_ROLES = new Set(['SUPER_ADMIN', 'SUPERUSER']);
+
+const SAFE_MANAGED_USER_SELECT = {
+    id: true,
+    email: true,
+    fullName: true,
+    avatarUrl: true,
+    status: true,
+    deletedAt: true,
+    createdAt: true,
+    updatedAt: true,
+    roleId: true,
+    agentStatus: true,
+    title: true,
+    bio: true,
+    timezone: true,
+    language: true,
+    maxActiveTickets: true,
+} as const;
+
+const SAFE_ROLE_SELECT = {
+    id: true,
+    name: true,
+    description: true,
+} as const;
+
+const SAFE_CUSTOMER_PROFILE_SELECT = {
+    id: true,
+    firstName: true,
+    lastName: true,
+    companyName: true,
+    customerNo: true,
+    industry: true,
+    jobTitle: true,
+    phoneNumber: true,
+    contractStatus: true,
+    crmVerified: true,
+    isVip: true,
+} as const;
+
+function selectKnownFields(value: unknown, selection: Record<string, true>) {
+    if (value === null) return null;
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    const record = value as Record<string, unknown>;
+    return Object.fromEntries(
+        Object.keys(selection)
+            .filter((key) => Object.prototype.hasOwnProperty.call(record, key))
+            .map((key) => [key, record[key]]),
+    );
+}
+
+function toSafeManagedUser(user: Record<string, unknown>) {
+    const safeUser = Object.fromEntries(
+        Object.keys(SAFE_MANAGED_USER_SELECT)
+            .filter((key) => Object.prototype.hasOwnProperty.call(user, key))
+            .map((key) => [key, user[key]]),
+    );
+
+    if (Object.prototype.hasOwnProperty.call(user, 'role')) {
+        safeUser.role = selectKnownFields(user.role, SAFE_ROLE_SELECT);
+    }
+    if (Object.prototype.hasOwnProperty.call(user, 'customerProfile')) {
+        safeUser.customerProfile = selectKnownFields(user.customerProfile, SAFE_CUSTOMER_PROFILE_SELECT);
+    }
+
+    return safeUser;
+}
 
 function durationToSeconds(value: string): number {
     const match = /^(\d+)\s*(s|m|h|d)$/i.exec(value.trim());
@@ -25,7 +100,58 @@ export class UsersService {
         private readonly config: ConfigService,
     ) { }
 
-    async create(dto: { email: string; password: string; fullName: string; roles?: string[] }) {
+    private assertManagementActor(actor: UserManagementActor): void {
+        if (!actor?.id || !actor?.role || !USER_MANAGEMENT_ROLES.has(normalizeUserRole(actor.role))) {
+            throw new ForbiddenException('You do not have permission to manage users');
+        }
+    }
+
+    private getRequestedRole(roles?: string[]): AssignableUserRole | null {
+        if (!roles?.length) return null;
+        if (roles.length !== 1 || typeof roles[0] !== 'string') {
+            throw new BadRequestException('Exactly one assignable role may be provided');
+        }
+
+        const normalizedRole = normalizeUserRole(roles[0]);
+        if (!ASSIGNABLE_USER_ROLES.includes(normalizedRole as AssignableUserRole)) {
+            throw new BadRequestException(`Role ${roles[0]} cannot be assigned through user management`);
+        }
+        return normalizedRole as AssignableUserRole;
+    }
+
+    private async resolveRole(roleName: AssignableUserRole) {
+        const role = await this.prisma.role.findFirst({
+            where: { name: { equals: roleName, mode: 'insensitive' } },
+        });
+        if (!role) {
+            throw new BadRequestException(`Assignable role ${roleName} is not configured`);
+        }
+        return role;
+    }
+
+    private getMutableUserWhere(id: string) {
+        return {
+            id,
+            deletedAt: null,
+            NOT: {
+                role: {
+                    is: {
+                        name: {
+                            in: Array.from(PROTECTED_USER_ROLES),
+                            mode: 'insensitive' as const,
+                        },
+                    },
+                },
+            },
+        };
+    }
+
+    async create(
+        dto: { email: string; password: string; fullName: string; roles?: string[] },
+        actor: UserManagementActor,
+    ) {
+        this.assertManagementActor(actor);
+        const requestedRole = this.getRequestedRole(dto.roles);
         const email = normalizeEmailAddress(dto.email);
         const existing = await this.prisma.user.findFirst({
             where: { email: { equals: email, mode: 'insensitive' } },
@@ -35,57 +161,66 @@ export class UsersService {
 
         if (existing) {
             // Allow upgrading an existing user (e.g., from CUSTOMER synced via CRM)
-            const roleName = dto.roles?.[0];
-            if (roleName && roleName.toUpperCase() !== 'CUSTOMER' && existing.role?.name === 'CUSTOMER') {
-                const newRole = await this.prisma.role.findFirst({
-                    where: {
-                        name: {
-                            equals: roleName,
-                            mode: 'insensitive'
-                        }
-                    }
-                });
-                if (newRole) {
+            if (requestedRole && normalizeUserRole(existing.role?.name ?? '') === 'CUSTOMER') {
+                const newRole = await this.resolveRole(requestedRole);
+                try {
                     const updated = await this.prisma.user.update({
-                        where: { id: existing.id },
+                        where: {
+                            id: existing.id,
+                            deletedAt: null,
+                            role: {
+                                is: {
+                                    name: { equals: 'CUSTOMER', mode: 'insensitive' },
+                                },
+                            },
+                        },
                         data: {
                             roleId: newRole.id,
                             fullName: dto.fullName || existing.fullName,
-                            passwordHash: passwordHash // Provide them the newly set password
-                        }
+                            passwordHash,
+                            sessionVersion: { increment: 1 },
+                            refreshTokenHash: null,
+                            passwordResetJtiHash: null,
+                        },
+                        select: SAFE_MANAGED_USER_SELECT,
                     });
-                    const { passwordHash: _passwordHash, ...result } = updated;
-                    return result;
+                    return toSafeManagedUser(updated);
+                } catch (error) {
+                    if ((error as { code?: string })?.code === 'P2025') {
+                        throw new ConflictException('User state changed before promotion. Please retry.');
+                    }
+                    throw error;
                 }
             }
             throw new ConflictException('Bu e-posta adresi zaten kayıtlı.');
         }
 
         let roleId: string | null = null;
-        if (dto.roles && dto.roles.length > 0) {
-            const role = await this.prisma.role.findFirst({
-                where: {
-                    name: {
-                        equals: dto.roles[0],
-                        mode: 'insensitive'
-                    }
-                }
-            });
-            roleId = role?.id || null;
+        if (requestedRole) {
+            const role = await this.resolveRole(requestedRole);
+            roleId = role.id;
         }
 
-        const user = await this.prisma.user.create({
-            data: {
-                email,
-                fullName: dto.fullName,
-                passwordHash,
-                status: 'ACTIVE',
-                roleId,
-            },
-        });
+        let user: Record<string, unknown>;
+        try {
+            user = await this.prisma.user.create({
+                data: {
+                    email,
+                    fullName: dto.fullName,
+                    passwordHash,
+                    status: 'ACTIVE',
+                    roleId,
+                },
+                select: SAFE_MANAGED_USER_SELECT,
+            });
+        } catch (error) {
+            if ((error as { code?: string })?.code === 'P2002') {
+                throw new ConflictException('Bu e-posta adresi zaten kayıtlı.');
+            }
+            throw error;
+        }
 
-        const { passwordHash: _passwordHash, ...result } = user;
-        return result;
+        return toSafeManagedUser(user);
     }
 
     async findAll(type?: 'agent' | 'customer') {
@@ -185,23 +320,25 @@ export class UsersService {
     async findOne(id: string) {
         const user = await this.prisma.user.findFirst({
             where: { id, deletedAt: null },
-            include: {
-                customerProfile: true,
+            select: {
+                ...SAFE_MANAGED_USER_SELECT,
+                customerProfile: { select: SAFE_CUSTOMER_PROFILE_SELECT },
             },
         });
         if (!user) throw new NotFoundException(`User ${id} not found`);
-        const { passwordHash: _passwordHash, ...result } = user;
-        return result;
+        return toSafeManagedUser(user);
     }
 
     async findByEmail(email: string) {
         const user = await this.prisma.user.findUnique({
-            where: { email },
-            include: { role: true }
+            where: { email: normalizeEmailAddress(email) },
+            select: {
+                ...SAFE_MANAGED_USER_SELECT,
+                role: { select: SAFE_ROLE_SELECT },
+            },
         });
         if (!user) return null;
-        const { passwordHash: _passwordHash, ...result } = user;
-        return result;
+        return toSafeManagedUser(user);
     }
 
     private async updateOrCreateCustomerProfile(user: any, dto: UpdateProfileDto, tx?: any) {
@@ -306,7 +443,10 @@ export class UsersService {
 
                 return tx.user.findUnique({
                     where: { id: userId },
-                    include: { customerProfile: true },
+                    select: {
+                        ...SAFE_MANAGED_USER_SELECT,
+                        customerProfile: { select: SAFE_CUSTOMER_PROFILE_SELECT },
+                    },
                 });
             });
 
@@ -321,8 +461,7 @@ export class UsersService {
                 this.logger.warn(`Redis session marker failed after durable password change for user ${userId}`, error);
             }
 
-            const { passwordHash: _ph, refreshTokenHash: _rth, passwordResetJtiHash: _prj, ...result } = freshUser ?? user;
-            return { ...result, passwordChanged: true };
+            return { ...toSafeManagedUser((freshUser ?? user) as Record<string, unknown>), passwordChanged: true };
         }
 
         // Normal profile update without password change
@@ -345,56 +484,122 @@ export class UsersService {
 
         const freshUser = await this.prisma.user.findUnique({
             where: { id: userId },
-            include: { customerProfile: true },
-        });
-
-        const { passwordHash: _ph, refreshTokenHash: _rth, passwordResetJtiHash: _prj, ...result } = freshUser ?? updatedUser;
-        return { ...result, passwordChanged: false };
-    }
-
-    async update(id: string, data: any) {
-        // Intercept 'roles' array from DTO and map to 'roleId'
-        if (data.roles && Array.isArray(data.roles) && data.roles.length > 0) {
-            const roleName = data.roles[0];
-            const role = await this.prisma.role.findFirst({
-                where: {
-                    name: {
-                        equals: roleName,
-                        mode: 'insensitive'
-                    }
-                }
-            });
-
-            if (role) {
-                data.roleId = role.id;
-            }
-
-            // Remove the problematic roles field that Prisma doesn't know about
-            delete data.roles;
-        }
-
-        return this.prisma.user.update({
-            where: { id },
-            data,
-        });
-    }
-
-    async remove(id: string, actorId?: string) {
-        const user = await this.prisma.user.update({
-            where: { id },
-            data: { deletedAt: new Date(), status: 'INACTIVE' },
-        });
-
-        await this.prisma.auditLog.create({
-            data: {
-                action: 'user.delete',
-                actorId: actorId || null,
-                entityType: 'USER',
-                entityId: id,
-                newValue: { status: 'INACTIVE', deletedAt: user.deletedAt },
+            select: {
+                ...SAFE_MANAGED_USER_SELECT,
+                customerProfile: { select: SAFE_CUSTOMER_PROFILE_SELECT },
             },
         });
 
-        return user;
+        return { ...toSafeManagedUser((freshUser ?? updatedUser) as Record<string, unknown>), passwordChanged: false };
+    }
+
+    async update(
+        id: string,
+        data: { email?: string; password?: string; fullName?: string; roles?: string[] },
+        actor: UserManagementActor,
+    ) {
+        this.assertManagementActor(actor);
+        const target = await this.prisma.user.findFirst({
+            where: { id, deletedAt: null },
+            include: { role: true },
+        });
+        if (!target) throw new NotFoundException(`User ${id} not found`);
+
+        const targetRole = normalizeUserRole(target.role?.name ?? '');
+        if (PROTECTED_USER_ROLES.has(targetRole)) {
+            throw new ForbiddenException('Protected users cannot be changed through user management');
+        }
+
+        const requestedRole = this.getRequestedRole(data.roles);
+        if (requestedRole && actor.id === id) {
+            throw new ForbiddenException('Administrators cannot change their own role');
+        }
+        if (data.password !== undefined && actor.id === id) {
+            throw new ForbiddenException('Use the profile password flow to change your own password');
+        }
+
+        const updateData: Record<string, unknown> = {};
+        if (data.fullName !== undefined) updateData.fullName = data.fullName;
+        if (data.email !== undefined) updateData.email = normalizeEmailAddress(data.email);
+        if (data.password !== undefined) {
+            updateData.passwordHash = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
+        }
+        if (requestedRole) {
+            const role = await this.resolveRole(requestedRole);
+            updateData.roleId = role.id;
+        }
+        if (data.password !== undefined || requestedRole !== null) {
+            updateData.sessionVersion = { increment: 1 };
+            updateData.refreshTokenHash = null;
+            updateData.passwordResetJtiHash = null;
+        }
+
+        let updatedUser: Record<string, unknown>;
+        try {
+            updatedUser = await this.prisma.user.update({
+                where: this.getMutableUserWhere(id),
+                data: updateData,
+                select: SAFE_MANAGED_USER_SELECT,
+            });
+        } catch (error) {
+            if ((error as { code?: string })?.code === 'P2025') {
+                throw new ConflictException('User state changed before update. Please retry.');
+            }
+            if ((error as { code?: string })?.code === 'P2002') {
+                throw new ConflictException('Bu e-posta adresi zaten kayıtlı.');
+            }
+            throw error;
+        }
+
+        return toSafeManagedUser(updatedUser);
+    }
+
+    async remove(id: string, actor: UserManagementActor) {
+        this.assertManagementActor(actor);
+        if (actor.id === id) {
+            throw new ForbiddenException('Administrators cannot delete their own account');
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            const target = await tx.user.findFirst({
+                where: { id, deletedAt: null },
+                include: { role: true },
+            });
+            if (!target) throw new NotFoundException(`User ${id} not found`);
+
+            const targetRole = normalizeUserRole(target.role?.name ?? '');
+            if (PROTECTED_USER_ROLES.has(targetRole)) {
+                throw new ForbiddenException('Protected users cannot be deleted through user management');
+            }
+
+            let user: Record<string, unknown>;
+            try {
+                user = await tx.user.update({
+                    where: this.getMutableUserWhere(id),
+                    data: { deletedAt: new Date(), status: 'INACTIVE' },
+                    select: SAFE_MANAGED_USER_SELECT,
+                });
+            } catch (error) {
+                if ((error as { code?: string })?.code === 'P2025') {
+                    throw new ConflictException('User state changed before deletion. Please retry.');
+                }
+                throw error;
+            }
+
+            await tx.auditLog.create({
+                data: {
+                    action: 'user.delete',
+                    actorId: actor.id,
+                    entityType: 'USER',
+                    entityId: id,
+                    newValue: {
+                        status: 'INACTIVE',
+                        deletedAt: user.deletedAt instanceof Date ? user.deletedAt.toISOString() : null,
+                    },
+                },
+            });
+
+            return toSafeManagedUser(user);
+        });
     }
 }

@@ -25,9 +25,15 @@ import { AllplanLicensingPolicyService } from './allplan-licensing-policy.servic
 // ---------------------------------------------------------------------------
 
 /** Build a minimal mock BullMQ Job object */
-function makeMockJob(state: string, returnvalue: unknown = null, failedReason = '') {
+function makeMockJob(
+    state: string,
+    returnvalue: unknown = null,
+    failedReason = '',
+    ownerId: string | null = 'owner-1',
+) {
     return {
         id: 'test-job-id',
+        data: ownerId === null ? { options: {} } : { options: { userId: ownerId } },
         getState: jest.fn().mockResolvedValue(state),
         returnvalue,
         failedReason,
@@ -89,6 +95,7 @@ async function buildModule(): Promise<TestingModule> {
 
 describe('AiController — getJobStatus() unit tests', () => {
     let controller: AiController;
+    const ownerRequest = { user: { sub: 'owner-1', role: 'CUSTOMER' } };
 
     beforeEach(async () => {
         const module = await buildModule();
@@ -101,7 +108,7 @@ describe('AiController — getJobStatus() unit tests', () => {
         mockAiQueue.getJob.mockResolvedValue(null);
 
         // Act & Assert
-        await expect(controller.getJobStatus('non-existent-id')).rejects.toThrow(NotFoundException);
+        await expect(controller.getJobStatus('non-existent-id', ownerRequest)).rejects.toThrow(NotFoundException);
     });
 
     it('returns HTTP 404 with message "Job not found" when job is null', async () => {
@@ -109,7 +116,7 @@ describe('AiController — getJobStatus() unit tests', () => {
         mockAiQueue.getJob.mockResolvedValue(null);
 
         // Act & Assert
-        await expect(controller.getJobStatus('non-existent-id')).rejects.toMatchObject({
+        await expect(controller.getJobStatus('non-existent-id', ownerRequest)).rejects.toMatchObject({
             response: { message: 'Job not found' },
         });
     });
@@ -120,7 +127,7 @@ describe('AiController — getJobStatus() unit tests', () => {
         mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', returnvalue));
 
         // Act
-        const response = await controller.getJobStatus('test-job-id');
+        const response = await controller.getJobStatus('test-job-id', ownerRequest);
 
         // Assert
         expect(response.status).toBe('COMPLETED');
@@ -128,17 +135,21 @@ describe('AiController — getJobStatus() unit tests', () => {
         expect(response).not.toHaveProperty('error');
     });
 
-    it('failed job — response includes error field equal to job.failedReason', async () => {
+    it('failed job — response includes only a stable safe error', async () => {
         // Arrange
         const failedReason = 'OpenAI rate limit exceeded';
         mockAiQueue.getJob.mockResolvedValue(makeMockJob('failed', null, failedReason));
 
         // Act
-        const response = await controller.getJobStatus('test-job-id');
+        const response = await controller.getJobStatus('test-job-id', ownerRequest);
 
         // Assert
         expect(response.status).toBe('FAILED');
-        expect(response.error).toBe(failedReason);
+        expect(response.error).toEqual({
+            code: 'AI_QUERY_FAILED',
+            message: 'AI query processing failed',
+        });
+        expect(JSON.stringify(response)).not.toContain(failedReason);
         expect(response).not.toHaveProperty('result');
     });
 
@@ -147,7 +158,7 @@ describe('AiController — getJobStatus() unit tests', () => {
         mockAiQueue.getJob.mockResolvedValue(makeMockJob('waiting'));
 
         // Act
-        const response = await controller.getJobStatus('test-job-id');
+        const response = await controller.getJobStatus('test-job-id', ownerRequest);
 
         // Assert
         expect(response.status).toBe('PENDING');
@@ -160,7 +171,7 @@ describe('AiController — getJobStatus() unit tests', () => {
         mockAiQueue.getJob.mockResolvedValue(makeMockJob('delayed'));
 
         // Act
-        const response = await controller.getJobStatus('test-job-id');
+        const response = await controller.getJobStatus('test-job-id', ownerRequest);
 
         // Assert
         expect(response.status).toBe('PENDING');
@@ -171,10 +182,73 @@ describe('AiController — getJobStatus() unit tests', () => {
         mockAiQueue.getJob.mockResolvedValue(makeMockJob('active'));
 
         // Act
-        const response = await controller.getJobStatus('test-job-id');
+        const response = await controller.getJobStatus('test-job-id', ownerRequest);
 
         // Assert
         expect(response.status).toBe('PROCESSING');
+    });
+
+    it('returns the job to its authenticated owner', async () => {
+        mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', { answer: 'owned' }));
+
+        await expect(controller.getJobStatus('test-job-id', ownerRequest)).resolves.toMatchObject({
+            status: 'COMPLETED',
+            result: { answer: 'owned' },
+        });
+    });
+
+    it('hides a job from an authenticated non-owner', async () => {
+        mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', { answer: 'private' }));
+
+        await expect(controller.getJobStatus('test-job-id', {
+            user: { sub: 'other-user', role: 'CUSTOMER' },
+        })).rejects.toThrow(NotFoundException);
+    });
+
+    it('fails closed when authenticated request identity is unavailable', async () => {
+        mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', { answer: 'private' }));
+
+        await expect(controller.getJobStatus('test-job-id', {}))
+            .rejects.toThrow(NotFoundException);
+    });
+
+    it.each([
+        'ADMIN',
+        ' admin ',
+        'SUPERUSER',
+        'superuser',
+        'SUPER_ADMIN',
+        'SUPER-ADMIN',
+        ' super-admin ',
+        'super_admin',
+    ])(
+        'allows the explicit privileged role bypass for %s',
+        async role => {
+            mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', { answer: 'audited' }));
+
+            await expect(controller.getJobStatus('test-job-id', {
+                user: { sub: 'operator-1', role },
+            })).resolves.toMatchObject({ status: 'COMPLETED' });
+        },
+    );
+
+    it.each(['SUPPORT_AGENT', 'support-agent', ' support_agent '])(
+        'does not let ordinary support role %s read a foreign job',
+        async role => {
+            mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', { answer: 'private' }));
+
+            await expect(controller.getJobStatus('test-job-id', {
+                user: { sub: 'other-user', role },
+            })).rejects.toThrow(NotFoundException);
+        },
+    );
+
+    it('fails closed when the job has no owner metadata, including for an admin', async () => {
+        mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', { answer: 'orphaned' }, '', null));
+
+        await expect(controller.getJobStatus('test-job-id', {
+            user: { sub: 'operator-1', role: 'ADMIN' },
+        })).rejects.toThrow(NotFoundException);
     });
 });
 
@@ -304,6 +378,7 @@ describe('AiController — removed provider boundary', () => {
 
 describe('AiController — Property 4: Job State → Status Enum Mapping', () => {
     let controller: AiController;
+    const ownerRequest = { user: { sub: 'owner-1', role: 'CUSTOMER' } };
 
     beforeEach(async () => {
         const module = await buildModule();
@@ -328,7 +403,7 @@ describe('AiController — Property 4: Job State → Status Enum Mapping', () =>
                         mockAiQueue.getJob.mockResolvedValue(makeMockJob(state));
 
                         // Act: should not throw
-                        const response = await controller.getJobStatus('test-job-id');
+                        const response = await controller.getJobStatus('test-job-id', ownerRequest);
 
                         // Assert: status is in the valid enum set
                         return validStatuses.has(response.status);
@@ -356,7 +431,7 @@ describe('AiController — Property 4: Job State → Status Enum Mapping', () =>
                         // Act & Assert: must not throw
                         let threw = false;
                         try {
-                            await controller.getJobStatus('test-job-id');
+                            await controller.getJobStatus('test-job-id', ownerRequest);
                         } catch {
                             threw = true;
                         }

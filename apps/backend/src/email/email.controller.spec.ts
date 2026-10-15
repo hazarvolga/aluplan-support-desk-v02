@@ -144,6 +144,36 @@ describe('EmailController Gmail OAuth state', () => {
     expect(gmailProvider.handleCallback).toHaveBeenCalledWith('code-1');
     expect(res.redirect).toHaveBeenCalledWith(expect.stringContaining('gmail_status=success'));
   });
+
+  it('redirects with a stable code and never exposes provider exception details', async () => {
+    const { controller, gmailProvider, redis } = makeOAuthController();
+    const res = makeResponse();
+    const loggerError = jest.spyOn((controller as any).logger, 'error').mockImplementation();
+    redis.get.mockResolvedValue(JSON.stringify({ userId: 'admin-1' }));
+    gmailProvider.handleCallback.mockRejectedValue(
+      new Error('invalid_client secret=super-sensitive-provider-detail'),
+    );
+
+    await controller.gmailOAuthCallback('code-1', '', 'state-1', res as any);
+
+    const redirectUrl = res.redirect.mock.calls[0][0] as string;
+    expect(redirectUrl).toContain('gmail_error=oauth_exchange_failed');
+    expect(redirectUrl).not.toContain('invalid_client');
+    expect(redirectUrl).not.toContain('super-sensitive-provider-detail');
+    expect(JSON.stringify(loggerError.mock.calls)).not.toContain('super-sensitive-provider-detail');
+    expect(loggerError).toHaveBeenCalledWith('Gmail OAuth callback failed', 'oauth_exchange_failed');
+  });
+
+  it('normalizes provider callback errors instead of reflecting the query value', async () => {
+    const { controller } = makeOAuthController();
+    const res = makeResponse();
+
+    await controller.gmailOAuthCallback('', 'attacker-controlled-error', 'state-1', res as any);
+
+    const redirectUrl = res.redirect.mock.calls[0][0] as string;
+    expect(redirectUrl).toContain('gmail_error=oauth_exchange_failed');
+    expect(redirectUrl).not.toContain('attacker-controlled-error');
+  });
 });
 
 describe('EmailController Resend webhook security', () => {

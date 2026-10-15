@@ -556,7 +556,7 @@ export class EmailController {
     const settingsUrl = `${frontendBase}/admin/settings?tab=email`;
 
     if (error || !code) {
-      return res.redirect(`${settingsUrl}&gmail_status=error&gmail_error=${encodeURIComponent(error || 'no_code')}`);
+      return res.redirect(`${settingsUrl}&gmail_status=error&gmail_error=oauth_exchange_failed`);
     }
 
     try {
@@ -567,8 +567,9 @@ export class EmailController {
 
       const { email } = await this.gmailProvider.handleCallback(code);
       return res.redirect(`${settingsUrl}&gmail_status=success&gmail_email=${encodeURIComponent(email)}`);
-    } catch (err: any) {
-      return res.redirect(`${settingsUrl}&gmail_status=error&gmail_error=${encodeURIComponent(err.message)}`);
+    } catch {
+      this.logger.error('Gmail OAuth callback failed', 'oauth_exchange_failed');
+      return res.redirect(`${settingsUrl}&gmail_status=error&gmail_error=oauth_exchange_failed`);
     }
   }
 
