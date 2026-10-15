@@ -81,7 +81,7 @@ export function AiSettings() {
         try {
             const [healthData, settingsData] = await Promise.all([
                 api.get<AiHealthResponse>('/ai/health-status'),
-                api.settings.list(false)
+                api.settings.list()
             ]);
 
             setStatus(healthData.providers || {});

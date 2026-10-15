@@ -58,9 +58,21 @@ type SlaPolicy = {
     resolutionMinutes: number;
     businessHoursOnly: boolean;
 };
+type DepartmentOption = { id: string; name: string };
+
+const EMPTY_SLA_POLICY = {
+    name: '',
+    priority: 'MEDIUM',
+    departmentId: '',
+    firstResponseMinutes: 480,
+    resolutionMinutes: 1440,
+    businessHoursOnly: true,
+};
+
+class UserFacingSettingsError extends Error {}
 
 const getErrorMessage = (error: unknown, fallback: string) =>
-    error instanceof Error && error.message ? error.message : fallback;
+    error instanceof UserFacingSettingsError && error.message ? error.message : fallback;
 
 export default function AdminSettingsPage() {
     const t = useTranslations('settings');
@@ -109,16 +121,10 @@ export default function AdminSettingsPage() {
 
     // SLA States
     const [policies, setPolicies] = useState<SlaPolicy[]>([]);
+    const [departments, setDepartments] = useState<DepartmentOption[]>([]);
     const [isAddingPolicy, setIsAddingPolicy] = useState(false);
     const [editingPolicy, setEditingPolicy] = useState<SlaPolicy | null>(null);
-    const [newPolicy, setNewPolicy] = useState({
-        name: '',
-        priority: 'MEDIUM',
-        departmentId: '',
-        firstResponseMinutes: 480,
-        resolutionMinutes: 1440,
-        businessHoursOnly: true
-    });
+    const [newPolicy, setNewPolicy] = useState({ ...EMPTY_SLA_POLICY });
 
     // Derived: check if refresh token exists in loaded settings
     const gmailTokenStatus = settings.find(s => s.key === 'mail.gmail.refresh_token')?.value ? 'ok' : 'missing';
@@ -133,18 +139,18 @@ export default function AdminSettingsPage() {
 
         // Read Gmail OAuth2 callback result from URL params
         const gmailStatus = searchParams.get('gmail_status');
-        const gmailError = searchParams.get('gmail_error');
         if (gmailStatus === 'success') {
             toast({ title: '✅ ' + t('email.authorized'), description: t('toasts.gmail_success') });
         } else if (gmailStatus === 'error') {
-            toast({ title: t('email.gmail_title'), description: gmailError || t('toasts.gmail_error'), variant: 'destructive' });
+            // Callback query values are intentionally never reflected to users.
+            toast({ title: t('email.gmail_title'), description: t('toasts.gmail_error'), variant: 'destructive' });
         }
     }, []);
 
     const loadSettings = async () => {
         try {
             setLoading(true);
-            const data = await api.settings.list(false) as Setting[];
+            const data = await api.settings.list() as Setting[];
             const normalizedSettings = data
                 .filter((setting) => !setting.key.startsWith('ai.ollama.'))
                 .map((setting) => {
@@ -225,7 +231,18 @@ export default function AdminSettingsPage() {
         try {
             setUploadingLogo(true);
             const res = await api.branding.uploadLogo(file);
-            updateValue('branding.logo_url', res.publicUrl || res.url);
+            const uploadedLogoUrl = res.publicUrl || res.url;
+            await api.settings.upsert({
+                key: 'branding.logo_url',
+                value: uploadedLogoUrl,
+                isSecret: false,
+            });
+            const persisted = await api.settings.get('branding.logo_url');
+            if (!persisted || persisted.value !== uploadedLogoUrl) {
+                throw new Error('Branding logo persistence could not be verified');
+            }
+            await loadSettings();
+            updateValue('branding.logo_url', persisted.value);
             toast({ title: '✅ ' + t('branding.logo_title'), description: t('toasts.logo_success') });
         } catch (error: unknown) {
             toast({
@@ -251,7 +268,7 @@ export default function AdminSettingsPage() {
                 const currentEmbedProvider = getSetting('ai.embed_provider');
 
                 if (!currentEmbedProvider) {
-                    throw new Error(t('ai.validation.embed_provider_required'));
+                    throw new UserFacingSettingsError(t('ai.validation.embed_provider_required'));
                 }
 
                 const fieldLabels: Record<string, string> = {
@@ -282,7 +299,7 @@ export default function AdminSettingsPage() {
                             const fieldName = field.split('.').pop() || '';
                             return fieldLabels[fieldName] || fieldName;
                         }).join(', ');
-                        throw new Error(t('ai.validation.missing_fields', { fields: missingLabels }));
+                        throw new UserFacingSettingsError(t('ai.validation.missing_fields', { fields: missingLabels }));
                     }
                 };
 
@@ -291,9 +308,14 @@ export default function AdminSettingsPage() {
             }
 
 
-            const batch = buildSettingsBatch(keys, (key) => key === 'ai.active_provider'
+            const settingsBatch = buildSettingsBatch(keys, (key) => key === 'ai.active_provider'
                 ? getSetting('ai.chat_provider') || getSetting(key)
                 : getSetting(key));
+            const batch = keys.includes('branding.logo_url')
+                && getSetting('branding.logo_url') === ''
+                && !settingsBatch.some((item) => item.key === 'branding.logo_url')
+                ? [...settingsBatch, { key: 'branding.logo_url', value: '', isSecret: false }]
+                : settingsBatch;
 
             if (batch.length > 0) {
                 await api.settings.bulkUpsert({ settings: batch });
@@ -316,22 +338,48 @@ export default function AdminSettingsPage() {
     };
 
     const loadSlaData = async () => {
-        try {
-            const policiesData = await api.sla.list();
-            setPolicies(policiesData as SlaPolicy[]);
-        } catch (err: unknown) {
-            console.error(t('sla.load_error'), err);
+        const [policiesResult, departmentsResult] = await Promise.allSettled([
+            api.sla.list(),
+            api.teams.departments(),
+        ]);
+
+        if (policiesResult.status === 'fulfilled') {
+            setPolicies(policiesResult.value as SlaPolicy[]);
+        } else {
+            console.error(t('sla.load_error'));
+        }
+
+        if (departmentsResult.status === 'fulfilled') {
+            setDepartments(departmentsResult.value.map(({ id, name }) => ({ id, name })));
+        } else {
+            setDepartments([]);
+            console.error(t('sla.load_error'));
         }
     };
 
     const handleSavePolicy = async () => {
         try {
             setSaving(true);
+            const normalizedPolicy = {
+                ...newPolicy,
+                name: newPolicy.name.trim(),
+            };
+            if (!normalizedPolicy.name || !normalizedPolicy.departmentId) {
+                throw new UserFacingSettingsError(t('sla.form.validation.required'));
+            }
+            if (
+                !Number.isInteger(normalizedPolicy.firstResponseMinutes)
+                || normalizedPolicy.firstResponseMinutes <= 0
+                || !Number.isInteger(normalizedPolicy.resolutionMinutes)
+                || normalizedPolicy.resolutionMinutes <= 0
+            ) {
+                throw new UserFacingSettingsError(t('sla.form.validation.positive_integer'));
+            }
             if (editingPolicy) {
-                await api.sla.update(editingPolicy.id, newPolicy);
+                await api.sla.update(editingPolicy.id, normalizedPolicy);
                 toast({ title: t('toasts.success'), description: t('toasts.policy_save_success') });
             } else {
-                await api.sla.create(newPolicy);
+                await api.sla.create(normalizedPolicy);
                 toast({ title: t('toasts.success'), description: t('toasts.policy_save_success') });
             }
             setIsAddingPolicy(false);
@@ -1445,7 +1493,11 @@ export default function AdminSettingsPage() {
                                     <CardTitle>{t('sla.title')}</CardTitle>
                                     <CardDescription>{t('sla.description')}</CardDescription>
                                 </div>
-                                <Button onClick={() => { setEditingPolicy(null); setIsAddingPolicy(true); }}>
+                                <Button onClick={() => {
+                                    setEditingPolicy(null);
+                                    setNewPolicy({ ...EMPTY_SLA_POLICY });
+                                    setIsAddingPolicy(true);
+                                }}>
                                     <Plus className="mr-2 h-4 w-4" /> {t('sla.add_policy')}
                                 </Button>
                             </CardHeader>
@@ -1523,12 +1575,20 @@ export default function AdminSettingsPage() {
                                 <div className="space-y-4 py-4">
                                     <div className="space-y-2">
                                         <Label>{t('sla.form.name_label')}</Label>
-                                        <Input id="sla_name" placeholder={t('sla.form.placeholders.name')} defaultValue={editingPolicy?.name} />
+                                        <Input
+                                            id="sla_name"
+                                            placeholder={t('sla.form.placeholders.name')}
+                                            value={newPolicy.name}
+                                            onChange={(event) => setNewPolicy((current) => ({ ...current, name: event.target.value }))}
+                                        />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label>{t('sla.form.priority_label')}</Label>
-                                            <Select defaultValue={editingPolicy?.priority || 'MEDIUM'}>
+                                            <Select
+                                                value={newPolicy.priority}
+                                                onValueChange={(priority) => setNewPolicy((current) => ({ ...current, priority }))}
+                                            >
                                                 <SelectTrigger id="sla_priority_trigger">
                                                     <SelectValue />
                                                 </SelectTrigger>
@@ -1542,17 +1602,51 @@ export default function AdminSettingsPage() {
                                         </div>
                                         <div className="space-y-2">
                                             <Label>{t('sla.form.department_label')}</Label>
-                                            <Input id="sla_department" placeholder={t('sla.form.placeholders.department')} defaultValue={editingPolicy?.department?.name || ''} />
+                                            <Select
+                                                value={newPolicy.departmentId}
+                                                onValueChange={(departmentId) => setNewPolicy((current) => ({ ...current, departmentId }))}
+                                            >
+                                                <SelectTrigger id="sla_department_trigger">
+                                                    <SelectValue placeholder={t('sla.form.placeholders.department')} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {departments.map((department) => (
+                                                        <SelectItem key={department.id} value={department.id}>
+                                                            {department.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label>{t('sla.form.response_label')}</Label>
-                                            <Input id="sla_response" type="number" defaultValue={editingPolicy?.firstResponseMinutes || 60} />
+                                            <Input
+                                                id="sla_response"
+                                                type="number"
+                                                min={1}
+                                                step={1}
+                                                value={newPolicy.firstResponseMinutes}
+                                                onChange={(event) => setNewPolicy((current) => ({
+                                                    ...current,
+                                                    firstResponseMinutes: Number(event.target.value),
+                                                }))}
+                                            />
                                         </div>
                                         <div className="space-y-2">
                                             <Label>{t('sla.form.resolve_label')}</Label>
-                                            <Input id="sla_resolve" type="number" defaultValue={editingPolicy?.resolutionMinutes || 240} />
+                                            <Input
+                                                id="sla_resolve"
+                                                type="number"
+                                                min={1}
+                                                step={1}
+                                                value={newPolicy.resolutionMinutes}
+                                                onChange={(event) => setNewPolicy((current) => ({
+                                                    ...current,
+                                                    resolutionMinutes: Number(event.target.value),
+                                                }))}
+                                            />
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-2 pt-2">
@@ -1560,7 +1654,11 @@ export default function AdminSettingsPage() {
                                             type="checkbox"
                                             id="sla_business"
                                             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
-                                            defaultChecked={editingPolicy?.businessHoursOnly}
+                                            checked={newPolicy.businessHoursOnly}
+                                            onChange={(event) => setNewPolicy((current) => ({
+                                                ...current,
+                                                businessHoursOnly: event.target.checked,
+                                            }))}
                                         />
                                         <Label htmlFor="sla_business" className="text-sm font-normal">
                                             {t('sla.form.business_hours')}

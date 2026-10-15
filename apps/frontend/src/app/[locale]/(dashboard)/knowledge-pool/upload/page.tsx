@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
     ArrowLeft, Upload, FileText,
     RefreshCw, Database,
@@ -19,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function KnowledgePoolUploadPage() {
     const router = useRouter();
+    const t = useTranslations('knowledge_pool.upload');
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [fileName, setFileName] = useState('');
@@ -99,11 +101,10 @@ export default function KnowledgePoolUploadPage() {
             setTimeout(() => {
                 router.push('/knowledge-pool');
             }, 2000);
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Dosya yüklenemedi.';
+        } catch {
             setUploadStatus('FAILED');
-            addTelemetry(`CRITICAL_ERROR: ${message.toUpperCase()}`);
-            toast({ title: 'Hata', description: message, variant: 'destructive' });
+            addTelemetry('UPLOAD_FAILED');
+            toast({ title: t('failure_title'), description: t('failure_description'), variant: 'destructive' });
         } finally {
             setLoading(false);
         }

@@ -60,8 +60,6 @@ interface CustomerDetails {
 
 type CustomerFormData = Pick<CustomerProfile, 'firstName' | 'lastName' | 'companyName' | 'jobTitle' | 'phoneNumber' | 'contractStatus' | 'customerNo' | 'isVip'>;
 
-const errorMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
-
 export default function CustomerProfilePage() {
     const { toast } = useToast();
     const params = useParams();
@@ -96,8 +94,7 @@ export default function CustomerProfilePage() {
                     });
                 }
             })
-            .catch(err => {
-                if (process.env.NODE_ENV === 'development') console.error(err);
+            .catch(() => {
                 toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('accounts.not_found') });
                 router.push('/customers');
             })
@@ -119,9 +116,8 @@ export default function CustomerProfilePage() {
             await api.customers.update(id, formData);
             toast({ title: '✅ ' + tc('success_title'), description: t('toasts.update_success') });
             window.location.reload(); // Quick refresh to catch top layout items
-        } catch (error: unknown) {
-            if (process.env.NODE_ENV === 'development') console.error(error);
-            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: errorMessage(error, t('toasts.update_error')) });
+        } catch {
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('toasts.update_error') });
         } finally {
             setSaving(false);
         }
@@ -132,9 +128,8 @@ export default function CustomerProfilePage() {
         try {
             await api.customers.resetPassword(id);
             toast({ title: '🔑 ' + t('labels.reset_password'), description: `${tc('success_title')}: ${customer?.email ?? ''}` });
-        } catch (error: unknown) {
-            if (process.env.NODE_ENV === 'development') console.error(error);
-            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: errorMessage(error, t('toasts.password_reset_error')) });
+        } catch {
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('toasts.password_reset_error') });
         }
     };
 
@@ -149,8 +144,7 @@ export default function CustomerProfilePage() {
             document.body.appendChild(a);
             a.click();
             a.remove();
-        } catch (error: unknown) {
-            if (process.env.NODE_ENV === 'development') console.error(error);
+        } catch {
             toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('toasts.download_error') });
         }
     };

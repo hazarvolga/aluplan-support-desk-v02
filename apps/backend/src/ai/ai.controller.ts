@@ -37,6 +37,17 @@ type AiJobStatusRequest = {
 };
 
 const AI_JOB_OPERATOR_ROLES = new Set(['ADMIN', 'SUPERUSER', 'SUPER_ADMIN']);
+const AI_QUERY_STAFF_ROLES = [
+    'ADMIN',
+    'SUPER_ADMIN',
+    'SUPERUSER',
+    'DEPARTMENT_MANAGER',
+    'TEAM_LEAD',
+    'SENIOR_AGENT',
+    'AGENT',
+    'SUPPORT_AGENT',
+    'SUPPORT_MANAGER',
+] as const;
 
 function getJobOwnerId(job: { data?: unknown }): string | null {
     if (!job.data || typeof job.data !== 'object') return null;
@@ -177,6 +188,7 @@ export class AiController {
     }
 
     @Post('query')
+    @Roles(...AI_QUERY_STAFF_ROLES)
     @Throttle({ default: { limit: 10, ttl: 60000 } }) // Limit complex AI inference
     @ApiOperation({ summary: 'Ask a question — semantic search + AI reformat pipeline' })
     @ApiResponse({ status: 200, description: 'RAG Pipeline execution completed with an AI-generated response.' })

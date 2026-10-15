@@ -1210,6 +1210,8 @@
       "confidence_score": "CONFIDENCE-VALUE: {confidence}",
       "data_gap_title": "DATA GAP",
       "data_gap_desc": "No matching record for this query was found in the current knowledge pool.",
+      "error": "An error occurred. Please try again.",
+      "empty": "No response was received. Please try again.",
       "visuals": {
         "title": "Source visuals",
         "description": "Approved source images supporting this answer.",
@@ -1841,6 +1843,10 @@
         "placeholders": {
           "name": "e.g.: Standard Support",
           "department": "Select department"
+        },
+        "validation": {
+          "required": "Policy name and department are required.",
+          "positive_integer": "Response and resolution times must be positive integers."
         },
         "cancel_btn": "Cancel"
       }
@@ -3627,6 +3633,10 @@
       "title": "KNOWLEDGE_POOL_CONTROL",
       "subtitle": "Management and indexing of technical resources for AI.",
       "placeholder": "Technical Documentation",
+      "upload": {
+        "failure_title": "Error",
+        "failure_description": "The file could not be uploaded. Please try again."
+      },
       "tabs": {
         "raw_sources": "RAW_SOURCES",
         "seeded_content": "SEEDED_CONTENT",

@@ -150,3 +150,40 @@ Kullanıcı diğer ajanın teslimini bu göreve getirir. Ben salt-okunur karşı
 - Uygulama işleri henüz PENDING mi; teslim gerçek kanıt mı, yapılmamış test/canlı başarı iddiası var mı?
 
 Sonuç **KABUL / DÜZELTME GEREKİYOR / BLOKE** olur; gerekçeyi dosya/diff ile veririm. STAB-00 kabulü yalnız plan ve izolasyon kabulüdür, production-ready veya deploy onayı değildir. Kabulden sonra ilk ürün görevi **yalnız SEC-01 CSAT sahiplik/izin doğrulaması** olarak ayrıca sınırlandırılacak; bütün güvenlik paketini tek seferde başlatma. Ürün tesliminde kod/test ve gerektiğinde güvenlik incelemesi yapılmadan tamamlandı sayılmaz. Push ve deploy için kullanıcıdan ayrıca açık talep gerekir.
+
+## 10. Yerel stabilizasyon kontrol noktası — 15 Ekim 2026
+
+Bu bölüm 28 Eylül tarihli tarihsel devir notlarını değiştirmez; güncel yerel çalışma alanının devam bilgilerini ekler. Aktif checkout `/Users/hazarvolgaekiz/dev/studio/aluplan-support-desk-v02/aluplan-stabilization-20260928`, dal `main`dir. Bu kontrol noktası yalnız yereldir; **push, deploy veya canlı sistem değişikliği yapılmadı**. Korunan kardeş checkout'a dokunulmadı.
+
+### Tamamlanan ve doğrulanan son dilim
+
+- Ollama ve eski sağlayıcı yolları uygulama, ayar arayüzü ve dokümantasyondan kaldırıldı; proje yalnız desteklenen sağlayıcı sözleşmelerini kullanıyor.
+- Dış sağlayıcı ve storage endpoint doğrulaması güçlendirildi; legacy credential saklama ve AI/user-admin sınırları sertleştirildi.
+- `POST /ai/query` açık personel rol allowlist'iyle sınırlandı. Frontend AI rotası bilinmeyen, müşteri ve görüntüleyici rollerinde fail-closed çalışıyor.
+- WebSocket terminal olayı kaybolduğunda AI işi iki saniyelik aralıklarla en fazla 60 kez sahiplik-korumalı durum endpoint'inden sorgulanıyor; tamamlanır, güvenli hata verir veya 120 saniyede sonlanır. Yabancı/stale job event'leri kabul edilmiyor.
+- AI ve bilgi havuzu kullanıcı hata metinleri TR/EN/DE i18n anahtarlarına taşındı; ham sağlayıcı ayrıntısı gösterilmiyor.
+- SLA politikaları ve departmanları bağımsız sonuçlandırılıyor. Departman servisi hata verse bile başarılı politika listesi görünür kalıyor; ham hata nesnesi konsola yazılmıyor.
+- Frontend ayar/secret sözleşmeleri, CRM müşteri akışları, admin işlemleri, rol seçimi, bilgi havuzu, ekipler ve erişilebilirlik yolları için geniş regresyon testleri eklendi.
+
+### 15 Ekim yerel doğrulama kanıtı
+
+- Frontend unit: `91/91` dosya, `741/741` test geçti.
+- Frontend TypeScript: `tsc --noEmit` geçti.
+- i18n: TR/EN/DE eksiksiz geçti.
+- Backend AI controller: `33/33` test geçti.
+- `git diff --check` temiz.
+- Gerçek Playwright email E2E bu kontrol noktasında çalıştırılmadı. Docker/Postgres/Redis gerektiren runtime kanıtı için kullanıcı onayı alınmadı; bu nedenle release/deploy kapısı hâlâ kapalıdır.
+- Dürüst frontend coverage son ölçümü yaklaşık statements `%67,41`, branches `%57,58`, functions `%66,58`, lines `%68,86`; hedef `%80` henüz karşılanmıyor ve eşik yapay olarak yükseltilmedi.
+
+### Devam sırası ve açık kapılar
+
+1. Ayar/API hata mesajlarında ham backend ayrıntısının kullanıcıya veya browser console'a taşınmasını tamamen kapat; status ve güvenli hata kodu dışında veri loglama.
+2. CRM yardımcı veri yükleme hatalarını görünür, güvenli ve tekrar denenebilir hale getir.
+3. Admin settings monolitini davranış-koruyucu dilimlerle 800 satır politikasına yaklaştır; aynı anda işlev değiştirme.
+4. Coverage'ı gerçek testlerle `%80+` seviyesine çıkar; threshold düşürme, exclude ekleme veya sahte test kullanma.
+5. Kullanıcı onayı sonrası izole Postgres/Redis ortamında kritik Playwright/E2E ve runtime smoke; canlı veriye/servislere bağlanma yok.
+6. Son code review + security review + release diff/rollback kontrolü tamamlanmadan push/deploy isteme veya yapma.
+
+### Commit dışında tutulmaya devam edecek yerel dosyalar
+
+`.ai/current-focus.md`, `.ai/session-summary.md`, `apps/backend/openapi.json`, `apps/frontend/next-env.d.ts` ve `scripts/generate_allplan_license_report.py` kullanıcı/ortam WIP'i olarak stage edilmemelidir. `git add .` veya `git add -A` kullanılmaz.

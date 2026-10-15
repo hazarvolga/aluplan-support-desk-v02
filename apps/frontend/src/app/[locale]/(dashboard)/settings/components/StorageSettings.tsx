@@ -26,7 +26,7 @@ export function StorageSettings() {
     useEffect(() => {
         const load = async () => {
             try {
-                const settings = await api.settings.list(false);
+                const settings = await api.settings.list();
                 const typedSettings = settings as Setting[];
                 setAccessKey(typedSettings.find((setting) => setting.key === 'r2_access_key_id')?.value || '');
                 setSecretKey(typedSettings.find((setting) => setting.key === 'r2_secret_access_key')?.value || '');

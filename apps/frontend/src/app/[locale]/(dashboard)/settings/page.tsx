@@ -28,6 +28,7 @@ import { toCredentialOverride } from '@/lib/ai-provider-policy';
 
 export default function SettingsPage() {
     const t = useTranslations('settings');
+    const ticketActionsT = useTranslations('tickets');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [macros, setMacros] = useState<Macro[]>([]);
@@ -51,7 +52,7 @@ export default function SettingsPage() {
         const load = async () => {
             try {
                 const [settingsData, macrosData] = await Promise.all([
-                    api.settings.list(false),
+                    api.settings.list(),
                     api.macros.list()
                 ]);
                 const typedSettings = settingsData as Setting[];
@@ -267,9 +268,15 @@ export default function SettingsPage() {
                                             <h4 className="font-bold text-sm">{m.name}</h4>
                                             <p className="text-xs text-muted-foreground line-clamp-1">{m.content}</p>
                                         </div>
-                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => handleDeleteMacro(m.id)}>
-                                                <Trash2 className="h-4 w-4" />
+                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
+                                                aria-label={`${ticketActionsT('delete')} ${m.name}`}
+                                                onClick={() => handleDeleteMacro(m.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" aria-hidden="true" />
                                             </Button>
                                         </div>
                                     </div>

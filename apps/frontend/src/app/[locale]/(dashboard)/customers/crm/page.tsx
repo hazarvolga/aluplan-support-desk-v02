@@ -117,13 +117,20 @@ const normalizeSyncSettings = (value: unknown): SyncSettings => {
     };
 };
 
-const crmErrorMessage = (error: unknown, fallback: string) => {
-    if (!isRecord(error)) return fallback;
-    const response = isRecord(error.response) ? error.response : null;
-    const data = response && isRecord(response.data) ? response.data : null;
-    if (data && typeof data.message === 'string') return data.message;
-    return typeof error.message === 'string' ? error.message : fallback;
-};
+const redactSyncLogDiagnostics = (log: SyncLog): SyncLog => ({
+    ...log,
+    errorMessage: log.errorMessage ? 'REDACTED' : null,
+    details: log.details
+        ? {
+            ...log.details,
+            failedRecords: log.details.failedRecords.map(record => ({
+                externalId: record.externalId,
+                entityType: record.entityType,
+                errorMessage: '',
+            })),
+        }
+        : null,
+});
 
 import { use } from 'react';
 
@@ -158,6 +165,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
     const [logs, setLogs] = useState<SyncLog[]>([]);
     const [changes, setChanges] = useState<CrmChangeLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [saving, setSaving] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [deltaSyncing, setDeltaSyncing] = useState(false);
@@ -165,6 +173,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
     const loadData = async () => {
         try {
             setLoading(true);
+            setLoadError(false);
             const connections = await api.crm.getConnections();
             if (connections && connections.length > 0) {
                 const conn = connections[0]; // Currently supporting one connection
@@ -185,8 +194,8 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
             // Load field definitions
             const definitions = await api.crm.getFieldDefinitions();
             setFieldDefinitions(definitions);
-        } catch (error) {
-            if (process.env.NODE_ENV === 'development') console.error('Failed to load CRM data', error);
+        } catch {
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -195,9 +204,9 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
     const loadLogs = async (id: string) => {
         try {
             const syncLogs = await api.crm.getLogs(id);
-            setLogs(syncLogs.map(log => ({ ...log, errorMessage: log.errorMessage ?? null })));
-        } catch (error) {
-            if (process.env.NODE_ENV === 'development') console.error('Failed to load logs', error);
+            setLogs(syncLogs.map(log => redactSyncLogDiagnostics({ ...log, errorMessage: log.errorMessage ?? null })));
+        } catch {
+            return;
         }
     };
 
@@ -205,8 +214,8 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
         try {
             const recentChanges = await api.crm.getChanges(id, 50);
             setChanges(recentChanges);
-        } catch (error) {
-            if (process.env.NODE_ENV === 'development') console.error('Failed to load CRM changes', error);
+        } catch {
+            return;
         }
     };
 
@@ -214,8 +223,8 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
         try {
             const data = await api.crm.getDiscoveryData(id);
             setDiscoveryData(data);
-        } catch (error) {
-            if (process.env.NODE_ENV === 'development') console.error('Failed to load discovery data', error);
+        } catch {
+            return;
         }
     };
 
@@ -257,8 +266,8 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
             await api.crm.upsertConnection(config);
             toast({ title: '✅ ' + tc('success_title'), description: t('toasts.bulk_update_success', { count: 1 }) });
             loadData();
-        } catch (error: unknown) {
-            toast({ variant: 'destructive', title: '❌ ' + t('crm.error'), description: crmErrorMessage(error, t('crm.error')) });
+        } catch {
+            toast({ variant: 'destructive', title: '❌ ' + t('crm.error'), description: t('crm.error') });
         } finally {
             setSaving(false);
         }
@@ -271,8 +280,8 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
             await api.crm.triggerSync(connection.id);
             toast({ title: '🔄 ' + t('crm.sync_btn'), description: t('toasts.sync_started') });
             loadData();
-        } catch (error) {
-            if (process.env.NODE_ENV === 'development') console.error('Sync failed', error);
+        } catch {
+            toast({ variant: 'destructive', title: '❌ ' + t('crm.error'), description: t('crm.error') });
         } finally {
             setSyncing(false);
         }
@@ -285,15 +294,32 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
             await api.crm.triggerDeltaSync(connection.id);
             toast({ title: '🔄 ' + t('crm.delta_sync_btn'), description: t('crm.delta_sync_started') });
             await Promise.all([loadData(), loadChanges(connection.id)]);
-        } catch (error) {
-            if (process.env.NODE_ENV === 'development') console.error('Delta sync failed', error);
+        } catch {
+            toast({ variant: 'destructive', title: '❌ ' + t('crm.error'), description: t('crm.error') });
         } finally {
             setDeltaSyncing(false);
         }
     };
 
-    if (loading || !fieldDefinitions) {
+    if (loading) {
         return <div className="flex items-center justify-center h-64">{tc('loading')}</div>;
+    }
+
+    if (loadError || !fieldDefinitions) {
+        return (
+            <div className="flex min-h-64 items-center justify-center p-4">
+                <div role="alert" className="max-w-md space-y-4 text-center">
+                    <div>
+                        <h1 className="text-lg font-semibold">{tc('backend_unavailable_title')}</h1>
+                        <p className="mt-1 text-sm text-muted-foreground">{tc('backend_unavailable_desc')}</p>
+                    </div>
+                    <Button type="button" variant="outline" onClick={() => void loadData()}>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        {tc('retry')}
+                    </Button>
+                </div>
+            </div>
+        );
     }
 
     const handleMappingChange = (entity: 'account' | 'contact', key: string, value: string) => {
@@ -401,7 +427,7 @@ export default function CrmManagementPage({ params }: { params: Promise<{ locale
                                     <div className="relative">
                                         <Input
                                             id="webhookSecret"
-                                            type="text"
+                                            type="password"
                                             value={config.webhookSecret}
                                             onChange={(e) => setConfig({ ...config, webhookSecret: e.target.value })}
                                             placeholder={t('import.processing')}
@@ -663,7 +689,7 @@ function SyncLogRow({ log }: { log: SyncLog }) {
                 <TableCell>{log.totalRecords}</TableCell>
                 <TableCell className="text-emerald-500">{log.successCount}</TableCell>
                 <TableCell className="text-red-500">{log.errorCount}</TableCell>
-                <TableCell className="text-xs truncate max-w-xs">{log.errorMessage || '-'}</TableCell>
+                <TableCell className="text-xs truncate max-w-xs">{log.errorMessage ? t('crm.error') : '-'}</TableCell>
                 <TableCell>
                     {hasFailedRecords && (
                         <Button
@@ -697,7 +723,7 @@ function SyncLogRow({ log }: { log: SyncLog }) {
                                         <TableRow key={i}>
                                             <TableCell className="text-xs font-mono">{r.externalId}</TableCell>
                                             <TableCell className="text-xs">{r.entityType}</TableCell>
-                                            <TableCell className="text-xs text-red-400">{r.errorMessage}</TableCell>
+                                            <TableCell className="text-xs text-red-400">{t('crm.error')}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

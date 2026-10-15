@@ -19,6 +19,7 @@ import { RbacGuard } from '../rbac/rbac.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { getQueueToken } from '@nestjs/bullmq';
 import { AllplanLicensingPolicyService } from './allplan-licensing-policy.service';
+import { ROLES_KEY } from '../rbac/decorators/rbac.decorators';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -62,6 +63,26 @@ const mockAllplanLicensingPolicy = { validate: jest.fn().mockResolvedValue(undef
 
 // Guard that always allows — used to bypass auth/throttle in unit tests
 const allowAllGuard = { canActivate: () => true };
+
+describe('AiController — query authorization metadata', () => {
+    it('restricts inference to the explicit staff role allowlist', () => {
+        const roles = Reflect.getMetadata(ROLES_KEY, AiController.prototype.query);
+
+        expect(roles).toEqual([
+            'ADMIN',
+            'SUPER_ADMIN',
+            'SUPERUSER',
+            'DEPARTMENT_MANAGER',
+            'TEAM_LEAD',
+            'SENIOR_AGENT',
+            'AGENT',
+            'SUPPORT_AGENT',
+            'SUPPORT_MANAGER',
+        ]);
+        expect(roles).not.toContain('CUSTOMER');
+        expect(roles).not.toContain('VIEWER');
+    });
+});
 
 async function buildModule(): Promise<TestingModule> {
     return Test.createTestingModule({

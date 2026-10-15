@@ -62,7 +62,9 @@ test.describe('Email Threading Integration', () => {
 
         // Verify ticket creation
         await page.goto(`/tr/tickets/${ticket.id}`);
-        await expect(page.locator('body')).toContainText(uniqueSubject.substring(0, 10));
+        const visibleSubjectPrefix = uniqueSubject.substring(0, 10)
+            .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        await expect(page.locator('body')).toContainText(new RegExp(visibleSubjectPrefix, 'i'));
 
         console.log('✅ Ticket correlation marker and authenticated UI lookup confirmed.');
         await apiContext.dispose();

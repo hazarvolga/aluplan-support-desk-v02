@@ -1234,6 +1234,8 @@
       "confidence_score": "GÜVEN-DEĞERİ: {confidence}",
       "data_gap_title": "VERİ BOŞLUĞU",
       "data_gap_desc": "Mevcut bilgi havuzunda bu sorgu için eşleşen kayıt bulunamadı.",
+      "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
+      "empty": "Yanıt alınamadı. Lütfen tekrar deneyin.",
       "visuals": {
         "title": "Kaynak görseller",
         "description": "Yanıtı destekleyen onaylı kaynak görselleri.",
@@ -1865,6 +1867,10 @@
         "placeholders": {
           "name": "örn: Standart Destek",
           "department": "Departman seçin"
+        },
+        "validation": {
+          "required": "Politika adı ve departman zorunludur.",
+          "positive_integer": "Yanıt ve çözüm süreleri pozitif tam sayı olmalıdır."
         },
         "cancel_btn": "İptal"
       }
@@ -3651,6 +3657,10 @@
       "title": "BİLGİ HAVUZU KONTROLÜ",
       "subtitle": "Yapay zeka için teknik kaynakların yönetimi ve indekslenmesi.",
       "placeholder": "Teknik Dokümantasyon",
+      "upload": {
+        "failure_title": "Hata",
+        "failure_description": "Dosya yüklenemedi. Lütfen tekrar deneyin."
+      },
       "tabs": {
         "raw_sources": "HAM KAYNAKLAR",
         "seeded_content": "ÜRETİLMİŞ İÇERİK",

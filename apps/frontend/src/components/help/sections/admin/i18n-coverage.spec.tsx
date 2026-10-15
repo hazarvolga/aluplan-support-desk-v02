@@ -25,8 +25,14 @@ import { AnnouncementsTemplates } from './AnnouncementsTemplates';
 import { TicketsOverview } from './TicketsOverview';
 import { TicketsAiCopilot } from './TicketsAiCopilot';
 import { TicketsInternalNotes } from './TicketsInternalNotes';
+import { AiLearningCycle } from './AiLearningCycle';
+import { AiApprovals } from './AiApprovals';
+import { AiFaq } from './AiFaq';
+import { SystemTopology } from './SystemTopology';
+import { SystemSettings } from './SystemSettings';
+import { SystemProfile } from './SystemProfile';
 
-// These 11 components were refactored from hardcoded Turkish text to
+// These components use translation-backed documentation content. Several were refactored from hardcoded Turkish text to
 // useTranslations() calls (commit a587ea89) without the matching keys ever
 // being added to the message catalogs, so next-intl fell back to rendering
 // the raw dotted key path (e.g. "help.docs.admin.crm_products.add_title")
@@ -47,6 +53,12 @@ const COMPONENTS = [
     ['TicketsOverview', TicketsOverview],
     ['TicketsAiCopilot', TicketsAiCopilot],
     ['TicketsInternalNotes', TicketsInternalNotes],
+    ['AiLearningCycle', AiLearningCycle],
+    ['AiApprovals', AiApprovals],
+    ['AiFaq', AiFaq],
+    ['SystemTopology', SystemTopology],
+    ['SystemSettings', SystemSettings],
+    ['SystemProfile', SystemProfile],
 ] as const;
 
 const LOCALES = [

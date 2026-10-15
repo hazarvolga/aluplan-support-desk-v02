@@ -1210,6 +1210,8 @@
       "confidence_score": "KONFIDENZ-WERT: {confidence}",
       "data_gap_title": "DATENLÜCKE",
       "data_gap_desc": "Im aktuellen Wissenspool wurde kein zu dieser Abfrage passender Datensatz gefunden.",
+      "error": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+      "empty": "Es wurde keine Antwort empfangen. Bitte versuchen Sie es erneut.",
       "visuals": {
         "title": "Quellbilder",
         "description": "Freigegebene Quellbilder, die diese Antwort stützen.",
@@ -1841,6 +1843,10 @@
         "placeholders": {
           "name": "z.B.: Standard-Support",
           "department": "Abteilung auswählen"
+        },
+        "validation": {
+          "required": "Richtlinienname und Abteilung sind erforderlich.",
+          "positive_integer": "Reaktions- und Lösungszeiten müssen positive ganze Zahlen sein."
         },
         "cancel_btn": "Abbrechen"
       }
@@ -3627,6 +3633,10 @@
       "title": "WISSENSPOOL_KONTROLLE",
       "subtitle": "Verwaltung und Indizierung technischer Ressourcen für KI.",
       "placeholder": "Technische Dokumentation",
+      "upload": {
+        "failure_title": "Fehler",
+        "failure_description": "Die Datei konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut."
+      },
       "tabs": {
         "raw_sources": "ROHQUELLEN",
         "seeded_content": "GESÄTE_INHALTE",

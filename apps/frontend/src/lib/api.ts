@@ -64,6 +64,15 @@ export type UpsertCrmConnectionInput = {
     syncSettings?: Record<string, unknown>;
 };
 
+export type SlaPolicyInput = {
+    name: string;
+    priority: string;
+    departmentId: string;
+    firstResponseMinutes: number;
+    resolutionMinutes: number;
+    businessHoursOnly: boolean;
+};
+
 export type LearnNowCrawlFormat =
     | 'knowledge_article'
     | 'pdf'
@@ -1024,8 +1033,17 @@ export const api = {
             request<{
                 jobId: string;
                 status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
-                result?: { answer?: string; status?: string };
-                error?: string;
+                result?: {
+                    query: string;
+                    answer: string | null;
+                    confidence: string;
+                    sources: AiSource[];
+                    visuals?: Array<{ url: string; alt?: string; caption?: string; summary: string; sourceTitle: string; sourceId: string }>;
+                    interactionId: string;
+                    suggestTicket: boolean;
+                    response?: string;
+                };
+                error?: { code: 'AI_QUERY_FAILED'; message: 'AI query processing failed' };
             }>(`/ai/status/${jobId}`),
         search: (query: string, productId?: string | null, limit = 5, language?: string) =>
             request<{
@@ -1266,8 +1284,8 @@ export const api = {
             request<unknown>(`/products/categories/${categoryId}`, { method: 'DELETE' }),
     },
     settings: {
-        list: (decrypt = false) => request<Setting[]>(`/settings${decrypt ? '?decrypt=true' : ''}`),
-        get: (key: string, decrypt = false) => request<Setting | null>(`/settings/${key}${decrypt ? '?decrypt=true' : ''}`),
+        list: () => request<Setting[]>('/settings'),
+        get: (key: string) => request<Setting | null>(`/settings/${key}`),
         upsert: (body: unknown) => request<unknown>('/settings', { method: 'POST', body: JSON.stringify(body) }),
         bulkUpsert: (body: { settings: unknown[] }) => request<unknown>('/settings/bulk', { method: 'POST', body: JSON.stringify(body) }),
         delete: (key: string) => request<unknown>(`/settings/${key}`, { method: 'DELETE' }),
@@ -1276,8 +1294,8 @@ export const api = {
     },
     sla: {
         list: () => request<unknown[]>('/tickets/sla/policies'),
-        create: (body: unknown) => request<unknown>('/tickets/sla/policies', { method: 'POST', body: JSON.stringify(body) }),
-        update: (id: string, body: unknown) => request<unknown>(`/tickets/sla/policies/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        create: (body: SlaPolicyInput) => request<unknown>('/tickets/sla/policies', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: Partial<SlaPolicyInput>) => request<unknown>(`/tickets/sla/policies/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
         delete: (id: string) => request<unknown>(`/tickets/sla/policies/${id}`, { method: 'DELETE' }),
     },
     macros: {
