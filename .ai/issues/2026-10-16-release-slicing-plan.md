@@ -2,7 +2,7 @@
 
 ## Durum
 
-`EXECUTING` — Bu kart yalnız yerel hazırlık ve kabul kanıtı içindir. Remote push, Coolify ayar değişikliği, build, deploy, migration veya canlı veri/queue/mail işlemi yetkilendirilmemiştir.
+`EXECUTING` — Bu kart yalnız yerel hazırlık ve kabul kanıtı içindir. Remote push, Coolify ayar değişikliği, build, deploy, migration veya canlı veri/queue/mail işlemi yetkilendirilmemiştir. 17 Ekim'de verilen onayla yalnız yerel Docker imajları ve geçici, izole runtime provası çalıştırılmıştır.
 
 ## Referanslar ve sınır
 
@@ -38,8 +38,8 @@ Bu gruplar **mantıksal kabul dilimleridir**. Her biri, ayrı aday branch/image 
 | K0 — yerel kaynak | `git diff --check`, backend/frontend typecheck, i18n, tam test ve production build | PASS (16 Ekim) |
 | K1 — Compose sözleşmesi | production ve staging Compose sentetik değerlerle `config --quiet` | PASS (16 Ekim) |
 | K2 — bağımlılık eşiği | `pnpm audit --prod --audit-level=high` | PASS (16 Ekim; bilinen açık yok) |
-| K3 — dilim imajları | Her R0–R3 için bağımsız, aynı architecture local/staging build ve image digest | PENDING |
-| K4 — izole runtime | Geçici Postgres/Redis ile login/refresh, ticket, worker ve health smoke | R3 auth kanıtı PASS; tam dilim runtime PENDING |
+| K3 — dilim imajları | Her R0–R3 için bağımsız, aynı architecture local/staging build ve image digest | Mevcut birleşik adayın backend/frontend `linux/arm64` imajları PASS; temiz commit bağlamı, hedef architecture ve ayrı R0–R3 imajları PENDING |
+| K4 — izole runtime | Geçici Postgres/Redis ile login/refresh, ticket, worker ve health smoke | Mevcut adayın backend migration/boot/health ve frontend login HTTP smoke PASS; önceki R3 auth E2E PASS; ticket oluşturma ve worker işleme PENDING |
 | K5 — canlı ön-kontrol | Coolify commit/image/env varlığı + backup/queue/mail/worker sınırı salt-okunur kayıt | PENDING — ayrı kullanıcı onayı gerekir |
 | K6 — yayın ve canary | Onaylı tek dilim, health + login/refresh + ticket oluşturma + queue gözlemi | BLOCKED — ayrıca push/deploy onayı gerekir |
 
@@ -54,10 +54,20 @@ Bu gruplar **mantıksal kabul dilimleridir**. Her biri, ayrı aday branch/image 
 ## Açık riskler
 
 - 20 commitlik farkın her dilim için ayrı image build ve CI çalıştırma kanıtı yoktur.
+- 17 Ekim yerel imajları, dört kullanıcı WIP dosyası bulunan çalışma klasöründen build edilmiştir. OCI revision etiketi `ef74cc082d0bcfad8c2ea9327b37219ce3d5f1a1` olsa da bu etiket tek başına temiz commit bağlamı kanıtı değildir. İmajlar bu haliyle yayın adayı olarak kullanılmaz.
+- Yerel Docker mimarisi `linux/arm64`; Coolify hedef mimarisi salt-okunur envanterle henüz eşleştirilmedi. Ayrı dilim imajları da oluşturulmadı.
 - Coolify'nin mevcut build cache'i, image digest'leri ve pnpm 11 runtime uyumu canlıdan bağımsız doğrulanmadı.
 - Mail/queue/R2/CRM sistemleri için canlı etkisiz geçiş kanıtı eksiktir; geçmiş tarihli notlar canlı durum yerine geçmez.
 - Mevcut branch bir release branch'i olarak ayrıştırılmadı. Sadece planlanan commit aralıklarından staging branch üretmek bile yeni Git state yaratır; kullanıcı onayı olmadan yapılmayacaktır.
 
-## En küçük sonraki karar
+## 17 Ekim yerel imaj ve runtime kanıtı
 
-K3 için yalnız yerel, disk etkili Docker image build ve geçici izole runtime provası yapılmasına izin verilecek mi? Bu izin deploy, push veya canlı erişim izni değildir.
+- Birleşik adayın backend imajı `sha256:a0907a5f74e833f465cc40b634cc0c254b7053d7df89501232206b7033e60399` (3,88 GB), frontend imajı `sha256:95d3a2bf0984ede13cecc3e505a6b41642009eedcdf02cfe654efc10bf3dbf38` (460 MB). İkisi de `linux/arm64` ve aynı OCI revision etiketini taşıyor. Bunlar yerel image ID'leridir; registry digest'i değildir.
+- Backend build `pnpm install --frozen-lockfile`, Prisma client üretimi ve Nest build ile; frontend build frozen lockfile, Prisma, ortak şema, TypeScript ve Next.js production build ile geçti.
+- Backend imajının ağ kapalı statik smoke testinde 59 migration dosyası canonical manifest ile eşleşti; PostgreSQL 17.11 istemcileri ve Node 22.23.3 görüldü. Frontend imajı ağ kapalı çalıştırıldığında `/tr/login` HTTP 200 verdi.
+- Ayrı, yalnız iç ağdaki geçici pgvector/PostgreSQL 17 ve Redis 7 ile backend production modunda açıldı. 59 migration doğrulaması, şema eşitliği ve RBAC sözleşmesi geçti; uygulama başladı, `/api/v1/health` HTTP 200 ve anonim `/api/v1/auth/refresh` HTTP 401 döndü. İlk denemede sentetik `SWAGGER_PASSWORD` eksikliği nedeniyle uygulama 1 koduyla çıktı; değer eklenince aynı imaj sağlıklı açıldı. Bu bir ürün kodu hatası değil, test ortamı eksiğiydi.
+- Test konteynerleri ve iç ağ kaldırıldı; kalıcı volume yaratılmadı. İmajlar yerelde kaldı. Canlıya bağlantı, push, deploy, gerçek mail/ticket veya queue replay yapılmadı.
+
+## Sonraki yerel kapı
+
+K3 için temiz commit arşivinden ve Coolify hedef mimarisiyle uyumlu imaj kanıtı; K4 için sentetik bilet oluşturma ve worker işleme smoke testi gerekir. Ardından salt-okunur Coolify envanteri ve canlı ön-kontrol yapılmadan yayın kararı verilmez.
