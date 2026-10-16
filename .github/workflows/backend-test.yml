@@ -67,7 +67,7 @@ jobs:
         run: |
           node - <<'NODE' >> "$GITHUB_ENV"
           const { randomBytes } = require('node:crypto');
-          for (const name of ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'ENCRYPTION_KEY']) {
+          for (const name of ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'SESSION_MARKER_SECRET', 'ENCRYPTION_KEY']) {
             process.stdout.write(`${name}=${randomBytes(32).toString('hex')}\n`);
           }
           NODE
@@ -152,7 +152,7 @@ jobs:
         run: |
           node - <<'NODE' >> "$GITHUB_ENV"
           const { randomBytes } = require('node:crypto');
-          for (const name of ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'ENCRYPTION_KEY']) {
+          for (const name of ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'SESSION_MARKER_SECRET', 'ENCRYPTION_KEY']) {
             process.stdout.write(`${name}=${randomBytes(32).toString('hex')}\n`);
           }
           NODE

@@ -26,12 +26,14 @@ import {
 } from "@/components/ui/command"
 
 import { useTranslations } from "next-intl"
+import { useAuth } from "@/components/auth/role-guard"
 
 export function CommandMenu() {
     const t = useTranslations("command_menu")
     const navT = useTranslations("sidebar.nav")
     const [open, setOpen] = React.useState(false)
     const router = useRouter()
+    const { logout } = useAuth()
 
     React.useEffect(() => {
         const down = (e: KeyboardEvent) => {
@@ -95,15 +97,7 @@ export function CommandMenu() {
                         <PlusCircle className="mr-2 h-4 w-4" />
                         <span>{t("items.new_ticket")}</span>
                     </CommandItem>
-                    <CommandItem onSelect={async () => {
-                        try {
-                            const { api } = await import('@/lib/api');
-                            await api.auth.logout();
-                        } catch (e) {
-                            console.error('Logout error', e);
-                        }
-                        router.push("/login");
-                    }}>
+                    <CommandItem onSelect={() => runCommand(() => void logout())}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>{t("items.logout")}</span>
                     </CommandItem>

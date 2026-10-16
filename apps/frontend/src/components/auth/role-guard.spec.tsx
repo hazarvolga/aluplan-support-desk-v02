@@ -96,4 +96,26 @@ describe('RoleGuard authorization rendering', () => {
             expect(push).toHaveBeenCalledWith('/de/login');
         });
     });
+
+    it('does not present logout as successful when local cookie cleanup fails', async () => {
+        vi.spyOn(api.auth, 'me').mockResolvedValue({ id: 'u1', role: 'ADMIN' } as never);
+        vi.spyOn(api.auth, 'logout').mockRejectedValue(new Error('Local cleanup failed'));
+
+        const { useAuth } = await import('./role-guard');
+        function TestLogout() {
+            const { logout } = useAuth();
+            return <button onClick={() => logout()}>Logout</button>;
+        }
+
+        render(
+            <AuthProvider>
+                <TestLogout />
+            </AuthProvider>,
+        );
+
+        screen.getByRole('button', { name: 'Logout' }).click();
+
+        await waitFor(() => expect(api.auth.logout).toHaveBeenCalled());
+        expect(push).not.toHaveBeenCalledWith('/tr/login');
+    });
 });

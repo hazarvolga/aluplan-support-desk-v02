@@ -69,10 +69,10 @@ describe('PromptContextBuilderService licensing context', () => {
             skipHotinfoProfile: false,
         });
 
-        expect(result).toContain('2024-2-0 ve sonrası ALLPLAN ID bulut lisans dönemi');
+        expect(result).toContain('2024-2-0, 2025, 2026 ve 2027 için aynı ALLPLAN ID bulut lisans akışını kullan');
         expect(result).toContain('ALLPLAN ID');
-        expect(result).toContain('kuruluş daveti');
-        expect(result).toContain('koltuk ataması');
+        expect(result).not.toContain('kuruluş daveti');
+        expect(result).not.toContain('koltuk atamasını doğrula');
         expect(result).not.toContain('Allmenu -> Lisans Ayarları (Wibu) -> Lisansı İade Et');
     });
 
@@ -90,8 +90,8 @@ describe('PromptContextBuilderService licensing context', () => {
         });
 
         expect(result).toContain('Connect portalı lisans teknolojisi değildir');
-        expect(result).toContain('kullanıcı, kuruluş ve koltuk yönetim katmanıdır');
-        expect(result).toContain('ALLPLAN ID bulut lisansı');
+        expect(result).toContain('kullanıcı ve lisans yönetim katmanıdır');
+        expect(result).toContain('ALLPLAN ID bulut lisans akışını');
     });
 
     it('keeps Hotinfo optional and asks for the exact release before any risky license instruction', async () => {
@@ -118,7 +118,7 @@ describe('PromptContextBuilderService licensing context', () => {
             kbContent: 'Approved ALLPLAN licensing procedures.',
         });
 
-        expect(result).toContain('2024-2-0 ve sonrası ALLPLAN ID bulut lisans dönemi');
+        expect(result).toContain('2024-2-0, 2025, 2026 ve 2027 için aynı ALLPLAN ID bulut lisans akışını kullan');
         expect(result).not.toContain('tam ALLPLAN sürümünü ve build bilgisini sor');
     });
 
@@ -209,6 +209,7 @@ describe('PromptContextBuilderService licensing context', () => {
         });
 
         expect(result).toContain('ALLPLAN ID bulut lisans');
-        expect(result).toContain('kuruluş daveti ve koltuk atamasını doğrula');
+        expect(result).toContain('sorunu yalnızca giriş, lisans görünürlüğü veya offline kullanım olarak sınıflandır');
+        expect(result).not.toContain('kuruluş daveti');
     });
 });

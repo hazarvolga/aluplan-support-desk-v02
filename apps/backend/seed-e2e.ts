@@ -51,6 +51,12 @@ const CUSTOMER_TWO = {
     fullName: 'E2E Customer Two',
     roleName: 'CUSTOMER',
 };
+const REMEMBER_ME_CUSTOMER = {
+    email: process.env.E2E_REMEMBER_ME_EMAIL || 'e2e-remember-me@aluplan.test',
+    password: process.env.E2E_REMEMBER_ME_PASSWORD || 'E2eRememberMe!Pass123',
+    fullName: 'E2E Remember Me Customer',
+    roleName: 'CUSTOMER',
+};
 const CUSTOMER_PHONE = process.env.E2E_CUSTOMER_PHONE || '905550009988';
 const SYSTEM_REQUIREMENTS_FIXTURE = JSON.stringify({
     tr: [{ title: 'ALLPLAN 2026', sections: [{ name: 'Sentetik E2E', items: ['Desteklenen test ortamı'] }] }],
@@ -119,27 +125,35 @@ async function assertRoleHasPermissions(roleName: string, requiredPermissions: s
 
 async function main() {
     const created: Array<{ role: string; email: string }> = [];
-    for (const spec of [ADMIN, AGENT, CUSTOMER, CUSTOMER_TWO]) {
+    for (const spec of [ADMIN, AGENT, CUSTOMER, CUSTOMER_TWO, REMEMBER_ME_CUSTOMER]) {
         const user = await ensureUser(spec);
         created.push({ role: spec.roleName, email: user.email });
-        if (spec === CUSTOMER || spec === CUSTOMER_TWO) {
+        if (spec === CUSTOMER || spec === CUSTOMER_TWO || spec === REMEMBER_ME_CUSTOMER) {
             await prisma.customerProfile.upsert({
                 where: { userId: user.id },
                 update: {
                     firstName: 'E2E',
-                    lastName: spec === CUSTOMER ? 'Customer' : 'Customer Two',
+                    lastName: spec === CUSTOMER
+                        ? 'Customer'
+                        : spec === CUSTOMER_TWO ? 'Customer Two' : 'Remember Me Customer',
                     customerNo: `E2E-${user.id}`,
                     companyName: 'E2E Test Company',
-                    phoneNumber: spec === CUSTOMER ? CUSTOMER_PHONE : '905550001122',
+                    phoneNumber: spec === CUSTOMER
+                        ? CUSTOMER_PHONE
+                        : spec === CUSTOMER_TWO ? '905550001122' : '905550003344',
                     contractStatus: 'ACTIVE',
                 },
                 create: {
                     userId: user.id,
                     firstName: 'E2E',
-                    lastName: spec === CUSTOMER ? 'Customer' : 'Customer Two',
+                    lastName: spec === CUSTOMER
+                        ? 'Customer'
+                        : spec === CUSTOMER_TWO ? 'Customer Two' : 'Remember Me Customer',
                     customerNo: `E2E-${user.id}`,
                     companyName: 'E2E Test Company',
-                    phoneNumber: spec === CUSTOMER ? CUSTOMER_PHONE : '905550001122',
+                    phoneNumber: spec === CUSTOMER
+                        ? CUSTOMER_PHONE
+                        : spec === CUSTOMER_TWO ? '905550001122' : '905550003344',
                     contractStatus: 'ACTIVE',
                 },
             });

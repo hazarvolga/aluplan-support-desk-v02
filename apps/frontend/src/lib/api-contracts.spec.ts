@@ -8,12 +8,15 @@ type ContractCase = {
     path: string;
     method?: string;
     body?: unknown;
+    calls?: number;
 };
 
-const jsonResponse = () => ({
-    ok: true,
-    status: 200,
-    text: async () => '{}',
+const jsonResponse = (body: unknown = {}, status = 200) => ({
+    ok: status >= 200 && status < 300,
+    status,
+    statusText: status === 401 ? 'Unauthorized' : 'OK',
+    text: async () => JSON.stringify(body),
+    json: async () => body,
     headers: new Headers(),
     blob: async () => new Blob(['ok']),
 }) as Response;
@@ -36,7 +39,7 @@ describe('API endpoint contracts', () => {
         for (const contract of cases) {
             fetchMock.mockClear();
             await contract.invoke();
-            expect(fetchMock, contract.name).toHaveBeenCalledTimes(1);
+            expect(fetchMock, contract.name).toHaveBeenCalledTimes(contract.calls ?? 1);
             const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
             const parsedUrl = new URL(url, 'http://local.invalid');
             expect(`${parsedUrl.pathname}${parsedUrl.search}`, contract.name).toBe(`/api/v1${contract.path}`);
@@ -51,14 +54,15 @@ describe('API endpoint contracts', () => {
         await verifyCases([
             { name: 'dashboard ops', invoke: () => api.dashboard.ops(14), path: '/dashboard/ops?days=14' },
             { name: 'review summary', invoke: () => api.reviewCenter.summary(), path: '/review-center/summary' },
-            { name: 'auth login', invoke: () => api.auth.login('agent@example.com', 'secret'), path: '/auth/login', method: 'POST', body: { email: 'agent@example.com', password: 'secret' } },
+            { name: 'auth login', invoke: () => api.auth.login('agent@example.com', 'secret'), path: '/auth/login', method: 'POST', body: { email: 'agent@example.com', password: 'secret', rememberMe: false } },
+            { name: 'persistent auth login', invoke: () => api.auth.login('agent@example.com', 'secret', true), path: '/auth/login', method: 'POST', body: { email: 'agent@example.com', password: 'secret', rememberMe: true } },
             { name: 'auth lookup', invoke: () => api.auth.lookup('a+b@example.com'), path: '/auth/lookup', method: 'POST', body: { email: 'a+b@example.com' } },
             { name: 'forgot password', invoke: () => api.auth.forgotPassword('a@example.com'), path: '/auth/forgot-password', method: 'POST', body: { email: 'a@example.com' } },
             { name: 'resend verification', invoke: () => api.auth.resendVerification('a@example.com'), path: '/auth/resend-verification', method: 'POST', body: { email: 'a@example.com' } },
             { name: 'verify email', invoke: () => api.auth.verifyEmail('token'), path: '/auth/verify-email', method: 'POST', body: { token: 'token' } },
             { name: 'reset password', invoke: () => api.auth.resetPassword('token', 'new-secret'), path: '/auth/reset-password', method: 'POST', body: { token: 'token', newPassword: 'new-secret' } },
             { name: 'current user', invoke: () => api.auth.me(), path: '/auth/me' },
-            { name: 'logout', invoke: () => api.auth.logout(), path: '/auth/logout', method: 'POST' },
+            { name: 'logout', invoke: () => api.auth.logout(), path: '/auth/logout', method: 'POST', calls: 2 },
             { name: 'pool sync', invoke: () => api.pool.sync('source-1'), path: '/knowledge-pool/sources/source-1/sync', method: 'POST' },
             { name: 'pool logs', invoke: () => api.pool.logs('source-1'), path: '/knowledge-pool/sources/source-1/logs' },
             { name: 'dataset sync', invoke: () => api.pool.syncDataset(), path: '/knowledge-pool/sync-dataset', method: 'POST' },
@@ -278,5 +282,29 @@ describe('API endpoint contracts', () => {
         expect(fetchMock.mock.calls[0][1]).toEqual(expect.objectContaining({ method: 'GET' }));
 
         expect(api.attachments.getDownloadUrl('attachment-1')).toContain('/attachments/attachment-1/download');
+    });
+
+    it('does not report logout success when backend session revocation fails', async () => {
+        fetchMock
+            .mockRejectedValueOnce(new Error('Backend unavailable'))
+            .mockResolvedValueOnce(jsonResponse());
+
+        await expect(api.auth.logout()).rejects.toMatchObject({ code: 'BACKEND_UNAVAILABLE' });
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(fetchMock.mock.calls[1][0]).toBe('/api/auth/clear-session');
+    });
+
+    it('falls back to refresh-authenticated logout when access has expired', async () => {
+        fetchMock
+            .mockResolvedValueOnce(jsonResponse({}, 401))
+            .mockResolvedValueOnce(jsonResponse({ success: true }))
+            .mockResolvedValueOnce(jsonResponse());
+
+        await expect(api.auth.logout()).resolves.toEqual({ success: true });
+
+        expect(fetchMock).toHaveBeenCalledTimes(3);
+        expect(fetchMock.mock.calls[0][0]).toContain('/auth/logout');
+        expect(fetchMock.mock.calls[1][0]).toContain('/auth/refresh/logout');
+        expect(fetchMock.mock.calls[2][0]).toBe('/api/auth/clear-session');
     });
 });

@@ -8,6 +8,7 @@ const VALID_ENV = {
     JWT_SECRET: 'a'.repeat(32),
     JWT_REFRESH_SECRET: 'b'.repeat(32),
     AUTH_ACTION_JWT_SECRET: 'd'.repeat(32),
+    SESSION_MARKER_SECRET: 'e'.repeat(32),
     ENCRYPTION_KEY: 'c'.repeat(32),
     FRONTEND_URL: 'http://localhost:3000',
     ADMIN_BYPASS_EMAILS: 'admin@example.com',
@@ -28,7 +29,7 @@ describe('validateEnv', () => {
     function setEnv(env: Record<string, string | undefined>) {
         for (const k of [
             'NODE_ENV', 'PORT', 'DATABASE_URL', 'REDIS_URL',
-            'JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'ENCRYPTION_KEY',
+            'JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'SESSION_MARKER_SECRET', 'ENCRYPTION_KEY',
             'FRONTEND_URL', 'SWAGGER_PASSWORD', 'ADMIN_BYPASS_EMAILS',
             'ALLOWED_ORIGINS', 'API_URL', 'LLMAPI_BASE_URL', 'LLMAPI_CHAT_MODEL',
             'LLMAPI_EMBED_MODEL', 'GEMINI_CHAT_MODEL', 'GEMINI_EMBED_MODEL',
@@ -76,7 +77,7 @@ describe('validateEnv', () => {
         expect(validateEnv()).toBeUndefined();
     });
 
-    it.each(['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET'] as const)(
+    it.each(['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'SESSION_MARKER_SECRET'] as const)(
         'rejects known placeholders for %s',
         (key) => {
             setEnv({ ...VALID_ENV, [key]: 'replace-with-a-long-random-secret-value' });
@@ -84,8 +85,8 @@ describe('validateEnv', () => {
         },
     );
 
-    it('requires access, refresh, and action JWT secrets to be pairwise distinct', () => {
-        setEnv({ ...VALID_ENV, AUTH_ACTION_JWT_SECRET: VALID_ENV.JWT_SECRET });
+    it('requires all JWT and session-marker secrets to be pairwise distinct', () => {
+        setEnv({ ...VALID_ENV, SESSION_MARKER_SECRET: VALID_ENV.JWT_SECRET });
         expect(validateEnv()).toBeUndefined();
     });
 

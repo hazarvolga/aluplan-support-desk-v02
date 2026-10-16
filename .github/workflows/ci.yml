@@ -261,6 +261,7 @@ jobs:
             JWT_SECRET: randomSecret(),
             JWT_REFRESH_SECRET: randomSecret(),
             AUTH_ACTION_JWT_SECRET: randomSecret(),
+            SESSION_MARKER_SECRET: randomSecret(),
             ENCRYPTION_KEY: crypto.randomBytes(32).toString('hex'),
             WHATSAPP_APP_SECRET: randomSecret(),
             ADMIN_BYPASS_EMAILS: 'e2e-admin@aluplan.test',
@@ -271,6 +272,8 @@ jobs:
             E2E_CUSTOMER_EMAIL: 'e2e-customer@aluplan.test',
             E2E_CUSTOMER_PASSWORD: randomSecret(),
             E2E_CUSTOMER_PHONE: '905550009988',
+            E2E_REMEMBER_ME_EMAIL: 'e2e-remember-me@aluplan.test',
+            E2E_REMEMBER_ME_PASSWORD: randomSecret(),
           };
           const env = Object.entries(values).map(([name, value]) => `${name}=${value}`).join('\n');
           fs.appendFileSync(process.env.GITHUB_ENV, `${env}\n`, { mode: 0o600 });

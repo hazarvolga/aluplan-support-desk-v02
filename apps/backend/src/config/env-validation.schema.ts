@@ -33,7 +33,8 @@ export const envSchema = z.object({
     JWT_SECRET: jwtSecret('JWT_SECRET'),
     JWT_REFRESH_SECRET: jwtSecret('JWT_REFRESH_SECRET'),
     AUTH_ACTION_JWT_SECRET: jwtSecret('AUTH_ACTION_JWT_SECRET'),
-    JWT_EXPIRES_IN: z.string().default('24h'),
+    SESSION_MARKER_SECRET: jwtSecret('SESSION_MARKER_SECRET'),
+    JWT_EXPIRES_IN: z.string().default('15m'),
     JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
 
     // Security
@@ -151,12 +152,17 @@ export const envSchema = z.object({
     EMBEDDING_DIMENSIONS: z.coerce.number().int().positive().default(3072),
     SWAGGER_PASSWORD: z.string().min(8).optional(),
 }).superRefine((env, ctx) => {
-    const jwtSecrets = [env.JWT_SECRET, env.JWT_REFRESH_SECRET, env.AUTH_ACTION_JWT_SECRET];
+    const jwtSecrets = [
+        env.JWT_SECRET,
+        env.JWT_REFRESH_SECRET,
+        env.AUTH_ACTION_JWT_SECRET,
+        env.SESSION_MARKER_SECRET,
+    ];
     if (new Set(jwtSecrets).size !== jwtSecrets.length) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['AUTH_ACTION_JWT_SECRET'],
-            message: 'JWT_SECRET, JWT_REFRESH_SECRET, and AUTH_ACTION_JWT_SECRET must be distinct',
+            message: 'JWT and session-marker secrets must be distinct',
         });
     }
 

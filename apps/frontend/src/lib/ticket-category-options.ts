@@ -15,24 +15,25 @@ export const LICENSING_CATEGORY_VALUE = 'licensing';
 const ALLPLAN_PRODUCT_NAME = 'ALLPLAN';
 const TECHNICAL_SUPPORT_DEPARTMENT_SLUG = 'technical-support';
 
-export const buildTicketCategoryOptions = (departments: DepartmentOption[]): TicketCategoryOption[] =>
-    departments.flatMap(department => {
-        const option: TicketCategoryOption = {
-            value: department.id,
-            departmentId: department.id,
-            department,
-            isLicensing: false,
-        };
+export const buildTicketCategoryOptions = (departments: DepartmentOption[]): TicketCategoryOption[] => {
+    const technical = departments.find(department => department.slug === TECHNICAL_SUPPORT_DEPARTMENT_SLUG);
+    const licensing = departments.find(department => department.slug === 'billing-payments');
 
-        return department.slug === 'billing-payments'
-            ? [option, {
-                value: LICENSING_CATEGORY_VALUE,
-                departmentId: department.id,
-                department,
-                isLicensing: true,
-            }]
-            : [option];
-    });
+    return [
+        ...(technical ? [{
+            value: technical.id,
+            departmentId: technical.id,
+            department: technical,
+            isLicensing: false,
+        }] : []),
+        ...(licensing ? [{
+            value: LICENSING_CATEGORY_VALUE,
+            departmentId: licensing.id,
+            department: licensing,
+            isLicensing: true,
+        }] : []),
+    ];
+};
 
 export const getTicketCategoryCreateFields = (option?: TicketCategoryOption) => ({
     departmentId: option?.departmentId,

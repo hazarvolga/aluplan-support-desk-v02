@@ -23,6 +23,10 @@ export const TEST_USERS = {
         email: process.env.E2E_CUSTOMER_TWO_EMAIL || 'e2e-customer-two@aluplan.test',
         password: process.env.E2E_CUSTOMER_TWO_PASSWORD || 'E2eCustomerTwo!Pass123',
     },
+    rememberMe: {
+        email: process.env.E2E_REMEMBER_ME_EMAIL || 'e2e-remember-me@aluplan.test',
+        password: process.env.E2E_REMEMBER_ME_PASSWORD || 'E2eRememberMe!Pass123',
+    },
 } as const;
 
 interface LoginOptions {

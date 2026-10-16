@@ -97,7 +97,7 @@ test('CI E2E uses isolated PostgreSQL and Redis with synthetic-only boot configu
     const secretStep = job.match(/- name: Generate disposable E2E secrets\n([\s\S]*?)(?=^      - )/m)?.[1];
     assert.ok(secretStep, 'ephemeral E2E secrets must be generated at runtime');
     assert.match(secretStep, /crypto\.randomBytes\(32\)/);
-    for (const name of ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'ENCRYPTION_KEY',
+    for (const name of ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'SESSION_MARKER_SECRET', 'ENCRYPTION_KEY',
         'ADMIN_BYPASS_EMAILS', 'E2E_ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD', 'E2E_AGENT_EMAIL', 'E2E_AGENT_PASSWORD',
         'E2E_CUSTOMER_EMAIL', 'E2E_CUSTOMER_PASSWORD', 'E2E_CUSTOMER_PHONE']) {
         assert.match(secretStep, new RegExp(`${name}:`), `${name} must be generated for the isolated E2E job`);

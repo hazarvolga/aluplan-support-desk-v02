@@ -79,11 +79,8 @@ const getTicketSchema = (t: TicketTranslator) => z.object({
     allplanVersion: z.string().max(64).optional(),
     allplan2024ReleaseBand: z.enum(['UP_TO_2024_1_10', 'FROM_2024_2_0', 'UNKNOWN']).optional(),
     licenseTopology: z.enum(['SINGLE_USER', 'LICENSE_SERVER', 'UNKNOWN']).optional(),
-    licenseIssueType: z.enum(['ACTIVATION', 'TRANSFER', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER']).optional(),
+    licenseIssueType: z.enum(['ACTIVATION', 'TRANSFER', 'FORMAT_REINSTALL', 'LOGIN', 'SEAT', 'OFFLINE']).optional(),
     licenseUserRole: z.enum(['END_USER', 'LICENSE_ADMIN', 'UNKNOWN']).optional(),
-    allplanIdStatus: z.enum(['AVAILABLE', 'UNAVAILABLE', 'UNKNOWN']).optional(),
-    organizationInviteStatus: z.enum(['ACCEPTED', 'MISSING', 'UNKNOWN']).optional(),
-    licenseGroupStatus: z.enum(['ASSIGNED', 'MISSING', 'UNKNOWN']).optional(),
 });
 
 type TicketFormValues = z.infer<ReturnType<typeof getTicketSchema>>;
@@ -289,10 +286,7 @@ export default function NewTicketPage() {
             allplan2024ReleaseBand: undefined,
             licenseTopology: undefined,
             licenseIssueType: undefined,
-            licenseUserRole: 'UNKNOWN',
-            allplanIdStatus: 'UNKNOWN',
-            organizationInviteStatus: 'UNKNOWN',
-            licenseGroupStatus: 'UNKNOWN',
+            licenseUserRole: 'LICENSE_ADMIN',
         },
     });
 
@@ -482,9 +476,6 @@ export default function NewTicketPage() {
                 licenseTopology: values.licenseTopology,
                 licenseIssueType: values.licenseIssueType,
                 licenseUserRole: values.licenseUserRole,
-                allplanIdStatus: values.allplanIdStatus,
-                organizationInviteStatus: values.organizationInviteStatus,
-                licenseGroupStatus: values.licenseGroupStatus,
             } : undefined;
             const resolvedResponse = await api.ai.query(buildDiagnosisQuery(subject, effectiveDescription), context, pId, locale, [], attachments, true, false, undefined, Boolean(context), canonicalAllplanVersion || undefined, licensingIntake, isLicensingIntakeVisible ? 'ALLPLAN_LICENSING' : 'GENERIC') as
                 { answer?: string; visuals?: AiVisualEvidenceItem[]; interactionId?: string; answerMode?: 'LLM' | 'FALLBACK'; languageMismatch?: boolean; confidence?: string } | null;
@@ -779,7 +770,7 @@ export default function NewTicketPage() {
                                                     <Select value={field.value} onValueChange={field.onChange}>
                                                         <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue placeholder={t('licensing_intake.topology_placeholder')} /></SelectTrigger></FormControl>
                                                         <SelectContent>
-                                                            {(['SINGLE_USER', 'LICENSE_SERVER', 'UNKNOWN'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.topology.${value}`)}</SelectItem>)}
+                                                            {(['SINGLE_USER', 'LICENSE_SERVER'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.topology.${value}`)}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                     <FormMessage />
@@ -803,70 +794,12 @@ export default function NewTicketPage() {
                                             )}
                                         />}
                                         {allplanReleaseFamily === 'CLOUD_2024_2_PLUS' && <>
-                                        <FormField
-                                            control={form.control}
-                                            name="licenseUserRole"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>{t('licensing_intake.user_role_label')}</FormLabel>
-                                                    <Select value={field.value} onValueChange={field.onChange}>
-                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
-                                                        <SelectContent>
-                                                            {(['END_USER', 'LICENSE_ADMIN', 'UNKNOWN'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.user_role.${value}`)}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="allplanIdStatus"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>{t('licensing_intake.allplan_id_label')}</FormLabel>
-                                                    <Select value={field.value} onValueChange={field.onChange}>
-                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
-                                                        <SelectContent>
-                                                            {(['AVAILABLE', 'UNAVAILABLE', 'UNKNOWN'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.allplan_id.${value}`)}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="organizationInviteStatus"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>{t('licensing_intake.invite_label')}</FormLabel>
-                                                    <Select value={field.value} onValueChange={field.onChange}>
-                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
-                                                        <SelectContent>
-                                                            {(['ACCEPTED', 'MISSING', 'UNKNOWN'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.invite.${value}`)}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="licenseGroupStatus"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>{t('licensing_intake.group_label')}</FormLabel>
-                                                    <Select value={field.value} onValueChange={field.onChange}>
-                                                        <FormControl><SelectTrigger className="border-white/10 bg-slate-950/60"><SelectValue /></SelectTrigger></FormControl>
-                                                        <SelectContent>
-                                                            {(['ASSIGNED', 'MISSING', 'UNKNOWN'] as const).map(value => <SelectItem key={value} value={value}>{t(`licensing_intake.group.${value}`)}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                        <div className="rounded-lg border border-brand-500/15 bg-slate-950/40 px-3 py-3 text-xs text-slate-300">
+                                            <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                                {t('licensing_intake.user_role_label')}
+                                            </span>
+                                            <span className="mt-1 block">{t('licensing_intake.user_role.LICENSE_ADMIN')}</span>
+                                        </div>
                                         </>}
                                     </div>
                                     {officialLicensingResources.length > 0 && (

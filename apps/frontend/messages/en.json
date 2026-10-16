@@ -66,6 +66,7 @@
     "email_placeholder": "operator@aluplan.com",
     "password_label": "VERIFICATION_KEY [PASSWORD]",
     "password_placeholder": "••••••••",
+    "remember_me": "Remember me",
     "recovery_link": "FORGOT PASSWORD",
     "submit_button": "START SESSION",
     "submitting": "ESTABLISHING_CONNECTION...",
@@ -738,7 +739,7 @@
         "actions": "Actions"
       },
       "category": {
-        "licensing": "License & Activation"
+        "licensing": "License Support"
       },
       "badges": {
         "kb_sync": "KB_SYNC",
@@ -882,7 +883,7 @@
       "channel_label": "Request Channel",
       "priority_label": "Priority",
       "category_label": "Category",
-      "category_licensing": "License & Activation",
+      "category_licensing": "License Support",
       "open_date": "Created on",
       "assignee_label": "Assigned Agent",
       "assign_placeholder": "Select support expert",
@@ -965,51 +966,22 @@
         "issue_label": "Requested action / issue",
         "issue_placeholder": "Select the action or issue type",
         "ai_gate_notice": "The release family, license usage model, and issue type are required for AI guidance. If you do not know the 2024 build, select its release range or send the request directly to support.",
-        "allplan_id_label": "ALLPLAN ID access",
         "user_role_label": "Your licensing role",
-        "invite_label": "Organization invitation",
-        "group_label": "License group / license visibility",
         "user_role": {
-          "END_USER": "I am the end user",
-          "LICENSE_ADMIN": "I manage the Connect organization / licenses",
-          "UNKNOWN": "I don't know"
+          "LICENSE_ADMIN": "I am the license administrator of the Connect platform"
         },
         "topology": {
-          "SINGLE_USER": "Single user",
-          "LICENSE_SERVER": "License server / network license",
+          "SINGLE_USER": "Node-Locked License / Computer-locked license",
+          "LICENSE_SERVER": "Floating License / Shared license",
           "UNKNOWN": "I don't know"
         },
         "issue": {
           "ACTIVATION": "Activation",
-          "TRANSFER": "New computer / transfer",
-          "LOGIN": "Sign-in / session issue",
-          "INVITATION": "Organization invitation",
-          "SEAT": "License / seat is not visible",
-          "OFFLINE": "Offline use / borrowing",
-          "OTHER": "Other / I don't know"
-        },
-        "allplan_id": {
-          "AVAILABLE": "I can access it",
-          "UNAVAILABLE": "No access / no account",
-          "UNKNOWN": "I don't know",
-          "NOT_APPLICABLE": "Not applicable"
-        },
-        "invite": {
-          "ACCEPTED": "Accepted",
-          "MISSING": "Missing / not accepted",
-          "UNKNOWN": "I don't know",
-          "NOT_APPLICABLE": "Not applicable"
-        },
-        "seat": {
-          "ASSIGNED": "Appears assigned",
-          "MISSING": "Missing / not visible",
-          "UNKNOWN": "I don't know",
-          "NOT_APPLICABLE": "Not applicable"
-        },
-        "group": {
-          "ASSIGNED": "Assigned to a group / license is visible",
-          "MISSING": "No group assignment / license is not visible",
-          "UNKNOWN": "I don't know"
+          "TRANSFER": "Move the license to a new computer",
+          "FORMAT_REINSTALL": "I formatted the computer",
+          "LOGIN": "I cannot sign in to my account",
+          "SEAT": "License is not visible",
+          "OFFLINE": "Offline use / borrowing"
         },
         "official_resources_title": "Official ALLPLAN resources for your release",
         "official_resource": {
@@ -1022,17 +994,14 @@
           "ALLPLAN release; enter only the year if the build is unknown (for example 2024)",
           "Single-user license or license server/network license",
           "The visible error and the action you are trying to perform",
-          "For 2024-2-0 and later: ALLPLAN ID, organization invitation, and seat status"
+          "For 2024-2-0 and later: Connect platform license-administrator flow"
         ],
         "validation": {
           "allplanVersion": "Enter the ALLPLAN release you know or confirm current Hotinfo before AI diagnosis.",
           "allplan2024ReleaseBand": "Select the release range so the 2024 licensing method can be determined.",
           "licenseTopology": "Select the license usage model before AI diagnosis.",
           "licenseIssueType": "Select the requested action or issue type before AI diagnosis.",
-          "allplanIdStatus": "Select your ALLPLAN ID access status.",
-          "organizationInviteStatus": "Select your organization invitation status.",
-          "licenseGroupStatus": "Select the license group / visibility status.",
-          "licenseUserRole": "Select your role in the licensing process."
+          "licenseUserRole": "This flow is only for the Connect platform license administrator."
         }
       },
       "departments": {
@@ -1040,7 +1009,7 @@
         "billing_payments": "Billing & Payments",
         "sales_pre_sales": "Sales & Pre-Sales",
         "general_support": "General Support",
-        "licensing": "License & Activation",
+        "licensing": "License Support",
         "customer_success": "Customer Success",
         "general_inquiries": "General Inquiries",
         "security_compliance": "Security & Compliance"

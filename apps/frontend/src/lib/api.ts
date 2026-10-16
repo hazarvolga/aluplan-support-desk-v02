@@ -1,4 +1,5 @@
 import { env } from './env';
+import { clearBrowserSessionCookies } from './session-cleanup';
 
 const CLIENT_API = env.apiUrl;
 const SERVER_API = (typeof process !== 'undefined' && process.env ? process.env.NEXT_INTERNAL_API_URL : undefined) ?? CLIENT_API;
@@ -661,11 +662,17 @@ const refreshAndRetry = async (path: string, fetchOptions: RequestInit) => {
         const refreshRes = await safeFetch(`${getApiUrl()}/auth/refresh`, {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            }
         });
 
         if (!refreshRes.ok) {
             processQueue(new Error('Session expired'));
+            // The marker cookie is shared across tabs. An automatic refresh failure
+            // cannot safely identify which tab/session it belongs to, so only an
+            // explicit logout may clear it. The API still fails closed here.
             throw new ApiRequestError('common.session_expired', 'SESSION_EXPIRED');
         }
 
@@ -820,10 +827,10 @@ export const api = {
         summary: () => request<ReviewCenterSummary>('/review-center/summary'),
     },
     auth: {
-        login: (email: string, password: string) =>
+        login: (email: string, password: string, rememberMe = false) =>
             request<{ user: { id: string; email: string; fullName: string } }>('/auth/login', {
                 method: 'POST',
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password, rememberMe }),
             }),
         lookup: (email: string) =>
             request<{ action: 'CLAIM' | 'NEW' | 'NEW_MATCHED_COMPANY' | 'CRM_REJECTED' | 'DELETED' | 'INACTIVE'; companyName: string | null; errorMessage?: string; status?: string }>('/auth/lookup', {
@@ -866,7 +873,29 @@ export const api = {
                 [key: string]: unknown;
             }
         }>('/auth/me'),
-        logout: () => request<{ success: boolean }>('/auth/logout', { method: 'POST' }),
+        logout: async () => {
+            try {
+                const options: RequestInit = {
+                    method: 'POST',
+                    credentials: 'include',
+                    cache: 'no-store',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                };
+                let response = await safeFetch(`${getApiUrl()}/auth/logout`, options);
+                if (response.status === 401 || response.status === 403) {
+                    response = await safeFetch(`${getApiUrl()}/auth/refresh/logout`, options);
+                }
+                if (!response.ok) {
+                    const code = response.status === 401 || response.status === 403
+                        ? 'SESSION_EXPIRED'
+                        : 'API_ERROR';
+                    throw new ApiRequestError(`HTTP ${response.status}: ${response.statusText}`, code);
+                }
+                return { success: true };
+            } finally {
+                await clearBrowserSessionCookies();
+            }
+        },
     },
     pool: {
         list: () => request<KnowledgeSource[]>('/knowledge-pool/sources'),

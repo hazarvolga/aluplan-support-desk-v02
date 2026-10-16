@@ -154,6 +154,25 @@ describe('api.ts', () => {
         expect(isBackendUnavailableError(error)).toBe(true);
     });
 
+    it('does not clear the shared marker on an automatic refresh failure', async () => {
+        fetchMock
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 401,
+                statusText: 'Unauthorized',
+                json: async () => ({ message: 'Unauthorized' }),
+            } as Response)
+            .mockResolvedValueOnce({
+            ok: false,
+            status: 401,
+            statusText: 'Unauthorized',
+            json: async () => ({ message: 'Unauthorized' }),
+        } as Response);
+
+        await expect(api.auth.me()).rejects.toMatchObject({ code: 'SESSION_EXPIRED' });
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
     describe('api.pool', () => {
         it('should list pools', async () => {
             fetchMock.mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify([{ id: 1 }]) } as Response);

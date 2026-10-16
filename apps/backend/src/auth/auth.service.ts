@@ -18,6 +18,9 @@ const EMAIL_VERIFICATION_AUDIENCE = 'aluplan:email-verification';
 const PASSWORD_RESET_AUDIENCE = 'aluplan:password-reset';
 const AUTH_ACTION_ISSUER = 'aluplan-support';
 const AUTH_ACTION_ALGORITHM = 'HS256' as const;
+const REMEMBER_ME_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+const SESSION_MARKER_ISSUER = 'aluplan-support';
+const SESSION_MARKER_AUDIENCE = 'aluplan:session-marker';
 
 function hashActionTokenJti(jti: string): string {
     return crypto.createHash('sha256').update(jti).digest('hex');
@@ -86,6 +89,8 @@ export class AuthService {
 
             const tokens = await this.generateTokens(
                 user.id, user.email, user.fullName, role, permissions, user.sessionVersion ?? 0,
+                dto.rememberMe === true,
+                dto.rememberMe === true ? Date.now() + REMEMBER_ME_DURATION_MS : undefined,
             );
 
             await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
@@ -107,7 +112,13 @@ export class AuthService {
         }
     }
 
-    async refreshTokens(userId: string, refreshToken: string, tokenSessionVersion = 0) {
+    async refreshTokens(
+        userId: string,
+        refreshToken: string,
+        tokenSessionVersion = 0,
+        rememberMe = false,
+        rememberMeExpiresAt?: number,
+    ) {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (
             !user
@@ -135,8 +146,19 @@ export class AuthService {
         }
         const { role, permissions } = authority;
 
+        if (rememberMe && (
+            typeof rememberMeExpiresAt !== 'number'
+            || !Number.isFinite(rememberMeExpiresAt)
+            || rememberMeExpiresAt <= Date.now()
+            || rememberMeExpiresAt > Date.now() + REMEMBER_ME_DURATION_MS
+        )) {
+            throw new ForbiddenException('Access denied');
+        }
+
         const tokens = await this.generateTokens(
             userId, user.email, user.fullName, role, permissions, user.sessionVersion ?? 0,
+            rememberMe,
+            rememberMeExpiresAt,
         );
         const nextRefreshTokenHash = await this.hashRefreshToken(tokens.refresh_token);
         const rotated = await this.prisma.user.updateMany({
@@ -156,7 +178,12 @@ export class AuthService {
         return tokens;
     }
 
-    async logout(userId: string, jti?: string, expiration?: number) {
+    async logout(
+        userId: string,
+        jti?: string,
+        expiration?: number,
+        tokenSessionVersion = 0,
+    ) {
         const nowSeconds = Date.now() / 1000;
         if (typeof expiration !== 'number' || !Number.isFinite(expiration) || expiration <= nowSeconds) {
             throw new UnauthorizedException('Invalid session');
@@ -171,14 +198,66 @@ export class AuthService {
             return { success: true };
         }
 
-        await this.prisma.user.updateMany({
-            where: { id: userId, refreshTokenHash: { not: null } },
-            data: { refreshTokenHash: null }
+        const revoked = await this.prisma.user.updateMany({
+            where: { id: userId, sessionVersion: tokenSessionVersion },
+            data: { refreshTokenHash: null, sessionVersion: { increment: 1 } },
         });
+        if (revoked.count !== 1) {
+            throw new UnauthorizedException('Invalid session');
+        }
 
-        // Retain revocation until the verified token actually expires, including long-lived tokens.
+        // Session-version invalidation is the durable security boundary. Redis remains an
+        // optimization for rejecting this exact JWT without another database decision.
         const remainingLifetime = Math.max(1, Math.ceil(expiration - nowSeconds));
-        await this.redisService.set(`jwt:blacklist:${jti}`, 'revoked', remainingLifetime);
+        try {
+            await this.redisService.set(`jwt:blacklist:${jti}`, 'revoked', remainingLifetime);
+        } catch (error) {
+            this.logger.warn(
+                `Redis logout marker failed after durable invalidation for user ${userId}`,
+                error instanceof Error ? error.stack : String(error),
+            );
+        }
+
+        return { success: true };
+    }
+
+    async logoutRefreshSession(
+        userId: string,
+        refreshToken: string,
+        tokenSessionVersion = 0,
+    ) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (
+            !user
+            || user.status !== 'ACTIVE'
+            || user.deletedAt
+            || !user.refreshTokenHash
+            || (user.sessionVersion ?? 0) !== tokenSessionVersion
+        ) {
+            throw new ForbiddenException('Access denied');
+        }
+
+        const refreshTokenMatches = await this.verifyRefreshToken(
+            refreshToken,
+            user.refreshTokenHash,
+        );
+        if (!refreshTokenMatches) {
+            throw new ForbiddenException('Access denied');
+        }
+
+        const revoked = await this.prisma.user.updateMany({
+            where: {
+                id: user.id,
+                status: 'ACTIVE',
+                deletedAt: null,
+                sessionVersion: user.sessionVersion ?? 0,
+                refreshTokenHash: user.refreshTokenHash,
+            },
+            data: { refreshTokenHash: null, sessionVersion: { increment: 1 } },
+        });
+        if (revoked.count !== 1) {
+            throw new ForbiddenException('Access denied');
+        }
 
         return { success: true };
     }
@@ -575,25 +654,55 @@ export class AuthService {
         role: string,
         permissions: string[],
         sessionVersion: number,
+        rememberMe = false,
+        rememberMeExpiresAt?: number,
     ) {
+        const now = Date.now();
+        const absoluteExpiry = rememberMe ? rememberMeExpiresAt : undefined;
+        if (rememberMe && (
+            typeof absoluteExpiry !== 'number'
+            || !Number.isFinite(absoluteExpiry)
+            || absoluteExpiry <= now
+            || absoluteExpiry > now + REMEMBER_ME_DURATION_MS
+        )) {
+            throw new ForbiddenException('Access denied');
+        }
+        const refreshExpiresIn = rememberMe
+            ? Math.max(1, Math.ceil((absoluteExpiry! - now) / 1000))
+            : this.config.get('JWT_REFRESH_EXPIRES_IN', '7d');
         const jti = crypto.randomUUID();
         const payload = {
             sub: userId, email, fullName, role, permissions, jti,
-            sessionIssuedAt: Date.now(), sessionVersion,
+            sessionIssuedAt: now, sessionVersion, rememberMe,
+            ...(absoluteExpiry ? { rememberMeExpiresAt: absoluteExpiry } : {}),
         };
 
-        const [accessToken, refreshToken] = await Promise.all([
+        const [accessToken, refreshToken, sessionMarker] = await Promise.all([
             this.jwtService.signAsync(payload, {
                 secret: this.config.get('JWT_SECRET'),
-                expiresIn: this.config.get('JWT_EXPIRES_IN', '1h'),
+                expiresIn: this.config.get('JWT_EXPIRES_IN', '15m'),
             }),
             this.jwtService.signAsync(payload, {
                 secret: this.config.get('JWT_REFRESH_SECRET'),
-                expiresIn: this.config.get('JWT_REFRESH_EXPIRES_IN', '7d'),
+                expiresIn: refreshExpiresIn,
+            }),
+            this.jwtService.signAsync({
+                sub: userId,
+                purpose: 'session-marker',
+            }, {
+                secret: this.config.get('SESSION_MARKER_SECRET'),
+                expiresIn: refreshExpiresIn,
+                issuer: SESSION_MARKER_ISSUER,
+                audience: SESSION_MARKER_AUDIENCE,
             }),
         ]);
 
-        return { access_token: accessToken, refresh_token: refreshToken };
+        return {
+            access_token: accessToken,
+            refresh_token: refreshToken,
+            session_marker: sessionMarker,
+            ...(absoluteExpiry ? { remember_me_expires_at: absoluteExpiry } : {}),
+        };
     }
 
     private async findUserByEmail(email: string) {
