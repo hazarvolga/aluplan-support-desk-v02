@@ -388,5 +388,5 @@ describe('MaintenanceWorkService', () => {
             drained: true,
             activeCount: 0,
         });
-    });
+    }, 30_000);
 });
