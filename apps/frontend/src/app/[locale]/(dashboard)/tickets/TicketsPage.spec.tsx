@@ -80,6 +80,27 @@ describe('TicketsPage', () => {
         expect(screen.getByText('table.header.subject')).toBeDefined();
     });
 
+    it('shows readable support categories for persisted department keys', async () => {
+        mockUseAuth({ role: 'ADMIN' });
+
+        render(<TicketsClient initialTickets={[
+            {
+                id: 'licensing-key', ticketNumber: 'SUP-00210', subject: 'Connect license',
+                status: 'NEW', priority: 'URGENT', channel: 'WEB', createdAt: '2026-10-18T14:37:00.000Z',
+                department: { name: 'TICKETS.DEPARTMENTS.LICENSING' },
+            },
+            {
+                id: 'technical-key', ticketNumber: 'SUP-00205', subject: 'Technical issue',
+                status: 'NEW', priority: 'URGENT', channel: 'WEB', createdAt: '2026-10-12T10:38:00.000Z',
+                department: { name: 'TICKETS.DEPARTMENTS.TECHNICAL_SUPPORT' },
+            },
+        ]} initialTotal={2} />);
+
+        expect(await screen.findByText('departments.licensing')).toBeInTheDocument();
+        expect(screen.getByText('departments.technical_support')).toBeInTheDocument();
+        expect(screen.queryByText(/TICKETS\.DEPARTMENTS\./)).not.toBeInTheDocument();
+    });
+
     it('sorts the current ticket page by category when the category header is clicked', async () => {
         mockUseAuth({ role: 'ADMIN' } );
 
