@@ -54,7 +54,7 @@ describe('UsersService (Integration)', () => {
             fullName: 'Integration Test User',
         };
 
-        const user = await service.create(userData);
+        const user = await service.create(userData, { id: 'integration-admin', role: 'ADMIN' });
 
         const persistedUser = await prisma.user.findUnique({
             where: { email: userData.email },
