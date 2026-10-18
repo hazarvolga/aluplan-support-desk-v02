@@ -5,6 +5,9 @@ import { useAuth } from '@/components/auth/role-guard';
 import { server } from '@/test/setup';
 import { delay, http, HttpResponse } from 'msw';
 import { useSearchParams } from 'next/navigation';
+import trMessages from '../../../../../messages/tr.json';
+import enMessages from '../../../../../messages/en.json';
+import deMessages from '../../../../../messages/de.json';
 
 // Mock the Auth Hook
 vi.mock('@/components/auth/role-guard', () => ({
@@ -18,6 +21,23 @@ const mockUseAuth = (user: unknown) => {
 };
 
 describe('TicketsPage', () => {
+    it('has readable category labels at the same translation path in every locale', () => {
+        expect(trMessages.tickets.new.departments.licensing).toBe('Lisans Desteği');
+        expect(trMessages.tickets.new.departments.technical_support).toBe('Teknik Destek');
+        const categoryKeys = [
+            'technical_support', 'billing_payments', 'sales_pre_sales',
+            'general_support', 'licensing', 'customer_success',
+            'general_inquiries', 'security_compliance',
+        ] as const;
+        for (const messages of [trMessages, enMessages, deMessages]) {
+            for (const key of categoryKeys) {
+                const label = messages.tickets.new.departments[key];
+                expect(label.trim()).not.toBe('');
+                expect(label).not.toContain('departments.');
+            }
+        }
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         // Mock confirm
@@ -75,7 +95,7 @@ describe('TicketsPage', () => {
 
         // The shared next-intl test mock returns translation keys. The display
         // helper's localized value is covered separately in its focused tests.
-        expect(await screen.findByText('departments.licensing')).toBeDefined();
+        expect(await screen.findByText('new.departments.licensing')).toBeDefined();
         expect(screen.getByText('table.header.category')).toBeDefined();
         expect(screen.getByText('table.header.subject')).toBeDefined();
     });
@@ -96,8 +116,8 @@ describe('TicketsPage', () => {
             },
         ]} initialTotal={2} />);
 
-        expect(await screen.findByText('departments.licensing')).toBeInTheDocument();
-        expect(screen.getByText('departments.technical_support')).toBeInTheDocument();
+        expect(await screen.findByText('new.departments.licensing')).toBeInTheDocument();
+        expect(screen.getByText('new.departments.technical_support')).toBeInTheDocument();
         expect(screen.queryByText(/TICKETS\.DEPARTMENTS\./)).not.toBeInTheDocument();
     });
 
@@ -121,12 +141,12 @@ describe('TicketsPage', () => {
         fireEvent.click(sortCategory);
 
         const rows = screen.getAllByRole('row');
-        expect(rows[1]).toHaveTextContent('departments.licensing');
-        expect(rows[2]).toHaveTextContent('departments.technical_support');
+        expect(rows[1]).toHaveTextContent('new.departments.licensing');
+        expect(rows[2]).toHaveTextContent('new.departments.technical_support');
 
         fireEvent.click(sortCategory);
         const reversedRows = screen.getAllByRole('row');
-        expect(reversedRows[1]).toHaveTextContent('departments.technical_support');
+        expect(reversedRows[1]).toHaveTextContent('new.departments.technical_support');
     });
 
     it('shows bulk actions only when tickets are selected (Admin)', async () => {

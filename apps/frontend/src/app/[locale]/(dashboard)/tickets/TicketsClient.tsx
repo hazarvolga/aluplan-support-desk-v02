@@ -145,14 +145,14 @@ export default function TicketsClient({ initialTickets, initialTotal }: TicketsC
     const isAdmin = roleStr === 'ADMIN' || roleStr === 'DEPARTMENT_MANAGER' || roleStr === 'TEAM_LEAD' || roleStr === 'SENIOR_AGENT';
     const canScopeTickets = Boolean(user && !isCustomer);
     const supportCategoryLabels: TicketSupportCategoryLabels = {
-        technical_support: t('departments.technical_support'),
-        billing_payments: t('departments.billing_payments'),
-        sales_pre_sales: t('departments.sales_pre_sales'),
-        general_support: t('departments.general_support'),
-        licensing: t('departments.licensing'),
-        customer_success: t('departments.customer_success'),
-        general_inquiries: t('departments.general_inquiries'),
-        security_compliance: t('departments.security_compliance'),
+        technical_support: t('new.departments.technical_support'),
+        billing_payments: t('new.departments.billing_payments'),
+        sales_pre_sales: t('new.departments.sales_pre_sales'),
+        general_support: t('new.departments.general_support'),
+        licensing: t('new.departments.licensing'),
+        customer_success: t('new.departments.customer_success'),
+        general_inquiries: t('new.departments.general_inquiries'),
+        security_compliance: t('new.departments.security_compliance'),
     };
 
     const toggleSort = (nextKey: SortKey) => {
