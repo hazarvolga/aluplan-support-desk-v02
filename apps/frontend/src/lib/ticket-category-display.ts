@@ -48,11 +48,19 @@ const CATEGORY_ALIASES: Record<string, keyof TicketSupportCategoryLabels> = {
     security_compliance: 'security_compliance',
 };
 
+const resolveTicketCategoryAlias = (value: string) => {
+    const normalized = normalizeTicketCategoryKey(value);
+    const departmentKey = normalized.startsWith('tickets.departments.')
+        ? normalized.slice('tickets.departments.'.length)
+        : normalized;
+
+    return CATEGORY_ALIASES[departmentKey];
+};
+
 export const getTicketCategoryDisplayName = (value: unknown, labels: TicketSupportCategoryLabels) => {
     if (typeof value !== 'string' || !value.trim()) return '';
 
-    const normalized = normalizeTicketCategoryKey(value);
-    const alias = CATEGORY_ALIASES[normalized];
+    const alias = resolveTicketCategoryAlias(value);
     if (alias && labels[alias]) return labels[alias];
 
     return value.trim();
@@ -66,10 +74,9 @@ type TicketCategorySource = {
 
 export const getTicketSupportCategoryNames = (ticket: TicketCategorySource, labels: TicketSupportCategoryLabels): string[] => {
     const departmentValue = ticket.department?.slug || ticket.department?.name;
-    const normalizedSlug = typeof ticket.department?.slug === 'string'
-        ? normalizeTicketCategoryKey(ticket.department.slug)
-        : '';
-    const slugAlias = normalizedSlug ? CATEGORY_ALIASES[normalizedSlug] : undefined;
+    const slugAlias = ticket.department?.slug
+        ? resolveTicketCategoryAlias(ticket.department.slug)
+        : undefined;
     const departmentCategory = slugAlias && labels[slugAlias]
         ? labels[slugAlias]
         : getTicketCategoryDisplayName(ticket.department?.name || departmentValue, labels);
