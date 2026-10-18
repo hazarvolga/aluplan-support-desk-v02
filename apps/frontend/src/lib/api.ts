@@ -1124,6 +1124,8 @@ export const api = {
         getCopilotDraft: (ticketId: string) => request<{
             draft: string;
             model: string;
+            reviewReason?: 'NO_RESULTS' | 'BELOW_THRESHOLD' | 'LICENSE_ERA_MISMATCH' | 'MISSING_LICENSING_INTAKE' | 'GENERATION_ERROR';
+            sources?: Array<{ title: string; sourceType?: string; similarity: number }>;
             visuals?: Array<{
                 url: string;
                 alt?: string;

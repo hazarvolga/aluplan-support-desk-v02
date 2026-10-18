@@ -1,7 +1,32 @@
-import { IsString, IsEnum, IsOptional, IsUUID, MinLength, MaxLength, IsObject } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsString, IsEnum, IsOptional, IsUUID, MinLength, MaxLength, IsObject, Equals, ValidateNested, IsIn, IsArray } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TicketPriority, CommunicationChannel } from '@aluplan/database';
+
+export class TicketLicensingIntakeDto {
+    @Equals('licensing')
+    categoryKey: 'licensing';
+
+    @IsString()
+    @MaxLength(128)
+    allplanVersion: string;
+
+    @IsOptional()
+    @IsIn(['UP_TO_2024_1_10', 'FROM_2024_2_0', 'UNKNOWN'])
+    allplan2024ReleaseBand?: 'UP_TO_2024_1_10' | 'FROM_2024_2_0' | 'UNKNOWN';
+
+    @IsOptional()
+    @IsIn(['SINGLE_USER', 'LICENSE_SERVER', 'UNKNOWN'])
+    licenseTopology?: 'SINGLE_USER' | 'LICENSE_SERVER' | 'UNKNOWN';
+
+    @IsOptional()
+    @IsIn(['ACTIVATION', 'TRANSFER', 'FORMAT_REINSTALL', 'LOGIN', 'SEAT', 'OFFLINE'])
+    licenseIssueType?: 'ACTIVATION' | 'TRANSFER' | 'FORMAT_REINSTALL' | 'LOGIN' | 'SEAT' | 'OFFLINE';
+
+    @IsOptional()
+    @IsIn(['END_USER', 'LICENSE_ADMIN', 'UNKNOWN'])
+    licenseUserRole?: 'END_USER' | 'LICENSE_ADMIN' | 'UNKNOWN';
+}
 
 export class CreateTicketDto {
     @ApiProperty({ example: 'Login sayfasında hata alıyorum' })
@@ -22,6 +47,8 @@ export class CreateTicketDto {
 
     @ApiPropertyOptional({ example: ['login', 'hata'] })
     @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
     tags?: string[];
 
     @ApiPropertyOptional({ description: 'If created from an AI interaction' })
@@ -44,6 +71,13 @@ export class CreateTicketDto {
     @IsObject()
     @IsOptional()
     hotinfoContext?: Record<string, unknown>;
+
+    @ApiPropertyOptional({ type: TicketLicensingIntakeDto, description: 'Validated ALLPLAN licensing selections' })
+    @IsOptional()
+    @IsObject()
+    @ValidateNested()
+    @Type(() => TicketLicensingIntakeDto)
+    licensingIntake?: TicketLicensingIntakeDto;
 
     @ApiPropertyOptional({ enum: CommunicationChannel, default: CommunicationChannel.WEB })
     @IsEnum(CommunicationChannel)

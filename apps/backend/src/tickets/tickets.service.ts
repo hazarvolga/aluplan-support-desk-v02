@@ -27,6 +27,7 @@ import { TicketAccessService } from '../common/services/ticket-access.service';
 import { MaintenanceWorkService } from '../common/services/maintenance-work.service';
 import { ResolutionDecisionDto } from './dto/ticket-lifecycle.dto';
 import { sanitizeHotinfoContext } from '../common/utils/hotinfo-context';
+import { validateAllplanLicensingIntake } from '../ai/allplan-licensing-policy.service';
 
 const ALLPLAN_PRODUCT_NAME = 'ALLPLAN';
 const TECHNICAL_SUPPORT_DEPARTMENT_SLUG = 'technical-support';
@@ -96,6 +97,11 @@ export class TicketsService {
                 this.logger.log(`🎫 Reusing ticket ${existingTicket.ticketNumber} for AI interaction ${dto.interactionId}`);
                 return { ...existingTicket, alreadyCreated: true };
             }
+            const ownedInteraction = await this.prisma.aiInteraction.findFirst({
+                where: { id: dto.interactionId, userId: createdByUserId },
+                select: { id: true },
+            });
+            if (!ownedInteraction) throw new ForbiddenException('AI interaction does not belong to this user');
         }
 
         let productName: string | undefined;
@@ -136,6 +142,17 @@ export class TicketsService {
                 throw new BadRequestException('Hotinfo is required for ALLPLAN technical support tickets');
             }
         }
+        const isAllplanLicensing = productName?.trim().toUpperCase() === ALLPLAN_PRODUCT_NAME
+            && department?.slug === 'billing-payments';
+        if (isAllplanLicensing && !dto.licensingIntake) {
+            throw new BadRequestException('ALLPLAN licensing intake is required for this support category');
+        }
+        if (dto.licensingIntake && !isAllplanLicensing) {
+            throw new BadRequestException('ALLPLAN licensing intake requires the licensing support category');
+        }
+        const validatedLicensing = dto.licensingIntake
+            ? validateAllplanLicensingIntake(dto.licensingIntake)
+            : undefined;
         const [ticketNumber, slaDeadlines] = await Promise.all([
             this.generateTicketNumber(),
             this.slaService.calculateDeadlines(priority, dto.departmentId),
@@ -155,6 +172,7 @@ export class TicketsService {
                     interactionId: dto.interactionId,
                     productId: dto.productId,
                     hotinfoSnapshot: hotinfoContext as Prisma.InputJsonValue | undefined,
+                    licensingIntake: validatedLicensing?.intake as Prisma.InputJsonValue | undefined,
                     slaResponseDue: slaDeadlines.slaResponseDue,
                     slaResolveDue: slaDeadlines.slaResolveDue,
                     channel: dto.channel || 'WEB',

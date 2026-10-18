@@ -546,6 +546,14 @@ export default function NewTicketPage() {
                 ...getTicketCategoryCreateFields(selectedCategoryOption),
                 productId: selectedProductId === 'general' || selectedProductId === '' ? undefined : selectedProductId,
                 hotinfoContext: isHotinfoConfirmed && hotinfoData ? hotinfoData : undefined,
+                licensingIntake: isLicensingIntakeVisible ? {
+                    categoryKey: 'licensing',
+                    allplanVersion: extractAllplanVersion(values.allplanVersion || (isHotinfoConfirmed ? hotinfoData?.allplanVersion : undefined)),
+                    allplan2024ReleaseBand: values.allplan2024ReleaseBand,
+                    licenseTopology: values.licenseTopology,
+                    licenseIssueType: values.licenseIssueType,
+                    licenseUserRole: values.licenseUserRole,
+                } : undefined,
                 interactionId: interactionId ?? undefined,
             });
 

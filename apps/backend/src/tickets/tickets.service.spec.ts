@@ -68,6 +68,20 @@ describe('TicketsService', () => {
     });
 
     describe('create', () => {
+        it('rejects linking another user AI interaction before creating a ticket', async () => {
+            const interactionId = '33333333-3333-4333-8333-333333333333';
+            prisma.ticket.findUnique.mockResolvedValue(null);
+            prisma.aiInteraction.findFirst.mockResolvedValue(null);
+
+            await expect(service.create({ subject: 'License issue', interactionId }, 'user1'))
+                .rejects.toThrow(ForbiddenException);
+            expect(prisma.aiInteraction.findFirst).toHaveBeenCalledWith({
+                where: { id: interactionId, userId: 'user1' },
+                select: { id: true },
+            });
+            expect(prisma.ticket.create).not.toHaveBeenCalled();
+        });
+
         it('should create a ticket and emit event', async () => {
             // Arrange
             const dto = { subject: 'Test', description: 'Desc', priority: TicketPriority.HIGH, departmentId: 'dep1' };
@@ -192,6 +206,12 @@ describe('TicketsService', () => {
                 productId: '11111111-1111-4111-8111-111111111111',
                 departmentId: '22222222-2222-4222-8222-222222222222',
                 tags: ['licensing'],
+                licensingIntake: {
+                    categoryKey: 'licensing' as const,
+                    allplanVersion: '2026',
+                    licenseIssueType: 'SEAT' as const,
+                    licenseUserRole: 'LICENSE_ADMIN' as const,
+                },
             };
             prisma.product.findFirst.mockResolvedValue({ id: dto.productId, name: 'ALLPLAN' });
             prisma.department.findFirst.mockResolvedValue({ slug: 'billing-payments' });
@@ -204,6 +224,75 @@ describe('TicketsService', () => {
 
             await expect(service.create(dto, 'user1')).resolves.toMatchObject({ id: 'tik1' });
             expect(prisma.ticket.create).toHaveBeenCalled();
+        });
+
+        it('requires structured choices for a new ALLPLAN licensing ticket', async () => {
+            const dto = {
+                subject: 'License activation',
+                productId: '11111111-1111-4111-8111-111111111111',
+                departmentId: '22222222-2222-4222-8222-222222222222',
+                tags: [],
+            };
+            prisma.product.findFirst.mockResolvedValue({ id: dto.productId, name: 'ALLPLAN' });
+            prisma.department.findFirst.mockResolvedValue({ slug: 'billing-payments' });
+
+            await expect(service.create(dto, 'user1')).rejects.toThrow(BadRequestException);
+            expect(prisma.ticket.create).not.toHaveBeenCalled();
+        });
+
+        it('stores validated ALLPLAN cloud licensing choices without requiring Hotinfo', async () => {
+            const dto = {
+                subject: 'Connect license is missing',
+                productId: '11111111-1111-4111-8111-111111111111',
+                departmentId: '22222222-2222-4222-8222-222222222222',
+                tags: ['licensing'],
+                licensingIntake: {
+                    categoryKey: 'licensing' as const,
+                    allplanVersion: '2026',
+                    licenseIssueType: 'SEAT' as const,
+                    licenseUserRole: 'LICENSE_ADMIN' as const,
+                },
+            };
+            prisma.product.findFirst.mockResolvedValue({ id: dto.productId, name: 'ALLPLAN' });
+            prisma.department.findFirst.mockResolvedValue({ slug: 'billing-payments' });
+            prisma.$queryRaw = jest.fn().mockResolvedValue([{ nextval: 1n }]);
+            mockSlaService.calculateDeadlines.mockResolvedValue({ slaResponseDue: new Date(), slaResolveDue: new Date() });
+            prisma.ticket.create.mockResolvedValue({ id: 'tik1', ticketNumber: 'SUP-00001' });
+
+            await service.create(dto, 'user1');
+
+            expect(prisma.ticket.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    hotinfoSnapshot: undefined,
+                    licensingIntake: {
+                        categoryKey: 'licensing',
+                        allplanVersion: '2026',
+                        licenseIssueType: 'SEAT',
+                        licenseUserRole: 'LICENSE_ADMIN',
+                    },
+                }),
+            }));
+        });
+
+        it('rejects a licensing intake on a non-licensing department', async () => {
+            const dto = {
+                subject: 'Connect license is missing',
+                productId: '11111111-1111-4111-8111-111111111111',
+                departmentId: '22222222-2222-4222-8222-222222222222',
+                tags: ['licensing'],
+                licensingIntake: {
+                    categoryKey: 'licensing' as const,
+                    allplanVersion: '2026',
+                    licenseIssueType: 'SEAT' as const,
+                    licenseUserRole: 'LICENSE_ADMIN' as const,
+                },
+            };
+            prisma.product.findFirst.mockResolvedValue({ id: dto.productId, name: 'ALLPLAN' });
+            prisma.department.findFirst.mockResolvedValue({ slug: 'technical-support' });
+            prisma.customerProfile.findFirst.mockResolvedValue(null);
+
+            await expect(service.create(dto, 'user1')).rejects.toThrow(BadRequestException);
+            expect(prisma.ticket.create).not.toHaveBeenCalled();
         });
 
         it('should use uploaded profile Hotinfo for ALLPLAN technical support tickets', async () => {
@@ -318,6 +407,7 @@ describe('TicketsService', () => {
             prisma.ticket.findFirst
                 .mockResolvedValueOnce(null)
                 .mockResolvedValueOnce(existingTicket);
+            prisma.aiInteraction.findFirst.mockResolvedValue({ id: dto.interactionId });
             prisma.$queryRaw = jest.fn().mockResolvedValue([{ nextval: 2n }]);
             mockSlaService.calculateDeadlines.mockResolvedValue({
                 slaResponseDue: new Date(),

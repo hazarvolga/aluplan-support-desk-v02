@@ -122,6 +122,23 @@ describe('PromptContextBuilderService licensing context', () => {
         expect(result).not.toContain('tam ALLPLAN sürümünü ve build bilgisini sor');
     });
 
+    it('keeps a confirmed 2026 seat/admin license ticket on the cloud route without requiring Hotinfo', async () => {
+        const result = await service.buildContext({
+            userId: 'user-1',
+            userQuery: 'Connect platformunda yöneticiyim fakat ALLPLAN 2026 lisans koltuğu görünmüyor.',
+            allplanVersion: '2026',
+            kbContent: 'ALLPLAN ID cloud license administration and seat visibility.',
+            hotinfoSnapshot: null,
+            skipHotinfoProfile: false,
+        });
+
+        expect(result).toContain('2024-2-0, 2025, 2026 ve 2027 için aynı ALLPLAN ID bulut lisans akışını kullan');
+        expect(result).toContain('Hotinfo isteğe bağlıdır');
+        expect(result).toContain('Connect portalı lisans teknolojisi değildir');
+        expect(result).not.toContain('WIBU/CodeMeter lisans dönemi');
+        expect(result).not.toContain('Allmenu -> Lisans Ayarları (Wibu) -> Lisansı İade Et');
+    });
+
     it('fails closed when confirmed intake and consented Hotinfo belong to different eras', async () => {
         const result = await service.buildContext({
             userId: 'user-1',

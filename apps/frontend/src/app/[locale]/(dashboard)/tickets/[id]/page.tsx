@@ -325,6 +325,7 @@ function TicketDetail({ id }: { id: string }) {
     const [loading, setLoading] = useState(true);
     const [drafting, setDrafting] = useState(false);
     const [draftVisuals, setDraftVisuals] = useState<AiVisualEvidenceItem[]>([]);
+    const [draftEvidence, setDraftEvidence] = useState<{ sources: Array<{ title: string; similarity: number }>; reviewReason?: string } | null>(null);
     const [downloadingHotinfo, setDownloadingHotinfo] = useState(false);
     const [aiTrace, setAiTrace] = useState<AiTrace | null>(null);
     const [agents, setAgents] = useState<AssignableAgent[]>([]);
@@ -693,9 +694,18 @@ function TicketDetail({ id }: { id: string }) {
                 htmlDraft += visualsHtml;
             }
 
-            setReply(htmlDraft);
+            // A review reason is an internal diagnostic, never a customer-ready reply.
+            if (!res.reviewReason) setReply(htmlDraft);
             setDraftVisuals([]);
-            toast.success(t('draft_success'));
+            const reviewReason = res.reviewReason === 'NO_RESULTS' ? t('draft_reason_no_results')
+                : res.reviewReason === 'BELOW_THRESHOLD' ? t('draft_reason_below_threshold')
+                    : res.reviewReason === 'LICENSE_ERA_MISMATCH' ? t('draft_reason_era_mismatch')
+                        : res.reviewReason === 'MISSING_LICENSING_INTAKE' ? t('draft_reason_missing_intake')
+                            : res.reviewReason === 'GENERATION_ERROR' ? t('draft_reason_generation_error')
+                                : undefined;
+            setDraftEvidence({ sources: res.sources ?? [], reviewReason });
+            if (res.reviewReason) toast.warning(t('draft_manual_review'));
+            else toast.success(t('draft_success'));
         } catch (err: unknown) {
             toast.error(t('draft_error', { error: errorMessage(err) }));
         } finally {
@@ -1086,6 +1096,14 @@ function TicketDetail({ id }: { id: string }) {
                                     }}
                                     className="min-h-20 transition-colors"
                                 />
+                                {draftEvidence && (
+                                    <div className="rounded-md border border-border/60 bg-muted/30 p-2 text-xs text-muted-foreground" role="status">
+                                        {draftEvidence.reviewReason && <p>{t('draft_manual_review')}: {draftEvidence.reviewReason}</p>}
+                                        <p>{t('draft_sources')}: {draftEvidence.sources.length > 0
+                                            ? draftEvidence.sources.map(source => `${source.title} (${Math.round(source.similarity * 100)}%)`).join(', ')
+                                            : t('draft_no_sources')}</p>
+                                    </div>
+                                )}
                             </div>
                             {!isComposerDisabled && (
                                 <Button
