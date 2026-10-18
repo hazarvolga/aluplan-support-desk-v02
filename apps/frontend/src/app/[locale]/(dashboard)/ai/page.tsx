@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/role-guard';
 import { api } from '@/lib/api';
@@ -48,13 +48,34 @@ interface Message {
     result?: QueryResult;
 }
 
+type CompletedJobEvent = { jobId: string; result: QueryResult & { response?: string } };
+type FailedJobEvent = { jobId: string };
+type TerminalJobEvent =
+    | { kind: 'completed'; data: CompletedJobEvent }
+    | { kind: 'failed'; data: FailedJobEvent };
+
+const MAX_BUFFERED_TERMINAL_EVENTS = 20;
+const JOB_POLL_INTERVAL_MS = 2_000;
+const MAX_JOB_POLL_ATTEMPTS = 60;
+const AI_STAFF_ROLES = new Set([
+    'admin',
+    'super_admin',
+    'superuser',
+    'department_manager',
+    'team_lead',
+    'senior_agent',
+    'agent',
+    'support_agent',
+    'support_manager',
+]);
+
 /** Resolves the role string regardless of how the backend returns it */
 function resolveRole(user: { role?: string | { name?: string } | null } | null): string {
     const role = user?.role;
     if (typeof role === 'object' && role !== null) {
-        return (role as { name?: string }).name?.toLowerCase() || '';
+        return (role as { name?: string }).name?.trim().replace(/-/g, '_').toLowerCase() || '';
     }
-    return (role as string)?.toLowerCase() || '';
+    return (role as string)?.trim().replace(/-/g, '_').toLowerCase() || '';
 }
 
 /** The actual AI assistant UI — only rendered for staff/admin */
@@ -66,36 +87,127 @@ function AiPageContent() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(false);
     const [streamingText, setStreamingText] = useState('');
-    const [activeJobId, setActiveJobId] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<Record<string, 'positive' | 'negative' | null>>({});
+    const activeJobIdRef = useRef<string | null>(null);
+    const awaitingJobIdRef = useRef(false);
+    const pendingTerminalEventsRef = useRef<Map<string, TerminalJobEvent>>(new Map());
+    const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const mountedRef = useRef(true);
+
+    const stopJobPolling = useCallback(() => {
+        if (pollTimeoutRef.current) {
+            clearTimeout(pollTimeoutRef.current);
+            pollTimeoutRef.current = null;
+        }
+    }, []);
+
+    const finishCompletedJob = useCallback((data: CompletedJobEvent) => {
+        stopJobPolling();
+        activeJobIdRef.current = null;
+        setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: data.result.answer || data.result.response || '',
+            result: data.result
+        }]);
+        setStreamingText('');
+        setLoading(false);
+    }, [stopJobPolling]);
+
+    const finishFailedJob = useCallback((_data: FailedJobEvent) => {
+        stopJobPolling();
+        activeJobIdRef.current = null;
+        setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: t('response.error')
+        }]);
+        setStreamingText('');
+        setLoading(false);
+    }, [stopJobPolling, t]);
+
+    const startJobPolling = useCallback((jobId: string) => {
+        stopJobPolling();
+        let attempts = 0;
+
+        const poll = async () => {
+            if (!mountedRef.current || activeJobIdRef.current !== jobId) return;
+            attempts += 1;
+
+            try {
+                const status = await api.ai.getJobStatus(jobId);
+                if (!mountedRef.current || activeJobIdRef.current !== jobId) return;
+
+                if (status.status === 'COMPLETED' && status.result) {
+                    finishCompletedJob({ jobId, result: status.result as QueryResult & { response?: string } });
+                    return;
+                }
+                if (status.status === 'FAILED') {
+                    finishFailedJob({ jobId });
+                    return;
+                }
+            } catch {
+                // Socket delivery may still complete the request; retry only within the fixed budget.
+            }
+
+            if (attempts >= MAX_JOB_POLL_ATTEMPTS) {
+                finishFailedJob({ jobId });
+                return;
+            }
+            pollTimeoutRef.current = setTimeout(poll, JOB_POLL_INTERVAL_MS);
+        };
+
+        pollTimeoutRef.current = setTimeout(poll, JOB_POLL_INTERVAL_MS);
+    }, [finishCompletedJob, finishFailedJob, stopJobPolling]);
+
+    const bufferTerminalEvent = useCallback((event: TerminalJobEvent) => {
+        const pending = pendingTerminalEventsRef.current;
+        if (pending.size >= MAX_BUFFERED_TERMINAL_EVENTS) {
+            const oldestJobId = pending.keys().next().value;
+            if (oldestJobId) pending.delete(oldestJobId);
+        }
+        pending.set(event.data.jobId, event);
+    }, []);
 
     useEffect(() => {
         const socket = getSocket();
+        mountedRef.current = true;
         socket.connect();
 
         const handleChunk = (data: { jobId: string; chunk: string }) => {
+            if (!activeJobIdRef.current || data.jobId !== activeJobIdRef.current) return;
             setStreamingText(prev => prev + data.chunk);
         };
 
-        const handleCompleted = (data: { jobId: string; result: any }) => {
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: data.result.answer || data.result.response || '',
-                result: data.result
-            }]);
-            setStreamingText('');
-            setActiveJobId(null);
-            setLoading(false);
+        const handleCompleted = (data: CompletedJobEvent) => {
+            if (data.jobId === activeJobIdRef.current) {
+                finishCompletedJob(data);
+            } else if (awaitingJobIdRef.current) {
+                bufferTerminalEvent({ kind: 'completed', data });
+            }
+        };
+
+        const handleFailed = (data: FailedJobEvent) => {
+            if (data.jobId === activeJobIdRef.current) {
+                finishFailedJob(data);
+            } else if (awaitingJobIdRef.current) {
+                bufferTerminalEvent({ kind: 'failed', data });
+            }
         };
 
         socket.on('AI_CHUNK', handleChunk);
         socket.on('AI_QUERY_COMPLETED', handleCompleted);
+        socket.on('AI_QUERY_FAILED', handleFailed);
 
         return () => {
+            mountedRef.current = false;
+            activeJobIdRef.current = null;
+            awaitingJobIdRef.current = false;
+            pendingTerminalEventsRef.current.clear();
+            stopJobPolling();
             socket.off('AI_CHUNK', handleChunk);
             socket.off('AI_QUERY_COMPLETED', handleCompleted);
+            socket.off('AI_QUERY_FAILED', handleFailed);
         };
-    }, []);
+    }, [bufferTerminalEvent, finishCompletedJob, finishFailedJob, stopJobPolling]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -124,7 +236,11 @@ function AiPageContent() {
         const userMsg = query.trim();
         if ((!userMsg && files.length === 0) || loading) return;
 
+        activeJobIdRef.current = null;
+        awaitingJobIdRef.current = true;
+        pendingTerminalEventsRef.current.clear();
         setLoading(true);
+        setStreamingText('');
         setQuery('');
 
         const currentFiles = [...files];
@@ -145,24 +261,38 @@ function AiPageContent() {
 
             const apiHistory = newMessages.map(m => ({ role: m.role, content: m.content }));
             const res = await api.ai.query(userMsg, null, null, locale as string, apiHistory, attachments);
+            if (!mountedRef.current) return;
 
             if (res.jobId) {
-                setActiveJobId(res.jobId);
+                activeJobIdRef.current = res.jobId;
+                awaitingJobIdRef.current = false;
+                const terminalEvent = pendingTerminalEventsRef.current.get(res.jobId);
+                pendingTerminalEventsRef.current.clear();
+                if (terminalEvent?.kind === 'completed') finishCompletedJob(terminalEvent.data);
+                else if (terminalEvent?.kind === 'failed') finishFailedJob(terminalEvent.data);
+                else startJobPolling(res.jobId);
             } else {
+                activeJobIdRef.current = null;
+                awaitingJobIdRef.current = false;
+                pendingTerminalEventsRef.current.clear();
                 setMessages(prev => [...prev, {
                     role: 'assistant',
-                    content: res.answer || 'No response',
+                    content: res.answer || t('response.empty'),
                     result: res
                 }]);
                 setLoading(false);
             }
         } catch {
+            if (!mountedRef.current) return;
+            activeJobIdRef.current = null;
+            awaitingJobIdRef.current = false;
+            pendingTerminalEventsRef.current.clear();
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: 'Hata oluştu, lütfen tekrar deneyin.'
+                content: t('response.error')
             }]);
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleFeedback = async (interactionId: string, positive: boolean) => {
@@ -253,7 +383,7 @@ function AiPageContent() {
                                     {msg.result?.sources && msg.result.sources.length > 0 && (
                                         <div className="mt-6 pt-4 border-t border-white/5">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                {msg.result.sources.map((s: any) => (
+                                                {msg.result.sources.map((s) => (
                                                     <div key={s.articleId} className="flex items-center justify-between p-2 rounded-lg border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] transition-all">
                                                         <span className="text-[11px] font-bold text-white/70 truncate mr-2">{s.title}</span>
                                                         <span className="text-[9px] font-mono text-orange-500/60 font-bold shrink-0">%{Math.round(s.similarity * 100)}</span>
@@ -403,7 +533,7 @@ export default function AiPage() {
                 return;
             }
             const role = resolveRole(user);
-            if (role === 'customer' || role === 'viewer') {
+            if (!AI_STAFF_ROLES.has(role)) {
                 router.replace('/my-tickets');
             }
         }
@@ -413,7 +543,7 @@ export default function AiPage() {
     if (!user) return null;
 
     const role = resolveRole(user);
-    if (role === 'customer' || role === 'viewer') return null;
+    if (!AI_STAFF_ROLES.has(role)) return null;
 
     return <AiPageContent />;
 }

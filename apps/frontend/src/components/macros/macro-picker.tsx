@@ -22,17 +22,20 @@ interface MacroPickerProps {
     onSelect: (content: string) => void;
 }
 
+type Macro = { id: string; name: string; content: string };
+type MacroUser = { userRoles?: Array<{ role: { name: string } }> };
+
 export function MacroPicker({ onSelect }: MacroPickerProps) {
     const [open, setOpen] = useState(false);
-    const [macros, setMacros] = useState<any[]>([]);
+    const [macros, setMacros] = useState<Macro[]>([]);
     const [loading, setLoading] = useState(false);
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<MacroUser | null>(null);
 
     useEffect(() => {
-        api.auth.me().then(setUser).catch(() => setUser(null));
+        api.auth.me().then((currentUser) => setUser(currentUser as unknown as MacroUser)).catch(() => setUser(null));
     }, []);
 
-    const isAuthorized = user?.userRoles?.some((ur: any) =>
+    const isAuthorized = user?.userRoles?.some((ur) =>
         ['admin', 'superuser', 'agent'].includes(ur.role.name)
     );
 
@@ -40,7 +43,7 @@ export function MacroPicker({ onSelect }: MacroPickerProps) {
         if (!isAuthorized) return;
         setLoading(true);
         try {
-            const data = await api.get('/macros');
+            const data = await api.get<Macro[]>('/macros');
             setMacros(data);
         } catch (error) {
             console.error('Failed to load macros:', error);

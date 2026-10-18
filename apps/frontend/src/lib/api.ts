@@ -1,4 +1,5 @@
 import { env } from './env';
+import { clearBrowserSessionCookies } from './session-cleanup';
 
 const CLIENT_API = env.apiUrl;
 const SERVER_API = (typeof process !== 'undefined' && process.env ? process.env.NEXT_INTERNAL_API_URL : undefined) ?? CLIENT_API;
@@ -8,7 +9,7 @@ const getApiUrl = () => {
 };
 
 let isRefreshing = false;
-let failedQueue: Array<{ resolve: (value?: any) => void; reject: (reason?: any) => void }> = [];
+let failedQueue: Array<{ resolve: () => void; reject: (reason?: unknown) => void }> = [];
 
 export class ApiRequestError extends Error {
     constructor(
@@ -29,7 +30,7 @@ export type KnowledgePoolUploadResult = {
     duplicateOf?: string;
     message?: string;
     fileName?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 };
 
 export type KnowledgePoolBulkUploadResult = {
@@ -62,6 +63,15 @@ export type UpsertCrmConnectionInput = {
     webhookSecret?: string;
     instanceUrl: string;
     syncSettings?: Record<string, unknown>;
+};
+
+export type SlaPolicyInput = {
+    name: string;
+    priority: string;
+    departmentId: string;
+    firstResponseMinutes: number;
+    resolutionMinutes: number;
+    businessHoursOnly: boolean;
 };
 
 export type LearnNowCrawlFormat =
@@ -159,6 +169,364 @@ export type AiInteractionHistoryResponse = {
     pages: number;
 };
 
+export type DashboardRow = {
+    id?: string;
+    title?: string;
+    sourceUrl?: string;
+    status?: string;
+    format?: string;
+    source?: string;
+    language?: string;
+    displayName?: string;
+    companyName?: string;
+    entityId?: string;
+    entityType?: string;
+    email?: string;
+    changeSummary?: string;
+    fieldLabel?: string;
+    href?: string;
+    count?: number;
+    created?: number;
+    confidence?: number;
+};
+
+export type DashboardTicket = {
+    id: string;
+    ticketNumber: string;
+    subject: string;
+    status: string;
+    priority: string;
+    creator?: { fullName?: string; customerProfile?: { companyName?: string } };
+    assignee?: { fullName?: string };
+};
+
+export type KnowledgeSource = {
+    id: string;
+    name: string;
+    url?: string | null;
+    fileName?: string | null;
+    type: string;
+    status: string;
+    lastSyncedAt?: string | null;
+    category?: { slug?: string; name?: string } | null;
+    metadata?: Record<string, unknown> | null;
+    _count?: { embeddings?: number };
+};
+
+export type KnowledgeSourceMutation = KnowledgeSource & {
+    success?: boolean;
+    message?: string;
+};
+
+export type CrawlDiscoveryResult = {
+    success?: boolean;
+    message?: string;
+    count?: number;
+    inserted?: number;
+    skipped?: number;
+    reason?: string;
+    status?: string;
+};
+
+export type TicketMutationResult = {
+    id: string;
+    status?: string;
+    chatStatus?: string;
+    assignedTo?: string | null;
+    closedAt?: string | null;
+    resolvedAt?: string | null;
+    satisfactionScore?: number | null;
+    satisfactionComment?: string | null;
+    alreadyCreated?: boolean;
+    ticketNumber?: string;
+};
+
+export type TicketMessage = {
+    id: string;
+    senderId?: string;
+    message: string;
+    sender?: TicketUser;
+    createdAt: string;
+    isInternal?: boolean;
+    isOptimistic?: boolean;
+    attachments: TicketAttachment[];
+};
+
+export type TicketAttachment = { id: string; fileName?: string };
+
+export type TicketUser = {
+    id: string;
+    fullName?: string;
+    email?: string;
+    role?: string | { name?: string };
+    roles?: string[];
+    permissions?: string[];
+    customerProfile?: { isVip?: boolean; hotinfoData?: unknown };
+};
+
+export type TicketDetail = {
+    id: string;
+    ticketNumber: string;
+    subject: string;
+    description: string;
+    status: string;
+    priority: string;
+    channel: string;
+    createdAt: string;
+    userId: string;
+    assignedTo?: string;
+    chatStatus?: string;
+    creator?: TicketUser;
+    assignee?: TicketUser;
+    messages: TicketMessage[];
+    hotinfoSnapshot?: unknown;
+    department?: { slug?: string | null; name?: string | null } | null;
+    tags?: string[] | null;
+};
+
+export type TicketAiTrace = {
+    interaction?: {
+        provider?: string;
+        model?: string;
+        confidenceBand?: string;
+        userQuery?: string;
+        responseGenerated?: string;
+        userContext?: { visuals?: unknown[] } | null;
+    };
+    quality?: {
+        responseLanguage?: string;
+        requestLocale?: string;
+        routeLocale?: string;
+        profileLanguage?: string;
+        sourceLeakDetected?: boolean;
+        mixedLanguageRisk?: boolean;
+        ticketCreatedFlagMatches?: boolean;
+        contractSections?: Record<string, boolean | number | undefined> & { isComplete?: boolean; passed?: number };
+    };
+};
+
+export type AiSource = {
+    articleId: string;
+    title: string;
+    similarity: number;
+    [key: string]: unknown;
+};
+
+export type Announcement = {
+    id: string;
+    title: string;
+    subject: string;
+    status: string;
+    createdAt: string;
+    author?: { fullName?: string | null } | null;
+    _count?: { logs: number };
+};
+
+export type AnnouncementTemplate = {
+    id: string;
+    name: string;
+    topic?: string | null;
+    subject?: string | null;
+    contentHtml?: string | null;
+    contentMjml?: string | null;
+    mjml?: string | null;
+    updatedAt: string;
+};
+
+export type AnnouncementLog = {
+    id: string;
+    announcementId: string;
+    sentAt: string | null;
+    readAt: string | null;
+    announcement: { title: string; contentMjml: string };
+};
+
+export type ProactiveChatSession = {
+    id: string;
+    status: string;
+    createdAt: string;
+    agentId: string;
+    agent?: { id?: string; fullName?: string; avatarUrl?: string } | null;
+    customer?: { id: string; fullName: string; avatarUrl?: string };
+};
+
+export type ProactiveChatMessage = {
+    id: string;
+    sessionId: string;
+    senderId: string;
+    content: string;
+    createdAt: string;
+};
+
+export type CustomerAccount = {
+    id: string;
+    name: string;
+    account_number?: string;
+    accountNumber?: string;
+    clientIdFrilo?: string;
+    industry?: string;
+    phone?: string;
+    fax?: string;
+    licenseManagerName?: string;
+    website?: string;
+    serviceAddress?: string;
+    address?: string;
+    crmVerified: boolean;
+    createdAt: string;
+    _count: { customers: number };
+    customers?: Array<{
+        id: string;
+        userId: string;
+        firstName?: string;
+        lastName?: string;
+        jobTitle?: string;
+        user?: { fullName?: string; email?: string; status?: string };
+    }>;
+};
+
+export type CustomerProfile = {
+    firstName?: string;
+    lastName?: string;
+    companyName: string;
+    jobTitle?: string;
+    phoneNumber: string | null;
+    contractStatus?: string;
+    customerNo: string;
+    isVip: boolean;
+    subscriptionModel?: string;
+    industry?: string;
+    fax?: string;
+    mobilePhone?: string;
+    primaryTimeZone?: string;
+    preferredContactMethod?: string;
+    address?: string;
+    crmVerified: boolean;
+    accountId?: string;
+    tags?: string[];
+    hotinfoData?: Record<string, unknown>;
+    account?: Pick<CustomerAccount, 'id' | 'name' | 'account_number'>;
+};
+
+export type Customer = {
+    id: string;
+    fullName: string;
+    email: string;
+    hasRealEmail?: boolean;
+    status: string;
+    createdAt: string;
+    customerProfile: CustomerProfile;
+};
+
+export type CrmFieldDefinition = {
+    key: string;
+    label: string;
+    defaultCrmField: string;
+    isRequired?: boolean;
+};
+
+export type CrmFieldMetadata = {
+    logicalName: string;
+    displayName: string;
+    sampleValue: unknown;
+    type?: string;
+    required?: boolean;
+};
+
+export type CrmSyncLog = {
+    id: string;
+    status: string;
+    startedAt: string;
+    completedAt: string | null;
+    totalRecords: number;
+    successCount: number;
+    errorCount: number;
+    errorMessage?: string;
+    details: {
+        failedRecords: Array<{ externalId: string; entityType: string; errorMessage: string; errorCode?: string }>;
+        skippedRecords: Array<{ externalId: string; reason: string }>;
+        skippedLinks: Array<{ contactExternalId: string; missingAccountExternalId: string }>;
+        summary: { successCount: number; errorCount: number; skippedCount: number };
+    } | null;
+};
+
+export type CrmChangeLog = {
+    id: string;
+    entityType: string;
+    entityId: string;
+    localRecordId: string | null;
+    fieldName: string;
+    oldValue: string | null;
+    newValue: string | null;
+    source: string;
+    status: string;
+    changedAt: string;
+};
+
+export type Setting = { key: string; value: string; encrypted?: boolean };
+export type Product = { id: string; name: string; description?: string | null; categories?: ProductCategory[] };
+export type ProductCategory = { id: string; name: string; keywords?: string[]; productId?: string };
+export type Team = {
+    id: string;
+    name: string;
+    autoAssignmentEnabled?: boolean;
+    assignmentStrategy?: string;
+    department?: { id?: string; name?: string; slug?: string };
+    members?: Array<Record<string, unknown>>;
+    [key: string]: unknown;
+};
+export type UserLookup = { id: string; fullName: string; email?: string; status?: string };
+export type UserDetails = UserLookup & {
+    phone?: string;
+    customerProfile?: CustomerProfile;
+    passwordChanged?: boolean;
+    role?: { name?: string };
+    roles?: Array<{ role?: { name?: string } }>;
+    userRoles?: Array<{ role?: { name?: string } }>;
+};
+export type KnowledgeArticle = {
+    id: string;
+    title: string;
+    content: string;
+    isInternal?: boolean;
+    createdAt: string;
+    versions?: Array<{ id: string; version: number; content: string }>;
+    [key: string]: unknown;
+};
+export type EmailValidationResult = {
+    email?: string;
+    status?: string;
+    score?: number;
+    message?: string;
+    syntax?: unknown;
+    dns?: unknown;
+    smtp?: unknown;
+};
+
+export type KnowledgeSyncLog = {
+    id: string;
+    status: string;
+    syncStartedAt: string;
+    chunksProcessed: number;
+    error?: string | null;
+};
+
+export type FaqLearningCandidate = {
+    id: string;
+    question: string;
+    answer: string;
+    confidenceScore: number;
+    frequency: number;
+    tags?: string[];
+    language?: string;
+    sourceTypes?: string[];
+    sources?: Array<{
+        id: string;
+        sourceType: string;
+        ticket?: { id: string; ticketNumber: string } | null;
+        interaction?: { id: string; createdAt?: string } | null;
+    }>;
+};
+
 export type OpsDashboardData = {
     generatedAt: string;
     window: { days: number; todayStart: string; trendStart: string };
@@ -184,33 +552,50 @@ export type OpsDashboardData = {
         aiEvents: Record<string, number>;
         activeAgents: number;
         dndAgents: number;
-        recentErrors: Array<Record<string, any>>;
+        recentErrors: DashboardRow[];
     };
     queues: Record<string, { waiting: number; active: number; delayed: number; failed: number; completed: number; paused: number }>;
     activeDesk: {
         total: number;
-        tickets: Array<Record<string, any>>;
-        trend: Array<Record<string, number | string>>;
+        tickets: DashboardTicket[];
+        trend: Array<DashboardRow>;
     };
     actions: Array<{ id: string; severity: 'ok' | 'info' | 'warning' | 'critical'; count: number; href: string }>;
     pulse: {
         ticketTrend: Array<Record<string, number | string>>;
         aiQuality: { summary: Record<string, number>; trend: Array<Record<string, number | string>> };
-        crm: Record<string, any>;
-        knowledge: Record<string, any>;
+        crm: {
+            updatedToday?: number;
+            failuresToday?: number;
+            recentChanges?: DashboardRow[];
+            trend?: DashboardRow[];
+        };
+        knowledge: {
+            activeSources?: number;
+            embeddings?: number;
+            genericCandidatesPending?: number;
+            syncFailuresToday: number;
+            datasetSources?: number;
+            trend?: DashboardRow[];
+        };
         details?: Record<string, {
             defaultKey: string;
             segments: Array<{
                 key: string;
                 intent: 'period' | 'breakdown' | 'filter';
-                series: Array<Record<string, number | string>>;
+                series: DashboardRow[];
                 metrics: Record<string, number>;
-                records: Array<{ id: string; title: string; description: string; href: string; status?: string | null; meta?: Record<string, any> }>;
+                records: Array<{ id: string; title: string; description: string; href: string; status?: string | null; meta?: Record<string, unknown> }>;
                 decision: { level: 'ok' | 'info' | 'warning' | 'critical'; title: string; description: string };
             }>;
         }>;
     };
-    learnNow: Record<string, any>;
+    learnNow: {
+        recent?: DashboardRow[];
+        pendingReview?: number;
+        byStatus?: Record<string, number>;
+        byFormat?: Record<string, number>;
+    };
     liveFeed: Array<{ id: string; type: string; title: string; description?: string; status?: string; at: string; href: string }>;
 };
 
@@ -228,12 +613,12 @@ export type ReviewCenterSummary = {
     pendingActions: number;
 };
 
-const processQueue = (error: Error | null, token: string | null = null) => {
+const processQueue = (error: Error | null) => {
     failedQueue.forEach(prom => {
         if (error) {
             prom.reject(error);
         } else {
-            prom.resolve(token);
+            prom.resolve();
         }
     });
     failedQueue = [];
@@ -242,7 +627,7 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 const safeFetch = async (input: string, init: RequestInit) => {
     try {
         return await fetch(input, init);
-    } catch (error) {
+    } catch {
         console.warn(`API Network Error: ${input}`);
         throw new ApiRequestError('BACKEND_UNAVAILABLE', 'BACKEND_UNAVAILABLE');
     }
@@ -277,11 +662,17 @@ const refreshAndRetry = async (path: string, fetchOptions: RequestInit) => {
         const refreshRes = await safeFetch(`${getApiUrl()}/auth/refresh`, {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            }
         });
 
         if (!refreshRes.ok) {
             processQueue(new Error('Session expired'));
+            // The marker cookie is shared across tabs. An automatic refresh failure
+            // cannot safely identify which tab/session it belongs to, so only an
+            // explicit logout may clear it. The API still fails closed here.
             throw new ApiRequestError('common.session_expired', 'SESSION_EXPIRED');
         }
 
@@ -306,18 +697,21 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         ? document.cookie.split('; ').find(row => row.trim().startsWith('XSRF-TOKEN='))?.split('=')[1]
         : null;
 
-    const headers: any = {
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-Request-Id': (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
-        ...options?.headers,
-    };
+    const headers = new Headers(options?.headers);
+    headers.set('X-Requested-With', 'XMLHttpRequest');
+    headers.set(
+        'X-Request-Id',
+        (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+    );
 
     if (csrfToken) {
-        headers['X-XSRF-TOKEN'] = csrfToken;
+        headers.set('X-XSRF-TOKEN', csrfToken);
     }
 
     if (!(options?.body instanceof FormData)) {
-        headers['Content-Type'] = 'application/json';
+        headers.set('Content-Type', 'application/json');
     }
 
     const fetchOptions: RequestInit = {
@@ -339,12 +733,15 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
     if (!res.ok) {
         let errStr = `HTTP ${res.status}: ${res.statusText}`;
-        let errBody: any = {};
+        let errBody: Record<string, unknown> = {};
         try {
-            errBody = await res.json();
+            const parsedBody: unknown = await res.json();
+            errBody = parsedBody !== null && typeof parsedBody === 'object' && !Array.isArray(parsedBody)
+                ? parsedBody as Record<string, unknown>
+                : {};
             if (Array.isArray(errBody.message)) {
                 errStr = errBody.message.join(', ');
-            } else if (errBody.message) {
+            } else if (typeof errBody.message === 'string') {
                 errStr = errBody.message;
             } else if (Object.keys(errBody).length > 0) {
                 errStr = JSON.stringify(errBody);
@@ -358,12 +755,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
             if (!(res.status === 401 && path.includes('/auth/me')) && !isHandledKnowledgeUrlDuplicate) {
                 console.error(`API Error [${res.status}]:`, errBody);
             }
-        } catch (e) {
+        } catch {
             try {
                 const text = await res.clone().text();
                 console.error(`API Error [${res.status}] (Non-JSON):`, text);
                 errStr = text || errStr;
-            } catch (te) {
+            } catch {
                 console.error(`API Error [${res.status}] (Parse Failed)`);
             }
         }
@@ -397,6 +794,31 @@ async function downloadRequest(path: string): Promise<{ blob: Blob; filename?: s
     return { blob: await res.blob(), filename };
 }
 
+type AiHealthStatusResponse = {
+    status: 'HEALTHY' | 'DEGRADED' | 'DOWN';
+    providers: Record<string, { available: boolean; message: string }>;
+};
+
+type ApiMutationResponse = { success: boolean; message?: string };
+
+function apiGet(path: '/ai/health-status'): Promise<AiHealthStatusResponse>;
+function apiGet(path: `/ai/tickets/${string}/summarize`): Promise<string>;
+function apiGet<T = unknown>(path: string): Promise<T>;
+function apiGet<T = unknown>(path: string): Promise<T> {
+    return request<T>(path);
+}
+
+function apiPost(path: '/customers/me/hotinfo', body: FormData): Promise<{ hotinfo: Record<string, unknown> }>;
+function apiPost(path: '/ai/test-connection', body: unknown): Promise<{ success: boolean; message: string }>;
+function apiPost(path: '/ai/trigger-report', body: unknown): Promise<ApiMutationResponse>;
+function apiPost<T = unknown>(path: string, body: unknown): Promise<T>;
+function apiPost<T = unknown>(path: string, body: unknown): Promise<T> {
+    return request<T>(path, {
+        method: 'POST',
+        body: body instanceof FormData ? body : JSON.stringify(body),
+    });
+}
+
 export const api = {
     dashboard: {
         ops: (days = 7) => request<OpsDashboardData>(`/dashboard/ops?days=${days}`),
@@ -405,10 +827,10 @@ export const api = {
         summary: () => request<ReviewCenterSummary>('/review-center/summary'),
     },
     auth: {
-        login: (email: string, password: string) =>
+        login: (email: string, password: string, rememberMe = false) =>
             request<{ user: { id: string; email: string; fullName: string } }>('/auth/login', {
                 method: 'POST',
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password, rememberMe }),
             }),
         lookup: (email: string) =>
             request<{ action: 'CLAIM' | 'NEW' | 'NEW_MATCHED_COMPANY' | 'CRM_REJECTED' | 'DELETED' | 'INACTIVE'; companyName: string | null; errorMessage?: string; status?: string }>('/auth/lookup', {
@@ -446,17 +868,39 @@ export const api = {
             isSupportTeamMember?: boolean;
             customerProfile?: {
                 id: string;
-                hotinfoData?: any;
+                hotinfoData?: { allplanVersion?: string; [key: string]: unknown };
                 hotinfoUpdatedAt?: string;
-                [key: string]: any;
+                [key: string]: unknown;
             }
         }>('/auth/me'),
-        logout: () => request<{ success: boolean }>('/auth/logout', { method: 'POST' }),
+        logout: async () => {
+            try {
+                const options: RequestInit = {
+                    method: 'POST',
+                    credentials: 'include',
+                    cache: 'no-store',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                };
+                let response = await safeFetch(`${getApiUrl()}/auth/logout`, options);
+                if (response.status === 401 || response.status === 403) {
+                    response = await safeFetch(`${getApiUrl()}/auth/refresh/logout`, options);
+                }
+                if (!response.ok) {
+                    const code = response.status === 401 || response.status === 403
+                        ? 'SESSION_EXPIRED'
+                        : 'API_ERROR';
+                    throw new ApiRequestError(`HTTP ${response.status}: ${response.statusText}`, code);
+                }
+                return { success: true };
+            } finally {
+                await clearBrowserSessionCookies();
+            }
+        },
     },
     pool: {
-        list: () => request<any[]>('/knowledge-pool/sources'),
+        list: () => request<KnowledgeSource[]>('/knowledge-pool/sources'),
         addUrl: (name: string, url: string) =>
-            request<any>('/knowledge-pool/sources', {
+            request<KnowledgeSource>('/knowledge-pool/sources', {
                 method: 'POST',
                 body: JSON.stringify({ name, url, type: 'URL' }),
             }),
@@ -478,11 +922,11 @@ export const api = {
                     const result = await api.pool.upload(name, file);
                     results.push({ ...result, fileName: file.name });
                     onProgress?.(i + 1, files.length, file);
-                } catch (error: any) {
+                } catch (error: unknown) {
                     results.push({
                         skipped: false,
                         reason: 'UPLOAD_FAILED',
-                        message: error?.message || 'Upload failed',
+                        message: error instanceof Error ? error.message : 'Upload failed',
                         fileName: file.name,
                     });
                     onProgress?.(i + 1, files.length, file);
@@ -496,14 +940,14 @@ export const api = {
                 total: files.length,
             };
         },
-        sync: (id: string) => request<any>(`/knowledge-pool/sources/${id}/sync`, { method: 'POST' }),
+        sync: (id: string) => request<KnowledgeSourceMutation>(`/knowledge-pool/sources/${id}/sync`, { method: 'POST' }),
         updateCategory: (id: string, categorySlug: string) =>
-            request<any>(`/knowledge-pool/admin/sources/${id}/category`, {
+            request<KnowledgeSourceMutation>(`/knowledge-pool/admin/sources/${id}/category`, {
                 method: 'PATCH',
                 body: JSON.stringify({ categorySlug }),
             }),
-        logs: (id: string) => request<any[]>(`/knowledge-pool/sources/${id}/logs`),
-        syncDataset: () => request<any>('/knowledge-pool/sync-dataset', { method: 'POST' }),
+        logs: (id: string) => request<KnowledgeSyncLog[]>(`/knowledge-pool/sources/${id}/logs`),
+        syncDataset: () => request<{ success: boolean; message?: string }>('/knowledge-pool/sync-dataset', { method: 'POST' }),
         startLearnNowCrawlRun: (body: StartLearnNowCrawlRunPayload) =>
             request<LearnNowCrawlRun>('/knowledge-pool/crawl/learnnow/runs', {
                 method: 'POST',
@@ -524,12 +968,12 @@ export const api = {
         resumeLearnNowCrawlRun: (id: string) =>
             request<LearnNowCrawlRun>(`/knowledge-pool/crawl/learnnow/runs/${id}/resume`, { method: 'POST' }),
         discoverGenericWeb: (body: DiscoverGenericWebPayload) =>
-            request<any>('/knowledge-pool/crawl/discover', {
+            request<CrawlDiscoveryResult>('/knowledge-pool/crawl/discover', {
                 method: 'POST',
                 body: JSON.stringify(body),
             }),
         discoverAllplanHelp: (body: DiscoverAllplanHelpPayload) =>
-            request<any>('/knowledge-pool/crawl/allplan-help/discover', {
+            request<CrawlDiscoveryResult>('/knowledge-pool/crawl/allplan-help/discover', {
                 method: 'POST',
                 body: JSON.stringify(body),
             }),
@@ -541,7 +985,7 @@ export const api = {
             return request<CrawlCandidate[]>(`/knowledge-pool/crawl/candidates${q}`);
         },
         importCrawlCandidate: (id: string) =>
-            request<any>(`/knowledge-pool/crawl/candidates/${id}/import`, { method: 'POST' }),
+            request<CrawlDiscoveryResult>(`/knowledge-pool/crawl/candidates/${id}/import`, { method: 'POST' }),
         approveCrawlCandidate: (id: string) =>
             request<{ success: true; status: 'APPROVED' }>(`/knowledge-pool/crawl/candidates/${id}/approve`, { method: 'POST' }),
         rejectCrawlCandidate: (id: string, reason: string) =>
@@ -566,40 +1010,40 @@ export const api = {
             }),
         list: (params?: Record<string, string>) => {
             const q = params ? '?' + new URLSearchParams(params).toString() : '';
-            return request<{ data: any[]; total: number; statusCounts?: Record<string, number> }>(`/tickets${q}`);
+            return request<{ data: unknown[]; total: number; statusCounts?: Record<string, number> }>(`/tickets${q}`);
         },
-        get: (id: string) => request<any>(`/tickets/${id}`),
-        getAiTrace: (id: string) => request<any>(`/tickets/${id}/ai-trace`),
-        assignableAgents: (id: string) => request<any[]>(`/tickets/${id}/assignable-agents`),
-        create: (body: any) => request<any>('/tickets', { method: 'POST', body: JSON.stringify(body) }),
+        get: (id: string) => request<unknown>(`/tickets/${id}`),
+        getAiTrace: (id: string) => request<unknown>(`/tickets/${id}/ai-trace`),
+        assignableAgents: (id: string) => request<unknown[]>(`/tickets/${id}/assignable-agents`),
+        create: (body: unknown) => request<TicketMutationResult>('/tickets', { method: 'POST', body: JSON.stringify(body) }),
         updateStatus: (id: string, status: string) =>
-            request<any>(`/tickets/${id}/status/${status}`, { method: 'PATCH' }),
+            request<TicketMutationResult>(`/tickets/${id}/status/${status}`, { method: 'PATCH' }),
         resolution: (id: string, decision: 'CONFIRM' | 'CONTINUE', comment?: string) =>
-            request<any>(`/tickets/${id}/resolution`, { method: 'POST', body: JSON.stringify({ decision, comment }) }),
+            request<TicketMutationResult>(`/tickets/${id}/resolution`, { method: 'POST', body: JSON.stringify({ decision, comment }) }),
         close: (id: string, reason?: string) =>
-            request<any>(`/tickets/${id}/close`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
+            request<TicketMutationResult>(`/tickets/${id}/close`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
         requestReopen: (id: string, comment: string) =>
-            request<any>(`/tickets/${id}/reopen-request`, { method: 'POST', body: JSON.stringify({ comment }) }),
+            request<TicketMutationResult>(`/tickets/${id}/reopen-request`, { method: 'POST', body: JSON.stringify({ comment }) }),
         feedback: (id: string, score: number, comment?: string) =>
-            request<any>(`/tickets/${id}/feedback`, { method: 'POST', body: JSON.stringify({ score, comment }) }),
+            request<TicketMutationResult>(`/tickets/${id}/feedback`, { method: 'POST', body: JSON.stringify({ score, comment }) }),
         assign: (id: string, userId: string) =>
-            request<any>(`/tickets/${id}/assign/${userId}`, { method: 'PATCH' }),
-        addMessage: (id: string, body: any) =>
-            request<any>(`/tickets/${id}/messages`, { method: 'POST', body: JSON.stringify(body) }),
-        getSlaStats: () => request<any>('/tickets/sla/stats'),
+            request<TicketMutationResult>(`/tickets/${id}/assign/${userId}`, { method: 'PATCH' }),
+        addMessage: (id: string, body: unknown) =>
+            request<TicketMessage>(`/tickets/${id}/messages`, { method: 'POST', body: JSON.stringify(body) }),
+        getSlaStats: () => request<unknown>('/tickets/sla/stats'),
         bulkUpdate: (body: { ticketIds: string[]; status?: string; priority?: string; assignedTo?: string }) =>
-            request<any>('/tickets/bulk', { method: 'PATCH', body: JSON.stringify(body) }),
-        bulkDelete: (ids: string[]) => request<any>('/tickets/bulk', { method: 'DELETE', body: JSON.stringify({ ticketIds: ids }) }),
-        delete: (id: string) => request<any>(`/tickets/${id}`, { method: 'DELETE' }),
+            request<unknown>('/tickets/bulk', { method: 'PATCH', body: JSON.stringify(body) }),
+        bulkDelete: (ids: string[]) => request<unknown>('/tickets/bulk', { method: 'DELETE', body: JSON.stringify({ ticketIds: ids }) }),
+        delete: (id: string) => request<unknown>(`/tickets/${id}`, { method: 'DELETE' }),
     },
     ai: {
-        query: (query: string, hotinfoContext?: any, productId?: string | null, language?: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>, attachments?: any[], wait?: boolean, strictLanguage?: boolean, routeLocale?: string, useHotinfo?: boolean, allplanVersion?: string, licensingIntake?: Record<string, unknown>, workflowKey?: 'GENERIC' | 'ALLPLAN_LICENSING') => {
+        query: (query: string, hotinfoContext?: unknown, productId?: string | null, language?: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>, attachments?: unknown[], wait?: boolean, strictLanguage?: boolean, routeLocale?: string, useHotinfo?: boolean, allplanVersion?: string, licensingIntake?: Record<string, unknown>, workflowKey?: 'GENERIC' | 'ALLPLAN_LICENSING') => {
             const url = wait ? '/ai/query?wait=true' : '/ai/query';
             return request<{
                 query: string;
                 answer: string | null;
                 confidence: string;
-                sources: any[];
+                sources: AiSource[];
                 visuals?: Array<{ url: string; alt?: string; caption?: string; summary: string; sourceTitle: string; sourceId: string }>;
                 interactionId: string;
                 suggestTicket: boolean;
@@ -618,19 +1062,28 @@ export const api = {
             request<{
                 jobId: string;
                 status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
-                result?: { answer?: string; status?: string };
-                error?: string;
+                result?: {
+                    query: string;
+                    answer: string | null;
+                    confidence: string;
+                    sources: AiSource[];
+                    visuals?: Array<{ url: string; alt?: string; caption?: string; summary: string; sourceTitle: string; sourceId: string }>;
+                    interactionId: string;
+                    suggestTicket: boolean;
+                    response?: string;
+                };
+                error?: { code: 'AI_QUERY_FAILED'; message: 'AI query processing failed' };
             }>(`/ai/status/${jobId}`),
         search: (query: string, productId?: string | null, limit = 5, language?: string) =>
             request<{
-                results: any[];
+                results: unknown[];
                 interactionId: string;
             }>('/ai/search', {
                 method: 'POST',
                 body: JSON.stringify({ query, productId, limit, language }),
             }),
         feedback: (interactionId: string, rating: number, comment?: string) =>
-            request<any>(`/ai/interactions/${interactionId}/feedback`, {
+            request<unknown>(`/ai/interactions/${interactionId}/feedback`, {
                 method: 'POST', body: JSON.stringify({ rating, comment }),
             }),
         listInteractions: (params: {
@@ -651,7 +1104,7 @@ export const api = {
             const suffix = query.toString();
             return request<AiInteractionHistoryResponse>(`/ai/interactions${suffix ? `?${suffix}` : ''}`);
         },
-        status: () => request<any>('/ai/status'),
+        status: () => request<{ available: boolean; model?: string }>('/ai/status'),
         getHealthStatus: () => request<{
             status: 'HEALTHY' | 'DEGRADED' | 'DOWN';
             chatProvider: string;
@@ -663,7 +1116,7 @@ export const api = {
             method: 'POST',
             body: JSON.stringify({ provider }),
         }),
-        testStorage: () => request<any>('/ai/test-storage', { method: 'POST' }),
+        testStorage: () => request<{ success: boolean; message: string; details?: { advice?: string } }>('/ai/test-storage', { method: 'POST' }),
         listModels: (provider: string, apiKey?: string, baseUrl?: string) => request<{
             chatModels: Array<{ id: string; displayName: string; recommended: boolean }>;
             embedModels: Array<{ id: string; displayName: string; recommended: boolean }>;
@@ -671,6 +1124,8 @@ export const api = {
         getCopilotDraft: (ticketId: string) => request<{
             draft: string;
             model: string;
+            reviewReason?: 'NO_RESULTS' | 'BELOW_THRESHOLD' | 'LICENSE_ERA_MISMATCH' | 'MISSING_LICENSING_INTAKE' | 'GENERATION_ERROR';
+            sources?: Array<{ title: string; sourceType?: string; similarity: number }>;
             visuals?: Array<{
                 url: string;
                 alt?: string;
@@ -743,77 +1198,77 @@ export const api = {
             };
             totalSources: number;
         }>('/ai/sources-stats'),
-        getIntelligence: (days = 30) => request<any>(`/ai/intelligence?days=${days}`),
+        getIntelligence: (days = 30) => request<unknown>(`/ai/intelligence?days=${days}`),
         getHealthEvents: (limit = 50, type?: string, days?: number) =>
-            request<any[]>(`/ai/health-events?limit=${limit}${type ? `&type=${type}` : ''}${days ? `&days=${days}` : ''}`),
+            request<unknown[]>(`/ai/health-events?limit=${limit}${type ? `&type=${type}` : ''}${days ? `&days=${days}` : ''}`),
         getHealthStats: (days = 7) =>
             request<{ total: number; byType: Array<{ type: string; count: number }>; byProvider: Array<{ provider: string; count: number; avgLatencyMs: number | null }>; avgLatencyMs: number | null }>(`/ai/health-stats?days=${days}`),
     },
     kb: {
-        listCategories: () => request<any[]>('/kb/categories'),
+        listCategories: () => request<Array<{ id: string; name: string }>>('/kb/categories'),
         list: (params?: Record<string, string>) => {
             const q = params ? '?' + new URLSearchParams(params).toString() : '';
-            return request<any>(`/kb/articles${q}`);
+            return request<{ data: KnowledgeArticle[]; total: number }>(`/kb/articles${q}`);
         },
-        get: (id: string) => request<any>(`/kb/articles/${id}`),
-        create: (body: any) =>
-            request<any>('/kb/articles', { method: 'POST', body: JSON.stringify(body) }),
-        update: (id: string, body: any) =>
-            request<any>(`/kb/articles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        get: (id: string) => request<KnowledgeArticle>(`/kb/articles/${id}`),
+        create: (body: unknown) =>
+            request<unknown>('/kb/articles', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: unknown) =>
+            request<unknown>(`/kb/articles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
         submitForReview: (id: string) =>
-            request<any>(`/kb/articles/${id}/submit`, { method: 'POST' }),
+            request<unknown>(`/kb/articles/${id}/submit`, { method: 'POST' }),
         review: (id: string, approved: boolean) =>
-            request<any>(`/kb/articles/${id}/review`, {
+            request<unknown>(`/kb/articles/${id}/review`, {
                 method: 'POST', body: JSON.stringify({ approved }),
             }),
         submitFeedback: (id: string, isHelpful: boolean, comment?: string) =>
-            request<any>(`/kb/articles/${id}/feedback`, {
+            request<unknown>(`/kb/articles/${id}/feedback`, {
                 method: 'POST', body: JSON.stringify({ isHelpful, comment }),
             }),
         incrementView: (id: string) =>
-            request<any>(`/kb/articles/${id}/view`, { method: 'POST' }),
-        getAnalytics: (id: string) => request<any>(`/kb/articles/${id}/analytics`),
+            request<unknown>(`/kb/articles/${id}/view`, { method: 'POST' }),
+        getAnalytics: (id: string) => request<unknown>(`/kb/articles/${id}/analytics`),
         compare: (id: string, v1: number, v2: number) =>
-            request<any>(`/kb/articles/${id}/compare?v1=${v1}&v2=${v2}`),
+            request<unknown>(`/kb/articles/${id}/compare?v1=${v1}&v2=${v2}`),
         suggestCategory: (title: string, content: string) =>
-            request<any>('/kb/articles/suggest-category', {
+            request<string>('/kb/articles/suggest-category', {
                 method: 'POST', body: JSON.stringify({ title, content }),
             }),
-        getGlobalAnalytics: () => request<any>('/kb/analytics'),
-        listPending: () => request<any>('/kb/articles?status=REVIEW'),
+        getGlobalAnalytics: () => request<Record<string, unknown>>('/kb/analytics'),
+        listPending: () => request<{ data: KnowledgeArticle[]; total: number }>('/kb/articles?status=REVIEW'),
     },
     faq: {
-        published: () => request<any[]>('/faq/published'),
+        published: () => request<FaqLearningCandidate[]>('/faq/published'),
         list: (status?: string) =>
-            request<any>(`/faq${status ? `?status=${status}` : ''}`),
-        approve: (id: string) => request<any>(`/faq/${id}/approve`, { method: 'POST' }),
-        dismiss: (id: string) => request<any>(`/faq/${id}/dismiss`, { method: 'POST' }),
-        remove: (id: string) => request<any>(`/faq/${id}`, { method: 'DELETE' }),
-        runPipeline: () => request<any>('/faq/pipeline/run', { method: 'POST' }),
+            request<{ data: FaqLearningCandidate[] }>(`/faq${status ? `?status=${status}` : ''}`),
+        approve: (id: string) => request<unknown>(`/faq/${id}/approve`, { method: 'POST' }),
+        dismiss: (id: string) => request<unknown>(`/faq/${id}/dismiss`, { method: 'POST' }),
+        remove: (id: string) => request<unknown>(`/faq/${id}`, { method: 'DELETE' }),
+        runPipeline: () => request<unknown>('/faq/pipeline/run', { method: 'POST' }),
     },
     teams: {
-        departments: () => request<any[]>('/teams/departments'),
+        departments: () => request<Array<{ id: string; name: string; slug?: string; description?: string | null; _count?: { teams?: number } }>>('/teams/departments'),
         departmentOptions: () => request<Array<{ id: string; name: string; slug?: string; description?: string | null }>>('/teams/departments/options'),
-        getDepartment: (id: string) => request<any>(`/teams/departments/${id}`),
-        list: () => request<any[]>('/teams'),
-        get: (id: string) => request<any>(`/teams/${id}`),
-        getStats: (id: string) => request<any>(`/teams/${id}/stats`),
-        create: (body: any) => request<any>('/teams', { method: 'POST', body: JSON.stringify(body) }),
-        update: (id: string, body: any) => request<any>(`/teams/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-        addMember: (teamId: string, body: any) => request<any>(`/teams/${teamId}/members`, { method: 'POST', body: JSON.stringify(body) }),
-        removeMember: (teamId: string, userId: string) => request<any>(`/teams/${teamId}/members/${userId}`, { method: 'DELETE' }),
-        getAgentProfile: (id: string) => request<any>(`/teams/agents/${id}`),
-        updateMyStatus: (status: string) => request<any>('/teams/agents/me/status', { method: 'PATCH', body: JSON.stringify({ status }) }),
-        updateMyProfile: (body: any) => request<any>('/teams/agents/me/profile', { method: 'PATCH', body: JSON.stringify(body) }),
+        getDepartment: (id: string) => request<Record<string, unknown> & { id: string; name: string }>(`/teams/departments/${id}`),
+        list: () => request<Team[]>('/teams'),
+        get: (id: string) => request<Team>(`/teams/${id}`),
+        getStats: (id: string) => request<unknown>(`/teams/${id}/stats`),
+        create: (body: unknown) => request<unknown>('/teams', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: unknown) => request<Team>(`/teams/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        addMember: (teamId: string, body: unknown) => request<unknown>(`/teams/${teamId}/members`, { method: 'POST', body: JSON.stringify(body) }),
+        removeMember: (teamId: string, userId: string) => request<unknown>(`/teams/${teamId}/members/${userId}`, { method: 'DELETE' }),
+        getAgentProfile: (id: string) => request<unknown>(`/teams/agents/${id}`),
+        updateMyStatus: (status: string) => request<unknown>('/teams/agents/me/status', { method: 'PATCH', body: JSON.stringify({ status }) }),
+        updateMyProfile: (body: unknown) => request<unknown>('/teams/agents/me/profile', { method: 'PATCH', body: JSON.stringify(body) }),
     },
     users: {
-        list: (type?: 'agent' | 'customer') => request<any[]>(`/users${type ? `?type=${type}` : ''}`),
-        get: (id: string) => request<any>(`/users/${id}`),
-        lookup: (email: string) => request<any>(`/users/lookup?email=${encodeURIComponent(email)}`),
-        create: (body: any) => request<any>('/users', { method: 'POST', body: JSON.stringify(body) }),
-        updateProfile: (body: any) => request<any>('/users/profile', { method: 'PATCH', body: JSON.stringify(body) }),
-        update: (id: string, body: any) => request<any>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-        delete: (id: string) => request<any>(`/users/${id}`, { method: 'DELETE' }),
+        list: (type?: 'agent' | 'customer') => request<UserLookup[]>(`/users${type ? `?type=${type}` : ''}`),
+        get: (id: string) => request<UserDetails>(`/users/${id}`),
+        lookup: (email: string) => request<UserLookup | null>(`/users/lookup?email=${encodeURIComponent(email)}`),
+        create: (body: unknown) => request<unknown>('/users', { method: 'POST', body: JSON.stringify(body) }),
+        updateProfile: (body: unknown) => request<UserDetails>('/users/profile', { method: 'PATCH', body: JSON.stringify(body) }),
+        update: (id: string, body: unknown) => request<unknown>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        delete: (id: string) => request<unknown>(`/users/${id}`, { method: 'DELETE' }),
     },
     attachments: {
         upload: (messageId: string, file: File) => {
@@ -836,98 +1291,98 @@ export const api = {
             if (params?.limit) qs.set('limit', String(params.limit));
             if (params?.search) qs.set('search', params.search);
             const query = qs.toString();
-            return request<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(`/customers${query ? `?${query}` : ''}`);
+            return request<{ data: Customer[]; total: number; page: number; limit: number; totalPages: number }>(`/customers${query ? `?${query}` : ''}`);
         },
-        getById: (id: string) => request<any>(`/customers/${id}`),
-        update: (id: string, body: any) => request<any>(`/customers/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-        bulkDelete: (ids: string[]) => request<any>('/customers/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
-        resetPassword: (id: string) => request<any>(`/customers/${id}/reset-password`, { method: 'POST' }),
-        import: (data: any[]) => request<any>('/customers/import', { method: 'POST', body: JSON.stringify(data) }),
+        getById: (id: string) => request<Customer>(`/customers/${id}`),
+        update: (id: string, body: unknown) => request<unknown>(`/customers/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        bulkDelete: (ids: string[]) => request<unknown>('/customers/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+        resetPassword: (id: string) => request<{ newPassword: string; email: string }>(`/customers/${id}/reset-password`, { method: 'POST' }),
+        import: (data: unknown[]) => request<{ successCount: number; errorCount: number }>('/customers/import', { method: 'POST', body: JSON.stringify(data) }),
         downloadHotinfo: (id: string) => downloadRequest(`/customers/${id}/hotinfo/download`),
     },
     products: {
-        list: () => request<any[]>('/products'),
+        list: () => request<Product[]>('/products'),
         create: (body: { name: string; description?: string }) =>
-            request<any>('/products', { method: 'POST', body: JSON.stringify(body) }),
+            request<unknown>('/products', { method: 'POST', body: JSON.stringify(body) }),
         update: (id: string, body: { name?: string; description?: string }) =>
-            request<any>(`/products/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-        archive: (id: string) => request<any>(`/products/${id}`, { method: 'DELETE' }),
+            request<unknown>(`/products/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        archive: (id: string) => request<unknown>(`/products/${id}`, { method: 'DELETE' }),
         createCategory: (productId: string, body: { name: string; keywords?: string[] }) =>
-            request<any>(`/products/${productId}/categories`, { method: 'POST', body: JSON.stringify(body) }),
+            request<unknown>(`/products/${productId}/categories`, { method: 'POST', body: JSON.stringify(body) }),
         updateCategory: (categoryId: string, body: { name?: string; keywords?: string[] }) =>
-            request<any>(`/products/categories/${categoryId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+            request<unknown>(`/products/categories/${categoryId}`, { method: 'PATCH', body: JSON.stringify(body) }),
         archiveCategory: (categoryId: string) =>
-            request<any>(`/products/categories/${categoryId}`, { method: 'DELETE' }),
+            request<unknown>(`/products/categories/${categoryId}`, { method: 'DELETE' }),
     },
     settings: {
-        list: (decrypt = false) => request<any[]>(`/settings${decrypt ? '?decrypt=true' : ''}`),
-        get: (key: string, decrypt = false) => request<any>(`/settings/${key}${decrypt ? '?decrypt=true' : ''}`),
-        upsert: (body: any) => request<any>('/settings', { method: 'POST', body: JSON.stringify(body) }),
-        bulkUpsert: (body: { settings: any[] }) => request<any>('/settings/bulk', { method: 'POST', body: JSON.stringify(body) }),
-        delete: (key: string) => request<any>(`/settings/${key}`, { method: 'DELETE' }),
+        list: () => request<Setting[]>('/settings'),
+        get: (key: string) => request<Setting | null>(`/settings/${key}`),
+        upsert: (body: unknown) => request<unknown>('/settings', { method: 'POST', body: JSON.stringify(body) }),
+        bulkUpsert: (body: { settings: unknown[] }) => request<unknown>('/settings/bulk', { method: 'POST', body: JSON.stringify(body) }),
+        delete: (key: string) => request<unknown>(`/settings/${key}`, { method: 'DELETE' }),
         testStorage: (config: { endpoint: string, region: string, accessKey: string, secretKey: string, bucket: string }) =>
-            request<any>('/settings/test-storage', { method: 'POST', body: JSON.stringify(config) }),
+            request<unknown>('/settings/test-storage', { method: 'POST', body: JSON.stringify(config) }),
     },
     sla: {
-        list: () => request<any[]>('/tickets/sla/policies'),
-        create: (body: any) => request<any>('/tickets/sla/policies', { method: 'POST', body: JSON.stringify(body) }),
-        update: (id: string, body: any) => request<any>(`/tickets/sla/policies/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-        delete: (id: string) => request<any>(`/tickets/sla/policies/${id}`, { method: 'DELETE' }),
+        list: () => request<unknown[]>('/tickets/sla/policies'),
+        create: (body: SlaPolicyInput) => request<unknown>('/tickets/sla/policies', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: Partial<SlaPolicyInput>) => request<unknown>(`/tickets/sla/policies/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        delete: (id: string) => request<unknown>(`/tickets/sla/policies/${id}`, { method: 'DELETE' }),
     },
     macros: {
-        list: () => request<any[]>('/macros'),
-        create: (body: any) => request<any>('/macros', { method: 'POST', body: JSON.stringify(body) }),
-        update: (id: string, body: any) => request<any>(`/macros/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-        delete: (id: string) => request<any>(`/macros/${id}`, { method: 'DELETE' }),
+        list: () => request<Array<{ id: string; name: string; content: string }>>('/macros'),
+        create: (body: unknown) => request<unknown>('/macros', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: unknown) => request<unknown>(`/macros/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        delete: (id: string) => request<unknown>(`/macros/${id}`, { method: 'DELETE' }),
     },
     email: {
         logs: (page = 1, limit = 50, status?: string) => {
             const q = new URLSearchParams({ page: String(page), limit: String(limit) });
             if (status) q.append('status', status);
-            return request<{ data: any[]; total: number; page: number; limit: number }>(`/email/admin/logs?${q}`);
+            return request<{ data: unknown[]; total: number; page: number; limit: number }>(`/email/admin/logs?${q}`);
         },
         templates: () => request<{ templates: string[] }>('/email/admin/templates'),
         getTemplateSource: (name: string) => request<{ content: string }>(`/email/admin/templates/${name}/source`),
         saveTemplate: (name: string, content: string) => request<{ success: true }>(`/email/admin/templates/${name}/save`, { method: 'POST', body: JSON.stringify({ content }) }),
-        previewTemplate: (name: string, data: any) => request<any>(`/email/admin/templates/${name}/preview`, { method: 'POST', body: JSON.stringify(data) }),
+        previewTemplate: (name: string, data: unknown) => request<{ html: string }>(`/email/admin/templates/${name}/preview`, { method: 'POST', body: JSON.stringify(data) }),
         verifyProvider: () => request<{ provider: string; available: boolean }>('/email/admin/provider/verify', { method: 'POST' }),
         verifyImap: () => request<{ available: boolean; message: string }>('/email/admin/imap/verify', { method: 'POST' }),
         getGmailAuthUrl: () => request<{ url: string }>('/email/gmail/auth-url'),
     },
     announcements: {
-        list: () => request<any[]>('/announcements'),
+        list: () => request<Announcement[]>('/announcements'),
         getFilters: () => request<{ industries: string[], statuses: string[], companies: string[] }>('/announcements/filters'),
-        get: (id: string) => request<any>(`/announcements/${id}`),
-        create: (body: any) => request<any>('/announcements', { method: 'POST', body: JSON.stringify(body) }),
-        update: (id: string, body: any) => request<any>(`/announcements/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-        delete: (id: string) => request<any>(`/announcements/${id}`, { method: 'DELETE' }),
-        getTargetCount: (criteria: any) => request<{ count: number }>('/announcements/target-count', { method: 'POST', body: JSON.stringify(criteria) }),
+        get: (id: string) => request<unknown>(`/announcements/${id}`),
+        create: (body: unknown) => request<unknown>('/announcements', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: unknown) => request<unknown>(`/announcements/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        delete: (id: string) => request<unknown>(`/announcements/${id}`, { method: 'DELETE' }),
+        getTargetCount: (criteria: unknown) => request<{ count: number }>('/announcements/target-count', { method: 'POST', body: JSON.stringify(criteria) }),
         broadcast: (id: string) => request<{ success: true; count: number }>(`/announcements/${id}/broadcast`, { method: 'POST' }),
         getMyAnnouncements: (page = 1, limit = 20) =>
-            request<{ data: any[]; total: number }>(`/announcements/my?page=${page}&limit=${limit}`),
+            request<{ data: AnnouncementLog[]; total: number }>(`/announcements/my?page=${page}&limit=${limit}`),
         getUnreadCount: () =>
             request<{ count: number }>('/announcements/my/unread-count'),
         markLogRead: (logId: string) =>
-            request<any>(`/announcements/logs/${logId}/read`, { method: 'PATCH' }),
+            request<unknown>(`/announcements/logs/${logId}/read`, { method: 'PATCH' }),
     },
     announcementTemplates: {
-        list: () => request<any[]>('/announcement-templates'),
-        get: (id: string) => request<any>(`/announcement-templates/${id}`),
-        create: (body: any) => request<any>('/announcement-templates', { method: 'POST', body: JSON.stringify(body) }),
-        update: (id: string, body: any) => request<any>(`/announcement-templates/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-        delete: (id: string) => request<any>(`/announcement-templates/${id}`, { method: 'DELETE' }),
+        list: () => request<AnnouncementTemplate[]>('/announcement-templates'),
+        get: (id: string) => request<unknown>(`/announcement-templates/${id}`),
+        create: (body: unknown) => request<unknown>('/announcement-templates', { method: 'POST', body: JSON.stringify(body) }),
+        update: (id: string, body: unknown) => request<unknown>(`/announcement-templates/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+        delete: (id: string) => request<unknown>(`/announcement-templates/${id}`, { method: 'DELETE' }),
     },
     preferences: {
         getEmail: () => request<Array<{ emailType: string; enabled: boolean }>>('/preferences/email'),
         updateEmail: (emailType: string, enabled: boolean) =>
-            request<any>('/preferences/email', {
+            request<unknown>('/preferences/email', {
                 method: 'PATCH',
                 body: JSON.stringify({ emailType, enabled }),
             }),
     },
     emailValidator: {
-        verify: (email: string) => request<any>(`/email-validator/verify?email=${encodeURIComponent(email)}`),
-        verifyBulk: (emails: string[]) => request<any[]>('/email-validator/verify-bulk', { method: 'POST', body: JSON.stringify({ emails }) }),
+        verify: (email: string) => request<EmailValidationResult>(`/email-validator/verify?email=${encodeURIComponent(email)}`),
+        verifyBulk: (emails: string[]) => request<EmailValidationResult[]>('/email-validator/verify-bulk', { method: 'POST', body: JSON.stringify({ emails }) }),
     },
     branding: {
         uploadLogo: (file: File) => {
@@ -945,52 +1400,48 @@ export const api = {
             method: 'POST',
             body: JSON.stringify(data)
         }),
-        triggerSync: (id: string) => request<any>(`/crm/sync/${id}`, { method: 'POST' }),
-        triggerDeltaSync: (id: string) => request<any>(`/crm/delta-sync/${id}`, { method: 'POST' }),
-        getDiscoveryData: (id: string) => request<any>(`/crm/discovery/${id}`),
-        getLogs: (connectionId: string) => request<any[]>(`/crm/logs/${connectionId}`),
-        getChanges: (connectionId?: string, limit = 50) => request<any[]>(`/crm/changes?${new URLSearchParams({
+        triggerSync: (id: string) => request<unknown>(`/crm/sync/${id}`, { method: 'POST' }),
+        triggerDeltaSync: (id: string) => request<unknown>(`/crm/delta-sync/${id}`, { method: 'POST' }),
+        getDiscoveryData: (id: string) => request<{ account: CrmFieldMetadata[]; contact: CrmFieldMetadata[] }>(`/crm/discovery/${id}`),
+        getLogs: (connectionId: string) => request<CrmSyncLog[]>(`/crm/logs/${connectionId}`),
+        getChanges: (connectionId?: string, limit = 50) => request<CrmChangeLog[]>(`/crm/changes?${new URLSearchParams({
             ...(connectionId ? { connectionId } : {}),
             limit: String(limit),
         }).toString()}`),
-        getAccounts: () => request<any[]>('/crm/accounts'),
-        getAccount: (id: string) => request<any>(`/crm/accounts/${id}`),
-        bulkDeleteAccounts: (ids: string[]) => request<any>('/crm/accounts/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
-        getFieldDefinitions: () => request<{ account: any[]; contact: any[] }>('/crm/fields-definitions'),
+        getAccounts: () => request<CustomerAccount[]>('/crm/accounts'),
+        getAccount: (id: string) => request<CustomerAccount>(`/crm/accounts/${id}`),
+        bulkDeleteAccounts: (ids: string[]) => request<unknown>('/crm/accounts/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+        getFieldDefinitions: () => request<{ account: CrmFieldDefinition[]; contact: CrmFieldDefinition[] }>('/crm/fields-definitions'),
     },
     proactiveChat: {
         createSession: (customerId: string) =>
-            request<any>('/proactive-chat/sessions', {
+            request<ProactiveChatSession>('/proactive-chat/sessions', {
                 method: 'POST',
                 body: JSON.stringify({ customerId }),
             }),
         acceptSession: (sessionId: string) =>
-            request<any>(`/proactive-chat/sessions/${sessionId}/accept`, { method: 'PATCH' }),
+            request<unknown>(`/proactive-chat/sessions/${sessionId}/accept`, { method: 'PATCH' }),
         declineSession: (sessionId: string) =>
-            request<any>(`/proactive-chat/sessions/${sessionId}/decline`, { method: 'PATCH' }),
+            request<unknown>(`/proactive-chat/sessions/${sessionId}/decline`, { method: 'PATCH' }),
         endSession: (sessionId: string) =>
-            request<any>(`/proactive-chat/sessions/${sessionId}/end`, { method: 'PATCH' }),
+            request<unknown>(`/proactive-chat/sessions/${sessionId}/end`, { method: 'PATCH' }),
         sendMessage: (sessionId: string, content: string) =>
-            request<any>(`/proactive-chat/sessions/${sessionId}/messages`, {
+            request<ProactiveChatMessage>(`/proactive-chat/sessions/${sessionId}/messages`, {
                 method: 'POST',
                 body: JSON.stringify({ content }),
             }),
         getMessages: (sessionId: string) =>
-            request<any[]>(`/proactive-chat/sessions/${sessionId}/messages`),
+            request<ProactiveChatMessage[]>(`/proactive-chat/sessions/${sessionId}/messages`),
         convertToTicket: (sessionId: string) =>
-            request<any>(`/proactive-chat/sessions/${sessionId}/convert`, { method: 'POST' }),
+            request<TicketMutationResult>(`/proactive-chat/sessions/${sessionId}/convert`, { method: 'POST' }),
         listSessions: () =>
-            request<any[]>('/proactive-chat/sessions'),
+            request<ProactiveChatSession[]>('/proactive-chat/sessions'),
     },
-    get: (url: string) => request<any>(url),
-    post: (url: string, body: any) =>
-        request<any>(url, {
-            method: 'POST',
-            body: body instanceof FormData ? body : JSON.stringify(body)
-        }),
-    delete: (url: string) => request<any>(url, { method: 'DELETE' }),
-    patch: (url: string, body: any) =>
-        request<any>(url, {
+    get: apiGet,
+    post: apiPost,
+    delete: <T = unknown>(url: string) => request<T>(url, { method: 'DELETE' }),
+    patch: <T = unknown>(url: string, body: unknown) =>
+        request<T>(url, {
             method: 'PATCH',
             body: body instanceof FormData ? body : JSON.stringify(body)
         }),

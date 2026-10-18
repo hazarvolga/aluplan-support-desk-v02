@@ -150,3 +150,113 @@ Kullanıcı diğer ajanın teslimini bu göreve getirir. Ben salt-okunur karşı
 - Uygulama işleri henüz PENDING mi; teslim gerçek kanıt mı, yapılmamış test/canlı başarı iddiası var mı?
 
 Sonuç **KABUL / DÜZELTME GEREKİYOR / BLOKE** olur; gerekçeyi dosya/diff ile veririm. STAB-00 kabulü yalnız plan ve izolasyon kabulüdür, production-ready veya deploy onayı değildir. Kabulden sonra ilk ürün görevi **yalnız SEC-01 CSAT sahiplik/izin doğrulaması** olarak ayrıca sınırlandırılacak; bütün güvenlik paketini tek seferde başlatma. Ürün tesliminde kod/test ve gerektiğinde güvenlik incelemesi yapılmadan tamamlandı sayılmaz. Push ve deploy için kullanıcıdan ayrıca açık talep gerekir.
+
+## 10. Yerel stabilizasyon kontrol noktası — 15 Ekim 2026
+
+Bu bölüm 28 Eylül tarihli tarihsel devir notlarını değiştirmez; güncel yerel çalışma alanının devam bilgilerini ekler. Aktif checkout `/Users/hazarvolgaekiz/dev/studio/aluplan-support-desk-v02/aluplan-stabilization-20260928`, dal `main`dir. Bu kontrol noktası yalnız yereldir; **push, deploy veya canlı sistem değişikliği yapılmadı**. Korunan kardeş checkout'a dokunulmadı.
+
+### Tamamlanan ve doğrulanan son dilim
+
+- Ollama ve eski sağlayıcı yolları uygulama, ayar arayüzü ve dokümantasyondan kaldırıldı; proje yalnız desteklenen sağlayıcı sözleşmelerini kullanıyor.
+- Dış sağlayıcı ve storage endpoint doğrulaması güçlendirildi; legacy credential saklama ve AI/user-admin sınırları sertleştirildi.
+- `POST /ai/query` açık personel rol allowlist'iyle sınırlandı. Frontend AI rotası bilinmeyen, müşteri ve görüntüleyici rollerinde fail-closed çalışıyor.
+- WebSocket terminal olayı kaybolduğunda AI işi iki saniyelik aralıklarla en fazla 60 kez sahiplik-korumalı durum endpoint'inden sorgulanıyor; tamamlanır, güvenli hata verir veya 120 saniyede sonlanır. Yabancı/stale job event'leri kabul edilmiyor.
+- AI ve bilgi havuzu kullanıcı hata metinleri TR/EN/DE i18n anahtarlarına taşındı; ham sağlayıcı ayrıntısı gösterilmiyor.
+- SLA politikaları ve departmanları bağımsız sonuçlandırılıyor. Departman servisi hata verse bile başarılı politika listesi görünür kalıyor; ham hata nesnesi konsola yazılmıyor.
+- Frontend ayar/secret sözleşmeleri, CRM müşteri akışları, admin işlemleri, rol seçimi, bilgi havuzu, ekipler ve erişilebilirlik yolları için geniş regresyon testleri eklendi.
+
+### 15 Ekim yerel doğrulama kanıtı
+
+- Frontend unit: `91/91` dosya, `741/741` test geçti.
+- Frontend TypeScript: `tsc --noEmit` geçti.
+- i18n: TR/EN/DE eksiksiz geçti.
+- Backend AI controller: `33/33` test geçti.
+- `git diff --check` temiz.
+- Gerçek Playwright email E2E bu kontrol noktasında çalıştırılmadı. Docker/Postgres/Redis gerektiren runtime kanıtı için kullanıcı onayı alınmadı; bu nedenle release/deploy kapısı hâlâ kapalıdır.
+- Dürüst frontend coverage son ölçümü yaklaşık statements `%67,41`, branches `%57,58`, functions `%66,58`, lines `%68,86`; hedef `%80` henüz karşılanmıyor ve eşik yapay olarak yükseltilmedi.
+
+### Devam sırası ve açık kapılar
+
+1. Ayar/API hata mesajlarında ham backend ayrıntısının kullanıcıya veya browser console'a taşınmasını tamamen kapat; status ve güvenli hata kodu dışında veri loglama.
+2. CRM yardımcı veri yükleme hatalarını görünür, güvenli ve tekrar denenebilir hale getir.
+3. Admin settings monolitini davranış-koruyucu dilimlerle 800 satır politikasına yaklaştır; aynı anda işlev değiştirme.
+4. Coverage'ı gerçek testlerle `%80+` seviyesine çıkar; threshold düşürme, exclude ekleme veya sahte test kullanma.
+5. Kullanıcı onayı sonrası izole Postgres/Redis ortamında kritik Playwright/E2E ve runtime smoke; canlı veriye/servislere bağlanma yok.
+6. Son code review + security review + release diff/rollback kontrolü tamamlanmadan push/deploy isteme veya yapma.
+
+### Commit dışında tutulmaya devam edecek yerel dosyalar
+
+`.ai/current-focus.md`, `.ai/session-summary.md`, `apps/backend/openapi.json`, `apps/frontend/next-env.d.ts` ve `scripts/generate_allplan_license_report.py` kullanıcı/ortam WIP'i olarak stage edilmemelidir. `git add .` veya `git add -A` kullanılmaz.
+
+## 11. Melih Dinekli ticket açma geri bildirimi — onaylı revize plan
+
+Bu bölüm kök dizindeki `Ticket Açma.docx` geri bildiriminin 15 Ekim 2026 tarihinde kullanıcı tarafından netleştirilen kararlarını ve uygulama sırasını kaydeder. Bu plan güncellemesi ürün kodu değişikliği, push veya deploy onayı değildir.
+
+### Onaylanan ürün kararları
+
+- Yeni ticket ekranında müşteriye yalnız `Teknik Destek` ve `Lisans Desteği` kategorileri gösterilecek. `Fatura ve Ödemeler`, `Müşteri Başarısı`, `Genel Başvurular`, `Satış ve Ön Satış` ve `Güvenlik ve Uyumluluk` kaldırılacak. Geçmiş departman/ticket kayıtları silinmeyecek; lisans yönlendirmesi görünür Fatura kategorisine bağımlı bırakılmayacak.
+- `Lisans ve Aktivasyon` müşteri etiketi `Lisans Desteği`, ürün etiketi `CDS Add-on` ise `CDS Add-On` olacak. Ürün yeniden adlandırması mükerrer kayıt üretmeyecek kontrollü veri güncellemesiyle yapılacak.
+- 2015 ve öncesi/CodeMeter soru metinleri Melih Bey'in belirttiği Node-Locked ve Floating License adlarına taşınacak; `Bilmiyorum` ve offline/ödünç seçenekleri kaldırılacak; `Yeni bilgisayara lisans taşıma` kullanılacak ve `Bilgisayara format attım` ayrı, kararlı bir sorun kodu olacak.
+- `Kuruluş daveti` hem sorun türünden hem ayrı teşhis alanından kaldırılacak. Cloud akışındaki `ALLPLAN ID erişimi` ve `Lisans grubu / lisans görünürlüğü` alanları da UI, doğrulama, AI DTO/policy ve üretilen açıklama bağlamından birlikte çıkarılacak.
+- Cloud rolü yalnız `Connect platformunun lisans yöneticisiyim` olacak. Tek seçenekli dropdown gösterilmeyecek; kararlı rol değeri otomatik atanacak. Eski ticket/payload değerleri okunabilir kalacak.
+- Oturum kalıcılığı `Beni hatırla` seçeneğiyle çözülecek. İşaretli değilken tarayıcı-oturumu davranışı, işaretliyken güvenli ve döndürülen HttpOnly refresh cookie ile kalıcı oturum kullanılacak. Önerilen başlangıç süresi 30 gündür ve tek bir merkezi konfigürasyondan yönetilecek; access token kısa ömürlü, logout/parola değişimi/pasifleştirme/revocation fail-closed kalacak. Parola veya token `localStorage` içine yazılmayacak.
+- Hotinfo için mevcut kural korunacak: yalnız `ALLPLAN + technical-support` zorunlu; `Lisans Desteği`, diğer kategoriler ve diğer ürünlerde isteğe bağlı. Uygulama commit'i `a98b4608`, regresyon test commit'i `2040d598` güncel HEAD'in atasıdır.
+
+### Tek cloud intake sözleşmesi
+
+Melih Bey'in “2024-2-0 – 2025 – 2026 – 2027 aynı hepsi olmalı” notu yalnız aynı release family sınıflandırması değildir. Aşağıdaki girdiler aynı müşteri alanlarını, seçenekleri, zorunlulukları, frontend doğrulamasını, backend doğrulamasını ve AI intake sözleşmesini üretmelidir:
+
+| Girdi | Beklenen sözleşme |
+|---|---|
+| `2024` + `2024-1-10 veya daha eski` | `CODEMETER_LICENSE_INTAKE` — cloud akışına giremez |
+| `2024` + `2024-2-0 veya daha yeni` | `CLOUD_LICENSE_INTAKE_V1` |
+| `2024-2-0` | `CLOUD_LICENSE_INTAKE_V1` |
+| `2025` | `CLOUD_LICENSE_INTAKE_V1` |
+| `2026` | `CLOUD_LICENSE_INTAKE_V1` |
+| `2027` | `CLOUD_LICENSE_INTAKE_V1` |
+| `2024` + `Diğer / bilmiyorum` | `UNKNOWN` — yanlışlıkla cloud kabul edilemez |
+
+Ortak cloud sorun seçenekleri yalnız `Hesabıma giriş yapamıyorum`, `Lisans görünmüyor` ve `Offline Kullanım / Ödünç Alma` olacaktır. `Aktivasyon`, `Kuruluş daveti` ve `Diğer / bilmiyorum` gösterilmeyecek veya yeni payload'larda üretilmeyecektir.
+
+Sürüm numarası yine saklanacak ve doğru teknik kaynağı/RAG sonucunu seçmek için kullanılabilecektir. Ancak sürüm, kullanıcıya farklı soru seti veya ek zorunluluk üretmeyecektir. `PromptContextBuilderService` içindeki yalnız `year >= 2025` için eklenen intake/prompt ayrımı kaldırılmalı veya bütün cloud sürümlerine ortak hale getirilmelidir; sürüme özgü teknik içerik seçimi ayrı retrieval katmanında kalmalıdır.
+
+Kullanıcının açıkça `2024-2` yazması güvenli biçimde `2024-2-0` olarak normalize edilmeli; eksik veya gerçekten belirsiz sürümler tahmin edilmemelidir. 2016–2023 sürümleri CodeMeter ailesinde kalmalı ve bu cloud eşitliği çalışması sırasında yanlışlıkla değiştirilmemelidir.
+
+### TDD ve uygulama sırası
+
+1. **Davranış sözleşmesini kilitle:** Önce başarısız testlerle görünür kategori listesi, lisans routing/tag davranışı, Hotinfo matrisi ve cloud parity matrisi yazılacak. Cloud testleri sürüm alanı hariç üretilen alan/seçenek/missing-field/prompt şemasının beş girdide birebir eşitliğini doğrulayacak; `2024 + eski`, `2024 + bilinmiyor` ve 2016–2023 girişlerinin cloud'a sızmadığını ayrıca kanıtlayacak.
+2. **Kategori ve ürün sözleşmesi:** Departmanları veya tarihsel ticket verisini silmeden yeni-ticket görünürlüğü ayrıştırılacak; Lisans Desteği routing'i kararlı hale getirilecek; `CDS Add-On` yeniden adlandırması idempotent uygulanacak.
+3. **Lisans domain modeli:** UI içindeki dağınık diziler yerine tek veri güdümlü legacy/CodeMeter/cloud sözleşmesi kullanılacak. `Bilgisayara format attım` için yeni kararlı kod eklenecek; kaldırılan eski enum değerleri geçiş döneminde tarihsel payload okumak için backend'de tolere edilecek fakat yeni UI bunları üretmeyecek.
+4. **Cloud parity:** `2024 + FROM_2024_2_0`, `2024-2-0`, `2025`, `2026`, `2027` aynı helper, UI, DTO, policy, description-builder ve AI prompt şemasından geçecek. Silinen üç teşhis alanı hiçbir katmanda ticket/AI teşhisini bloke etmeyecek.
+5. **Beni hatırla:** Login DTO/UI seçeneği, cookie TTL politikası, middleware yenileme davranışı, refresh rotation ve token-reuse tespiti birlikte uygulanacak. Cookie `HttpOnly`, production'da `Secure` ve uygun `SameSite` politikasıyla yazılacak. İşaretsiz oturumun tarayıcı kapanınca bitmesi; işaretli oturumun belirlenen süre içinde şifresiz yenilenmesi; süresi dolmuş/iptal edilmiş oturumun login'e dönmesi test edilecek.
+6. **i18n ve geriye dönük uyumluluk:** TR/EN/DE anahtarları birlikte güncellenecek. Geçmiş ticket açıklamaları, departman kimlikleri, SLA/raporlar ve `licensing` tag'i korunacak.
+7. **Doğrulama kapıları:** Odaklı unit testler → frontend/backend typecheck → i18n kontrolü → tam unit/integration paketleri → izole Playwright login ve ticket akışları → code review → security review. Coverage hedefi gerçek testlerle `%80+`; exclude/threshold düşürme yok.
+8. **Release kapısı:** Test ve inceleme raporu kullanıcıya sunulmadan, ayrıca açık onay alınmadan push/deploy yapılmayacak.
+
+### Kabul ölçütleri
+
+- Yeni ticket kategori seçicisinde yalnız onaylanan iki kategori görünür; eski ticket, SLA, rapor ve departman ilişkileri çalışır.
+- `2024 + FROM_2024_2_0`, `2024-2-0`, `2025`, `2026`, `2027` için müşteri akışı ve frontend/backend/AI intake kontratı sürüm değeri dışında birebir aynıdır.
+- Cloud akışında kaldırılan alanlar görünmez, zorunlu olmaz, DTO/prompt/description içine eklenmez ve doğrudan ticket oluşturmayı engellemez.
+- AI, aynı intake sözleşmesine rağmen kullanıcının gerçek ALLPLAN sürümüne uygun teknik kaynağı seçebilir; 2025/2026/2027 için ayrı müşteri sorusu üretmez.
+- `Beni hatırla` işaretliyken tarayıcı yeniden açıldığında geçerli süre içinde parola sorulmaz; işaretsiz, süresi dolmuş, logout edilmiş, parolası değiştirilmiş veya revoke edilmiş oturum fail-closed davranır.
+- ALLPLAN Teknik Destek Hotinfo zorunluluğu ve Lisans Desteği Hotinfo opsiyonelliği hem frontend hem backend regresyon testleriyle korunur.
+
+### 15 Ekim uygulama ve yerel doğrulama durumu
+
+- Onaylanan iki kategori, tek cloud intake sözleşmesi, legacy/CodeMeter seçenekleri, kaldırılan cloud alanları, sabit Connect lisans yöneticisi rolü, `CDS Add-On` veri düzeltmesi ve Hotinfo matrisi kod/test katmanlarında uygulandı.
+- `Beni hatırla` mutlak 30 günlük son tarihle uygulandı. Refresh işlemi bu süreyi ileri taşıyamaz; access token varsayılanı 15 dakikadır. Middleware yalnız backend tarafından HS256 ile imzalanmış, issuer/audience/purpose/expiry doğrulaması geçen session marker'ı kabul eder. Logout sunucu revokasyonunu dener ve tarayıcı çerezlerini aynı-origin endpoint üzerinden temizlemeden başarı yönlendirmesi yapmaz.
+- Yerel giriş ekranında `BENİ HATIRLA` seçeneği gerçek render üzerinde görünür, seçilebilir ve tekrar kapatılabilir olarak doğrulandı. Kimlik bilgisi girilmedi ve oturum açma gönderimi yapılmadı.
+- Frontend tam unit paketi: `6/6` Node script testi ve `94/94` Vitest dosyasında `743/743` test geçti.
+- Backend tam unit/integration paketi: `225/225` çalıştırılan suite ve `2830/2830` test geçti; repo tarafından `7` suite / `31` test skip durumunda tutuluyor.
+- Frontend ve backend `tsc --noEmit`, TR/EN/DE i18n kontrolü, backend `nest build`, frontend production `next build`, production-sync sözdizimi ve `git diff --check` geçti. Frontend build'deki Edge Runtime JWT import uyarısı dar import kullanılarak kaldırıldı.
+- Son code review ve security review bu dilimin kapanış kapısıdır. Gerçek kimlik bilgili login/refresh/browser-reopen E2E ile izole Postgres/Redis ticket E2E henüz çalıştırılmadı; mevcut dev ortamında yalnız UI render/checkbox davranışı doğrulandı. Bu nedenle **push/deploy yapılmadı ve release kapısı açık değildir**.
+
+### 16 Ekim oturum regresyonu ve yerel kabul kanıtı
+
+- Otomatik refresh başarısızlığında paylaşılan tarayıcı oturum işaretçisi artık silinmez. İşaretçi yalnız kullanıcının açık logout işlemiyle temizlenir; başarısız refresh yine `SESSION_EXPIRED` ile fail-closed sonuçlanır. Bu, eski bir sekmenin başarısız isteğinin yeni bir sekmede açılmış geçerli oturumu kapatmasını önler.
+- Backend JWT doğrulaması `sessionVersion` bilgisini taşır; logout/revocation karşılaştırması kalıcı oturum sürümü üzerinden yapılmaya devam eder.
+- İzole Playwright akışlarında hem `Beni hatırla` refresh senaryosu hem de iki sekmeli stale-refresh yarış senaryosu geçti: her çalıştırmada setup ile birlikte `4/4` test başarılı oldu. Stale istek eski cookie başlıklarıyla devam ettirildi, yeni oturumun üç cookie'si korundu ve `/auth/me` başarılı kaldı.
+- 16 Ekim tam backend turu, gerekli `NODE_OPTIONS=--experimental-vm-modules` test çalışma sözleşmesiyle: `226/226` suite, `2847/2847` test başarılı; repo tarafından `7` suite ve `31` test skip tutuluyor. İlk doğrudan Jest çağrısındaki iki upload testi VM Modules bayrağı olmadığı için başarısız olmuş, uygulama değişikliği gerektirmeden doğru çalışma sözleşmesiyle yeşile dönmüştür.
+- Frontend tam Vitest turu: `95/95` dosya ve `749/749` test başarılı. Frontend/backend `tsc --noEmit`, i18n bütünlük kontrolü, backend `nest build`, frontend production `next build` ve `git diff --check` başarılıdır. Test loglarındaki SMTP, sağlayıcı ve ağ hata kayıtları negatif yol fixture'larının beklenen çıktılarıdır.
+- Bu kanıtlar yalnız yerel checkout içindir. **Push, deploy, canlı API çağrısı veya canlı veri değişikliği yapılmadı.** Release için hâlâ kullanıcı onayı, güncel release diff/rollback incelemesi ve canlıdan bağımsız kabul kararı gerekir.

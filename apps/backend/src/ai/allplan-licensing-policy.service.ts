@@ -6,22 +6,26 @@ export type AllplanLicensingIntake = {
     allplanVersion: string;
     allplan2024ReleaseBand?: 'UP_TO_2024_1_10' | 'FROM_2024_2_0' | 'UNKNOWN';
     licenseTopology?: 'SINGLE_USER' | 'LICENSE_SERVER' | 'UNKNOWN';
-    licenseIssueType?: 'ACTIVATION' | 'TRANSFER' | 'LOGIN' | 'INVITATION' | 'SEAT' | 'OFFLINE' | 'OTHER';
+    licenseIssueType?: 'ACTIVATION' | 'TRANSFER' | 'FORMAT_REINSTALL' | 'LOGIN' | 'INVITATION' | 'SEAT' | 'OFFLINE' | 'OTHER';
     licenseUserRole?: 'END_USER' | 'LICENSE_ADMIN' | 'UNKNOWN';
     allplanIdStatus?: 'AVAILABLE' | 'UNAVAILABLE' | 'UNKNOWN';
     organizationInviteStatus?: 'ACCEPTED' | 'MISSING' | 'UNKNOWN';
     licenseGroupStatus?: 'ASSIGNED' | 'MISSING' | 'UNKNOWN';
 };
 
-export type ValidatedAllplanLicensingContext = { allplanVersion: string; promptContext: string };
+export type ValidatedAllplanLicensingContext = {
+    allplanVersion: string;
+    promptContext: string;
+    intake: AllplanLicensingIntake;
+};
 
 type ReleaseFamily = 'LEGACY' | 'CODEMETER' | 'TRANSITION_2024' | 'CLOUD' | 'UNKNOWN';
 type LicenseIssueType = NonNullable<AllplanLicensingIntake['licenseIssueType']>;
 
 const ALLOWED_ISSUES: Record<Exclude<ReleaseFamily, 'UNKNOWN' | 'TRANSITION_2024'>, readonly LicenseIssueType[]> = {
-    LEGACY: ['ACTIVATION', 'TRANSFER', 'OFFLINE', 'OTHER'],
-    CODEMETER: ['ACTIVATION', 'TRANSFER', 'OFFLINE', 'OTHER'],
-    CLOUD: ['ACTIVATION', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER'],
+    LEGACY: ['ACTIVATION', 'TRANSFER', 'FORMAT_REINSTALL'],
+    CODEMETER: ['ACTIVATION', 'TRANSFER', 'FORMAT_REINSTALL'],
+    CLOUD: ['LOGIN', 'SEAT', 'OFFLINE'],
 };
 
 export const canonicalizeAllplanRelease = (raw?: string): string | undefined => {
@@ -51,10 +55,58 @@ const classifyStrictRelease = (
         if (allplan2024ReleaseBand === 'FROM_2024_2_0') return 'CLOUD';
         return 'TRANSITION_2024';
     }
-    if (year !== 2024 || minor === undefined || match[3] === undefined) return 'UNKNOWN';
-    if (minor < 1 || (minor === 1 && patch <= 10)) return 'CODEMETER';
+    if (year !== 2024 || minor === undefined) return 'UNKNOWN';
     if (minor >= 2) return 'CLOUD';
+    if (match[3] === undefined) return 'UNKNOWN';
+    if (minor < 1 || (minor === 1 && patch <= 10)) return 'CODEMETER';
     return 'UNKNOWN';
+};
+
+export const validateAllplanLicensingIntake = (intake: AllplanLicensingIntake): ValidatedAllplanLicensingContext => {
+    if (intake.categoryKey !== 'licensing') {
+        throw new BadRequestException('ALLPLAN licensing category is required.');
+    }
+    const family = classifyStrictRelease(intake.allplanVersion, intake.allplan2024ReleaseBand);
+    if (family === 'UNKNOWN') {
+        throw new BadRequestException({ message: 'Exact ALLPLAN release/build is required.', missingFields: ['allplanVersion'] });
+    }
+    if (family === 'TRANSITION_2024') {
+        throw new BadRequestException({
+            message: 'The ALLPLAN 2024 release range is required.',
+            missingFields: ['allplan2024ReleaseBand'],
+        });
+    }
+
+    const missingFields: string[] = [];
+    if (!intake.licenseIssueType || !ALLOWED_ISSUES[family].includes(intake.licenseIssueType)) missingFields.push('licenseIssueType');
+    if ((family === 'LEGACY' || family === 'CODEMETER')
+        && (!intake.licenseTopology || intake.licenseTopology === 'UNKNOWN')) {
+        missingFields.push('licenseTopology');
+    }
+    if (family === 'CLOUD' && intake.licenseUserRole !== 'LICENSE_ADMIN') missingFields.push('licenseUserRole');
+    if (missingFields.length > 0) {
+        throw new BadRequestException({ message: 'ALLPLAN licensing intake is incomplete.', missingFields });
+    }
+
+    const allplanVersion = canonicalizeAllplanRelease(intake.allplanVersion)!;
+    const normalizedIntake: AllplanLicensingIntake = {
+        categoryKey: 'licensing',
+        allplanVersion,
+        ...(allplanVersion === '2024' ? { allplan2024ReleaseBand: intake.allplan2024ReleaseBand } : {}),
+        licenseIssueType: intake.licenseIssueType,
+        ...(family === 'CLOUD'
+            ? { licenseUserRole: intake.licenseUserRole }
+            : { licenseTopology: intake.licenseTopology }),
+    };
+    const promptContext = [
+        '[VALIDATED ALLPLAN LICENSING INTAKE - use this data when routing the answer]',
+        `Release: ${allplanVersion}`,
+        `Release family: ${family}`,
+        ...(allplanVersion === '2024' ? [`2024 release range: ${intake.allplan2024ReleaseBand}`] : []),
+        `Issue: ${intake.licenseIssueType}`,
+        family === 'CLOUD' ? `User role: ${intake.licenseUserRole}` : `License topology: ${intake.licenseTopology}`,
+    ].join('\n');
+    return { allplanVersion, promptContext, intake: normalizedIntake };
 };
 
 @Injectable()
@@ -81,47 +133,6 @@ export class AllplanLicensingPolicyService {
             throw new BadRequestException('The ALLPLAN licensing workflow is only available for the ALLPLAN product.');
         }
 
-        const family = classifyStrictRelease(intake.allplanVersion, intake.allplan2024ReleaseBand);
-        if (family === 'UNKNOWN') {
-            throw new BadRequestException({ message: 'Exact ALLPLAN release/build is required.', missingFields: ['allplanVersion'] });
-        }
-        if (family === 'TRANSITION_2024') {
-            throw new BadRequestException({
-                message: 'The ALLPLAN 2024 release range is required.',
-                missingFields: ['allplan2024ReleaseBand'],
-            });
-        }
-
-        const missingFields: string[] = [];
-        if (!intake.licenseIssueType || !ALLOWED_ISSUES[family].includes(intake.licenseIssueType)) missingFields.push('licenseIssueType');
-        if ((family === 'LEGACY' || family === 'CODEMETER')
-            && (!intake.licenseTopology || intake.licenseTopology === 'UNKNOWN')) {
-            missingFields.push('licenseTopology');
-        }
-        if (family === 'CLOUD') {
-            if (!intake.allplanIdStatus || intake.allplanIdStatus === 'UNKNOWN') missingFields.push('allplanIdStatus');
-            if (!intake.organizationInviteStatus || intake.organizationInviteStatus === 'UNKNOWN') missingFields.push('organizationInviteStatus');
-            if (!intake.licenseGroupStatus || intake.licenseGroupStatus === 'UNKNOWN') missingFields.push('licenseGroupStatus');
-            if (!intake.licenseUserRole || intake.licenseUserRole === 'UNKNOWN') missingFields.push('licenseUserRole');
-        }
-        if (missingFields.length > 0) {
-            throw new BadRequestException({ message: 'ALLPLAN licensing intake is incomplete.', missingFields });
-        }
-
-        const allplanVersion = canonicalizeAllplanRelease(intake.allplanVersion)!;
-        const promptContext = [
-            '[VALIDATED ALLPLAN LICENSING INTAKE - use this data when routing the answer]',
-            `Release: ${allplanVersion}`,
-            `Release family: ${family}`,
-            ...(allplanVersion === '2024' ? [`2024 release range: ${intake.allplan2024ReleaseBand}`] : []),
-            `Issue: ${intake.licenseIssueType}`,
-            family === 'CLOUD' ? `User role: ${intake.licenseUserRole}` : `License topology: ${intake.licenseTopology}`,
-            ...(family === 'CLOUD' ? [
-                `ALLPLAN ID access: ${intake.allplanIdStatus}`,
-                `Organization invitation: ${intake.organizationInviteStatus}`,
-                `License group visibility: ${intake.licenseGroupStatus}`,
-            ] : []),
-        ].join('\n');
-        return { allplanVersion, promptContext };
+        return validateAllplanLicensingIntake(intake);
     }
 }

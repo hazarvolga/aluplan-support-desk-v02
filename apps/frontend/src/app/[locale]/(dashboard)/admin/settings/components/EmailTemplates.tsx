@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Eye, Save, FilePlus, Code, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { getErrorMessage, type EmailPreviewResult } from '../../../settings/settings-types';
 
 export function EmailTemplates() {
     const t = useTranslations('settings.email.templates');
@@ -22,7 +23,6 @@ export function EmailTemplates() {
     const [dirty, setDirty] = useState(false);
     const [showNewDialog, setShowNewDialog] = useState(false);
     const [newTemplateName, setNewTemplateName] = useState('');
-    const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
 
     // Load template list
     useEffect(() => {
@@ -52,7 +52,7 @@ export function EmailTemplates() {
                 setMjmlSource(res.content);
                 setDirty(false);
                 setPreviewHtml(null);
-            } catch (error: any) {
+            } catch {
                 toast.error(t('toasts.load_error'));
                 setMjmlSource('');
             }
@@ -64,15 +64,14 @@ export function EmailTemplates() {
         if (!selected) return;
         setRendering(true);
         try {
-            const result = await api.email.previewTemplate(selected, {});
+            const result = await api.email.previewTemplate(selected, {}) as EmailPreviewResult;
             if (result.success) {
-                setPreviewHtml(result.html);
-                setPreviewSubject(result.subject);
-                setActiveTab('preview');
+                setPreviewHtml(result.html ?? null);
+                setPreviewSubject(result.subject ?? null);
             } else {
                 toast.error(result.error || t('toasts.compile_error'));
             }
-        } catch (error: any) {
+        } catch {
             toast.error(t('toasts.preview_error'));
             setPreviewHtml(null);
         } finally {
@@ -89,8 +88,8 @@ export function EmailTemplates() {
             toast.success(t('toasts.save_success', { name: selected }));
             // Auto-preview after save
             handlePreview();
-        } catch (error: any) {
-            toast.error(t('toasts.save_failed', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('toasts.save_failed', { message: getErrorMessage(error) }));
         } finally {
             setSaving(false);
         }
@@ -141,8 +140,8 @@ export function EmailTemplates() {
             setNewTemplateName('');
             setShowNewDialog(false);
             toast.success(t('toasts.create_success', { name }));
-        } catch (error: any) {
-            toast.error(t('toasts.create_failed', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('toasts.create_failed', { message: getErrorMessage(error) }));
         }
     }, [newTemplateName]);
 

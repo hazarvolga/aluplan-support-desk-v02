@@ -87,6 +87,7 @@ describe('Disposable PostgreSQL customer security rehearsal', () => {
         NODE_ENV: 'test',
         JWT_SECRET: randomBytes(48).toString('hex'),
         JWT_REFRESH_SECRET: randomBytes(48).toString('hex'),
+        SESSION_MARKER_SECRET: randomBytes(48).toString('hex'),
         AUTH_ACTION_JWT_SECRET: randomBytes(48).toString('hex'),
         JWT_EXPIRES_IN: '1h', JWT_REFRESH_EXPIRES_IN: '1d',
         FRONTEND_URL: 'http://127.0.0.1:3999',

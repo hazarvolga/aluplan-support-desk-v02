@@ -16,12 +16,12 @@ import { useToast } from '@/hooks/use-toast';
 import {
     Loader2, Bot, Globe, Mail, ShieldCheck, Palette, CheckCircle2,
     XCircle, ExternalLink, Plus, Trash2, Edit2, AlertCircle, Clock,
-    Upload, Trash, MessageSquare, Phone, Monitor, Database, Sparkles, Copy
+    Upload, Trash, MessageSquare, Monitor, Database, Sparkles
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
-    Dialog, DialogContent, DialogDescription, DialogFooter,
-    DialogHeader, DialogTitle, DialogTrigger
+    Dialog, DialogContent, DialogFooter,
+    DialogHeader, DialogTitle
 } from '@/components/ui/dialog';
 import {
     Table, TableBody, TableCell, TableHead,
@@ -30,13 +30,49 @@ import {
 import { AiTelemetryDashboard } from '@/components/admin/AiTelemetryDashboard';
 import { useTranslations } from 'next-intl';
 import { SystemRequirementsForm } from '@/components/admin/settings/SystemRequirementsForm';
+import {
+    CHAT_PROVIDER_OPTIONS,
+    EMBEDDING_PROVIDER_OPTIONS,
+    buildSettingsBatch,
+    ensureSupportedEmbeddingProvider,
+    maskSavedSecretValues,
+    normalizeChatFallbackProvider,
+    normalizeChatProvider,
+    normalizeEmbeddingFallbackProvider,
+    normalizeEmbeddingProvider,
+    toCredentialOverride,
+} from '@/lib/ai-provider-policy';
 
-enum TicketPriority {
-    LOW = 'LOW',
-    MEDIUM = 'MEDIUM',
-    HIGH = 'HIGH',
-    CRITICAL = 'CRITICAL'
-}
+type Setting = { key: string; value: string; isSecret?: boolean };
+type AiHealth = {
+    chatProvider?: string;
+    providers?: Record<string, { available?: boolean }>;
+};
+type SlaPolicy = {
+    id: string;
+    name: string;
+    priority: string;
+    departmentId?: string;
+    department?: { name?: string | null } | null;
+    firstResponseMinutes: number;
+    resolutionMinutes: number;
+    businessHoursOnly: boolean;
+};
+type DepartmentOption = { id: string; name: string };
+
+const EMPTY_SLA_POLICY = {
+    name: '',
+    priority: 'MEDIUM',
+    departmentId: '',
+    firstResponseMinutes: 480,
+    resolutionMinutes: 1440,
+    businessHoursOnly: true,
+};
+
+class UserFacingSettingsError extends Error {}
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof UserFacingSettingsError && error.message ? error.message : fallback;
 
 export default function AdminSettingsPage() {
     const t = useTranslations('settings');
@@ -45,11 +81,11 @@ export default function AdminSettingsPage() {
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [settings, setSettings] = useState<any[]>([]);
+    const [settings, setSettings] = useState<Setting[]>([]);
     const [gmailAuthorizing, setGmailAuthorizing] = useState(false);
     const [imapTesting, setImapTesting] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
-    const [aiHealth, setAiHealth] = useState<any>(null);
+    const [aiHealth, setAiHealth] = useState<AiHealth | null>(null);
     type ModelList = {
         chatModels: Array<{ id: string; displayName: string; recommended: boolean }>;
         embedModels: Array<{ id: string; displayName: string; recommended: boolean }>;
@@ -60,9 +96,6 @@ export default function AdminSettingsPage() {
     const [loadingOpenaiModels, setLoadingOpenaiModels] = useState(false);
     const [groqModels, setGroqModels] = useState<ModelList | null>(null);
     const [loadingGroqModels, setLoadingGroqModels] = useState(false);
-    const [ollamaModels, setOllamaModels] = useState<ModelList | null>(null);
-    const [loadingOllamaModels, setLoadingOllamaModels] = useState(false);
-
     const getListModelsButtonLabel = (loading: boolean) => (
         loading ? t('ai.loading_models') : t('ai.list_models')
     );
@@ -87,21 +120,17 @@ export default function AdminSettingsPage() {
     };
 
     // SLA States
-    const [policies, setPolicies] = useState<any[]>([]);
-    const [departments, setDepartments] = useState<any[]>([]);
+    const [policies, setPolicies] = useState<SlaPolicy[]>([]);
+    const [departments, setDepartments] = useState<DepartmentOption[]>([]);
     const [isAddingPolicy, setIsAddingPolicy] = useState(false);
-    const [editingPolicy, setEditingPolicy] = useState<any>(null);
-    const [newPolicy, setNewPolicy] = useState({
-        name: '',
-        priority: 'MEDIUM',
-        departmentId: '',
-        firstResponseMinutes: 480,
-        resolutionMinutes: 1440,
-        businessHoursOnly: true
-    });
+    const [editingPolicy, setEditingPolicy] = useState<SlaPolicy | null>(null);
+    const [newPolicy, setNewPolicy] = useState({ ...EMPTY_SLA_POLICY });
 
     // Derived: check if refresh token exists in loaded settings
     const gmailTokenStatus = settings.find(s => s.key === 'mail.gmail.refresh_token')?.value ? 'ok' : 'missing';
+    const primaryProviderAvailable = Boolean(
+        aiHealth?.chatProvider && aiHealth.providers?.[aiHealth.chatProvider]?.available,
+    );
 
     useEffect(() => {
         loadSettings();
@@ -110,31 +139,45 @@ export default function AdminSettingsPage() {
 
         // Read Gmail OAuth2 callback result from URL params
         const gmailStatus = searchParams.get('gmail_status');
-        const gmailEmail = searchParams.get('gmail_email');
-        const gmailError = searchParams.get('gmail_error');
         if (gmailStatus === 'success') {
             toast({ title: '✅ ' + t('email.authorized'), description: t('toasts.gmail_success') });
         } else if (gmailStatus === 'error') {
-            toast({ title: t('email.gmail_title'), description: gmailError || t('toasts.gmail_error'), variant: 'destructive' });
+            // Callback query values are intentionally never reflected to users.
+            toast({ title: t('email.gmail_title'), description: t('toasts.gmail_error'), variant: 'destructive' });
         }
     }, []);
 
     const loadSettings = async () => {
         try {
             setLoading(true);
-            const data = await api.settings.list(true);
-            const chatProvider = data.find((s: any) => s.key === 'ai.chat_provider')?.value;
-            const activeProvider = data.find((s: any) => s.key === 'ai.active_provider')?.value;
-            if (chatProvider && activeProvider !== chatProvider) {
-                const activeIndex = data.findIndex((s: any) => s.key === 'ai.active_provider');
-                if (activeIndex > -1) {
-                    data[activeIndex] = { ...data[activeIndex], value: chatProvider };
-                } else {
-                    data.push({ key: 'ai.active_provider', value: chatProvider });
-                }
-            }
-            setSettings(data);
-        } catch (error: any) {
+            const data = await api.settings.list() as Setting[];
+            const normalizedSettings = data
+                .filter((setting) => !setting.key.startsWith('ai.ollama.'))
+                .map((setting) => {
+                    if (['ai.chat_provider', 'ai.active_provider'].includes(setting.key)) {
+                        return { ...setting, value: normalizeChatProvider(setting.value) };
+                    }
+                    if (setting.key === 'ai.embed_provider') {
+                        return { ...setting, value: normalizeEmbeddingProvider(setting.value) };
+                    }
+                    if (setting.key === 'ai.fallback_provider') {
+                        return { ...setting, value: normalizeChatFallbackProvider(setting.value) };
+                    }
+                    if (setting.key === 'ai.embed_fallback_provider') {
+                        return { ...setting, value: normalizeEmbeddingFallbackProvider(setting.value) };
+                    }
+                    return setting;
+                });
+            const sanitizedSettings = ensureSupportedEmbeddingProvider(normalizedSettings);
+            const chatProvider = sanitizedSettings.find((setting) => setting.key === 'ai.chat_provider')?.value;
+            const activeProvider = sanitizedSettings.find((setting) => setting.key === 'ai.active_provider')?.value;
+            const nextSettings = chatProvider && activeProvider !== chatProvider
+                ? sanitizedSettings.some((setting) => setting.key === 'ai.active_provider')
+                    ? sanitizedSettings.map((setting) => setting.key === 'ai.active_provider' ? { ...setting, value: chatProvider } : setting)
+                    : [...sanitizedSettings, { key: 'ai.active_provider', value: chatProvider }]
+                : sanitizedSettings;
+            setSettings(nextSettings);
+        } catch {
             toast({
                 title: t('toasts.load_error').split(':')[0],
                 description: t('toasts.load_error'),
@@ -148,13 +191,26 @@ export default function AdminSettingsPage() {
     const loadAiHealth = async () => {
         try {
             const res = await api.ai.getHealthStatus();
-            setAiHealth(res);
+            setAiHealth(res as AiHealth);
         } catch (e) {
             console.error('Failed to load AI health', e);
         }
     };
 
     const getSetting = (key: string) => settings.find(s => s.key === key)?.value || '';
+
+    const getProviderLabel = (provider: string, embedding = false) => {
+        const labels: Record<string, string> = {
+            openai: t('ai.providers.openai_cloud'),
+            llmapi: t('ai.providers.llmapi'),
+            xai: t('ai.providers.xai'),
+            deepseek: t('ai.providers.deepseek'),
+            groq: t('ai.providers.groq'),
+            custom: t(embedding ? 'ai.providers.custom_info' : 'ai.providers.custom'),
+            gemini: t('ai.providers.gemini'),
+        };
+        return labels[provider] || provider;
+    };
 
     const updateValue = (key: string, value: string) => {
         setSettings(prev => {
@@ -175,12 +231,23 @@ export default function AdminSettingsPage() {
         try {
             setUploadingLogo(true);
             const res = await api.branding.uploadLogo(file);
-            updateValue('branding.logo_url', res.publicUrl || res.url);
+            const uploadedLogoUrl = res.publicUrl || res.url;
+            await api.settings.upsert({
+                key: 'branding.logo_url',
+                value: uploadedLogoUrl,
+                isSecret: false,
+            });
+            const persisted = await api.settings.get('branding.logo_url');
+            if (!persisted || persisted.value !== uploadedLogoUrl) {
+                throw new Error('Branding logo persistence could not be verified');
+            }
+            await loadSettings();
+            updateValue('branding.logo_url', persisted.value);
             toast({ title: '✅ ' + t('branding.logo_title'), description: t('toasts.logo_success') });
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast({
                 title: t('toasts.save_error').split(':')[0],
-                description: t('toasts.logo_error') + ': ' + error.message,
+                description: t('toasts.logo_error') + ': ' + getErrorMessage(error, t('toasts.save_error')),
                 variant: 'destructive',
             });
         } finally {
@@ -200,92 +267,69 @@ export default function AdminSettingsPage() {
                 const currentChatProvider = getSetting('ai.chat_provider');
                 const currentEmbedProvider = getSetting('ai.embed_provider');
 
-                const validateProvider = (p: string) => {
-                    const fieldLabels: Record<string, string> = {
-                        'api_key': t('ai.validation.fields.api_key'),
-                        'chat_model': t('ai.validation.fields.chat_model'),
-                        'embed_model': t('ai.validation.fields.embed_model'),
-                        'url': t('ai.validation.fields.url')
-                    };
+                if (!currentEmbedProvider) {
+                    throw new UserFacingSettingsError(t('ai.validation.embed_provider_required'));
+                }
 
-                    const checkFields = (providerName: string, fields: string[]) => {
-                        const missing = fields.filter(f => !getSetting(f));
-                        if (missing.length > 0) {
-                            const missingLabels = missing.map(f => {
-                                const lastPart = f.split('.').pop() || '';
-                                return fieldLabels[lastPart] || lastPart;
-                            }).join(', ');
-
-                            throw new Error(t('ai.validation.missing_fields', { fields: missingLabels }));
-                        }
-                    };
-
-                    if (p === 'openai') {
-                        checkFields('OpenAI', ['ai.openai.api_key', 'ai.openai.chat_model', 'ai.openai.embed_model']);
-                    } else if (p === 'ollama') {
-                        checkFields('Ollama', ['ai.ollama.url', 'ai.ollama.chat_model', 'ai.ollama.embed_model']);
-                    } else if (p === 'vertex') {
-                        checkFields('Google Vertex AI', ['ai.vertex.project_id', 'ai.vertex.chat_model']);
-                    } else if (p === 'anthropic') {
-                        checkFields('Anthropic', ['ai.anthropic.api_key', 'ai.anthropic.chat_model']);
-                    } else if (p === 'gemini') {
-                        checkFields('Google Gemini', ['ai.gemini.api_key', 'ai.gemini.chat_model']);
-                    } else if (['xai', 'deepseek', 'groq', 'custom', 'llmapi'].includes(p)) {
-                        const models = {
-                            xai: ['ai.xai.api_key', 'ai.xai.chat_model'],
-                            deepseek: ['ai.deepseek.api_key', 'ai.deepseek.chat_model'],
-                            groq: ['ai.groq.api_key', 'ai.groq.chat_model'],
-                            custom: ['ai.custom.api_key', 'ai.custom.url', 'ai.custom.chat_model', 'ai.custom.embed_model'],
-                            llmapi: ['ai.llmapi.api_key', 'ai.llmapi.chat_model', 'ai.llmapi.embed_model']
-                        };
-                        checkFields(p.toUpperCase(), (models as Record<string, string[]>)[p]);
+                const fieldLabels: Record<string, string> = {
+                    api_key: t('ai.validation.fields.api_key'),
+                    chat_model: t('ai.validation.fields.chat_model'),
+                    embed_model: t('ai.validation.fields.embed_model'),
+                    url: t('ai.validation.fields.url'),
+                };
+                const chatFields: Record<string, string[]> = {
+                    openai: ['ai.openai.api_key', 'ai.openai.chat_model'],
+                    gemini: ['ai.gemini.api_key', 'ai.gemini.chat_model'],
+                    xai: ['ai.xai.api_key', 'ai.xai.chat_model'],
+                    deepseek: ['ai.deepseek.api_key', 'ai.deepseek.chat_model'],
+                    groq: ['ai.groq.api_key', 'ai.groq.chat_model'],
+                    custom: ['ai.custom.api_key', 'ai.custom.url', 'ai.custom.chat_model'],
+                    llmapi: ['ai.llmapi.api_key', 'ai.llmapi.chat_model'],
+                };
+                const embeddingFields: Record<string, string[]> = {
+                    openai: ['ai.openai.api_key', 'ai.openai.embed_model'],
+                    gemini: ['ai.gemini.api_key', 'ai.gemini.embed_model'],
+                    custom: ['ai.custom.api_key', 'ai.custom.url', 'ai.custom.embed_model'],
+                    llmapi: ['ai.llmapi.api_key', 'ai.llmapi.embed_model'],
+                };
+                const validateProviderFields = (provider: string, fieldsByProvider: Record<string, string[]>) => {
+                    const missing = (fieldsByProvider[provider] || []).filter(field => !getSetting(field));
+                    if (missing.length > 0) {
+                        const missingLabels = missing.map(field => {
+                            const fieldName = field.split('.').pop() || '';
+                            return fieldLabels[fieldName] || fieldName;
+                        }).join(', ');
+                        throw new UserFacingSettingsError(t('ai.validation.missing_fields', { fields: missingLabels }));
                     }
                 };
 
-                if (currentChatProvider) validateProvider(currentChatProvider);
-                if (currentEmbedProvider && currentEmbedProvider !== currentChatProvider) validateProvider(currentEmbedProvider);
+                if (currentChatProvider) validateProviderFields(currentChatProvider, chatFields);
+                validateProviderFields(currentEmbedProvider, embeddingFields);
             }
 
 
-            const secretKeys = [
-                'ai.llmapi.api_key',
-                'ai.openai.api_key',
-                'ai.xai.api_key',
-                'ai.deepseek.api_key',
-                'ai.groq.api_key',
-                'ai.custom.api_key',
-                'ai.gemini.api_key',
-                'ai.vertex.credentials_json',
-                'email.resend.api_key',
-                'email.smtp.pass',
-                'email.gmail.client_secret',
-                'email.gmail.refresh_token',
-                'whatsapp.access_token',
-                'whatsapp.verify_token',
-            ];
-
-            const batch = keys
-                .map(key => {
-                    const value = key === 'ai.active_provider'
-                        ? getSetting('ai.chat_provider') || getSetting(key)
-                        : getSetting(key);
-                    const isSecret = secretKeys.includes(key);
-                    return { key, value, isSecret };
-                })
-                .filter(item => item.value !== '' && item.value !== '********');
+            const settingsBatch = buildSettingsBatch(keys, (key) => key === 'ai.active_provider'
+                ? getSetting('ai.chat_provider') || getSetting(key)
+                : getSetting(key));
+            const batch = keys.includes('branding.logo_url')
+                && getSetting('branding.logo_url') === ''
+                && !settingsBatch.some((item) => item.key === 'branding.logo_url')
+                ? [...settingsBatch, { key: 'branding.logo_url', value: '', isSecret: false }]
+                : settingsBatch;
 
             if (batch.length > 0) {
                 await api.settings.bulkUpsert({ settings: batch });
+                setSettings((current) => maskSavedSecretValues(current, batch.map((item) => item.key)));
             }
 
             toast({
                 title: t('toasts.success'),
                 description: t('toasts.save_success', { key: 'Settings' }),
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast({
                 title: t('toasts.generic_error'),
-                description: error.message || t('toasts.save_error'),
+                description: getErrorMessage(error, t('toasts.save_error')),
                 variant: 'destructive',
             });
         } finally {
@@ -294,33 +338,55 @@ export default function AdminSettingsPage() {
     };
 
     const loadSlaData = async () => {
-        try {
-            const [policiesData, deptsData] = await Promise.all([
-                api.sla.list(),
-                api.teams.departments()
-            ]);
-            setPolicies(policiesData);
-            setDepartments(deptsData);
-        } catch (err: any) {
-            console.error(t('sla.load_error'), err);
+        const [policiesResult, departmentsResult] = await Promise.allSettled([
+            api.sla.list(),
+            api.teams.departments(),
+        ]);
+
+        if (policiesResult.status === 'fulfilled') {
+            setPolicies(policiesResult.value as SlaPolicy[]);
+        } else {
+            console.error(t('sla.load_error'));
+        }
+
+        if (departmentsResult.status === 'fulfilled') {
+            setDepartments(departmentsResult.value.map(({ id, name }) => ({ id, name })));
+        } else {
+            setDepartments([]);
+            console.error(t('sla.load_error'));
         }
     };
 
     const handleSavePolicy = async () => {
         try {
             setSaving(true);
+            const normalizedPolicy = {
+                ...newPolicy,
+                name: newPolicy.name.trim(),
+            };
+            if (!normalizedPolicy.name || !normalizedPolicy.departmentId) {
+                throw new UserFacingSettingsError(t('sla.form.validation.required'));
+            }
+            if (
+                !Number.isInteger(normalizedPolicy.firstResponseMinutes)
+                || normalizedPolicy.firstResponseMinutes <= 0
+                || !Number.isInteger(normalizedPolicy.resolutionMinutes)
+                || normalizedPolicy.resolutionMinutes <= 0
+            ) {
+                throw new UserFacingSettingsError(t('sla.form.validation.positive_integer'));
+            }
             if (editingPolicy) {
-                await api.sla.update(editingPolicy.id, newPolicy);
+                await api.sla.update(editingPolicy.id, normalizedPolicy);
                 toast({ title: t('toasts.success'), description: t('toasts.policy_save_success') });
             } else {
-                await api.sla.create(newPolicy);
+                await api.sla.create(normalizedPolicy);
                 toast({ title: t('toasts.success'), description: t('toasts.policy_save_success') });
             }
             setIsAddingPolicy(false);
             setEditingPolicy(null);
             loadSlaData();
-        } catch (err: any) {
-            toast({ title: t('toasts.save_error').split(':')[0], description: err.message, variant: 'destructive' });
+        } catch (err: unknown) {
+            toast({ title: t('toasts.save_error').split(':')[0], description: getErrorMessage(err, t('toasts.save_error')), variant: 'destructive' });
         } finally {
             setSaving(false);
         }
@@ -332,17 +398,17 @@ export default function AdminSettingsPage() {
             await api.sla.delete(id);
             toast({ title: t('toasts.success'), description: t('toasts.policy_delete_success') });
             loadSlaData();
-        } catch (err: any) {
-            toast({ title: t('toasts.save_error').split(':')[0], description: err.message, variant: 'destructive' });
+        } catch (err: unknown) {
+            toast({ title: t('toasts.save_error').split(':')[0], description: getErrorMessage(err, t('toasts.save_error')), variant: 'destructive' });
         }
     };
 
-    const openEditPolicy = (policy: any) => {
+    const openEditPolicy = (policy: SlaPolicy) => {
         setEditingPolicy(policy);
         setNewPolicy({
             name: policy.name,
             priority: policy.priority,
-            departmentId: policy.departmentId,
+            departmentId: policy.departmentId ?? '',
             firstResponseMinutes: policy.firstResponseMinutes,
             resolutionMinutes: policy.resolutionMinutes,
             businessHoursOnly: policy.businessHoursOnly
@@ -351,7 +417,7 @@ export default function AdminSettingsPage() {
     };
 
     const getPriorityBadge = (priority: string) => {
-        const styles: any = {
+        const styles: Record<string, string> = {
             URGENT: 'bg-red-500/10 text-red-500 border-red-500/20',
             CRITICAL: 'bg-red-500/10 text-red-500 border-red-500/20',
             HIGH: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
@@ -463,14 +529,14 @@ export default function AdminSettingsPage() {
                                             <>
                                                 <div className="flex flex-col items-center">
                                                     <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider mb-1">Primary</span>
-                                                    <Badge variant="outline" className={`text-[10px] relative ${aiHealth?.providers?.[aiHealth?.chatProvider]?.available ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/20' : 'bg-red-500/15 text-red-500 border-red-500/20'}`}>
-                                                        {aiHealth?.providers?.[aiHealth?.chatProvider]?.available && (
+                                                    <Badge variant="outline" className={`text-[10px] relative ${primaryProviderAvailable ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/20' : 'bg-red-500/15 text-red-500 border-red-500/20'}`}>
+                                                        {primaryProviderAvailable && (
                                                             <span className="absolute -left-1 -top-1 flex h-2 w-2">
                                                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                                                             </span>
                                                         )}
-                                                        {aiHealth?.providers?.[aiHealth?.chatProvider]?.available ? 'ONLINE' : 'DOWN'}
+                                                        {primaryProviderAvailable ? 'ONLINE' : 'DOWN'}
                                                     </Badge>
                                                 </div>
                                                 <div className="h-6 w-px bg-border"></div>
@@ -514,37 +580,27 @@ export default function AdminSettingsPage() {
                                                 <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-500 border-blue-500/20">ACTIVE</Badge>
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-[12px] font-bold tracking-widest uppercase">{t('ai.chat_provider')}</Label>
-                                                <Select value={getSetting('ai.chat_provider') || getSetting('ai.active_provider') || 'ollama'} onValueChange={v => {
+                                                <Label htmlFor="ai-chat-provider" className="text-[12px] font-bold tracking-widest uppercase">{t('ai.chat_provider')}</Label>
+                                                <Select value={normalizeChatProvider(getSetting('ai.chat_provider') || getSetting('ai.active_provider')) || undefined} onValueChange={v => {
                                                     updateValue('ai.chat_provider', v);
                                                     updateValue('ai.active_provider', v);
                                                 }}>
-                                                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                                                    <SelectTrigger id="ai-chat-provider" className="w-full"><SelectValue /></SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
-                                                        <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
-                                                        <SelectItem value="vertex">Google Vertex AI</SelectItem>
-                                                        <SelectItem value="xai">{t('ai.providers.xai')}</SelectItem>
-                                                        <SelectItem value="groq">{t('ai.providers.groq')}</SelectItem>
-                                                        <SelectItem value="deepseek">{t('ai.providers.deepseek')}</SelectItem>
-                                                        <SelectItem value="gemini">{t('ai.providers.gemini')}</SelectItem>
-                                                        <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
-                                                        <SelectItem value="custom">{t('ai.providers.custom')}</SelectItem>
+                                                        {CHAT_PROVIDER_OPTIONS.map(provider => (
+                                                            <SelectItem key={provider} value={provider}>{getProviderLabel(provider)}</SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-[12px] font-bold tracking-widest uppercase">{t('ai.embed_provider')}</Label>
-                                                <Select value={getSetting('ai.embed_provider') || getSetting('ai.active_provider') || 'ollama'} onValueChange={v => updateValue('ai.embed_provider', v)}>
+                                                <Select value={normalizeEmbeddingProvider(getSetting('ai.embed_provider')) || undefined} onValueChange={v => updateValue('ai.embed_provider', v)}>
                                                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
-                                                        <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
-                                                        <SelectItem value="vertex">Google Vertex AI</SelectItem>
-                                                        <SelectItem value="groq">{t('ai.providers.groq_no_embed')}</SelectItem>
-                                                        <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
-                                                        <SelectItem value="gemini">{t('ai.providers.gemini')}</SelectItem>
-                                                        <SelectItem value="custom">{t('ai.providers.custom_info')}</SelectItem>
+                                                        {EMBEDDING_PROVIDER_OPTIONS.map(provider => (
+                                                            <SelectItem key={provider} value={provider}>{getProviderLabel(provider, true)}</SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -558,34 +614,25 @@ export default function AdminSettingsPage() {
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-[12px] font-bold tracking-widest uppercase flex items-center gap-1.5"><Globe className="h-3 w-3" /> FALLBACK CHAT</Label>
-                                                <Select value={getSetting('ai.fallback_provider') || 'none'} onValueChange={v => updateValue('ai.fallback_provider', v)}>
+                                                <Select value={normalizeChatFallbackProvider(getSetting('ai.fallback_provider'))} onValueChange={v => updateValue('ai.fallback_provider', v)}>
                                                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="none">-- Devre Dışı --</SelectItem>
-                                                        <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
-                                                        <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
-                                                        <SelectItem value="vertex">Google Vertex AI</SelectItem>
-                                                        <SelectItem value="xai">{t('ai.providers.xai')}</SelectItem>
-                                                        <SelectItem value="groq">{t('ai.providers.groq')}</SelectItem>
-                                                        <SelectItem value="deepseek">{t('ai.providers.deepseek')}</SelectItem>
-                                                        <SelectItem value="gemini">{t('ai.providers.gemini')}</SelectItem>
-                                                        <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
-                                                        <SelectItem value="custom">{t('ai.providers.custom')}</SelectItem>
+                                                        {CHAT_PROVIDER_OPTIONS.map(provider => (
+                                                            <SelectItem key={provider} value={provider}>{getProviderLabel(provider)}</SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label className="text-[12px] font-bold tracking-widest uppercase flex items-center gap-1.5"><Database className="h-3 w-3" /> FALLBACK EMBED</Label>
-                                                <Select value={getSetting('ai.embed_fallback_provider') || 'none'} onValueChange={v => updateValue('ai.embed_fallback_provider', v)}>
+                                                <Select value={normalizeEmbeddingFallbackProvider(getSetting('ai.embed_fallback_provider'))} onValueChange={v => updateValue('ai.embed_fallback_provider', v)}>
                                                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="none">-- Devre Dışı --</SelectItem>
-                                                        <SelectItem value="ollama">{t('ai.providers.ollama')}</SelectItem>
-                                                        <SelectItem value="openai">{t('ai.providers.openai_cloud')}</SelectItem>
-                                                        <SelectItem value="vertex">Google Vertex AI</SelectItem>
-                                                        <SelectItem value="llmapi">{t('ai.providers.llmapi')}</SelectItem>
-                                                        <SelectItem value="gemini">{t('ai.providers.gemini')}</SelectItem>
-                                                        <SelectItem value="custom">{t('ai.providers.custom_info')}</SelectItem>
+                                                        {EMBEDDING_PROVIDER_OPTIONS.map(provider => (
+                                                            <SelectItem key={provider} value={provider}>{getProviderLabel(provider, true)}</SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -594,96 +641,6 @@ export default function AdminSettingsPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                                    {([getSetting('ai.chat_provider'), getSetting('ai.embed_provider'), getSetting('ai.fallback_provider'), getSetting('ai.embed_fallback_provider')].includes('ollama')) && (
-                                        /* Ollama Ayarları */
-                                        <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
-                                            <div className="flex justify-between items-center mb-2">
-                                                <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                    <Bot className="h-4 w-4" /> {t('ai.ollama.title')}
-                                                </h3>
-                                                <div className="flex items-center gap-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-6 px-2 text-[10px] text-blue-400 hover:bg-blue-500/10"
-                                                        disabled={loadingOllamaModels}
-                                                        onClick={async () => {
-                                                            setLoadingOllamaModels(true);
-                                                            try {
-                                                                const result = await api.ai.listModels('ollama', undefined, getSetting('ai.ollama.url'));
-                                                                setOllamaModels(result);
-                                                                if (!getSetting('ai.ollama.chat_model')) {
-                                                                    const rec = result.chatModels.find((m: { recommended: boolean }) => m.recommended);
-                                                                    if (rec) updateValue('ai.ollama.chat_model', rec.id);
-                                                                }
-                                                                if (!getSetting('ai.ollama.embed_model')) {
-                                                                    const rec = result.embedModels.find((m: { recommended: boolean }) => m.recommended);
-                                                                    if (rec) updateValue('ai.ollama.embed_model', rec.id);
-                                                                }
-                                                            } catch (e: any) {
-                                                                toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
-                                                            } finally {
-                                                                setLoadingOllamaModels(false);
-                                                            }
-                                                        }}
-                                                    >
-                                                        {getListModelsButtonLabel(loadingOllamaModels)}
-                                                    </Button>
-                                                    <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={async () => {
-                                                        try {
-                                                            const res = await api.ai.testConnection('ollama');
-                                                            toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || (res.success ? t('toasts.ollama_ok') : t('toasts.ollama_fail')), variant: res.success ? 'default' : 'destructive' });
-                                                        } catch (e: any) {
-                                                            toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
-                                                        }
-                                                    }}>{t('ai.test_btn')}</Button>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs">{t('ai.base_url')}</Label>
-                                                <Input value={getSetting('ai.ollama.url')} onChange={e => updateValue('ai.ollama.url', e.target.value)} placeholder="http://localhost:11434" className="bg-black/50 h-8 text-sm" />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs">{t('ai.ollama.chat_model')}</Label>
-                                                    {ollamaModels && ollamaModels.chatModels.length > 0 ? (
-                                                        <select
-                                                            value={getSetting('ai.ollama.chat_model')}
-                                                            onChange={e => updateValue('ai.ollama.chat_model', e.target.value)}
-                                                            className="bg-black/50 h-8 text-sm rounded border border-border/50 w-full px-2"
-                                                        >
-                                                            {ollamaModels.chatModels.map(m => (
-                                                                <option key={m.id} value={m.id}>
-                                                                    {m.recommended ? `⭐ ${m.displayName}` : m.displayName}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    ) : (
-                                                        <Input value={getSetting('ai.ollama.chat_model')} onChange={e => updateValue('ai.ollama.chat_model', e.target.value)} placeholder="llama3.2:3b" className="bg-black/50 h-8 text-sm" />
-                                                    )}
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs">{t('ai.ollama.embed_model')}</Label>
-                                                    {ollamaModels && ollamaModels.embedModels.length > 0 ? (
-                                                        <select
-                                                            value={getSetting('ai.ollama.embed_model')}
-                                                            onChange={e => updateValue('ai.ollama.embed_model', e.target.value)}
-                                                            className="bg-black/50 h-8 text-sm rounded border border-border/50 w-full px-2"
-                                                        >
-                                                            {ollamaModels.embedModels.map(m => (
-                                                                <option key={m.id} value={m.id}>
-                                                                    {m.recommended ? `⭐ ${m.displayName}` : m.displayName}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    ) : (
-                                                        <Input value={getSetting('ai.ollama.embed_model')} onChange={e => updateValue('ai.ollama.embed_model', e.target.value)} placeholder="nomic-embed-text" className="bg-black/50 h-8 text-sm" />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
                                     {([getSetting('ai.chat_provider'), getSetting('ai.embed_provider'), getSetting('ai.fallback_provider'), getSetting('ai.embed_fallback_provider')].includes('openai')) && (
                                         /* OpenAI Ayarları */
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-primary/40 bg-primary/5`}>
@@ -700,7 +657,7 @@ export default function AdminSettingsPage() {
                                                         onClick={async () => {
                                                             setLoadingOpenaiModels(true);
                                                             try {
-                                                                const result = await api.ai.listModels('openai', getSetting('ai.openai.api_key'));
+                                                                const result = await api.ai.listModels('openai', toCredentialOverride(getSetting('ai.openai.api_key')));
                                                                 setOpenaiModels(result);
                                                                 if (!getSetting('ai.openai.chat_model')) {
                                                                     const rec = result.chatModels.find((m: { recommended: boolean }) => m.recommended);
@@ -710,8 +667,8 @@ export default function AdminSettingsPage() {
                                                                     const rec = result.embedModels.find((m: { recommended: boolean }) => m.recommended);
                                                                     if (rec) updateValue('ai.openai.embed_model', rec.id);
                                                                 }
-                                                            } catch (e: any) {
-                                                                toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                                toast({ title: t('ai.model_list_error'), description: getErrorMessage(e, t('toasts.generic_error')), variant: 'destructive' });
                                                             } finally {
                                                                 setLoadingOpenaiModels(false);
                                                             }
@@ -723,8 +680,8 @@ export default function AdminSettingsPage() {
                                                         try {
                                                             const res = await api.ai.testConnection('openai');
                                                             toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || (res.success ? t('toasts.openai_ok') : t('toasts.openai_fail')), variant: res.success ? 'default' : 'destructive' });
-                                                        } catch (e: any) {
-                                                            toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                        } catch (e: unknown) {
+                                                            toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                         }
                                                     }}>{t('ai.test_btn')}</Button>
                                                 </div>
@@ -774,47 +731,6 @@ export default function AdminSettingsPage() {
                                         </div>
                                     )}
 
-                                    {([getSetting('ai.chat_provider'), getSetting('ai.embed_provider'), getSetting('ai.fallback_provider'), getSetting('ai.embed_fallback_provider')].includes('vertex')) && (
-                                        /* Vertex AI Ayarları */
-                                        <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-blue-500/40 bg-blue-500/5`}>
-                                            <div className="flex justify-between items-center mb-2">
-                                                <h3 className={`font-bold text-[12px] uppercase tracking-widest flex items-center gap-2 text-foreground`}>
-                                                    <Database className="h-4 w-4 text-blue-500" /> Google Vertex AI
-                                                </h3>
-                                                <Button size="sm" variant="outline" className="h-7 text-xs px-3 border-blue-500/20 text-blue-500 hover:bg-blue-500/10" onClick={async () => {
-                                                    try {
-                                                        const res = await api.ai.testConnection('vertex');
-                                                        toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || t('ai.vertex.connection_success'), variant: res.success ? 'default' : 'destructive' });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: t('ai.vertex.connection_error'), variant: 'destructive' });
-                                                    }
-                                                }}>{t('ai.test_btn')}</Button>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs">{t('ai.vertex.project_id')}</Label>
-                                                <Input value={getSetting('ai.vertex.project_id')} onChange={e => updateValue('ai.vertex.project_id', e.target.value)} placeholder="project-id-12345" className="bg-black/50 h-8 text-sm" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs">{t('ai.vertex.credentials_json')}</Label>
-                                                <Input type="password" value={getSetting('ai.vertex.credentials_json')} onChange={e => updateValue('ai.vertex.credentials_json', e.target.value)} placeholder='{"type": "service_account", ...}' className="bg-black/50 h-8 text-sm" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs">Vertex Data Store ID (Hybrid Search)</Label>
-                                                <Input value={getSetting('ai.vertex.data_store_id')} onChange={e => updateValue('ai.vertex.data_store_id', e.target.value)} placeholder="manuals-ds-12345" className="bg-black/50 h-8 text-sm" />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs">Chat Model</Label>
-                                                    <Input value={getSetting('ai.vertex.chat_model')} onChange={e => updateValue('ai.vertex.chat_model', e.target.value)} placeholder="gemini-1.5-pro-preview-0409" className="bg-black/50 h-8 text-sm" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs">Embed Model</Label>
-                                                    <Input value={getSetting('ai.vertex.embed_model')} onChange={e => updateValue('ai.vertex.embed_model', e.target.value)} placeholder="text-multilingual-embedding-002" className="bg-black/50 h-8 text-sm" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
                                     {([getSetting('ai.chat_provider'), getSetting('ai.embed_provider'), getSetting('ai.fallback_provider'), getSetting('ai.embed_fallback_provider')].includes('gemini')) && (
                                         /* Gemini Studio Ayarları */
                                         <div className={`space-y-4 p-5 border-2 rounded-lg relative overflow-hidden transition-all duration-200 border-teal-500/40 bg-teal-500/5`}>
@@ -831,14 +747,14 @@ export default function AdminSettingsPage() {
                                                         onClick={async () => {
                                                             setLoadingGeminiModels(true);
                                                             try {
-                                                                const result = await api.ai.listModels('gemini', getSetting('ai.gemini.api_key'));
+                                                                const result = await api.ai.listModels('gemini', toCredentialOverride(getSetting('ai.gemini.api_key')));
                                                                 setGeminiModels(result);
                                                                 const nextChatModel = chooseDefaultModel(result.chatModels, getSetting('ai.gemini.chat_model'));
                                                                 const nextEmbedModel = chooseDefaultModel(result.embedModels, getSetting('ai.gemini.embed_model'));
                                                                 if (nextChatModel) updateValue('ai.gemini.chat_model', nextChatModel);
                                                                 if (nextEmbedModel) updateValue('ai.gemini.embed_model', nextEmbedModel);
-                                                            } catch (e: any) {
-                                                                toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                                toast({ title: t('ai.model_list_error'), description: getErrorMessage(e, t('toasts.generic_error')), variant: 'destructive' });
                                                             } finally {
                                                                 setLoadingGeminiModels(false);
                                                             }
@@ -850,7 +766,7 @@ export default function AdminSettingsPage() {
                                                         try {
                                                             const res = await api.ai.testConnection('gemini');
                                                             toast({ title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'), description: res.message || 'Google Gemini Studio bağlantısı başarılı.', variant: res.success ? 'default' : 'destructive' });
-                                                        } catch (e: any) {
+                                                        } catch {
                                                             toast({ title: t('toasts.connection_error'), description: 'Gemini API ulaşılamıyor', variant: 'destructive' });
                                                         }
                                                     }}>{t('ai.test_btn')}</Button>
@@ -973,8 +889,8 @@ export default function AdminSettingsPage() {
                                                             description: res.message || (res.success ? t('toasts.xai_ok') : t('toasts.xai_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                        toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                     }
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
@@ -1015,14 +931,14 @@ export default function AdminSettingsPage() {
                                                         onClick={async () => {
                                                             setLoadingGroqModels(true);
                                                             try {
-                                                                const result = await api.ai.listModels('groq', getSetting('ai.groq.api_key'), getSetting('ai.groq.url'));
+                                                                const result = await api.ai.listModels('groq', toCredentialOverride(getSetting('ai.groq.api_key')), getSetting('ai.groq.url'));
                                                                 setGroqModels(result);
                                                                 if (!getSetting('ai.groq.chat_model')) {
                                                                     const rec = result.chatModels.find((m: { recommended: boolean }) => m.recommended);
                                                                     if (rec) updateValue('ai.groq.chat_model', rec.id);
                                                                 }
-                                                            } catch (e: any) {
-                                                                toast({ title: t('ai.model_list_error'), description: e.message, variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                                toast({ title: t('ai.model_list_error'), description: getErrorMessage(e, t('toasts.generic_error')), variant: 'destructive' });
                                                             } finally {
                                                                 setLoadingGroqModels(false);
                                                             }
@@ -1038,8 +954,8 @@ export default function AdminSettingsPage() {
                                                                 description: res.message || (res.success ? t('toasts.groq_ok') : t('toasts.groq_fail')),
                                                                 variant: res.success ? 'default' : 'destructive'
                                                             });
-                                                        } catch (e: any) {
-                                                            toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                            toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                         }
                                                     }}>{t('ai.test_btn')}</Button>
                                                 </div>
@@ -1094,8 +1010,8 @@ export default function AdminSettingsPage() {
                                                             description: res.message || (res.success ? t('toasts.deepseek_ok') : t('toasts.deepseek_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                        toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                     }
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
@@ -1135,8 +1051,8 @@ export default function AdminSettingsPage() {
                                                             description: res.message || (res.success ? t('toasts.llmapi_ok') : t('toasts.llmapi_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                        toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                     }
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
@@ -1176,8 +1092,8 @@ export default function AdminSettingsPage() {
                                                             description: res.message || (res.success ? t('toasts.custom_ok') : t('toasts.custom_fail')),
                                                             variant: res.success ? 'default' : 'destructive'
                                                         });
-                                                    } catch (e: any) {
-                                                        toast({ title: t('toasts.connection_error'), description: e.message || t('toasts.server_unreachable'), variant: 'destructive' });
+                                                            } catch (e: unknown) {
+                                                        toast({ title: t('toasts.connection_error'), description: getErrorMessage(e, t('toasts.server_unreachable')), variant: 'destructive' });
                                                     }
                                                 }}>{t('ai.test_btn')}</Button>
                                             </div>
@@ -1211,9 +1127,6 @@ export default function AdminSettingsPage() {
                                             'ai.fallback_provider',
                                             'ai.embed_fallback_provider',
                                             'ai.active_provider', // kept for backwards compatibility during migration 
-                                            'ai.ollama.url',
-                                            'ai.ollama.chat_model',
-                                            'ai.ollama.embed_model',
                                             'ai.openai.api_key',
                                             'ai.openai.chat_model',
                                             'ai.openai.embed_model',
@@ -1234,13 +1147,6 @@ export default function AdminSettingsPage() {
                                             'ai.custom.api_key',
                                             'ai.custom.chat_model',
                                             'ai.custom.embed_model',
-                                            'ai.vertex.project_id',
-                                            'ai.vertex.credentials_json',
-                                            'ai.vertex.data_store_id',
-                                            'ai.vertex.chat_model',
-                                            'ai.vertex.embed_model',
-                                            'ai.anthropic.api_key',
-                                            'ai.anthropic.chat_model',
                                             'ai.gemini.api_key',
                                             'ai.gemini.chat_model',
                                             'ai.gemini.embed_model'
@@ -1378,16 +1284,16 @@ export default function AdminSettingsPage() {
                                                 <div className="space-y-2">
                                                     <Label>{t('email.from_address_label')}</Label>
                                                     <Input
-                                                        value={getSetting('email.gmail.email')}
-                                                        onChange={e => updateValue('email.gmail.email', e.target.value)}
+                                                        value={getSetting('mail.gmail.email')}
+                                                        onChange={e => updateValue('mail.gmail.email', e.target.value)}
                                                         placeholder="newsletters@aluplan.info"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label>{t('email.gmail_client_id')}</Label>
                                                     <Input
-                                                        value={getSetting('email.gmail.client_id')}
-                                                        onChange={e => updateValue('email.gmail.client_id', e.target.value)}
+                                                        value={getSetting('mail.gmail.client_id')}
+                                                        onChange={e => updateValue('mail.gmail.client_id', e.target.value)}
                                                         placeholder="258437053886-....apps.googleusercontent.com"
                                                     />
                                                 </div>
@@ -1395,8 +1301,8 @@ export default function AdminSettingsPage() {
                                                     <Label>{t('email.gmail_client_secret')}</Label>
                                                     <Input
                                                         type="password"
-                                                        value={getSetting('email.gmail.client_secret')}
-                                                        onChange={e => updateValue('email.gmail.client_secret', e.target.value)}
+                                                        value={getSetting('mail.gmail.client_secret')}
+                                                        onChange={e => updateValue('mail.gmail.client_secret', e.target.value)}
                                                         placeholder="GOCSPX-..."
                                                     />
                                                 </div>
@@ -1421,7 +1327,7 @@ export default function AdminSettingsPage() {
                                                     variant="outline"
                                                     className="gap-2"
                                                     disabled={saving}
-                                                    onClick={() => handleSave(['email.gmail.email', 'email.gmail.client_id', 'email.gmail.client_secret'])}
+                                                    onClick={() => handleSave(['mail.gmail.email', 'mail.gmail.client_id', 'mail.gmail.client_secret'])}
                                                 >
                                                     {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                                                     {t('email.gmail.credentials_save')}
@@ -1435,8 +1341,8 @@ export default function AdminSettingsPage() {
                                                             setGmailAuthorizing(true);
                                                             const { url } = await api.email.getGmailAuthUrl();
                                                             window.open(url, '_blank');
-                                                        } catch (err: any) {
-                                                            toast({ title: t('toasts.connection_error'), description: err.message || t('toasts.gmail_credentials_hint'), variant: 'destructive' });
+                                                        } catch (err: unknown) {
+                                                            toast({ title: t('toasts.connection_error'), description: getErrorMessage(err, t('toasts.gmail_credentials_hint')), variant: 'destructive' });
                                                         } finally {
                                                             setGmailAuthorizing(false);
                                                         }
@@ -1472,8 +1378,8 @@ export default function AdminSettingsPage() {
                                                             description: res.message,
                                                             variant: res.available ? 'default' : 'destructive'
                                                         });
-                                                    } catch (err: any) {
-                                                        toast({ title: tc('error_title'), description: err.message, variant: 'destructive' });
+                                                        } catch (err: unknown) {
+                                                        toast({ title: tc('error_title'), description: getErrorMessage(err, t('toasts.generic_error')), variant: 'destructive' });
                                                     } finally {
                                                         setImapTesting(false);
                                                     }
@@ -1548,7 +1454,7 @@ export default function AdminSettingsPage() {
                                         onClick={() => handleSave([
                                             'email.active_provider', 'email.from_address',
                                             'email.resend.api_key', 'email.smtp.host', 'email.smtp.port', 'email.smtp.user', 'email.smtp.pass', 'email.smtp.secure',
-                                            'email.gmail.email', 'email.gmail.client_id', 'email.gmail.client_secret',
+                                            'mail.gmail.email', 'mail.gmail.client_id', 'mail.gmail.client_secret',
                                             'email.imap.host', 'email.imap.port', 'email.imap.user', 'email.imap.pass', 'email.imap.tls',
                                         ])}
                                         disabled={saving}
@@ -1567,8 +1473,8 @@ export default function AdminSettingsPage() {
                                                 } else {
                                                     toast({ title: t('toasts.connection_failed'), description: t('toasts.generic_fail_hint'), variant: 'destructive' });
                                                 }
-                                            } catch (err: any) {
-                                                toast({ title: t('toasts.error') || t('toasts.generic_error'), description: err.message || t('toasts.generic_error'), variant: 'destructive' });
+                                                        } catch (err: unknown) {
+                                                toast({ title: t('toasts.error') || t('toasts.generic_error'), description: getErrorMessage(err, t('toasts.generic_error')), variant: 'destructive' });
                                             }
                                         }}
                                     >
@@ -1587,7 +1493,11 @@ export default function AdminSettingsPage() {
                                     <CardTitle>{t('sla.title')}</CardTitle>
                                     <CardDescription>{t('sla.description')}</CardDescription>
                                 </div>
-                                <Button onClick={() => { setEditingPolicy(null); setIsAddingPolicy(true); }}>
+                                <Button onClick={() => {
+                                    setEditingPolicy(null);
+                                    setNewPolicy({ ...EMPTY_SLA_POLICY });
+                                    setIsAddingPolicy(true);
+                                }}>
                                     <Plus className="mr-2 h-4 w-4" /> {t('sla.add_policy')}
                                 </Button>
                             </CardHeader>
@@ -1665,12 +1575,20 @@ export default function AdminSettingsPage() {
                                 <div className="space-y-4 py-4">
                                     <div className="space-y-2">
                                         <Label>{t('sla.form.name_label')}</Label>
-                                        <Input id="sla_name" placeholder={t('sla.form.placeholders.name')} defaultValue={editingPolicy?.name} />
+                                        <Input
+                                            id="sla_name"
+                                            placeholder={t('sla.form.placeholders.name')}
+                                            value={newPolicy.name}
+                                            onChange={(event) => setNewPolicy((current) => ({ ...current, name: event.target.value }))}
+                                        />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label>{t('sla.form.priority_label')}</Label>
-                                            <Select defaultValue={editingPolicy?.priority || 'MEDIUM'}>
+                                            <Select
+                                                value={newPolicy.priority}
+                                                onValueChange={(priority) => setNewPolicy((current) => ({ ...current, priority }))}
+                                            >
                                                 <SelectTrigger id="sla_priority_trigger">
                                                     <SelectValue />
                                                 </SelectTrigger>
@@ -1684,17 +1602,51 @@ export default function AdminSettingsPage() {
                                         </div>
                                         <div className="space-y-2">
                                             <Label>{t('sla.form.department_label')}</Label>
-                                            <Input id="sla_department" placeholder={t('sla.form.placeholders.department')} defaultValue={editingPolicy?.department || ''} />
+                                            <Select
+                                                value={newPolicy.departmentId}
+                                                onValueChange={(departmentId) => setNewPolicy((current) => ({ ...current, departmentId }))}
+                                            >
+                                                <SelectTrigger id="sla_department_trigger">
+                                                    <SelectValue placeholder={t('sla.form.placeholders.department')} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {departments.map((department) => (
+                                                        <SelectItem key={department.id} value={department.id}>
+                                                            {department.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label>{t('sla.form.response_label')}</Label>
-                                            <Input id="sla_response" type="number" defaultValue={editingPolicy?.firstResponseMinutes || 60} />
+                                            <Input
+                                                id="sla_response"
+                                                type="number"
+                                                min={1}
+                                                step={1}
+                                                value={newPolicy.firstResponseMinutes}
+                                                onChange={(event) => setNewPolicy((current) => ({
+                                                    ...current,
+                                                    firstResponseMinutes: Number(event.target.value),
+                                                }))}
+                                            />
                                         </div>
                                         <div className="space-y-2">
                                             <Label>{t('sla.form.resolve_label')}</Label>
-                                            <Input id="sla_resolve" type="number" defaultValue={editingPolicy?.resolutionMinutes || 240} />
+                                            <Input
+                                                id="sla_resolve"
+                                                type="number"
+                                                min={1}
+                                                step={1}
+                                                value={newPolicy.resolutionMinutes}
+                                                onChange={(event) => setNewPolicy((current) => ({
+                                                    ...current,
+                                                    resolutionMinutes: Number(event.target.value),
+                                                }))}
+                                            />
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-2 pt-2">
@@ -1702,7 +1654,11 @@ export default function AdminSettingsPage() {
                                             type="checkbox"
                                             id="sla_business"
                                             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
-                                            defaultChecked={editingPolicy?.businessHoursOnly}
+                                            checked={newPolicy.businessHoursOnly}
+                                            onChange={(event) => setNewPolicy((current) => ({
+                                                ...current,
+                                                businessHoursOnly: event.target.checked,
+                                            }))}
                                         />
                                         <Label htmlFor="sla_business" className="text-sm font-normal">
                                             {t('sla.form.business_hours')}
@@ -2040,16 +1996,20 @@ export default function AdminSettingsPage() {
                                                     accessKey: getSetting('storage.access_key'),
                                                     secretKey: getSetting('storage.secret_key'),
                                                 };
-                                                const res = await api.settings.testStorage(config);
+                                                const res = await api.settings.testStorage(config) as {
+                                                    success: boolean;
+                                                    message: string;
+                                                    details?: { advice?: string };
+                                                };
                                                 toast({
                                                     title: res.success ? t('toasts.connection_success') : t('toasts.connection_failed'),
                                                     description: res.message + (res.details?.advice ? `\n\n${res.details.advice}` : ''),
                                                     variant: res.success ? 'default' : 'destructive'
                                                 });
-                                            } catch (error: any) {
+                                            } catch (error: unknown) {
                                                 toast({
                                                     title: t('toasts.connection_error'),
-                                                    description: error.message,
+                                                    description: getErrorMessage(error, t('toasts.generic_error')),
                                                     variant: 'destructive'
                                                 });
                                             }

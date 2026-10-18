@@ -125,9 +125,9 @@ const newKeys = {
         de: "KI-Knoten"
       },
       view_ai_desc: {
-        en: "Status of Ollama and vector computation nodes",
-        tr: "Ollama ve vektör hesaplama node'larının durumu",
-        de: "Status von Ollama und Vektorberechnungsknoten"
+        en: "Status of AI providers and vector computation nodes",
+        tr: "Yapay zeka sağlayıcıları ve vektör hesaplama node'larının durumu",
+        de: "Status der KI-Anbieter und Vektorberechnungsknoten"
       },
       view_db_name: {
         en: "Database",

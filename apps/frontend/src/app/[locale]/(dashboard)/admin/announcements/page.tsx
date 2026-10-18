@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useTranslations, useLocale } from 'next-intl';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,15 +14,35 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Loader2, Send, Save, Eye, History, Megaphone, Users, User, Trash2, BookOpen, EyeOff, Building2, Target, Globe, Shield, Mail, Clock, Layout, Check } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, Send, Save, Eye, History, Megaphone, Users, User, Trash2, BookOpen, EyeOff, Building2, Target, Globe, Shield, Mail, Clock, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { RichTextEditor } from '@/components/email/RichTextEditor';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
-
 import DOMPurify from 'dompurify';
+
+type Announcement = {
+    id: string;
+    title: string;
+    subject: string;
+    status: 'DRAFT' | 'SENT' | string;
+    createdAt: string;
+    author?: { fullName?: string | null } | null;
+    _count?: { logs: number };
+};
+
+type AnnouncementTemplate = {
+    id: string;
+    name: string;
+    topic?: string | null;
+    subject?: string | null;
+    contentHtml?: string | null;
+    contentMjml?: string | null;
+    mjml?: string | null;
+    updatedAt: string;
+};
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error && error.message ? error.message : fallback;
 
 // Mirrors the backend canonical announcement email context
 // (apps/backend/src/announcements/announcement-email-context.ts).
@@ -42,8 +62,8 @@ const PREVIEW_CUSTOMER_CONTEXT = {
 export default function AnnouncementsPage() {
     const t = useTranslations('admin.announcements');
     const locale = useLocale();
-    const [announcements, setAnnouncements] = useState<any[]>([]);
-    const [templates, setTemplates] = useState<any[]>([]);
+    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+    const [templates, setTemplates] = useState<AnnouncementTemplate[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('create');
 
@@ -66,7 +86,7 @@ export default function AnnouncementsPage() {
     });
 
     // Form State for Template Management
-    const [editTemplate, setEditTemplate] = useState<any>(null);
+    const [editTemplate, setEditTemplate] = useState<AnnouncementTemplate | null>(null);
     const [templateName, setTemplateName] = useState('');
     const [templateTopic, setTemplateTopic] = useState('');
     const [templateSubject, setTemplateSubject] = useState('');
@@ -118,8 +138,8 @@ export default function AnnouncementsPage() {
                 api.announcementTemplates.list(),
                 api.announcements.getFilters()
             ]);
-            setAnnouncements(annData);
-            setTemplates(tempData);
+            setAnnouncements(annData as Announcement[]);
+            setTemplates(tempData as AnnouncementTemplate[]);
             setFilterOptions(filters);
         } catch (error) {
             console.error(error);
@@ -168,17 +188,17 @@ export default function AnnouncementsPage() {
                 contentHtml: contentOverride || contentHtml,
                 customer: PREVIEW_CUSTOMER_CONTEXT,
             });
-            if (res.success && res.html) {
+            if (res.html) {
                 setPreviewHtml(res.html);
             }
-        } catch (error: any) {
-            toast.error(t('toasts.preview_error') + ' ' + (error.message || t('toasts.unknown_error')));
+        } catch (error: unknown) {
+            toast.error(t('toasts.preview_error') + ' ' + getErrorMessage(error, t('toasts.unknown_error')));
         } finally {
             setRendering(false);
         }
     };
 
-    const handleTemplatePreview = async (template: any) => {
+    const handleTemplatePreview = async (template: AnnouncementTemplate) => {
         // If same template is previewed, toggle off
         if (templatePreviewId === template.id && templatePreviewHtml) {
             setTemplatePreviewHtml(null);
@@ -198,14 +218,14 @@ export default function AnnouncementsPage() {
                 contentHtml: htmlContent,
                 customer: PREVIEW_CUSTOMER_CONTEXT,
             });
-            if (res.success && res.html) {
+            if (res.html) {
                 setTemplatePreviewHtml(res.html);
             } else {
-                toast.error(res.error || t('toasts.template_compile_error'));
+                toast.error(t('toasts.template_compile_error'));
                 setTemplatePreviewId(null);
             }
-        } catch (error: any) {
-            toast.error(t('toasts.preview_error') + ' ' + (error.message || t('toasts.unknown_error')));
+        } catch (error: unknown) {
+            toast.error(t('toasts.preview_error') + ' ' + getErrorMessage(error, t('toasts.unknown_error')));
             setTemplatePreviewId(null);
         } finally {
             setTemplateRendering(false);
@@ -236,8 +256,8 @@ export default function AnnouncementsPage() {
             loadData();
             setEditTemplate(null);
             clearTemplateForm();
-        } catch (error: any) {
-            toast.error(t('toasts.error') + ': ' + error.message);
+        } catch (error: unknown) {
+            toast.error(t('toasts.error') + ': ' + getErrorMessage(error, t('toasts.unknown_error')));
         } finally {
             setTemplateSaving(false);
         }
@@ -251,7 +271,7 @@ export default function AnnouncementsPage() {
         setEditTemplate(null);
     };
 
-    const applyTemplate = (temp: any) => {
+    const applyTemplate = (temp: AnnouncementTemplate) => {
         setTitle(temp.name || '');
         setContentHtml(temp.contentMjml || temp.contentHtml || '');
         setSubject(temp.subject || '');
@@ -288,8 +308,8 @@ export default function AnnouncementsPage() {
             setSubject('');
             setCriteria({ industries: [], statuses: [], companyNames: [], tags: [] });
             setActiveTab('history');
-        } catch (error: any) {
-            toast.error((error.message || t('toasts.save_failed')));
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, t('toasts.save_failed')));
         } finally {
             setSaving(false);
         }
@@ -303,8 +323,8 @@ export default function AnnouncementsPage() {
             const res = await api.announcements.broadcast(id);
             toast.success(t('toasts.broadcast_success', { count: res.count }));
             loadData();
-        } catch (error: any) {
-            toast.error((error.message || t('toasts.broadcast_error')));
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, t('toasts.broadcast_error')));
         } finally {
             setBroadcasting(false);
         }
@@ -316,8 +336,8 @@ export default function AnnouncementsPage() {
             await api.announcements.delete(id);
             toast.success(t('toasts.delete_success'));
             loadData();
-        } catch (error: any) {
-            toast.error((error.message || t('toasts.delete_failed')));
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, t('toasts.delete_failed')));
         }
     };
 
@@ -327,8 +347,8 @@ export default function AnnouncementsPage() {
             await api.announcementTemplates.delete(id);
             toast.success(t('toasts.delete_success'));
             loadData();
-        } catch (error: any) {
-            toast.error((error.message || t('toasts.delete_failed')));
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, t('toasts.delete_failed')));
         }
     };
 
@@ -767,11 +787,11 @@ export default function AnnouncementsPage() {
                                                         <span className="text-[11px] text-muted-foreground font-medium">{new Date(ann.createdAt).toLocaleDateString(locale)}</span>
                                                     </div>
                                                 </div>
-                                                {ann._count?.logs > 0 && (
+                                                {(ann._count?.logs ?? 0) > 0 && (
                                                     <div className="flex items-center gap-2 pt-1">
                                                         <div className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
                                                         <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">
-                                                            {t('history.terminal_delivered', { count: ann._count.logs })}
+                                                            {t('history.terminal_delivered', { count: ann._count?.logs ?? 0 })}
                                                         </span>
                                                     </div>
                                                 )}

@@ -31,7 +31,7 @@ Sistem, batan (obsolete) biletlerden otomatik olarak yeni bilgi üreten, düşü
 Projemiz sadece soru-cevap yapmaz, kendi kendini besleyen bir veri ekosistemi kurar:
 
 1.  **Ingestion:** Teknik dokümanlar, PDF'ler ve geçmiş biletler `pgvector` üzerinde HNSW indeksleri ile vektörize edilir.
-2.  **AI Query & RAG:** Kullanıcı sorusu geldiğinde, sistem hibrit (semantic + keyword) arama yaparak en alakalı bağlamı bulur ve **OpenAI/Groq/Ollama** üzerinden yanıt üretir.
+2.  **AI Query & RAG:** Kullanıcı sorusu geldiğinde, sistem hibrit (semantic + keyword) arama yaparak en alakalı bağlamı bulur ve **Gemini** üzerinden yanıt üretir; OpenAI/Groq yalnızca sohbet fallback sağlayıcılarıdır.
 3.  **Real-time Streaming:** Yanıtlar, düşük gecikme için WebSocket/Server-Sent Events üzerinden bizzat akış (stream) olarak sunulur.
 4.  **Feedback-to-Vector Loop:** Düşük puan alan cevaplar otomatik olarak **Strategic Intelligence Dashboard**'a düşer.
 5.  **Gap Detection:** Yapay zeka, cevaplayamadığı soruları analiz ederek "Bilgi Boşluklarını" (Knowledge Gaps) raporlar.
@@ -55,7 +55,7 @@ Projemiz sadece soru-cevap yapmaz, kendi kendini besleyen bir veri ekosistemi ku
 - **TanStack Query:** Güçlü state yönetimi ve veri önbelleğe alma.
 
 ### AI & Intelligence
-- **Multi-Provider Fallback:** OpenAI (GPT-4o), Groq (Llama 3.3), ve Yerel Ollama arasında anlık geçiş ve hata toleransı.
+- **Provider Routing:** Gemini birincil sağlayıcıdır; OpenAI ve Groq yalnızca sohbet yanıtları için kontrollü fallback sağlar. Embedding sürümü içinde sağlayıcı fallback'i yapılmaz.
 - **HNSW Vector Indexes:** Milisaniyeler içinde yüksek hassasiyetli döküman arama.
 - **OpenTelemetry:** Yapay zeka performans ve maliyet takibi.
 

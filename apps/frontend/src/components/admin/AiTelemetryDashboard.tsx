@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Coins, Server, Zap, LineChart, MessageCircle, Globe, Mail, AlertTriangle, Send } from 'lucide-react';
+import { Loader2, Coins, Server, Zap, LineChart, MessageCircle, Globe, Mail, AlertTriangle, Send, type LucideProps } from 'lucide-react';
 import { api } from '@/lib/api';
 import { HealthTrendChart } from './HealthTrendChart';
 import { LiveEventFeed } from './LiveEventFeed';
@@ -15,9 +15,12 @@ import { useTranslations } from 'next-intl';
 export function AiTelemetryDashboard() {
     const t = useTranslations('admin.ai_health');
     const [loading, setLoading] = useState(true);
-    const [metrics, setMetrics] = useState<any>(null);
-    const [trends, setTrends] = useState<any[]>([]);
-    const [gaps, setGaps] = useState<any[]>([]);
+    type Metrics = Awaited<ReturnType<typeof api.ai.getMetrics>> & { deflectionRate: number; globalAccuracy: number };
+    type Trends = Awaited<ReturnType<typeof api.ai.getHealthTrends>>;
+    type Gaps = Awaited<ReturnType<typeof api.ai.getKnowledgeGaps>>;
+    const [metrics, setMetrics] = useState<Metrics | null>(null);
+    const [trends, setTrends] = useState<Trends>([]);
+    const [gaps, setGaps] = useState<Gaps>([]);
     const [sendingReport, setSendingReport] = useState(false);
     const [testingStorage, setTestingStorage] = useState(false);
     const { events, connectionState, stats } = useAiHealthSocket();
@@ -39,11 +42,15 @@ export function AiTelemetryDashboard() {
             const metricsData = data.status === 'fulfilled' ? data.value : null;
             const healthData = health.status === 'fulfilled' ? health.value : null;
 
-            setMetrics({
-                ...metricsData,
-                deflectionRate: healthData?.deflectionRate ?? 0,
-                globalAccuracy: healthData?.aiAccuracy ?? 0,
-            });
+            if (metricsData) {
+                setMetrics({
+                    ...metricsData,
+                    deflectionRate: healthData?.deflectionRate ?? 0,
+                    globalAccuracy: healthData?.aiAccuracy ?? 0,
+                });
+            } else {
+                setMetrics(null);
+            }
 
             if (trendData.status === 'fulfilled') setTrends(trendData.value);
             if (gapData.status === 'fulfilled') setGaps(gapData.value);
@@ -67,9 +74,9 @@ export function AiTelemetryDashboard() {
                     duration: 10000,
                 });
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.error('Depolama testi başarısız oldu', {
-                description: error.message
+                description: error instanceof Error ? error.message : undefined
             });
         } finally {
             setTestingStorage(false);
@@ -79,13 +86,13 @@ export function AiTelemetryDashboard() {
     const triggerWeeklyReport = async () => {
         try {
             setSendingReport(true);
-            const res = await api.post('/ai/trigger-report', {});
+            const res = await api.post<{ success: boolean }>('/ai/trigger-report', {});
             if (res.success) {
                 toast.success(t('dashboard.report_queued'));
             } else {
                 toast.error(t('dashboard.report_failed'));
             }
-        } catch (error: any) {
+        } catch {
             toast.error(t('dashboard.report_failed'));
         } finally {
             setSendingReport(false);
@@ -188,7 +195,7 @@ export function AiTelemetryDashboard() {
                             <BotIcon className="h-4 w-4 text-primary" />
                         </div>
                         <div className="text-xl font-bold text-primary truncate">
-                            {sortedProviders.length > 0 ? sortedProviders.map((p: any) => p.model).filter((v: any, i: number, a: any[]) => a.indexOf(v) === i).join(', ') : t('dashboard.unknown')}
+                            {sortedProviders.length > 0 ? [...new Set(sortedProviders.map((provider) => provider.model))].join(', ') : t('dashboard.unknown')}
                         </div>
                     </CardContent>
                 </Card>
@@ -250,7 +257,7 @@ export function AiTelemetryDashboard() {
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="divide-y">
-                                {metrics.channels.map((c: any, idx: number) => (
+                                {metrics.channels.map((c, idx) => (
                                     <div key={idx} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
                                         <div className="flex items-center gap-3">
                                             <div className={`p-2 rounded-lg ${c.channel === 'WHATSAPP' ? 'bg-emerald-500/10 text-emerald-600' :
@@ -323,7 +330,7 @@ export function AiTelemetryDashboard() {
     );
 }
 
-function BotIcon(props: any) {
+function BotIcon(props: LucideProps) {
     return (
         <svg
             {...props}

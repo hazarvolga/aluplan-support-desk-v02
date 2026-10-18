@@ -5,7 +5,7 @@ export type AllplanLicensingIntakeValues = {
     allplanVersion?: string;
     allplan2024ReleaseBand?: Allplan2024ReleaseBand;
     licenseTopology?: 'SINGLE_USER' | 'LICENSE_SERVER' | 'UNKNOWN';
-    licenseIssueType?: 'ACTIVATION' | 'TRANSFER' | 'LOGIN' | 'INVITATION' | 'SEAT' | 'OFFLINE' | 'OTHER';
+    licenseIssueType?: 'ACTIVATION' | 'TRANSFER' | 'FORMAT_REINSTALL' | 'LOGIN' | 'INVITATION' | 'SEAT' | 'OFFLINE' | 'OTHER';
     licenseUserRole?: 'END_USER' | 'LICENSE_ADMIN' | 'UNKNOWN';
     allplanIdStatus?: 'AVAILABLE' | 'UNAVAILABLE' | 'UNKNOWN';
     organizationInviteStatus?: 'ACCEPTED' | 'MISSING' | 'UNKNOWN';
@@ -19,10 +19,7 @@ export type AllplanLicensingDiagnosisField =
     | 'allplan2024ReleaseBand'
     | 'licenseTopology'
     | 'licenseIssueType'
-    | 'licenseUserRole'
-    | 'allplanIdStatus'
-    | 'organizationInviteStatus'
-    | 'licenseGroupStatus';
+    | 'licenseUserRole';
 
 export const ALLPLAN_LICENSING_RESOURCES = {
     CODEMETER_SINGLE: 'https://learnnow.allplan.com/totara/engage/resources/howto/index.php?id=11873',
@@ -58,18 +55,19 @@ export const classifyAllplanRelease = (
         if (allplan2024ReleaseBand === 'FROM_2024_2_0') return 'CLOUD_2024_2_PLUS';
         return 'TRANSITION_2024';
     }
-    if (year !== 2024 || minor === undefined || match[3] === undefined) return 'UNKNOWN';
-    if (minor < 1 || (minor === 1 && patch <= 10)) return 'CODEMETER_2016_2024_1_10';
+    if (year !== 2024 || minor === undefined) return 'UNKNOWN';
     if (minor >= 2) return 'CLOUD_2024_2_PLUS';
+    if (match[3] === undefined) return 'UNKNOWN';
+    if (minor < 1 || (minor === 1 && patch <= 10)) return 'CODEMETER_2016_2024_1_10';
     return 'UNKNOWN';
 };
 
 export const getAllowedAllplanLicenseIssueTypes = (family: AllplanReleaseFamily): NonNullable<AllplanLicensingIntakeValues['licenseIssueType']>[] => {
     if (family === 'LEGACY_PRE_2016' || family === 'CODEMETER_2016_2024_1_10') {
-        return ['ACTIVATION', 'TRANSFER', 'OFFLINE', 'OTHER'];
+        return ['ACTIVATION', 'TRANSFER', 'FORMAT_REINSTALL'];
     }
     if (family === 'CLOUD_2024_2_PLUS') {
-        return ['ACTIVATION', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER'];
+        return ['LOGIN', 'SEAT', 'OFFLINE'];
     }
     return [];
 };
@@ -110,10 +108,7 @@ export const getMissingAllplanLicensingDiagnosisFields = (
     }
     if (family === 'CLOUD_2024_2_PLUS') {
         if (!values.licenseIssueType || !allowedIssueTypes.includes(values.licenseIssueType)) missing.push('licenseIssueType');
-        if (!values.allplanIdStatus || values.allplanIdStatus === 'UNKNOWN') missing.push('allplanIdStatus');
-        if (!values.organizationInviteStatus || values.organizationInviteStatus === 'UNKNOWN') missing.push('organizationInviteStatus');
-        if (!values.licenseGroupStatus || values.licenseGroupStatus === 'UNKNOWN') missing.push('licenseGroupStatus');
-        if (!values.licenseUserRole || values.licenseUserRole === 'UNKNOWN') missing.push('licenseUserRole');
+        if (values.licenseUserRole !== 'LICENSE_ADMIN') missing.push('licenseUserRole');
     }
     return Array.from(new Set(missing));
 };
@@ -124,7 +119,7 @@ export const buildAllplanLicensingDescription = (description: string, values: Al
         `[${translate('licensing_intake.context_title')}]`,
         `${translate('licensing_intake.release_family_label')}: ${translate(`licensing_intake.release_family.${family}`)}`,
         `${translate('licensing_intake.version_label')}: ${extractAllplanVersion(values.allplanVersion) || translate('licensing_intake.unknown')}`,
-        `${translate('licensing_intake.issue_label')}: ${translate(`licensing_intake.issue.${values.licenseIssueType || 'OTHER'}`)}`,
+        `${translate('licensing_intake.issue_label')}: ${values.licenseIssueType ? translate(`licensing_intake.issue.${values.licenseIssueType}`) : translate('licensing_intake.unknown')}`,
     ];
     if (extractAllplanVersion(values.allplanVersion) === '2024') {
         lines.push(`${translate('licensing_intake.release_band_label')}: ${translate(`licensing_intake.release_band.${values.allplan2024ReleaseBand || 'UNKNOWN'}`)}`);
@@ -133,12 +128,7 @@ export const buildAllplanLicensingDescription = (description: string, values: Al
         lines.push(`${translate('licensing_intake.topology_label')}: ${translate(`licensing_intake.topology.${values.licenseTopology || 'UNKNOWN'}`)}`);
     }
     if (family === 'CLOUD_2024_2_PLUS') {
-        lines.push(
-            `${translate('licensing_intake.user_role_label')}: ${translate(`licensing_intake.user_role.${values.licenseUserRole || 'UNKNOWN'}`)}`,
-            `${translate('licensing_intake.allplan_id_label')}: ${translate(`licensing_intake.allplan_id.${values.allplanIdStatus || 'UNKNOWN'}`)}`,
-            `${translate('licensing_intake.invite_label')}: ${translate(`licensing_intake.invite.${values.organizationInviteStatus || 'UNKNOWN'}`)}`,
-            `${translate('licensing_intake.group_label')}: ${translate(`licensing_intake.group.${values.licenseGroupStatus || 'UNKNOWN'}`)}`,
-        );
+        lines.push(`${translate('licensing_intake.user_role_label')}: ${translate('licensing_intake.user_role.LICENSE_ADMIN')}`);
     }
     return `${description.trim()}\n\n${lines.join('\n')}`;
 };

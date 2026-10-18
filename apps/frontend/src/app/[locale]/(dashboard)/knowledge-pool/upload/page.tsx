@@ -4,13 +4,14 @@ export const dynamic = "force-dynamic";
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
-    ArrowLeft, Upload, FileText, CheckCircle2,
-    XCircle, Clock, RefreshCw, Database,
+    ArrowLeft, Upload, FileText,
+    RefreshCw, Database,
     Info, ShieldCheck, Activity
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function KnowledgePoolUploadPage() {
     const router = useRouter();
+    const t = useTranslations('knowledge_pool.upload');
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [fileName, setFileName] = useState('');
@@ -99,10 +101,10 @@ export default function KnowledgePoolUploadPage() {
             setTimeout(() => {
                 router.push('/knowledge-pool');
             }, 2000);
-        } catch (err: any) {
+        } catch {
             setUploadStatus('FAILED');
-            addTelemetry(`CRITICAL_ERROR: ${err.message.toUpperCase()}`);
-            toast({ title: 'Hata', description: err.message, variant: 'destructive' });
+            addTelemetry('UPLOAD_FAILED');
+            toast({ title: t('failure_title'), description: t('failure_description'), variant: 'destructive' });
         } finally {
             setLoading(false);
         }

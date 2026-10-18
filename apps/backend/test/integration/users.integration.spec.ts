@@ -6,6 +6,8 @@ import { userFactory } from '../factories/user.factory';
 import { UsersModule } from '../../src/users/users.module';
 import { PrismaModule } from '../../src/prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
+import { RedisModule } from '../../src/redis/redis.module';
+import { RedisService } from '../../src/redis/redis.service';
 
 describe('UsersService (Integration)', () => {
     jest.setTimeout(30000); // 30 seconds for DB operations
@@ -19,9 +21,13 @@ describe('UsersService (Integration)', () => {
                 imports: [
                     ConfigModule.forRoot({ isGlobal: true }),
                     PrismaModule,
+                    RedisModule,
                     UsersModule,
                 ],
-            }).compile();
+            })
+                .overrideProvider(RedisService)
+                .useValue({})
+                .compile();
 
             service = testModule.get<UsersService>(UsersService);
             prisma = testModule.get<PrismaService>(PrismaService);
@@ -48,7 +54,7 @@ describe('UsersService (Integration)', () => {
             fullName: 'Integration Test User',
         };
 
-        const user = await service.create(userData);
+        const user = await service.create(userData, { id: 'integration-admin', role: 'ADMIN' });
 
         const persistedUser = await prisma.user.findUnique({
             where: { email: userData.email },

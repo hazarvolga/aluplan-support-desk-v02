@@ -12,10 +12,11 @@ import { AlertingService } from './services/alerting.service';
 import { TicketAccessService } from './services/ticket-access.service';
 import { MaintenanceWorkService } from './services/maintenance-work.service';
 import { MaintenanceAdmissionMiddleware } from './middleware/maintenance-admission.middleware';
+import { OutboundHttpModule } from './http/outbound-http.module';
 
 @Global()
 @Module({
-    imports: [PrismaModule],
+    imports: [PrismaModule, OutboundHttpModule],
     providers: [
         MaintenanceAdmissionMiddleware,
         MaintenanceWorkService,

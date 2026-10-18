@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import {
     ChevronLeft,
     ShieldCheck,
-    Clock,
     Users,
     Settings2,
     Calendar,
@@ -23,12 +22,17 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
+type DepartmentMember = { user: { id: string; fullName: string; status?: string; role?: string | { name?: string } } };
+type DepartmentTeam = { id: string; name: string; assignmentStrategy?: string; autoAssignmentEnabled?: boolean; _count?: { members?: number }; members?: DepartmentMember[] };
+type SlaPolicy = { id: string; name: string; priority: string; firstResponseMinutes: number; resolutionMinutes: number };
+type Department = { id: string; name: string; slug: string; description?: string; teams?: DepartmentTeam[]; slaPolicies?: SlaPolicy[] };
+
 export default function DepartmentDetailPage() {
     const t = useTranslations('teams');
     const tc = useTranslations('common');
     const { id } = useParams();
     const router = useRouter();
-    const [dept, setDept] = useState<any>(null);
+    const [dept, setDept] = useState<Department | null>(null);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
 
@@ -36,8 +40,8 @@ export default function DepartmentDetailPage() {
         const fetchDept = async () => {
             try {
                 const res = await api.teams.getDepartment(id as string);
-                setDept(res);
-            } catch (error) {
+                setDept(res as Department);
+            } catch {
                 toast({ title: tc('error_title'), description: t('errors.fetch_dept'), variant: 'destructive' });
                 router.push('/teams');
             } finally {
@@ -99,7 +103,7 @@ export default function DepartmentDetailPage() {
                         <Card className="bg-card/50 border-border/40 shadow-sm">
                             <CardHeader className="pb-2">
                                 <CardDescription className="text-[11px] font-bold uppercase tracking-wider">{t('stats.total_agents')}</CardDescription>
-                                <CardTitle className="text-3xl font-black">{dept.teams?.reduce((acc: number, t: any) => acc + (t._count?.members || 0), 0) || 0}</CardTitle>
+                                <CardTitle className="text-3xl font-black">{dept.teams?.reduce((acc, team) => acc + (team._count?.members || 0), 0) || 0}</CardTitle>
                             </CardHeader>
                             <CardContent>
                             </CardContent>
@@ -114,7 +118,7 @@ export default function DepartmentDetailPage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                {dept.slaPolicies?.map((sla: any) => (
+                                {dept.slaPolicies?.map((sla) => (
                                     <div key={sla.id} className="flex justify-between items-center p-3 rounded-lg bg-muted/40 border border-border/30">
                                         <div className="flex flex-col">
                                             <span className="font-bold text-sm">{sla.name}</span>
@@ -140,9 +144,10 @@ export default function DepartmentDetailPage() {
                 {/* Teams List */}
                 <TabsContent value="teams" className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {dept.teams?.map((team: any) => {
-                            const assignableMembers = (team.members || []).filter((member: any) => {
-                                const roleName = String(member.user?.role?.name || member.user?.role || '').toLowerCase();
+                        {dept.teams?.map((team) => {
+                            const assignableMembers = (team.members || []).filter((member) => {
+                                const role = member.user?.role;
+                                const roleName = String(typeof role === 'object' ? role?.name : role || '').toLowerCase();
                                 return member.user?.status === 'ACTIVE' && roleName !== 'customer';
                             });
 
@@ -179,7 +184,7 @@ export default function DepartmentDetailPage() {
                                             </div>
                                             {assignableMembers.length > 0 ? (
                                                 <div className="mt-3 flex flex-wrap gap-2">
-                                                    {assignableMembers.slice(0, 4).map((member: any) => (
+                                                    {assignableMembers.slice(0, 4).map((member) => (
                                                         <Badge key={member.user.id} variant="secondary" className="text-[11px] font-semibold">
                                                             {member.user.fullName}
                                                         </Badge>
@@ -210,7 +215,7 @@ export default function DepartmentDetailPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {dept.slaPolicies?.map((sla: any) => (
+                                {dept.slaPolicies?.map((sla) => (
                                     <div key={sla.id} className="grid grid-cols-4 p-4 rounded-xl bg-muted/20 border border-border/50 items-center">
                                         <div className="col-span-1">
                                             <div className="font-black text-lg">{sla.name}</div>

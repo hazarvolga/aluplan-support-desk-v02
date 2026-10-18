@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import nextDynamic from 'next/dynamic';
-import { useTranslations } from 'next-intl';
 import { useAuth } from '@/components/auth/role-guard';
 import { HelpDocsSidebar } from '@/components/help/HelpDocsSidebar';
 import { isAdminOrAgent, buildDocTree } from '@/components/help/doc-tree';
@@ -42,7 +41,6 @@ const HelpDocsContent = nextDynamic(
 
 export default function HelpDocsPage() {
   const { user } = useAuth();
-  const t = useTranslations('help');
   const [activeNodeId, setActiveNodeId] = useState<string>('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 

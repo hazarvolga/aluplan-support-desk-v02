@@ -16,8 +16,12 @@ import { Link } from '@/i18n/routing';
 import { LanguageSwitcher } from './language-switcher';
 import { useAnnouncementStore } from '@/stores/announcement-store';
 import { getReviewCenterDefinition } from './review-center/review-center-registry';
+import type { ElementType } from 'react';
 
-const ADMIN_NAV = [
+type NavLink = { href: string; icon: ElementType; labelKey: string; isAnnouncementBell?: boolean };
+type NavSection = { sectionKey: string; items: NavLink[] };
+
+const ADMIN_NAV: Array<NavLink | NavSection> = [
     { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
     { href: '/tickets', icon: Ticket, labelKey: 'tickets' },
     {
@@ -56,7 +60,7 @@ const ADMIN_NAV = [
     { href: '/profile', icon: User, labelKey: 'profile' },
 ];
 
-const STAFF_NAV = [
+const STAFF_NAV: NavLink[] = [
     { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
     { href: '/tickets', icon: Ticket, labelKey: 'tickets' },
     { href: '/knowledge-base', icon: BookOpen, labelKey: 'articles' },
@@ -98,7 +102,6 @@ export function Sidebar({ onNavClick }: SidebarProps) {
     const role = typeof rawRole === 'string'
         ? rawRole.trim().replace(/-/g, '_').toUpperCase()
         : '';
-    const isCustomer = role === 'CUSTOMER' || role === 'VIEWER';
     const isStaff = STAFF_ROLES.has(role);
 
     useEffect(() => {
@@ -155,7 +158,7 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                 <nav className="flex-1 space-y-6 overflow-y-auto pr-2">
                     {isStaff && (
                         <div className="space-y-2" data-testid="review-center-section">
-                            <h4 className="px-3 text-[10px] font-semibold uppercase tracking-wider text-primary/70">
+                            <h4 className="px-3 text-[10px] font-semibold uppercase tracking-wider text-primary">
                                 {t('nav.review_section')}
                             </h4>
                             <div className="space-y-1 border-l border-primary/20 pl-2">
@@ -206,15 +209,15 @@ export function Sidebar({ onNavClick }: SidebarProps) {
                             </div>
                         </div>
                     )}
-                    {navItems.map((item: any, idx) => {
-                        if (item.sectionKey) {
+                    {navItems.map((item, idx) => {
+                        if ('sectionKey' in item) {
                             return (
                                 <div key={idx} className="space-y-2">
-                                    <h4 className="px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                                    <h4 className="px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                                         {t(`nav.${item.sectionKey}`)}
                                     </h4>
                                     <div className="space-y-1">
-                                        {item.items.map((sub: any, sIdx: number) => {
+                                        {item.items.map((sub, sIdx) => {
                                             const active = pathname === sub.href || pathname.endsWith(sub.href);
                                             return (
                                                 <Link

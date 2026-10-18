@@ -1,6 +1,15 @@
 import { EmbeddingVersionRegistry } from './embedding-version.registry';
 
 describe('EmbeddingVersionRegistry', () => {
+    it('rejects a stale Ollama setting as an active embedding provider while preserving legacy lookup metadata', async () => {
+        const settings = {
+            getValue: jest.fn((key: string) => Promise.resolve(key === 'ai.embed_provider' ? 'ollama' : null)),
+        } as any;
+        const registry = new EmbeddingVersionRegistry(settings);
+
+        await expect(registry.getActiveVersionConfig()).rejects.toThrow('UNSUPPORTED_EMBEDDING_PROVIDER: ollama');
+        expect(registry.getVersionConfig('ollama', 'nomic-embed-text')).toEqual({ version: 'v_nom', dimension: 768 });
+    });
     it('returns the correct Gemini embedding v2 config', async () => {
         const settingsService = {
             getValue: jest.fn(async (key: string) => {

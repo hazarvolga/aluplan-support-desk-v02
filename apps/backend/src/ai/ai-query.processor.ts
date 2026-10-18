@@ -3,6 +3,11 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { AiQueryService } from './ai-query.service';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
+import {
+    createSafeAiQueryFailure,
+    createSafeAiQueryJobError,
+    getSafeThrownType,
+} from './ai-job-error';
 
 @Processor('ai-query-processing', {
     concurrency: 2,
@@ -49,16 +54,22 @@ export class AiQueryProcessor extends WorkerHost {
             this.logger.log(`✅ AI Job Completed: ${jobId}`);
             return result;
 
-        } catch (error) {
-            this.logger.error(`❌ AI Job Failed: ${jobId} - ${error.message}`);
+        } catch (error: unknown) {
+            this.logger.error(`❌ AI Job Failed: ${jobId} errorType=${getSafeThrownType(error)}`);
 
             if (job.data.options?.userId) {
-                this.notifications.sendToUser(job.data.options.userId, 'AI_QUERY_FAILED', {
-                    jobId,
-                    error: error.message
-                });
+                try {
+                    this.notifications.sendToUser(job.data.options.userId, 'AI_QUERY_FAILED', {
+                        jobId,
+                        error: createSafeAiQueryFailure(),
+                    });
+                } catch (notificationError: unknown) {
+                    this.logger.error(
+                        `❌ AI failure notification could not be delivered: ${jobId} errorType=${getSafeThrownType(notificationError)}`,
+                    );
+                }
             }
-            throw error;
+            throw createSafeAiQueryJobError();
         }
     }
 }

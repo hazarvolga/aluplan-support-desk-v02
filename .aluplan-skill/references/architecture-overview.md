@@ -39,7 +39,7 @@ aluplan-support-desk/
 │   • Re-rank with RAG_CONFIG.RERANK.{FACTORS, WEIGHTS}               │
 │   • PromptContextBuilderService.buildContext(...)                   │
 │   • buildSupportAnswerContractPrompt(...) — shared customer/agent   │
-│   • AiService → provider router (OpenAI → Groq → Ollama)            │
+│   • AiService → Gemini primary + OpenAI/Groq chat fallback          │
 │   • Self-check + isNoKnowledgeAnswer detection                      │
 │   • Persist AiInteraction (inline telemetry)                        │
 │   • Langfuse trace                                                  │
@@ -123,7 +123,7 @@ Always think in **systems**, not isolated components. A retrieval change affects
 - **Never reach into another module's Prisma calls.** `PrismaService` is shared via `PrismaModule`, but each module owns its own model queries. AI does not write to `tickets`; tickets does not write to `ai_interactions`.
 - **Repository pattern is not used.** Services call `this.prisma.<model>.<method>` directly. Do not introduce a repository layer.
 - **CRM types stay inside `crm/`.** Raw Dynamics payloads, `@odata.*` system fields — none leak past `CrmService`. Other modules consume clean local types (`CrmAccount`, `CustomerProfile`).
-- **AI provider details stay inside `ai/`.** Provider-specific shapes (OpenAI, Gemini, Groq, Ollama) stay behind `AiService`. Consumers see `AiQueryResult` + `AiInteraction`.
+- **AI provider details stay inside `ai/`.** Provider-specific shapes (Gemini, OpenAI, Groq) stay behind `AiService`. Consumers see `AiQueryResult` + `AiInteraction`.
 
 ## 5. Event flow conventions
 

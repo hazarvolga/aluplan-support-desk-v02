@@ -24,11 +24,13 @@ async function run() {
         { key: 'email.from_address', value: 'noreply@allplan.net.tr', is_secret: false },
         { key: 'email.resend.api_key', value: '', is_secret: true },
 
-        // AI Integration
-        { key: 'ai.active_provider', value: 'ollama', is_secret: false },
-        { key: 'ai.ollama.url', value: 'http://172.17.0.1:11434', is_secret: false },
-        { key: 'ai.ollama.chat_model', value: 'llama3.2:3b', is_secret: false },
-        { key: 'ai.ollama.embed_model', value: 'nomic-embed-text', is_secret: false }
+        // AI Integration — Gemini is the supported default provider.
+        { key: 'ai.chat_provider', value: 'gemini', is_secret: false },
+        { key: 'ai.active_provider', value: 'gemini', is_secret: false },
+        { key: 'ai.embed_provider', value: 'gemini', is_secret: false },
+        { key: 'ai.gemini.chat_model', value: 'gemini-2.5-flash', is_secret: false },
+        { key: 'ai.gemini.embed_model', value: 'gemini-embedding-2', is_secret: false },
+        { key: 'ai.fallback_provider', value: 'openai', is_secret: false }
     ];
 
     console.log('--- Seeding Platform Settings ---');

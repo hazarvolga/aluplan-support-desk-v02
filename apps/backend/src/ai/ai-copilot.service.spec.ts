@@ -36,7 +36,16 @@ describe('AiCopilotService', () => {
             getActiveModelName: jest.fn().mockResolvedValue('gemini-2.5-flash'),
         };
         mockPromptBuilder = { buildContext: jest.fn().mockResolvedValue('Mock Context') };
-        mockEmbedding = { search: jest.fn().mockResolvedValue({ results: [] }) };
+        mockEmbedding = {
+            search: jest.fn().mockResolvedValue({
+                results: [{
+                    id: 'approved-support-source',
+                    title: 'Approved ALLPLAN support procedure',
+                    content: 'Approved ALLPLAN support procedure for the ticket topic.',
+                    similarity: 0.92,
+                }],
+            }),
+        };
         mockStorage = { getFile: jest.fn() };
         mockDiagnosis = { analyze: jest.fn().mockResolvedValue({ isProblemShift: false }) };
         mockDocParser = { extractText: jest.fn() };
@@ -69,6 +78,176 @@ describe('AiCopilotService', () => {
             messages: [{ id: 'm1', message: 'Hello', attachments: [] }],
             creator: { id: 'u1', fullName: 'Test Customer', language: 'tr', customerProfile: { hotinfoData: {} } }
         };
+
+        const cloudLicenseTicket = {
+            ...mockTicket,
+            subject: 'ALLPLAN 2026 Connect lisansım görünmüyor',
+            description: 'Connect platformundan lisansımı alamıyorum.',
+            messages: [{ id: 'm1', senderId: 'u1', message: 'Lisans yöneticisiyim; koltuk görünmüyor.', attachments: [] }],
+            hotinfoSnapshot: null,
+            creator: { ...mockTicket.creator, customerProfile: { hotinfoData: null } },
+            licensingIntake: {
+                categoryKey: 'licensing',
+                allplanVersion: '2026',
+                licenseIssueType: 'SEAT',
+                licenseUserRole: 'LICENSE_ADMIN',
+            },
+        };
+
+        const cloudSource = {
+            id: 'cloud-2026',
+            licenseEra: 'cloud_2024_2_plus',
+            title: 'ALLPLAN 2026 Connect 2.0 lisans yöneticisi ve koltuk yönetimi',
+            content: 'ALLPLAN ID bulut lisansı Connect 2.0 üzerinde lisans yöneticisi tarafından yönetilir.',
+            similarity: 0.92,
+        };
+
+        it('uses structured 2026 cloud seat/admin intake when creating a staff draft without Hotinfo', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue(cloudLicenseTicket);
+            mockEmbedding.search.mockResolvedValue({ results: [cloudSource] });
+            mockAi.generate.mockResolvedValue('Connect lisans yöneticisi koltuk atamasını kontrol etmelidir.');
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(result.draft).toContain('Connect lisans yöneticisi');
+            expect(mockPromptBuilder.buildContext).toHaveBeenCalledWith(expect.objectContaining({
+                allplanVersion: '2026',
+            }));
+            const prompt = mockAi.generate.mock.calls[0]?.[0] || '';
+            expect(prompt).toContain('CLOUD');
+            expect(prompt).toContain('SEAT');
+            expect(prompt).toContain('LICENSE_ADMIN');
+            expect(prompt).not.toContain('CodeMeter hizmetini yeniden başlat');
+        });
+
+        it('includes consented ticket Hotinfo alongside structured license intake when supplied', async () => {
+            const hotinfoSnapshot = { allplanVersion: 'Allplan 2026-1-3', allplanBuildId: '39.1613.8530.664' };
+            mockPrisma.ticket.findUnique.mockResolvedValue({ ...cloudLicenseTicket, hotinfoSnapshot });
+            mockEmbedding.search.mockResolvedValue({ results: [cloudSource] });
+            mockAi.generate.mockResolvedValue('Connect lisans yöneticisi koltuk atamasını kontrol etmelidir.');
+
+            await service.generateDraft('tik-1');
+
+            expect(mockPromptBuilder.buildContext).toHaveBeenCalledWith(expect.objectContaining({
+                allplanVersion: '2026',
+                hotinfoSnapshot,
+                skipHotinfoProfile: false,
+            }));
+        });
+
+        it.each([
+            ['empty', []],
+            ['weak', [{ ...cloudSource, similarity: 0.1 }]],
+        ])('requires manual review instead of invoking an LLM with %s retrieval', async (_case, results) => {
+            mockPrisma.ticket.findUnique.mockResolvedValue(cloudLicenseTicket);
+            mockEmbedding.search.mockResolvedValue({ results });
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(mockAi.generate).not.toHaveBeenCalled();
+            expect(result.draft).toMatch(/bilgi kaynağ|güvenilir|uzman|inceleme/i);
+            expect(result.draft).not.toMatch(/CodeMeter hizmetini yeniden başlat/i);
+        });
+
+        it('does not use a legacy CodeMeter-only match as evidence for a 2026 cloud seat ticket', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue(cloudLicenseTicket);
+            mockEmbedding.search.mockResolvedValue({
+                results: [{
+                    id: 'legacy-codemeter',
+                    licenseEra: 'codemeter_2016_2024_1_10',
+                    title: 'ALLPLAN 2023 CodeMeter product key and license server',
+                    content: 'CodeMeter hizmetini yeniden başlatın ve ürün anahtarıyla lisansı etkinleştirin.',
+                    similarity: 0.98,
+                }],
+            });
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(mockAi.generate).not.toHaveBeenCalled();
+            expect(result.draft).toMatch(/bilgi kaynağ|güvenilir|uzman|inceleme/i);
+            expect(result.draft).not.toContain('CodeMeter hizmetini yeniden başlatın');
+        });
+
+        it.each([
+            ['2015', 'SINGLE_USER', 'legacy_pre_2016', 'codemeter_2016_2024_1_10'],
+            ['2023', 'LICENSE_SERVER', 'codemeter_2016_2024_1_10', 'legacy_pre_2016'],
+        ])('rejects mismatched licensing eras for %s', async (version, topology, _expectedEra, wrongEra) => {
+            mockPrisma.ticket.findUnique.mockResolvedValue({
+                ...mockTicket,
+                licensingIntake: {
+                    categoryKey: 'licensing',
+                    allplanVersion: version,
+                    licenseIssueType: 'ACTIVATION',
+                    licenseTopology: topology,
+                },
+            });
+            mockEmbedding.search.mockResolvedValue({ results: [{
+                ...cloudSource,
+                licenseEra: wrongEra,
+            }] });
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(mockAi.generate).not.toHaveBeenCalled();
+            expect(result.reviewReason).toBe('LICENSE_ERA_MISMATCH');
+        });
+
+        it('does not trust untagged legacy material just because it mentions a newer year', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue(cloudLicenseTicket);
+            mockEmbedding.search.mockResolvedValue({ results: [{
+                ...cloudSource,
+                licenseEra: null,
+                title: 'CodeMeter 2023 procedure with 2026 comparison',
+                content: 'Restart CodeMeter service; 2026 differs.',
+            }] });
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(mockAi.generate).not.toHaveBeenCalled();
+            expect(result.reviewReason).toBe('LICENSE_ERA_MISMATCH');
+        });
+
+        it('does not recycle the previous customer answer in a structured cloud license draft', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue({
+                ...cloudLicenseTicket,
+                interaction: { responseGenerated: 'Restart CodeMeter service', userContext: {} },
+            });
+            mockEmbedding.search.mockResolvedValue({ results: [cloudSource] });
+            mockAi.generate.mockResolvedValue('Connect üzerinden koltuk atamasını inceleyin.');
+
+            await service.generateDraft('tik-1');
+
+            expect(mockAi.generate.mock.calls[0]?.[0]).not.toContain('Restart CodeMeter service');
+        });
+
+        it('does not use hardcoded CodeMeter fallback when cloud-license generation has no answer', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue({
+                ...cloudLicenseTicket,
+                description: 'Lisans sunucusu kullanıcı erişim hakkı görünmüyor',
+            });
+            mockEmbedding.search.mockResolvedValue({ results: [cloudSource] });
+            mockAi.generate.mockResolvedValue('');
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(result.reviewReason).toBe('GENERATION_ERROR');
+            expect(result.draft).not.toMatch(/CodeMeter|lisans sunucusunda/i);
+        });
+
+        it('requires manual review for older licensing tickets without persisted choices', async () => {
+            mockPrisma.ticket.findUnique.mockResolvedValue({
+                ...mockTicket,
+                tags: [],
+                department: { slug: 'billing-payments' },
+                product: { name: 'ALLPLAN' },
+                licensingIntake: null,
+            });
+
+            const result = await service.generateDraft('tik-1');
+
+            expect(result.reviewReason).toBe('MISSING_LICENSING_INTAKE');
+            expect(mockAi.generate).not.toHaveBeenCalled();
+        });
 
         it('should throw NotFoundException if ticket not found', async () => {
             mockPrisma.ticket.findUnique.mockResolvedValue(null);
@@ -266,7 +445,7 @@ describe('AiCopilotService', () => {
             expect(result.visuals).toEqual(visuals);
         });
 
-        it('reuses the linked ticket-opening AI answer when the admin model returns no-knowledge', async () => {
+        it('requires current retrieval instead of reusing an unverified linked opening answer', async () => {
             const openingAnswer = [
                 'Merhaba,',
                 '',
@@ -293,7 +472,8 @@ describe('AiCopilotService', () => {
 
             const result = await service.generateDraft('tik-1');
 
-            expect(result.draft).toContain('manuel sunucu ekleme akışı kullanılmalıdır');
+            expect(result.draft).toMatch(/güvenilir|manuel incele/i);
+            expect(mockAi.generate).not.toHaveBeenCalled();
             expect(result.draft).not.toContain('yeterli döküman bulunmuyor');
             expect(result.draft).not.toContain('Kaynak:');
         });
@@ -387,13 +567,15 @@ describe('AiCopilotService', () => {
             expect(mockDocParser.extractText).toHaveBeenCalled();
         });
 
-        it('should return error message when AI generation fails', async () => {
+        it('should return a safe manual-review message when AI generation fails', async () => {
             mockPrisma.ticket.findUnique.mockResolvedValue(mockTicket);
             mockAi.generate.mockRejectedValue(new Error('AI Service Down'));
 
             const result = await service.generateDraft('tik-1');
 
-            expect(result.draft).toContain('AI_ERROR');
+            expect(result.draft).toContain('manuel inceleyin');
+            expect(result.draft).not.toContain('AI Service Down');
+            expect(result.reviewReason).toBe('GENERATION_ERROR');
         });
 
         it('does not replace no-knowledge draft with raw unrelated source excerpts', async () => {

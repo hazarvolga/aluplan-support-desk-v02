@@ -8,19 +8,24 @@ const ts = require('typescript');
 
 const root = path.resolve(__dirname, '..');
 const backend = createRequire(path.join(root, 'apps/backend/package.json'));
-const mjmlEntry = backend.resolve('mjml');
-const realMjml = backend('mjml');
-const mjmlRequire = createRequire(mjmlEntry);
-const mjmlPackage = require(path.resolve(path.dirname(mjmlEntry), '../package.json'));
-const coreEntry = mjmlRequire.resolve('mjml-core');
+const coreEntry = backend.resolve('mjml-core');
+const coreRequire = createRequire(coreEntry);
 const corePackage = require(path.resolve(path.dirname(coreEntry), '../package.json'));
+const coreSource = fs.readFileSync(coreEntry, 'utf8');
+const core = backend('mjml-core');
+const preset = backend('mjml-preset-core');
+const validator = backend('mjml-validator');
+core.assignComponents(core.components, preset.components);
+validator.assignDependencies(validator.dependencies, preset.dependencies);
+const realMjml = core.default;
 const lockfile = fs.readFileSync(path.join(root, 'pnpm-lock.yaml'), 'utf8');
 const sourcePath = path.join(root, 'apps/backend/src/email/email.templates.ts');
 
 function loadRenderer(optionsSeen) {
     const allowed = new Set([sourcePath,
         path.join(root, 'apps/backend/src/email/contracts/base.contract.ts'),
-        path.join(root, 'apps/backend/src/common/utils/public-url.util.ts')]);
+        path.join(root, 'apps/backend/src/common/utils/public-url.util.ts'),
+        path.join(root, 'apps/backend/src/email/email-template-security.ts')]);
     function load(file) {
         assert.ok(allowed.has(file), 'Only reviewed renderer sources may execute');
         const module = { exports: {} };
@@ -31,11 +36,17 @@ function loadRenderer(optionsSeen) {
         const localRequire = (name) => {
             if (name.startsWith('.')) return load(path.resolve(path.dirname(file), `${name}.ts`));
             if (name === '@nestjs/common') return { Logger: class { log() {} warn() {} error() {} } };
-            if (name === 'mjml') return (input, options) => {
-                optionsSeen.push(options);
-                return realMjml(input, options);
+            if (name === 'mjml-core') return {
+                ...core,
+                __esModule: true,
+                default: (input, options) => {
+                    optionsSeen.push(options);
+                    return realMjml(input, options);
+                },
             };
-            assert.ok(['fs', 'path', 'crypto', 'handlebars', 'html-to-text', 'zod'].includes(name));
+            if (name === 'mjml-preset-core') return preset;
+            if (name === 'mjml-validator') return validator;
+            assert.ok(['fs', 'path', 'crypto', 'cheerio', 'handlebars', 'html-to-text', 'zod'].includes(name));
             return backend(name);
         };
         vm.runInNewContext(code, { module, exports: module.exports, require: localRequire,
@@ -47,14 +58,12 @@ function loadRenderer(optionsSeen) {
 }
 
 test('production MJML dependencies do not include the unmaintained CLI or vulnerable html-minifier', () => {
-    assert.equal(mjmlPackage.dependencies['mjml-cli'], undefined);
     assert.equal(corePackage.dependencies['html-minifier'], undefined);
-    const mjmlSnapshot = lockfile.match(/^  mjml@4\.18\.0\(patch_hash=[^\n]+\n(?:(?!^  [^ ])[^\n]*\n)*/m)?.[0];
     const coreSnapshot = lockfile.match(/^  mjml-core@4\.18\.0\(patch_hash=[^\n]+\n(?:(?!^  [^ ])[^\n]*\n)*/m)?.[0];
-    assert.ok(mjmlSnapshot, 'The patched MJML snapshot must be present in the lockfile');
     assert.ok(coreSnapshot, 'The patched MJML core snapshot must be present in the lockfile');
-    assert.doesNotMatch(mjmlSnapshot, /^      mjml-cli:/m);
-    assert.doesNotMatch(coreSnapshot, /^      html-minifier:/m);
+    assert.throws(() => backend.resolve('mjml-cli/package.json'), /Cannot find module/);
+    assert.throws(() => coreRequire.resolve('html-minifier'), /Cannot find module/);
+    assert.doesNotMatch(coreSource, /require\(["']html-minifier["']\)/);
 });
 
 test('deprecated core minification fails closed instead of loading an unsafe minifier', () => {

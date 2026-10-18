@@ -7,16 +7,15 @@ import { useAuth } from '@/components/auth/role-guard';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { HotinfoGrid } from "@/components/ui/hotinfo-grid";
+import { HotinfoGrid, type HotinfoData } from "@/components/ui/hotinfo-grid";
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, KeyRound, Monitor, UploadCloud, AlertCircle, AlertTriangle, History, Clock, FileText, Activity, LayoutDashboard, Smartphone, SmartphoneNfc, CheckCircle2, UserCircle, Save, Loader2, Mail, BellRing, ShieldAlert } from 'lucide-react';
+import { Monitor, AlertTriangle, History, CheckCircle2, Loader2, Mail, BellRing, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
-import { useTranslations, useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 export default function ProfilePage() {
     const t = useTranslations('profile');
-    const tc = useTranslations('common');
     const locale = useLocale();
     const { logout } = useAuth();
     const [loading, setLoading] = useState(true);
@@ -34,7 +33,7 @@ export default function ProfilePage() {
     const [accountStatus, setAccountStatus] = useState('');
     const [crmVerified, setCrmVerified] = useState(false);
     const [roles, setRoles] = useState<string[]>([]);
-    const [hotinfoData, setHotinfoData] = useState<any>(null);
+    const [hotinfoData, setHotinfoData] = useState<(HotinfoData & { isAllplanUser?: boolean }) | null>(null);
     const [hotinfoUpdatedAt, setHotinfoUpdatedAt] = useState<string | null>(null);
     const [uploadingHotinfo, setUploadingHotinfo] = useState(false);
 
@@ -69,7 +68,7 @@ export default function ProfilePage() {
             await api.preferences.updateEmail(type, !current);
             setEmailPrefs(prev => prev.map(p => p.emailType === type ? { ...p, enabled: !current } : p));
             toast.success(t('toasts.pref_updated'));
-        } catch (error) {
+        } catch {
             toast.error(t('toasts.pref_failed'));
         }
     };
@@ -84,7 +83,7 @@ export default function ProfilePage() {
             setRoles(user.role ? [user.role] : []);
             setAccountStatus(user.status || 'ACTIVE');
             if (user.customerProfile) {
-                setHotinfoData(user.customerProfile.hotinfoData);
+                setHotinfoData(user.customerProfile.hotinfoData as (HotinfoData & { isAllplanUser?: boolean }) | null);
                 setHotinfoUpdatedAt(user.customerProfile.hotinfoUpdatedAt || null);
             }
 
@@ -103,7 +102,7 @@ export default function ProfilePage() {
                 } else if (fullDetails?.phone) {
                     setPhone(fullDetails.phone);
                 }
-            } catch (e) { /* ignore secondary load failure */ }
+            } catch { /* ignore secondary load failure */ }
 
         } catch (error) {
             console.error('Failed to load profile', error);
@@ -134,7 +133,7 @@ export default function ProfilePage() {
 
         setSaving(true);
         try {
-            const body: any = {
+            const body: { fullName: string; phone: string; companyName: string; jobTitle: string; industry: string; currentPassword?: string; newPassword?: string } = {
                 fullName,
                 phone,
                 companyName,
@@ -163,9 +162,9 @@ export default function ProfilePage() {
             setPassword('');
             setConfirmPassword('');
             loadProfile(); // Refresh to see any auto-generated customerNo
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            toast.error(t('toasts.update_failed') + ': ' + (error.message || t('toasts.unknown_error')));
+            toast.error(t('toasts.update_failed') + ': ' + (error instanceof Error ? error.message : t('toasts.unknown_error')));
         } finally {
             setSaving(false);
         }
@@ -185,12 +184,12 @@ export default function ProfilePage() {
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await api.post('/customers/me/hotinfo', formData);
+            const response = await api.post<{ hotinfo: HotinfoData & { isAllplanUser?: boolean } }>('/customers/me/hotinfo', formData);
 
             setHotinfoData(response.hotinfo);
             setHotinfoUpdatedAt(new Date().toISOString());
             toast.success(t('toasts.hotinfo_updated'));
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.error(t('toasts.hotinfo_failed'));
             console.error(error);
         } finally {

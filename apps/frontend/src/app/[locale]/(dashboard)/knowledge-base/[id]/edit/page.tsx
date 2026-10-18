@@ -49,9 +49,9 @@ export default function EditKnowledgeArticlePage() {
                     content: content,
                     isInternal: data.isInternal || false,
                 });
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error('Failed to load article:', err);
-                setError(err.message || 'Belge yüklenirken bir hata oluştu');
+                setError(err instanceof Error ? err.message : 'Belge yüklenirken bir hata oluştu');
             } finally {
                 setIsLoading(false);
             }
@@ -71,9 +71,9 @@ export default function EditKnowledgeArticlePage() {
             });
             toast.success('Belge başarıyla güncellendi.');
             router.push(`/knowledge-base/${articleId}`);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Update failed:', err);
-            toast.error(err.message || 'Güncelleme başarısız oldu.');
+            toast.error(err instanceof Error ? err.message : 'Güncelleme başarısız oldu.');
         } finally {
             setIsSaving(false);
         }

@@ -83,13 +83,15 @@ describe('UsersController', () => {
     });
 
     describe('create', () => {
-        it('should create a user', async () => {
-            const dto = { email: 'new@example.com', fullName: 'New User', password: 'secret' };
+        it('passes the exact authenticated actor context when creating a user', async () => {
+            const dto = { email: 'new@example.com', fullName: 'New User', password: 'secret', roles: ['viewer'] };
             const expected = { id: 'u-new', ...dto };
             usersService.create.mockResolvedValue(expected);
-            const result = await controller.create(dto as any);
+            const result = await controller.create(dto as any, {
+                user: { sub: 'admin-1', id: 'legacy-id-must-not-win', role: { name: 'ADMIN' } },
+            });
             expect(result).toEqual(expected);
-            expect(usersService.create).toHaveBeenCalledWith(dto);
+            expect(usersService.create).toHaveBeenCalledWith(dto, { id: 'admin-1', role: 'ADMIN' });
         });
     });
 
@@ -106,23 +108,27 @@ describe('UsersController', () => {
     });
 
     describe('update', () => {
-        it('should update user by admin', async () => {
-            const dto = { roleId: 'role-1' };
-            const expected = { id: 'u1', roleId: 'role-1' };
+        it('passes the exact DTO and authenticated actor context when updating a user', async () => {
+            const dto = { fullName: 'Updated User', roles: ['support_agent'] };
+            const expected = { id: 'u1', fullName: 'Updated User' };
             usersService.update.mockResolvedValue(expected);
-            const result = await controller.update('u1', dto as any);
+            const result = await controller.update('u1', dto as any, {
+                user: { sub: 'admin-1', role: 'SUPERUSER' },
+            });
             expect(result).toEqual(expected);
-            expect(usersService.update).toHaveBeenCalledWith('u1', dto);
+            expect(usersService.update).toHaveBeenCalledWith('u1', dto, { id: 'admin-1', role: 'SUPERUSER' });
         });
     });
 
     describe('remove', () => {
-        it('should remove user by admin', async () => {
+        it('passes the authenticated management actor when deleting a user', async () => {
             const expected = { id: 'u1' };
             usersService.remove.mockResolvedValue(expected);
-            const result = await controller.remove('u1');
+            const result = await controller.remove('u1', {
+                user: { sub: 'admin-1', id: 'legacy-id-must-not-win', role: { name: 'ADMIN' } },
+            });
             expect(result).toEqual(expected);
-            expect(usersService.remove).toHaveBeenCalledWith('u1');
+            expect(usersService.remove).toHaveBeenCalledWith('u1', { id: 'admin-1', role: 'ADMIN' });
         });
     });
 });

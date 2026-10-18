@@ -16,10 +16,35 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Building2, Globe, MapPin, Users, ArrowLeft, ExternalLink, Calendar, Mail, User, Phone, Hash, FileText } from 'lucide-react';
+import { Building2, Globe, MapPin, Users, ArrowLeft, ExternalLink, Calendar, Mail, User, Phone, Hash, FileText, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 
 import { useTranslations, useLocale } from 'next-intl';
+
+interface AccountContact {
+    id: string;
+    userId: string;
+    firstName?: string;
+    lastName?: string;
+    jobTitle?: string;
+    user?: { fullName?: string; email?: string; status?: string };
+}
+
+interface AccountDetails {
+    name?: string;
+    crmVerified?: boolean;
+    account_number?: string;
+    clientIdFrilo?: string;
+    industry?: string;
+    phone?: string;
+    fax?: string;
+    licenseManagerName?: string;
+    website?: string;
+    serviceAddress?: string;
+    address?: string;
+    createdAt?: string;
+    customers?: AccountContact[];
+}
 
 export default function AccountDetailPage() {
     const t = useTranslations('customers');
@@ -27,7 +52,7 @@ export default function AccountDetailPage() {
     const locale = useLocale();
     const params = useParams();
     const router = useRouter();
-    const [account, setAccount] = useState<any>(null);
+    const [account, setAccount] = useState<AccountDetails | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -56,7 +81,7 @@ export default function AccountDetailPage() {
         );
     }
 
-    const InfoRow = ({ icon: Icon, label, children }: { icon: any; label: string; children: ReactNode }) => (
+    const InfoRow = ({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: ReactNode }) => (
         <div className="flex items-start gap-3 border-b border-border/40 pb-3 last:border-0 last:pb-0">
             <Icon className="h-4 w-4 text-muted-foreground mt-1" />
             <div className="space-y-1 min-w-0">
@@ -133,7 +158,7 @@ export default function AccountDetailPage() {
                         </InfoRow>
 
                         <InfoRow icon={Calendar} label={t('accounts.joined_system')}>
-                            {new Date(account.createdAt).toLocaleDateString(locale)}
+                            {account.createdAt ? new Date(account.createdAt).toLocaleDateString(locale) : '-'}
                         </InfoRow>
                     </CardContent>
                 </Card>
@@ -170,7 +195,7 @@ export default function AccountDetailPage() {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    account.customers.map((c: any) => (
+                                    account.customers.map((c) => (
                                         <TableRow key={c.id}>
                                             <TableCell>
                                                 <Link href={`/customers/${c.userId}`} className="flex items-center gap-2 hover:underline font-medium text-primary">

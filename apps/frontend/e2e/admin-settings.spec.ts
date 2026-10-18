@@ -1,9 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { loginAsAdmin } from './helpers/auth';
 
 test.describe('Admin Settings', () => {
     test.beforeEach(async ({ page }) => {
-        await loginAsAdmin(page);
         await page.goto('/tr/admin/settings');
     });
 
@@ -47,9 +45,9 @@ test.describe('Admin Settings', () => {
     test('should save AI settings correctly', async ({ page }) => {
         await page.click('role=tab[name="YZE"]');
 
-        // Find OpenAI section (if present or click provider)
-        // This test assumes OpenAI is at least selectable
-        await page.selectOption('select:near(label:has-text("Varsayılan Sohbet Sağlayıcısı"))', 'openai');
+        const chatProvider = page.getByRole('combobox', { name: 'Varsayılan Sohbet Sağlayıcısı' });
+        await chatProvider.click();
+        await page.getByRole('option', { name: /^OpenAI \(Bulut/ }).click();
 
         // Check for the OpenAI API Key label (which we fixed)
         await expect(page.locator('text=API Anahtarı')).toBeVisible();

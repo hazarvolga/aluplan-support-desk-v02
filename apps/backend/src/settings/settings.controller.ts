@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request } from '@nestjs/common';
 import { SettingsService } from './settings.service';
 import { UpsertSettingDto } from './dto/upsert-setting.dto';
 import { BulkUpsertSettingDto } from './dto/bulk-upsert-setting.dto';
@@ -35,14 +35,14 @@ export class SettingsController {
 
     @Get()
     @Roles('ADMIN', 'SUPERUSER')
-    findAll(@Query('decrypt') decrypt?: string) {
-        return this.settingsService.getAll(decrypt === 'true');
+    findAll() {
+        return this.settingsService.getAll(false);
     }
 
     @Get(':key')
     @Roles('ADMIN', 'SUPERUSER')
-    findOne(@Param('key') key: string, @Query('decrypt') decrypt?: string) {
-        return this.settingsService.get(key, decrypt === 'true');
+    findOne(@Param('key') key: string) {
+        return this.settingsService.get(key, false);
     }
 
     @Delete(':key')

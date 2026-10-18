@@ -19,6 +19,14 @@ export const TEST_USERS = {
         password: process.env.E2E_CUSTOMER_PASSWORD || 'E2eCustomer!Pass123',
         phone: process.env.E2E_CUSTOMER_PHONE || '905550009988',
     },
+    customerTwo: {
+        email: process.env.E2E_CUSTOMER_TWO_EMAIL || 'e2e-customer-two@aluplan.test',
+        password: process.env.E2E_CUSTOMER_TWO_PASSWORD || 'E2eCustomerTwo!Pass123',
+    },
+    rememberMe: {
+        email: process.env.E2E_REMEMBER_ME_EMAIL || 'e2e-remember-me@aluplan.test',
+        password: process.env.E2E_REMEMBER_ME_PASSWORD || 'E2eRememberMe!Pass123',
+    },
 } as const;
 
 interface LoginOptions {
@@ -43,6 +51,10 @@ export async function login(
         try {
             if (debug) console.log(`--- [AUTH] Login attempt ${attempt}/${maxRetries} for ${email} ---`);
 
+            // The chromium project normally starts from an authenticated admin
+            // storage state. An explicit login must begin anonymously or the
+            // login page redirects before both form fields can be filled.
+            await page.context().clearCookies();
             await page.goto('/tr/login');
             // Don't waitForLoadState('networkidle') — under `next dev` hot-reload
             // never lets the network settle and the wait expires. The selector
@@ -111,7 +123,8 @@ export async function getAuthToken(
     email: string,
     password: string,
 ): Promise<string> {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const configuredApiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const apiBase = configuredApiBase.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
     const response = await context.request.post(`${apiBase}/api/v1/auth/login`, {
         data: { email, password },
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -119,5 +132,12 @@ export async function getAuthToken(
     if (!response.ok()) {
         throw new Error(`getAuthToken failed: ${response.status()} ${await response.text()}`);
     }
-    return extractAccessTokenFromSetCookie(response.headers()['set-cookie']);
+    // Playwright deliberately omits `set-cookie` from the flattened headers
+    // object. Read the raw header array so multiple auth cookies are preserved.
+    const setCookie = response
+        .headersArray()
+        .filter(({ name }) => name.toLowerCase() === 'set-cookie')
+        .map(({ value }) => value)
+        .join(', ');
+    return extractAccessTokenFromSetCookie(setCookie);
 }

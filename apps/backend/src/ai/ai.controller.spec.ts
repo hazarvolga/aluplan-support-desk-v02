@@ -5,7 +5,6 @@ import * as fc from 'fast-check';
 import { AiController } from './ai.controller';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
-import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { AiService } from './ai.service';
@@ -20,15 +19,22 @@ import { RbacGuard } from '../rbac/rbac.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { getQueueToken } from '@nestjs/bullmq';
 import { AllplanLicensingPolicyService } from './allplan-licensing-policy.service';
+import { ROLES_KEY } from '../rbac/decorators/rbac.decorators';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /** Build a minimal mock BullMQ Job object */
-function makeMockJob(state: string, returnvalue: unknown = null, failedReason = '') {
+function makeMockJob(
+    state: string,
+    returnvalue: unknown = null,
+    failedReason = '',
+    ownerId: string | null = 'owner-1',
+) {
     return {
         id: 'test-job-id',
+        data: ownerId === null ? { options: {} } : { options: { userId: ownerId } },
         getState: jest.fn().mockResolvedValue(state),
         returnvalue,
         failedReason,
@@ -42,7 +48,6 @@ function makeMockJob(state: string, returnvalue: unknown = null, failedReason = 
 
 const mockAiQueryService = { query: jest.fn(), getTelemetryMetrics: jest.fn() };
 const mockEmbeddingService = { search: jest.fn(), reindexAll: jest.fn() };
-const mockOllamaService = {};
 const mockOpenAiService = {};
 const mockGenericOpenAiService = {};
 const mockAiService = { isAvailable: jest.fn(), getHealthStatus: jest.fn(), testProvider: jest.fn(), translate: jest.fn() };
@@ -59,13 +64,32 @@ const mockAllplanLicensingPolicy = { validate: jest.fn().mockResolvedValue(undef
 // Guard that always allows — used to bypass auth/throttle in unit tests
 const allowAllGuard = { canActivate: () => true };
 
+describe('AiController — query authorization metadata', () => {
+    it('restricts inference to the explicit staff role allowlist', () => {
+        const roles = Reflect.getMetadata(ROLES_KEY, AiController.prototype.query);
+
+        expect(roles).toEqual([
+            'ADMIN',
+            'SUPER_ADMIN',
+            'SUPERUSER',
+            'DEPARTMENT_MANAGER',
+            'TEAM_LEAD',
+            'SENIOR_AGENT',
+            'AGENT',
+            'SUPPORT_AGENT',
+            'SUPPORT_MANAGER',
+        ]);
+        expect(roles).not.toContain('CUSTOMER');
+        expect(roles).not.toContain('VIEWER');
+    });
+});
+
 async function buildModule(): Promise<TestingModule> {
     return Test.createTestingModule({
         controllers: [AiController],
         providers: [
             { provide: AiQueryService, useValue: mockAiQueryService },
             { provide: EmbeddingService, useValue: mockEmbeddingService },
-            { provide: OllamaService, useValue: mockOllamaService },
             { provide: OpenAiService, useValue: mockOpenAiService },
             { provide: GenericOpenAiService, useValue: mockGenericOpenAiService },
             { provide: AiService, useValue: mockAiService },
@@ -92,6 +116,7 @@ async function buildModule(): Promise<TestingModule> {
 
 describe('AiController — getJobStatus() unit tests', () => {
     let controller: AiController;
+    const ownerRequest = { user: { sub: 'owner-1', role: 'CUSTOMER' } };
 
     beforeEach(async () => {
         const module = await buildModule();
@@ -104,7 +129,7 @@ describe('AiController — getJobStatus() unit tests', () => {
         mockAiQueue.getJob.mockResolvedValue(null);
 
         // Act & Assert
-        await expect(controller.getJobStatus('non-existent-id')).rejects.toThrow(NotFoundException);
+        await expect(controller.getJobStatus('non-existent-id', ownerRequest)).rejects.toThrow(NotFoundException);
     });
 
     it('returns HTTP 404 with message "Job not found" when job is null', async () => {
@@ -112,7 +137,7 @@ describe('AiController — getJobStatus() unit tests', () => {
         mockAiQueue.getJob.mockResolvedValue(null);
 
         // Act & Assert
-        await expect(controller.getJobStatus('non-existent-id')).rejects.toMatchObject({
+        await expect(controller.getJobStatus('non-existent-id', ownerRequest)).rejects.toMatchObject({
             response: { message: 'Job not found' },
         });
     });
@@ -123,7 +148,7 @@ describe('AiController — getJobStatus() unit tests', () => {
         mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', returnvalue));
 
         // Act
-        const response = await controller.getJobStatus('test-job-id');
+        const response = await controller.getJobStatus('test-job-id', ownerRequest);
 
         // Assert
         expect(response.status).toBe('COMPLETED');
@@ -131,17 +156,21 @@ describe('AiController — getJobStatus() unit tests', () => {
         expect(response).not.toHaveProperty('error');
     });
 
-    it('failed job — response includes error field equal to job.failedReason', async () => {
+    it('failed job — response includes only a stable safe error', async () => {
         // Arrange
         const failedReason = 'OpenAI rate limit exceeded';
         mockAiQueue.getJob.mockResolvedValue(makeMockJob('failed', null, failedReason));
 
         // Act
-        const response = await controller.getJobStatus('test-job-id');
+        const response = await controller.getJobStatus('test-job-id', ownerRequest);
 
         // Assert
         expect(response.status).toBe('FAILED');
-        expect(response.error).toBe(failedReason);
+        expect(response.error).toEqual({
+            code: 'AI_QUERY_FAILED',
+            message: 'AI query processing failed',
+        });
+        expect(JSON.stringify(response)).not.toContain(failedReason);
         expect(response).not.toHaveProperty('result');
     });
 
@@ -150,7 +179,7 @@ describe('AiController — getJobStatus() unit tests', () => {
         mockAiQueue.getJob.mockResolvedValue(makeMockJob('waiting'));
 
         // Act
-        const response = await controller.getJobStatus('test-job-id');
+        const response = await controller.getJobStatus('test-job-id', ownerRequest);
 
         // Assert
         expect(response.status).toBe('PENDING');
@@ -163,7 +192,7 @@ describe('AiController — getJobStatus() unit tests', () => {
         mockAiQueue.getJob.mockResolvedValue(makeMockJob('delayed'));
 
         // Act
-        const response = await controller.getJobStatus('test-job-id');
+        const response = await controller.getJobStatus('test-job-id', ownerRequest);
 
         // Assert
         expect(response.status).toBe('PENDING');
@@ -174,10 +203,73 @@ describe('AiController — getJobStatus() unit tests', () => {
         mockAiQueue.getJob.mockResolvedValue(makeMockJob('active'));
 
         // Act
-        const response = await controller.getJobStatus('test-job-id');
+        const response = await controller.getJobStatus('test-job-id', ownerRequest);
 
         // Assert
         expect(response.status).toBe('PROCESSING');
+    });
+
+    it('returns the job to its authenticated owner', async () => {
+        mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', { answer: 'owned' }));
+
+        await expect(controller.getJobStatus('test-job-id', ownerRequest)).resolves.toMatchObject({
+            status: 'COMPLETED',
+            result: { answer: 'owned' },
+        });
+    });
+
+    it('hides a job from an authenticated non-owner', async () => {
+        mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', { answer: 'private' }));
+
+        await expect(controller.getJobStatus('test-job-id', {
+            user: { sub: 'other-user', role: 'CUSTOMER' },
+        })).rejects.toThrow(NotFoundException);
+    });
+
+    it('fails closed when authenticated request identity is unavailable', async () => {
+        mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', { answer: 'private' }));
+
+        await expect(controller.getJobStatus('test-job-id', {}))
+            .rejects.toThrow(NotFoundException);
+    });
+
+    it.each([
+        'ADMIN',
+        ' admin ',
+        'SUPERUSER',
+        'superuser',
+        'SUPER_ADMIN',
+        'SUPER-ADMIN',
+        ' super-admin ',
+        'super_admin',
+    ])(
+        'allows the explicit privileged role bypass for %s',
+        async role => {
+            mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', { answer: 'audited' }));
+
+            await expect(controller.getJobStatus('test-job-id', {
+                user: { sub: 'operator-1', role },
+            })).resolves.toMatchObject({ status: 'COMPLETED' });
+        },
+    );
+
+    it.each(['SUPPORT_AGENT', 'support-agent', ' support_agent '])(
+        'does not let ordinary support role %s read a foreign job',
+        async role => {
+            mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', { answer: 'private' }));
+
+            await expect(controller.getJobStatus('test-job-id', {
+                user: { sub: 'other-user', role },
+            })).rejects.toThrow(NotFoundException);
+        },
+    );
+
+    it('fails closed when the job has no owner metadata, including for an admin', async () => {
+        mockAiQueue.getJob.mockResolvedValue(makeMockJob('completed', { answer: 'orphaned' }, '', null));
+
+        await expect(controller.getJobStatus('test-job-id', {
+            user: { sub: 'operator-1', role: 'ADMIN' },
+        })).rejects.toThrow(NotFoundException);
     });
 });
 
@@ -290,6 +382,16 @@ describe('AiController — Hotinfo consent forwarding', () => {
     });
 });
 
+describe('AiController — removed provider boundary', () => {
+    it('rejects stale Ollama model-list requests with HTTP 400', async () => {
+        const module = await buildModule();
+        const controller = module.get<AiController>(AiController);
+
+        await expect(controller.listModels({ provider: 'ollama' }))
+            .rejects.toMatchObject({ status: 400 });
+    });
+});
+
 // ---------------------------------------------------------------------------
 // Task 6.2 — Property test: Property 4: Job State → Status Enum Mapping
 // Validates: Requirements 4.2, 4.3
@@ -297,6 +399,7 @@ describe('AiController — Hotinfo consent forwarding', () => {
 
 describe('AiController — Property 4: Job State → Status Enum Mapping', () => {
     let controller: AiController;
+    const ownerRequest = { user: { sub: 'owner-1', role: 'CUSTOMER' } };
 
     beforeEach(async () => {
         const module = await buildModule();
@@ -321,7 +424,7 @@ describe('AiController — Property 4: Job State → Status Enum Mapping', () =>
                         mockAiQueue.getJob.mockResolvedValue(makeMockJob(state));
 
                         // Act: should not throw
-                        const response = await controller.getJobStatus('test-job-id');
+                        const response = await controller.getJobStatus('test-job-id', ownerRequest);
 
                         // Assert: status is in the valid enum set
                         return validStatuses.has(response.status);
@@ -349,7 +452,7 @@ describe('AiController — Property 4: Job State → Status Enum Mapping', () =>
                         // Act & Assert: must not throw
                         let threw = false;
                         try {
-                            await controller.getJobStatus('test-job-id');
+                            await controller.getJobStatus('test-job-id', ownerRequest);
                         } catch {
                             threw = true;
                         }

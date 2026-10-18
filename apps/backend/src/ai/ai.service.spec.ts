@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AiService } from './ai.service';
 import { SettingsService } from '../settings/settings.service';
-import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { LlmApiService } from './llm-api.service';
@@ -19,7 +18,7 @@ describe('AiService — VertexAI Removal', () => {
         generate: jest.fn(),
         isAvailable: jest.fn(),
         testConnection: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
-        setProvider: jest.fn(),
+        forProvider: jest.fn(function () { return this; }),
         reformat: jest.fn(),
         suggestCategory: jest.fn(),
         summarizeTicket: jest.fn(),
@@ -28,25 +27,12 @@ describe('AiService — VertexAI Removal', () => {
         getName: jest.fn().mockReturnValue('openai'),
     };
 
-    const mockOllamaService = {
-        embed: jest.fn(),
-        generate: jest.fn(),
-        isAvailable: jest.fn(),
-        testConnection: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
-        reformat: jest.fn(),
-        suggestCategory: jest.fn(),
-        summarizeTicket: jest.fn(),
-        analyzeSentiment: jest.fn(),
-        translate: jest.fn(),
-        getName: jest.fn().mockReturnValue('ollama'),
-    };
-
     const mockGenericOpenAiService = {
         embed: jest.fn(),
         generate: jest.fn(),
         isAvailable: jest.fn(),
         testConnection: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
-        setProvider: jest.fn(),
+        forProvider: jest.fn(function () { return this; }),
         reformat: jest.fn(),
         suggestCategory: jest.fn(),
         summarizeTicket: jest.fn(),
@@ -108,13 +94,12 @@ describe('AiService — VertexAI Removal', () => {
             if (!name) return null;
             const n = name.toLowerCase();
             if (n === 'vertex' || n === 'openai') return mockOpenAiService;
-            if (n === 'ollama') return mockOllamaService;
             if (['custom', 'xai', 'deepseek', 'groq'].includes(n)) return mockGenericOpenAiService;
             if (n === 'llmapi') return mockLlmApiService;
             return null;
         }),
-        getActiveChatProvider: jest.fn().mockResolvedValue(mockOllamaService),
-        getActiveEmbedProvider: jest.fn().mockResolvedValue(mockOllamaService),
+        getActiveChatProvider: jest.fn().mockResolvedValue(mockOpenAiService),
+        getActiveEmbedProvider: jest.fn().mockResolvedValue(mockOpenAiService),
         isManualOverride: jest.fn().mockResolvedValue(false),
     };
 
@@ -123,7 +108,6 @@ describe('AiService — VertexAI Removal', () => {
             providers: [
                 AiService,
                 { provide: SettingsService, useValue: mockSettingsService },
-                { provide: OllamaService, useValue: mockOllamaService },
                 { provide: OpenAiService, useValue: mockOpenAiService },
                 { provide: GenericOpenAiService, useValue: mockGenericOpenAiService },
                 { provide: LlmApiService, useValue: mockLlmApiService },
@@ -165,7 +149,7 @@ describe('AiService — VertexAI Removal', () => {
 
         // Known providers are also present
         expect(result.providers).toHaveProperty('openai');
-        expect(result.providers).toHaveProperty('ollama');
+        expect(result.providers).not.toHaveProperty('ollama');
     });
 
     it('NestJS test module compiles successfully without VertexAiService', async () => {
@@ -174,7 +158,6 @@ describe('AiService — VertexAI Removal', () => {
             providers: [
                 AiService,
                 { provide: SettingsService, useValue: mockSettingsService },
-                { provide: OllamaService, useValue: mockOllamaService },
                 { provide: OpenAiService, useValue: mockOpenAiService },
                 { provide: GenericOpenAiService, useValue: mockGenericOpenAiService },
                 { provide: LlmApiService, useValue: mockLlmApiService },
@@ -194,7 +177,6 @@ describe('AiService — VertexAI Removal', () => {
 describe('AiService', () => {
     let service: AiService;
     let settingsService: any;
-    let ollamaService: any;
 
     const mockSettingsService = {
         getValue: jest.fn(),
@@ -232,8 +214,9 @@ describe('AiService', () => {
     const mockProviderRouter = {
         getProviderByName: jest.fn((name: string | null) => {
             if (!name) return null;
-            if (name === 'ollama') return mockOllamaService;
-            return mockOtherProviders;
+            if (name === 'openai') return mockOtherProviders;
+            if (name === 'llmapi') return mockFallbackProvider;
+            return null;
         }),
         getActiveChatProvider: jest.fn().mockResolvedValue(null),
         getActiveEmbedProvider: jest.fn().mockResolvedValue(null),
@@ -244,19 +227,19 @@ describe('AiService', () => {
         record: jest.fn(),
     };
 
-    const mockOllamaService = {
-        embed: jest.fn(),
-        generate: jest.fn(),
-        isAvailable: jest.fn(),
-        testConnection: jest.fn(),
-    };
-
     const mockOtherProviders = {
         embed: jest.fn(),
         generate: jest.fn(),
         isAvailable: jest.fn(),
         testConnection: jest.fn(),
-        setProvider: jest.fn(),
+        forProvider: jest.fn(function () { return this; }),
+    };
+
+    const mockFallbackProvider = {
+        ...mockOtherProviders,
+        embed: jest.fn(),
+        generate: jest.fn(),
+        getName: jest.fn().mockReturnValue('llmapi'),
     };
 
     beforeEach(async () => {
@@ -264,7 +247,6 @@ describe('AiService', () => {
             providers: [
                 AiService,
                 { provide: SettingsService, useValue: mockSettingsService },
-                { provide: OllamaService, useValue: mockOllamaService },
                 { provide: OpenAiService, useValue: mockOtherProviders },
                 { provide: GenericOpenAiService, useValue: mockOtherProviders },
                 { provide: LlmApiService, useValue: mockOtherProviders },
@@ -278,7 +260,6 @@ describe('AiService', () => {
 
         service = module.get<AiService>(AiService);
         settingsService = module.get<SettingsService>(SettingsService);
-        ollamaService = module.get<OllamaService>(OllamaService);
 
         // Reset stateful breaker instances between tests
         Object.keys(breakerMap).forEach(k => delete breakerMap[k]);
@@ -286,7 +267,7 @@ describe('AiService', () => {
     });
 
     describe('Provider Selection', () => {
-        it('should fallback to ollama if no provider is configured', async () => {
+        it('reports unavailable if no provider is configured', async () => {
             // Arrange
             mockSettingsService.getValue.mockResolvedValue(null);
             delete process.env.OPENAI_API_KEY; // Ensure env is cleared for test
@@ -296,7 +277,7 @@ describe('AiService', () => {
             const name = await service.getActiveProviderName();
 
             // Assert
-            expect(name).toBe('ollama');
+            expect(name).toBe('unavailable');
         });
 
         it('should use chat_provider setting if present', async () => {
@@ -312,31 +293,95 @@ describe('AiService', () => {
             // Assert
             expect(name).toBe('openai');
         });
+
+        it('does not silently substitute a stale Ollama selection', async () => {
+            mockSettingsService.getValue.mockImplementation(async (key) => key === 'ai.chat_provider' ? 'ollama' : null);
+
+            await expect(service.generate('Hello')).rejects.toMatchObject({ status: 503 });
+            await expect(service.getActiveModelName()).resolves.toBe('unavailable');
+            expect(mockOtherProviders.generate).not.toHaveBeenCalled();
+            await expect(service.testProvider('ollama')).resolves.toEqual({
+                success: false,
+                message: 'Bilinmeyen AI sağlayıcısı.',
+            });
+        });
+
+        it('rejects stale Ollama embedding primary before a valid fallback is called', async () => {
+            mockSettingsService.getValue.mockImplementation(async (key) => {
+                if (key === 'ai.embed_provider') return 'ollama';
+                if (key === 'ai.embed_fallback_provider') return 'llmapi';
+                return null;
+            });
+            await expect(service.embed('secret')).rejects.toMatchObject({ status: 503 });
+            expect(mockFallbackProvider.embed).not.toHaveBeenCalled();
+        });
+
+        it('rejects a stale specialized Ollama primary before a valid fallback is called', async () => {
+            mockSettingsService.getValue.mockImplementation(async (key) => {
+                if (key === 'ai.specialized.general_provider') return 'ollama';
+                if (key === 'ai.fallback_provider') return 'llmapi';
+                return null;
+            });
+            await expect(service.generate('secret')).rejects.toMatchObject({ status: 503 });
+            expect(mockFallbackProvider.generate).not.toHaveBeenCalled();
+        });
+
+        it('rejects a stale Ollama fallback before the valid primary is called', async () => {
+            mockSettingsService.getValue.mockImplementation(async (key) => {
+                if (key === 'ai.chat_provider') return 'openai';
+                if (key === 'ai.fallback_provider') return 'ollama';
+                return null;
+            });
+            await expect(service.generate('secret')).rejects.toMatchObject({ status: 503 });
+            expect(mockOtherProviders.generate).not.toHaveBeenCalled();
+        });
+
+        it('rejects a stale Ollama fallback before streaming starts', async () => {
+            mockSettingsService.getValue.mockImplementation(async (key) => {
+                if (key === 'ai.chat_provider') return 'openai';
+                if (key === 'ai.fallback_provider') return 'ollama';
+                return null;
+            });
+            const stream = service.streamGenerate('secret');
+            await expect(stream.next()).rejects.toMatchObject({ status: 503 });
+            expect(mockOtherProviders.generate).not.toHaveBeenCalled();
+        });
+
+        it('rejects a stale specialized Ollama selection before reformat streaming starts', async () => {
+            mockSettingsService.getValue.mockImplementation(async (key) => {
+                if (key === 'ai.specialized.reformatting_provider') return 'ollama';
+                if (key === 'ai.fallback_provider') return 'llmapi';
+                return null;
+            });
+            const stream = service.streamReformat('system', 'query', 'context');
+            await expect(stream.next()).rejects.toMatchObject({ status: 503 });
+            expect(mockFallbackProvider.generate).not.toHaveBeenCalled();
+        });
     });
 
     describe('generate', () => {
         it('should call generate on the active provider', async () => {
             // Arrange
             mockSettingsService.getValue.mockImplementation(async (key) => {
-                if (key === 'ai.chat_provider') return 'ollama';
+                if (key === 'ai.chat_provider') return 'openai';
                 return null;
             });
-            mockOllamaService.generate.mockResolvedValue('AI Response');
+            mockOtherProviders.generate.mockResolvedValue('AI Response');
 
             // Act
             const result = await service.generate('Hello');
 
             // Assert
-            expect(mockOllamaService.generate).toHaveBeenCalledWith('Hello', undefined);
+            expect(mockOtherProviders.generate).toHaveBeenCalledWith('Hello', undefined);
             expect(result).toBe('AI Response');
         });
 
         it('should retry a rate-limited primary provider before succeeding', async () => {
             mockSettingsService.getValue.mockImplementation(async (key) => {
-                if (key === 'ai.chat_provider') return 'ollama';
+                if (key === 'ai.chat_provider') return 'openai';
                 return null;
             });
-            mockOllamaService.generate
+            mockOtherProviders.generate
                 .mockRejectedValueOnce(new Error('Gemini API Error 429: {"error":{"details":[{"@type":"type.googleapis.com/google.rpc.RetryInfo","retryDelay":"1s"}]}}'))
                 .mockResolvedValueOnce('Recovered Response');
             const delaySpy = jest.spyOn(service as any, 'delay').mockResolvedValue(undefined);
@@ -344,28 +389,29 @@ describe('AiService', () => {
             const result = await service.generate('Hello');
 
             expect(delaySpy).toHaveBeenCalledWith(1000);
-            expect(mockOllamaService.generate).toHaveBeenCalledTimes(2);
+            expect(mockOtherProviders.generate).toHaveBeenCalledTimes(2);
             expect(result).toBe('Recovered Response');
         });
 
         it('should skip retries and use fallback when daily quota is exhausted', async () => {
             mockSettingsService.getValue.mockImplementation(async (key) => {
-                if (key === 'ai.chat_provider') return 'ollama';
-                if (key === 'ai.fallback_provider') return 'openai';
+                if (key === 'ai.chat_provider') return 'openai';
+                if (key === 'ai.fallback_provider') return 'llmapi';
                 return null;
             });
-            mockOllamaService.generate.mockRejectedValueOnce(new Error('Gemini API Error 429: {"error":{"status":"RESOURCE_EXHAUSTED","message":"Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests","details":[{"quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier"}]}}'));
-            mockOtherProviders.generate.mockResolvedValueOnce('Fallback Response');
+            mockOtherProviders.generate.mockRejectedValueOnce(new Error('Gemini API Error 429: {"error":{"status":"RESOURCE_EXHAUSTED","message":"Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests","details":[{"quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier"}]}}'));
+            mockFallbackProvider.generate.mockResolvedValueOnce('Fallback Response');
             const delaySpy = jest.spyOn(service as any, 'delay').mockResolvedValue(undefined);
 
             const result = await service.generate('Hello');
 
             expect(delaySpy).not.toHaveBeenCalled();
-            expect(mockOllamaService.generate).toHaveBeenCalledTimes(1);
+            expect(mockOtherProviders.generate).toHaveBeenCalledTimes(1);
+            expect(mockFallbackProvider.generate).toHaveBeenCalledTimes(1);
             expect(mockOtherProviders.generate).toHaveBeenCalledTimes(1);
             expect(mockAiHealthEventService.record).toHaveBeenCalledWith(expect.objectContaining({
                 eventType: 'ERROR',
-                provider: 'ollama',
+                provider: 'openai',
                 task: 'general',
             }));
             expect(result).toBe('Fallback Response');
@@ -373,8 +419,8 @@ describe('AiService', () => {
 
         it('should increment failure count and throw on error', async () => {
             // Arrange
-            mockSettingsService.getValue.mockResolvedValue('ollama');
-            mockOllamaService.generate.mockRejectedValue(new Error('API failure'));
+            mockSettingsService.getValue.mockResolvedValue('openai');
+            mockOtherProviders.generate.mockRejectedValue(new Error('API failure'));
 
             // Act & Assert
             await expect(service.generate('Hello')).rejects.toThrow('API failure');
@@ -384,8 +430,8 @@ describe('AiService', () => {
     describe('Circuit Breaker', () => {
         it('should open circuit breaker after multiple failures', async () => {
             // Arrange
-            mockSettingsService.getValue.mockResolvedValue('ollama');
-            mockOllamaService.generate.mockRejectedValue(new Error('fail'));
+            mockSettingsService.getValue.mockResolvedValue('openai');
+            mockOtherProviders.generate.mockRejectedValue(new Error('fail'));
 
             // Act: Fail 5 times
             for (let i = 0; i < 5; i++) {
@@ -395,10 +441,10 @@ describe('AiService', () => {
             // After enough failures the breaker opens; the next call should fast-fail
             // without invoking the provider (current impl re-throws as InternalServerErrorException
             // wrapping "Breaker is open" rather than returning null).
-            mockOllamaService.generate.mockClear();
+            mockOtherProviders.generate.mockClear();
 
             await expect(service.generate('should skip')).rejects.toThrow(/Breaker is open/);
-            expect(mockOllamaService.generate).not.toHaveBeenCalled();
+            expect(mockOtherProviders.generate).not.toHaveBeenCalled();
         });
     });
 });

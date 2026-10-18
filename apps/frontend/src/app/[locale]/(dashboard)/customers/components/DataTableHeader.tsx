@@ -4,9 +4,7 @@ import React, { useState } from 'react';
 import {
     ArrowUpAZ,
     ArrowDownZA,
-    Filter,
     Layers,
-    X,
     Check,
     Search,
     ChevronDown

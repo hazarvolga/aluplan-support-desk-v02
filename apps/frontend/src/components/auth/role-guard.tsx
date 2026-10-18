@@ -97,13 +97,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = async (redirectTo?: string) => {
         try {
             await api.auth.logout();
-        } catch (e) {
-            console.error('Logout API call failed', e);
-        } finally {
             setUser(null);
             const localePrefix = routing.locales.find(l => pathname === `/${l}` || pathname.startsWith(`/${l}/`));
             const defaultTarget = localePrefix ? `/${localePrefix}/login` : '/login';
             router.push(redirectTo || defaultTarget);
+        } catch (e) {
+            console.error('Logout failed because the browser session could not be cleared', e);
         }
     };
 

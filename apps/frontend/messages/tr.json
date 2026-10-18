@@ -66,6 +66,7 @@
     "email_placeholder": "operator@aluplan.com",
     "password_label": "DOĞRULAMA_ANAHTARI [ŞİFRE]",
     "password_placeholder": "••••••••",
+    "remember_me": "Beni hatırla",
     "recovery_link": "ŞİFREMİ UNUTTUM",
     "submit_button": "OTURUMU BAŞLAT",
     "submitting": "BAĞLANTI_KURULUYOR...",
@@ -139,6 +140,10 @@
     "reset_password": {
       "new_password_label": "YENİ ŞİFRE",
       "confirm_password_label": "ŞİFREYİ DOĞRULA",
+      "show_new_password": "Yeni şifreyi göster",
+      "hide_new_password": "Yeni şifreyi gizle",
+      "show_confirm_password": "Şifre doğrulamasını göster",
+      "hide_confirm_password": "Şifre doğrulamasını gizle",
       "submit_btn": "ŞİFREYİ GÜNCELLE",
       "title": "YENİ ŞİFRE BELİRLE",
       "subtitle": "Güvenliğiniz için yeni bir şifre girin",
@@ -173,6 +178,7 @@
     "logout": "Çıkış Yap",
     "loading": "Yükleniyor...",
     "error": "Bir hata oluştu",
+    "close_notification": "Bildirimi kapat",
     "session_expired": "Oturum süresi doldu. Lütfen tekrar giriş yapın.",
     "realtime_session_ended": "Canlı güncellemeler durdu. Bu sayfayı kapatmadan yeni sekmede tekrar giriş yapın, sonra yeniden bağlanın. Gönderilmemiş taslağınız bu sayfada korunur.",
     "realtime_sign_in": "Yeni sekmede giriş yap",
@@ -741,6 +747,9 @@
       "empty": "Kuyruk Boş",
       "load_error": "Destek talepleri yüklenemedi",
       "retry": "Tekrar Dene",
+      "select_all": "Tüm talepleri seç",
+      "select_ticket": "{ticket} numaralı talebi seç",
+      "delete_ticket": "{ticket} numaralı talebi sil",
       "header": {
         "system_id": "ID",
         "company": "Şirket",
@@ -750,10 +759,11 @@
         "status": "Durum",
         "priority": "Öncelik",
         "assignee": "Atanan",
-        "timestamp": "Oluşturma"
+        "timestamp": "Oluşturma",
+        "actions": "İşlemler"
       },
       "category": {
-        "licensing": "Lisans ve Aktivasyon"
+        "licensing": "Lisans Desteği"
       },
       "badges": {
         "kb_sync": "KB_SENK",
@@ -838,6 +848,14 @@
       "summary_success": "Yapay zeka özeti oluşturuldu",
       "summary_error": "Özet oluşturulurken hata oluştu",
       "draft_success": "Yapay zeka taslağı hazırlandı",
+      "draft_manual_review": "Güvenilir ve uygun kaynak bulunamadı; uzman incelemesi gerekli",
+      "draft_sources": "Eşleşen kaynaklar",
+      "draft_no_sources": "Yok",
+      "draft_reason_no_results": "Eşleşen bilgi kaynağı yok",
+      "draft_reason_below_threshold": "Kaynak eşleşmesi güven eşiğinin altında",
+      "draft_reason_era_mismatch": "Kaynak lisans dönemine uygun değil",
+      "draft_reason_missing_intake": "Bu bilette doğrulanmış lisans seçimleri yok",
+      "draft_reason_generation_error": "AI taslak üretimi başarısız oldu",
       "draft_error": "Taslak oluşturulamaz: {error}",
       "review_success": "Talep inceleme aşamasına alındı",
       "status_update_error": "Durum güncellenemedi",
@@ -897,7 +915,7 @@
       "channel_label": "Talep Kanalı",
       "priority_label": "Öncelik",
       "category_label": "Kategori",
-      "category_licensing": "Lisans ve Aktivasyon",
+      "category_licensing": "Lisans Desteği",
       "open_date": "Oluşturulma Tarihi",
       "assignee_label": "Atanan Uzman",
       "assign_placeholder": "Destek yetkilisi seç",
@@ -980,51 +998,22 @@
         "issue_label": "Yapmak istediğiniz işlem / sorun",
         "issue_placeholder": "İşlem veya sorun türünü seçin",
         "ai_gate_notice": "Yapay zeka ile çözüm aramak için sürüm ailesi, lisans kullanım biçimi ve sorun türü gereklidir. 2024 build bilgisini bilmiyorsanız sürüm aralığını seçebilir veya talebinizi doğrudan destek ekibine iletebilirsiniz.",
-        "allplan_id_label": "ALLPLAN ID erişimi",
         "user_role_label": "Lisans işlemindeki rolünüz",
-        "invite_label": "Kuruluş daveti",
-        "group_label": "Lisans grubu / lisans görünürlüğü",
         "user_role": {
-          "END_USER": "Lisansı kullanacak son kullanıcıyım",
-          "LICENSE_ADMIN": "Connect kuruluş / lisans yöneticisiyim",
-          "UNKNOWN": "Bilmiyorum"
+          "LICENSE_ADMIN": "Connect platformunun lisans yöneticisiyim"
         },
         "topology": {
-          "SINGLE_USER": "Tek kullanıcı",
-          "LICENSE_SERVER": "Lisans sunucusu / ağ lisansı",
+          "SINGLE_USER": "Node-Locked License / Bilgisayara Kilitli Lisans",
+          "LICENSE_SERVER": "Floating License / Paylaşımlı Lisans",
           "UNKNOWN": "Bilmiyorum"
         },
         "issue": {
           "ACTIVATION": "Aktivasyon",
-          "TRANSFER": "Yeni bilgisayara geçiş / aktarım",
-          "LOGIN": "Giriş / oturum sorunu",
-          "INVITATION": "Kuruluş daveti",
-          "SEAT": "Lisans / koltuk görünmüyor",
-          "OFFLINE": "Offline kullanım / ödünç alma",
-          "OTHER": "Diğer / bilmiyorum"
-        },
-        "allplan_id": {
-          "AVAILABLE": "Erişebiliyorum",
-          "UNAVAILABLE": "Erişemiyorum / hesabım yok",
-          "UNKNOWN": "Bilmiyorum",
-          "NOT_APPLICABLE": "Uygulanamaz"
-        },
-        "invite": {
-          "ACCEPTED": "Kabul edildi",
-          "MISSING": "Gelmedi / kabul edilmedi",
-          "UNKNOWN": "Bilmiyorum",
-          "NOT_APPLICABLE": "Uygulanamaz"
-        },
-        "seat": {
-          "ASSIGNED": "Atanmış görünüyor",
-          "MISSING": "Atanmamış / görünmüyor",
-          "UNKNOWN": "Bilmiyorum",
-          "NOT_APPLICABLE": "Uygulanamaz"
-        },
-        "group": {
-          "ASSIGNED": "Lisans grubunda / lisans görünür",
-          "MISSING": "Grup ataması yok / lisans görünmüyor",
-          "UNKNOWN": "Bilmiyorum"
+          "TRANSFER": "Yeni bilgisayara lisans taşıma",
+          "FORMAT_REINSTALL": "Bilgisayara format attım",
+          "LOGIN": "Hesabıma giriş yapamıyorum",
+          "SEAT": "Lisans görünmüyor",
+          "OFFLINE": "Offline Kullanım / Ödünç Alma"
         },
         "official_resources_title": "Sürümünüze uygun resmi ALLPLAN kaynakları",
         "official_resource": {
@@ -1037,17 +1026,14 @@
           "ALLPLAN sürümü; build bilinmiyorsa yalnızca yıl (ör. 2024)",
           "Tek kullanıcı lisansı mı, lisans sunucusu/ağ lisansı mı?",
           "Görünen hata mesajı ve yapmak istediğiniz işlem",
-          "2024-2-0 ve sonrası için ALLPLAN ID, kuruluş daveti ve koltuk durumu"
+          "2024-2-0 ve sonrası için Connect platformu lisans yöneticisi akışı"
         ],
         "validation": {
           "allplanVersion": "Yapay zeka teşhisi için bildiğiniz ALLPLAN sürümünü yazın veya güncel Hotinfo'yu onaylayın.",
           "allplan2024ReleaseBand": "2024 lisans yöntemini belirlemek için sürüm aralığını seçin.",
           "licenseTopology": "Yapay zeka teşhisi için lisans kullanım biçimini seçin.",
           "licenseIssueType": "Yapay zeka teşhisi için yapmak istediğiniz işlemi veya sorun türünü seçin.",
-          "allplanIdStatus": "ALLPLAN ID erişim durumunuzu seçin.",
-          "organizationInviteStatus": "Kuruluş daveti durumunuzu seçin.",
-          "licenseGroupStatus": "Lisans grubu / lisans görünürlüğü durumunu seçin.",
-          "licenseUserRole": "Lisans işlemindeki rolünüzü seçin."
+          "licenseUserRole": "Bu akış yalnızca Connect platformunun lisans yöneticisi içindir."
         }
       },
       "departments": {
@@ -1055,7 +1041,7 @@
         "billing_payments": "Fatura ve Ödemeler",
         "sales_pre_sales": "Satış ve Ön Satış",
         "general_support": "Genel Destek",
-        "licensing": "Lisans ve Aktivasyon",
+        "licensing": "Lisans Desteği",
         "customer_success": "Müşteri Başarısı",
         "general_inquiries": "Genel Başvurular",
         "security_compliance": "Güvenlik ve Uyumluluk"
@@ -1225,6 +1211,8 @@
       "confidence_score": "GÜVEN-DEĞERİ: {confidence}",
       "data_gap_title": "VERİ BOŞLUĞU",
       "data_gap_desc": "Mevcut bilgi havuzunda bu sorgu için eşleşen kayıt bulunamadı.",
+      "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
+      "empty": "Yanıt alınamadı. Lütfen tekrar deneyin.",
       "visuals": {
         "title": "Kaynak görseller",
         "description": "Yanıtı destekleyen onaylı kaynak görselleri.",
@@ -1246,7 +1234,7 @@
     },
     "system_info": {
       "infrastructure": "ALTYAPI",
-      "node": "Ollama-VEC Hesaplama Düğümü",
+      "node": "Vektör Hesaplama Düğümü",
       "latency": "GECİKME",
       "lookup": "{ms}ms Anlamsal Arama"
     }
@@ -1554,8 +1542,6 @@
       "connection_success": "Bağlantı başarılı",
       "connection_failed": "Bağlantı başarısız",
       "connection_error": "Bağlantı hatası",
-      "ollama_ok": "Ollama ile iletişim sağlandı.",
-      "ollama_fail": "Ollama servisine ulaşılamadı.",
       "openai_ok": "OpenAI anahtarları doğrulandı.",
       "openai_fail": "API anahtarı geçersiz veya eksik.",
       "xai_ok": "xAI bağlantısı başarılı.",
@@ -1646,7 +1632,7 @@
     },
     "ai": {
       "title": "Yapay Zeka Entegrasyonu",
-      "description": "Grok (xAI), DeepSeek, OpenAI veya Ollama servislerini yapılandırın.",
+      "description": "Grok (xAI), DeepSeek, OpenAI veya Gemini servislerini yapılandırın.",
       "api_key": "API Anahtarı",
       "base_url": "Bağlantı URL",
       "base_url_optional": "Özel URL (Opsiyonel)",
@@ -1676,7 +1662,6 @@
       "rag_desc": "Bilgi havuzunuzu vektörleştiren ve arama kalitesini belirleyen temel ayarlar.",
       "advanced_params": "Gelişmiş Parametreler",
       "global_default": "Global Varsayılan",
-      "ollama_local": "Ollama (Lokal)",
       "status_active": "Aktif",
       "status_inactive": "Pasif",
       "hide_key": "{name} anahtarını gizle",
@@ -1688,6 +1673,7 @@
       "total_latency": "Toplam Gecikme",
       "validation": {
         "missing_fields": "Eksik alanlar: {fields}",
+        "embed_provider_required": "Bir vektör sağlayıcısı seçin ve yapılandırmasını tamamlayın.",
         "fields": {
           "api_key": "API Anahtarı",
           "chat_model": "Sohbet Modeli",
@@ -1703,18 +1689,12 @@
         "save_success": "{provider} ayarları kaydedildi.",
         "save_error": "Kaydetme hatası: {message}"
       },
-      "ollama": {
-        "title": "Ollama (Yerel)",
-        "chat_model": "Sohbet Modeli",
-        "embed_model": "Vektör Modeli"
-      },
       "openai": {
         "title": "OpenAI (Bulut)",
         "chat_model": "Sohbet Modeli",
         "embed_model": "Vektör Modeli"
       },
       "providers": {
-        "ollama": "Ollama (Yerel)",
         "openai": "OpenAI (Bulut)",
         "openai_cloud": "OpenAI (Bulut - Önerilen)",
         "xai": "xAI (Grok)",
@@ -1738,7 +1718,6 @@
       "description": "Sistem bildirimleri ve müşteri yazışmaları için sağlayıcı yapılandırması.",
       "active_provider": "Aktif Sağlayıcı",
       "from_address": "Gönderen E-posta Adresi",
-      "ollama_title": "Ollama (Yerel) Yapılandırması",
       "openai_title": "OpenAI Altyapı Yapılandırması",
       "azure_title": "Azure OpenAI Yapılandırması",
       "status_active": "Aktif",
@@ -1865,6 +1844,10 @@
         "placeholders": {
           "name": "örn: Standart Destek",
           "department": "Departman seçin"
+        },
+        "validation": {
+          "required": "Politika adı ve departman zorunludur.",
+          "positive_integer": "Yanıt ve çözüm süreleri pozitif tam sayı olmalıdır."
         },
         "cancel_btn": "İptal"
       }
@@ -2613,7 +2596,7 @@
           "view_title": "Topoloji Görünümü",
           "view_desc": "Bu sayfa, sistem yöneticilerine altyapının genel sağlık durumunu gösterir. Aşağıdaki bileşenler izlenir:",
           "view_ai_name": "AI Node'ları",
-          "view_ai_desc": "Ollama ve vektör hesaplama node'larının durumu",
+          "view_ai_desc": "Yapay zeka ve vektör hesaplama düğümlerinin durumu",
           "view_db_name": "Veritabanı",
           "view_db_desc": "Aktif DB node sayısı ve bağlantı durumu",
           "view_api_name": "API Servisleri",
@@ -3651,6 +3634,10 @@
       "title": "BİLGİ HAVUZU KONTROLÜ",
       "subtitle": "Yapay zeka için teknik kaynakların yönetimi ve indekslenmesi.",
       "placeholder": "Teknik Dokümantasyon",
+      "upload": {
+        "failure_title": "Hata",
+        "failure_description": "Dosya yüklenemedi. Lütfen tekrar deneyin."
+      },
       "tabs": {
         "raw_sources": "HAM KAYNAKLAR",
         "seeded_content": "ÜRETİLMİŞ İÇERİK",
@@ -4384,7 +4371,7 @@
       },
       "ai": {
         "title": "Yapay Zeka Entegrasyonu",
-        "description": "Grok (xAI), DeepSeek, OpenAI veya Ollama servislerini yapılandırın.",
+        "description": "Grok (xAI), DeepSeek, OpenAI veya Gemini servislerini yapılandırın.",
         "chat_provider": "Varsayılan Sohbet Sağlayıcısı",
         "chat_provider_desc": "Talep yanıtları ve asistan işlevleri için kullanılır.",
         "embed_provider": "Varsayılan Vektörleştirme Sağlayıcısı",
@@ -4407,7 +4394,6 @@
         "rag_desc": "Bilgi havuzunuzu vektörleştiren ve arama kalitesini belirleyen temel ayarlar.",
         "advanced_params": "Gelişmiş Parametreler",
         "global_default": "Global Varsayılan",
-        "ollama_local": "Ollama (Lokal)",
         "status_active": "Aktif",
         "status_inactive": "Pasif",
         "hide_key": "{name} anahtarını gizle",
@@ -4434,11 +4420,6 @@
           "save_success": "{provider} ayarları kaydedildi.",
           "save_error": "Kaydetme hatası: {message}"
         },
-        "ollama": {
-          "title": "Ollama (Yerel)",
-          "chat_model": "Sohbet Modeli",
-          "embed_model": "Vektör Modeli"
-        },
         "openai": {
           "title": "OpenAI (Bulut)",
           "chat_model": "Sohbet Modeli",
@@ -4451,7 +4432,6 @@
           "connection_error": "Vertex endpoint ulaşılamıyor"
         },
         "providers": {
-          "ollama": "Ollama (Yerel)",
           "openai": "OpenAI (Bulut)",
           "openai_cloud": "OpenAI (Bulut - Önerilen)",
           "xai": "xAI (Grok)",
@@ -4469,7 +4449,6 @@
         "description": "Sistem bildirimleri ve müşteri yazışmaları için sağlayıcı yapılandırması.",
         "active_provider": "Aktif Sağlayıcı",
         "from_address": "Gönderen E-posta Adresi",
-        "ollama_title": "Ollama (Yerel) Yapılandırması",
         "openai_title": "OpenAI Altyapı Yapılandırması",
         "azure_title": "Azure OpenAI Yapılandırması",
         "status_active": "Aktif",
@@ -4675,8 +4654,6 @@
         "connection_success": "Bağlantı başarılı",
         "connection_failed": "Bağlantı başarısız",
         "connection_error": "Bağlantı hatası",
-        "ollama_ok": "Ollama ile iletişim sağlandı.",
-        "ollama_fail": "Ollama servisine ulaşılamadı.",
         "openai_ok": "OpenAI anahtarları doğrulandı.",
         "openai_fail": "API anahtarı geçersiz veya eksik.",
         "xai_ok": "xAI bağlantısı başarılı.",

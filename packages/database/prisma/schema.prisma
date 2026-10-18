@@ -621,6 +621,7 @@ model Ticket {
   productId           String?              @map("product_id") @db.Uuid
   suggestedCategories String[]             @default([]) @map("suggested_categories")
   hotinfoSnapshot     Json?                @map("hotinfo_snapshot")
+  licensingIntake     Json?                @map("licensing_intake")
   channel             CommunicationChannel @default(WEB)
   chatStatus          ChatStatus           @default(NORMAL) @map("chat_status")
   departmentId        String?              @map("department_id") @db.Uuid

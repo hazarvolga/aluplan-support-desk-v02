@@ -17,7 +17,7 @@ aluplan-support-desk/
 ├── packages/
 │   ├── database/       @aluplan/database  → Prisma 7 schema + migrations + seed
 │   └── shared-schemas/ @aluplan/shared-schemas → Zod şemaları (FE+BE ortak)
-└── docker-compose.yml  → Postgres 16 (pgvector) + Redis + Ollama (opsiyonel)
+└── docker-compose.yml  → Postgres 16 (pgvector) + Redis
 ```
 
 > **Kritik:** Prisma client `packages/database/client/` dizinine generate edilir,
@@ -125,11 +125,11 @@ Bu sistemin çekirdeği. Değişiklik yapmadan önce ilgili dosyaları birlikte 
 
 | Servis | Görev |
 |--------|-------|
-| `ai-provider-router.service.ts` | Multi-provider fallback: OpenAI → Groq → Ollama (`opossum` circuit breaker) |
+| `ai-provider-router.service.ts` | Gemini birincil; OpenAI/Groq yalnızca chat fallback (`opossum` circuit breaker) |
 | `ai-provider-registry.service.ts` | Provider kaydı ve seçimi |
 | `ai-query.service.ts` | RAG giriş noktası |
 | `ai-query.processor.ts` | BullMQ consumer — `AI_QUEUE_RATE_MAX` / `AI_QUEUE_RATE_DURATION_MS` |
-| `embedding.service.ts` | OpenAI `text-embedding-3-small` (1536-dim) veya Ollama BGE-M3 (1024-dim) — `EMBEDDING_PROVIDER` env |
+| `embedding.service.ts` | Gemini `gemini-embedding-2` (3072-dim); embedding sürümü içinde provider fallback yok (`EMBEDDING_PROVIDER` env) |
 | `embedding-normalizer.service.ts` | Farklı dim vektörleri karşılaştırılabilir hale getirir |
 | `prompt-context-builder.service.ts` | Hybrid retrieval (semantic + keyword) + re-ranking (`RERANK_MULTIPLIER_*`) |
 | `ai-semantic-cache.service.ts` | Embedding similarity-based semantic cache (exact match değil) |
@@ -285,7 +285,7 @@ app/[locale]/
 
 ## 8. ALTYAPI & CI/CD
 
-- **Docker Compose:** Postgres 16 pgvector + Redis (AOF, LRU 256MB) + Ollama. `pg_stat_statements` aktif, `log_min_duration_statement=500`. Dev'den önce `docker compose up -d`.
+- **Docker Compose:** Postgres 16 pgvector + Redis (AOF, LRU 256MB). `pg_stat_statements` aktif, `log_min_duration_statement=500`. Dev'den önce `docker compose up -d`.
 - **Socket.io:** `@socket.io/redis-adapter` multi-instance room sharing.
 - **Deployment:** Coolify hedefli. Her app'in Dockerfile'ı var. `docker-compose.staging.yml` staging için.
 - **CI:** `backend-test.yml`, `frontend-test.yml`, `ci.yml`, `ai-eval.yml`, `dr-drill.yml`, `semantic-release.yml`.

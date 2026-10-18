@@ -57,8 +57,8 @@ function ResetPasswordForm() {
             const result = await api.auth.resetPassword(token, password);
             toast({ title: result.message || t('success_message') });
             router.push('/login');
-        } catch (error: any) {
-            toast({ title: error.message || t('error_failed'), variant: 'destructive' });
+        } catch (error: unknown) {
+            toast({ title: error instanceof Error ? error.message : t('error_failed'), variant: 'destructive' });
         } finally {
             setLoading(false);
         }
@@ -73,13 +73,15 @@ function ResetPasswordForm() {
             {/* Password */}
             <div className="space-y-2 group">
                 <div className="flex justify-between items-center">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-focus-within:text-primary transition-colors">
+                    <label htmlFor="new-password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-focus-within:text-primary transition-colors">
                         {t('new_password_label')}
                     </label>
                 </div>
                 <div className="relative">
                     <input
+                        id="new-password"
                         type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
@@ -90,22 +92,24 @@ function ResetPasswordForm() {
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
-                        tabIndex={-1}
+                        aria-label={showPassword ? t('hide_new_password') : t('show_new_password')}
+                        className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? <EyeOff aria-hidden="true" className="h-4 w-4" /> : <Eye aria-hidden="true" className="h-4 w-4" />}
                     </button>
                 </div>
             </div>
 
             {/* Confirm Password */}
             <div className="space-y-2 group">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-focus-within:text-primary transition-colors">
+                <label htmlFor="confirm-password" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-focus-within:text-primary transition-colors">
                     {t('confirm_password_label')}
                 </label>
                 <div className="relative">
                     <input
+                        id="confirm-password"
                         type={showConfirm ? "text" : "password"}
+                        autoComplete="new-password"
                         value={confirm}
                         onChange={(e) => setConfirm(e.target.value)}
                         placeholder="••••••••"
@@ -115,10 +119,10 @@ function ResetPasswordForm() {
                     <button
                         type="button"
                         onClick={() => setShowConfirm(!showConfirm)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
-                        tabIndex={-1}
+                        aria-label={showConfirm ? t('hide_confirm_password') : t('show_confirm_password')}
+                        className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
-                        {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showConfirm ? <EyeOff aria-hidden="true" className="h-4 w-4" /> : <Eye aria-hidden="true" className="h-4 w-4" />}
                     </button>
                 </div>
             </div>

@@ -16,6 +16,7 @@ describe('SettingsService', () => {
                 findMany: jest.fn(),
                 upsert: jest.fn(),
                 update: jest.fn(),
+                updateMany: jest.fn().mockResolvedValue({ count: 1 }),
                 delete: jest.fn(),
             },
             $transaction: jest.fn(),
@@ -98,6 +99,19 @@ describe('SettingsService', () => {
                     updatedBy: undefined,
                 },
             });
+        });
+
+        it.each([
+            'ai.chat_provider',
+            'ai.embed_provider',
+            'ai.active_provider',
+            'ai.fallback_provider',
+            'ai.embed_fallback_provider',
+            'ai.specialized.summarization_provider',
+        ])('rejects removed Ollama selection for %s before persistence', async (key) => {
+            await expect(service.upsert({ key, value: 'ollama', isSecret: false }))
+                .rejects.toMatchObject({ status: 400 });
+            expect(prisma.setting.upsert).not.toHaveBeenCalled();
         });
 
         it('should coerce stale active provider during bulk AI save', async () => {
@@ -308,6 +322,100 @@ describe('SettingsService', () => {
         });
     });
 
+    describe.each([
+        'mail.gmail.access_token_cache',
+        'mail.gmail.refresh_token',
+        'r2_access_key_id',
+        'r2_secret_access_key',
+        'storage.access_key',
+        'storage.r2.access_key_id',
+        'storage.r2.secret_access_key',
+        'whatsapp.access_token',
+        'whatsapp.verify_token',
+    ])('server-classified R2 credential %s', (key) => {
+        const plaintext = 'synthetic-r2-credential';
+
+        function mockWrites() {
+            prisma.setting.findUnique.mockResolvedValue(null);
+            prisma.setting.findMany.mockResolvedValue([]);
+            prisma.setting.upsert.mockImplementation(({ create }: any) => Promise.resolve({ id: 'r2-setting', ...create }));
+            prisma.$transaction.mockImplementation((operations: Array<Promise<unknown>>) => Promise.all(operations));
+        }
+
+        it.each(['single', 'bulk'])('encrypts and masks %s saves even when the client marks it non-secret', async (mode) => {
+            mockWrites();
+            const input = { key, value: plaintext, isSecret: false };
+
+            const result = mode === 'single'
+                ? await service.upsert(input)
+                : (await service.bulkUpsert({ settings: [input] }))[0];
+
+            expect(crypto.encrypt).toHaveBeenCalledWith(plaintext);
+            expect(prisma.setting.upsert).toHaveBeenCalledWith(expect.objectContaining({
+                create: expect.objectContaining({ key, value: `encrypted-${plaintext}`, isSecret: true }),
+                update: expect.objectContaining({ value: `encrypted-${plaintext}`, isSecret: true }),
+            }));
+            expect(result).toEqual(expect.objectContaining({ key, value: '********', isSecret: true }));
+            expect(await service.get(key)).toEqual(expect.objectContaining({ value: '********', isSecret: true }));
+            expect(await service.getValue(key)).toBe(plaintext);
+        });
+
+        it.each(['get', 'getAll'])('secures a historical unflagged row through %s while keeping internal access and public reads redacted', async (mode) => {
+            const stored = {
+                id: 'legacy-r2-setting',
+                key,
+                value: plaintext,
+                isSecret: false,
+            };
+            prisma.setting.findUnique.mockResolvedValue(stored);
+            prisma.setting.findMany.mockResolvedValue([stored]);
+
+            const result = mode === 'get' ? await service.get(key) : (await service.getAll())[0];
+
+            expect(result).toEqual(expect.objectContaining({
+                key,
+                value: '********',
+                isSecret: true,
+            }));
+            expect(prisma.setting.updateMany).toHaveBeenCalledWith({
+                where: { key, value: plaintext, isSecret: false },
+                data: {
+                    value: `encrypted-${plaintext}`,
+                    isSecret: true,
+                },
+            });
+            expect(await service.getValue(key)).toBe(plaintext);
+        });
+    });
+
+    it('does not classify similar non-credential R2 keys as secrets', async () => {
+        prisma.setting.upsert.mockImplementation(({ create }: any) => Promise.resolve({ id: 'r2-label', ...create }));
+
+        const result = await service.upsert({
+            key: 'storage.r2.access_key_identifier',
+            value: 'display-label',
+            isSecret: false,
+        });
+
+        expect(result).toEqual(expect.objectContaining({ value: 'display-label', isSecret: false }));
+        expect(crypto.encrypt).not.toHaveBeenCalled();
+    });
+
+    it('deletes a secret without returning its stored value', async () => {
+        prisma.setting.delete.mockResolvedValue({
+            id: 'legacy-secret',
+            key: 'email.smtp.pass',
+            value: 'synthetic-plaintext-password',
+            isSecret: false,
+        });
+
+        await expect(service.delete('email.smtp.pass')).resolves.toEqual({
+            key: 'email.smtp.pass',
+            deleted: true,
+        });
+        expect(prisma.setting.delete).toHaveBeenCalledWith({ where: { key: 'email.smtp.pass' } });
+    });
+
     it.each(['email.imap.host', 'email.smtp.host'])('keeps %s non-secret', async (key) => {
         prisma.setting.upsert.mockImplementation(({ create }: any) => Promise.resolve({ id: 'host-setting', ...create }));
         const result = await service.upsert({ key, value: 'mail.example.test', isSecret: false });
@@ -329,18 +437,32 @@ describe('SettingsService', () => {
         it('should migrate plaintext API keys to encrypted secret storage on read', async () => {
             const dbSetting = { id: 's1', key: 'ai.gemini.api_key', value: 'plain-key', isSecret: false };
             prisma.setting.findUnique.mockResolvedValue(dbSetting);
-            prisma.setting.update.mockResolvedValue({ ...dbSetting, value: 'encrypted-plain-key', isSecret: true });
-
             const result = await service.getValue('ai.gemini.api_key');
 
             expect(result).toBe('plain-key');
-            expect(prisma.setting.update).toHaveBeenCalledWith({
-                where: { key: 'ai.gemini.api_key' },
+            expect(prisma.setting.updateMany).toHaveBeenCalledWith({
+                where: { key: 'ai.gemini.api_key', value: 'plain-key', isSecret: false },
                 data: {
                     value: 'encrypted-plain-key',
                     isSecret: true,
                 },
             });
+        });
+
+        it('does not overwrite a credential that changed after the initial read', async () => {
+            const stale = { id: 's1', key: 'storage.access_key', value: 'stale-access', isSecret: false };
+            const latest = { id: 's1', key: 'storage.access_key', value: 'encrypted-current-access', isSecret: true };
+            prisma.setting.findUnique
+                .mockResolvedValueOnce(stale)
+                .mockResolvedValueOnce(latest);
+            prisma.setting.updateMany.mockResolvedValueOnce({ count: 0 });
+
+            await expect(service.getValue('storage.access_key')).resolves.toBe('current-access');
+
+            expect(prisma.setting.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: { key: 'storage.access_key', value: 'stale-access', isSecret: false },
+            }));
+            expect(crypto.decrypt).toHaveBeenCalledWith('encrypted-current-access');
         });
 
         it('should return null if setting does not exist', async () => {

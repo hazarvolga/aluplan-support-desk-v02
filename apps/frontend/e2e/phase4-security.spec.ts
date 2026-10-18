@@ -23,39 +23,42 @@ test.describe('Phase 4: Security & Compliance', () => {
     });
 
     test('should mask sensitive customer data in CRM views', async ({ page }) => {
-        const { loginAsAdmin } = require('./helpers/auth');
+        const { loginAsAdmin, TEST_USERS } = require('./helpers/auth');
         await loginAsAdmin(page);
 
-        // Navigate to Customers/CRM section
-        await page.goto('/tr/customers');
+        const accountsResponse = await page.request.get('http://localhost:4000/api/v1/crm/accounts');
+        expect(accountsResponse.ok()).toBe(true);
+        const accounts = await accountsResponse.json();
+        const fixture = accounts.find((account: { name?: string }) => account.name === 'E2E PII Masking Account');
+        expect(fixture?.id).toBeTruthy();
 
-        // Check if any visible phone numbers or emails follow the masking pattern
-        // Pattern: [TELEFON GİZLENDİ] or [E-POSTA GİZLENDİ: ...]
-        const maskedText = page.locator('text=/GİZLENDİ/i');
+        await page.goto(`/tr/customers/accounts/${fixture.id}`);
 
-        // Note: This relies on existing data being synced from CRM.
-        // In a clean test env, we might need to check if the logic is active.
-        const pageContent = await page.content();
-        const hasMaskingTag = pageContent.includes('GİZLENDİ');
-
-        if (hasMaskingTag) {
-            console.log('✅ PII Masking detected in the UI');
-        }
+        await expect(page.getByText('[E-POSTA GİZLENDİ: e***@aluplan.test]', { exact: true })).toBeVisible();
+        await expect(page.getByText(TEST_USERS.customer.email, { exact: true })).toHaveCount(0);
     });
 
     test('should include X-XSRF-TOKEN header in mutating requests', async ({ page }) => {
         const { loginAsAdmin } = require('./helpers/auth');
         await loginAsAdmin(page);
 
-        // Intercept a mutating request (e.g., ticket status update or setting change)
+        await page.goto('/tr/admin/settings');
+
+        const portalNameInput = page.locator('input[placeholder="örn: Aluplan Destek"]');
+        await expect(portalNameInput).toBeVisible();
+
+        // Saving the currently loaded general settings exercises the shared API
+        // client without changing their values. Match the exact endpoint so
+        // unrelated background POST requests cannot satisfy this assertion.
         const [request] = await Promise.all([
-            page.waitForRequest(req => req.method() === 'POST' || req.method() === 'PUT' || req.method() === 'PATCH'),
-            // Trigger an action that causes a mutation
-            page.goto('/tr/settings'),
-            page.getByTestId('save-settings').first().click().catch(() => { }) // Attempt click
+            page.waitForRequest(req => (
+                req.method() === 'POST'
+                && new URL(req.url()).pathname === '/api/v1/settings/bulk'
+            )),
+            page.getByRole('button', { name: 'Değişiklikleri Kaydet' }).first().click(),
         ]);
 
         const headers = request.headers();
-        expect(headers['x-xsrf-token']).toBeDefined();
+        expect(headers['x-xsrf-token']).toBeTruthy();
     });
 });

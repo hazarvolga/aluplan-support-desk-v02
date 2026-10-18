@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import {
     RotateCcw,
     Save,
-    AlertCircle,
     Plus,
     Trash2,
     Eye,
@@ -39,14 +38,25 @@ interface MappingItem {
     isCustom?: boolean;
 }
 
+export interface CrmFieldMetadata {
+    logicalName: string;
+    displayName: string;
+    sampleValue?: unknown;
+}
+
+export interface DisplaySetting {
+    key: string;
+    visible: boolean;
+}
+
 interface FieldMappingProps {
     entityType: 'account' | 'contact';
     definitions: FieldDefinition[];
-    discoveryData: any[];
+    discoveryData: CrmFieldMetadata[];
     currentMapping: Record<string, string>;
-    displaySettings: any[];
+    displaySettings: DisplaySetting[];
     onMappingChange: (key: string, value: string) => void;
-    onDisplayChange: (settings: any[]) => void;
+    onDisplayChange: (settings: DisplaySetting[]) => void;
     onReset: () => void;
     onSave: () => void;
     saving?: boolean;

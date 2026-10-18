@@ -16,14 +16,8 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
-import { cn } from '@/lib/utils';
-
-interface CrmFieldMetadata {
-    logicalName: string;
-    displayName: string;
-    sampleValue: any;
-}
+import { Check, ChevronsUpDown } from 'lucide-react';
+import type { CrmFieldMetadata } from './field-mapping';
 
 interface SmartFieldSelectorProps {
     fields: CrmFieldMetadata[];

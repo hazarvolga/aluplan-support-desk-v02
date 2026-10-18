@@ -55,6 +55,9 @@ export class AttachmentsController {
                         // text/* is intentionally NOT used (too broad — allows text/javascript, text/html etc.)
                         // Blocked: exe, dll, bat, sh, js, py, apk, iso, dmg and all other executables
                         fileType: /^(image\/(png|jpeg|jpg|gif|webp|bmp|svg\+xml|tiff)|application\/pdf|text\/(plain|csv|markdown|x-log)|application\/(zip|x-zip-compressed|x-7z-compressed|x-rar-compressed)|application\/vnd\.rar|application\/octet-stream|application\/msword|application\/vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)|application\/vnd\.ms-(excel|powerpoint)|video\/(mp4|quicktime|x-msvideo|webm|x-ms-wmv))/,
+                        // Plain-text formats have no magic bytes. Fall back to the
+                        // multipart MIME type only when binary detection returns no type.
+                        fallbackToMimetype: true,
                     }),
                 ],
             }),

@@ -3,13 +3,6 @@ import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Server, CheckCircle, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
 
-type ProviderHealth = {
-    name: string;
-    status: 'healthy' | 'degraded' | 'down' | 'unknown';
-    lastHeartbeat?: Date | null;
-    latencyMs?: number | null;
-};
-
 type HealthStatusResponse = {
     status: 'HEALTHY' | 'DEGRADED' | 'DOWN';
     chatProvider: string;

@@ -9,12 +9,56 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Building, Save, Key, Monitor, Download, Mail, Phone, FileText, Smartphone, MapPin, Clock, MessageCircle, Briefcase, Hash, Globe, ExternalLink } from 'lucide-react';
+import { ArrowLeft, User, Building, Save, Key, Monitor, Download, Mail, Phone, FileText, Smartphone, MapPin, Clock, MessageCircle, Briefcase, Hash, Globe, ExternalLink, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslations } from 'next-intl';
 import { HotinfoGrid } from '@/components/ui/hotinfo-grid';
+
+interface CustomerAccount {
+    id?: string;
+    name?: string;
+    account_number?: string;
+    clientIdFrilo?: string;
+    industry?: string;
+    phone?: string;
+    fax?: string;
+    licenseManagerName?: string;
+    website?: string;
+    serviceAddress?: string;
+    address?: string;
+}
+
+interface CustomerProfile {
+    firstName?: string;
+    lastName?: string;
+    companyName?: string;
+    jobTitle?: string;
+    phoneNumber?: string | null;
+    contractStatus?: string;
+    customerNo?: string;
+    isVip?: boolean;
+    subscriptionModel?: string;
+    fax?: string;
+    mobilePhone?: string;
+    primaryTimeZone?: string;
+    preferredContactMethod?: string;
+    address?: string;
+    hotinfoData?: Record<string, unknown>;
+    account?: CustomerAccount;
+}
+
+interface CustomerDetails {
+    fullName: string;
+    email?: string;
+    hasRealEmail?: boolean;
+    status?: string;
+    createdAt: string;
+    customerProfile?: CustomerProfile;
+}
+
+type CustomerFormData = Pick<CustomerProfile, 'firstName' | 'lastName' | 'companyName' | 'jobTitle' | 'phoneNumber' | 'contractStatus' | 'customerNo' | 'isVip'>;
 
 export default function CustomerProfilePage() {
     const { toast } = useToast();
@@ -24,12 +68,12 @@ export default function CustomerProfilePage() {
     const tc = useTranslations('common');
     const id = params.id as string;
 
-    const [customer, setCustomer] = useState<any>(null);
+    const [customer, setCustomer] = useState<CustomerDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     // Editable state mapping
-    const [formData, setFormData] = useState<any>({});
+    const [formData, setFormData] = useState<CustomerFormData>({});
 
     useEffect(() => {
         if (!id) return;
@@ -50,8 +94,7 @@ export default function CustomerProfilePage() {
                     });
                 }
             })
-            .catch(err => {
-                if (process.env.NODE_ENV === 'development') console.error(err);
+            .catch(() => {
                 toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('accounts.not_found') });
                 router.push('/customers');
             })
@@ -59,7 +102,7 @@ export default function CustomerProfilePage() {
     }, [id, router]);
 
     const handleChange = (field: string, value: string | boolean) => {
-        setFormData((prev: any) => ({ ...prev, [field]: value }));
+        setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     const displayCustomerNo = customer?.customerProfile?.account?.account_number || formData.customerNo || '';
@@ -73,9 +116,8 @@ export default function CustomerProfilePage() {
             await api.customers.update(id, formData);
             toast({ title: '✅ ' + tc('success_title'), description: t('toasts.update_success') });
             window.location.reload(); // Quick refresh to catch top layout items
-        } catch (error: any) {
-            if (process.env.NODE_ENV === 'development') console.error(error);
-            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message || t('toasts.update_error') });
+        } catch {
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('toasts.update_error') });
         } finally {
             setSaving(false);
         }
@@ -84,11 +126,10 @@ export default function CustomerProfilePage() {
     const handleResetPassword = async () => {
         if (!confirm(t('labels.reset_password_confirm'))) return;
         try {
-            const result = await api.customers.resetPassword(id);
-            toast({ title: '🔑 ' + t('labels.reset_password'), description: `${tc('success_title')}: ${result.email}` });
-        } catch (error: any) {
-            if (process.env.NODE_ENV === 'development') console.error(error);
-            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message || t('toasts.password_reset_error') });
+            await api.customers.resetPassword(id);
+            toast({ title: '🔑 ' + t('labels.reset_password'), description: `${tc('success_title')}: ${customer?.email ?? ''}` });
+        } catch {
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('toasts.password_reset_error') });
         }
     };
 
@@ -103,8 +144,7 @@ export default function CustomerProfilePage() {
             document.body.appendChild(a);
             a.click();
             a.remove();
-        } catch (error: any) {
-            if (process.env.NODE_ENV === 'development') console.error(error);
+        } catch {
             toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('toasts.download_error') });
         }
     };
@@ -119,7 +159,7 @@ export default function CustomerProfilePage() {
 
     const profile = customer.customerProfile;
     const account = profile?.account;
-    const DetailRow = ({ icon: Icon, label, value, children }: { icon: any; label: string; value?: any; children?: ReactNode }) => (
+    const DetailRow = ({ icon: Icon, label, value, children }: { icon: LucideIcon; label: string; value?: ReactNode; children?: ReactNode }) => (
         <div className="flex items-start gap-3 border-b border-border/40 pb-3 last:border-0 last:pb-0">
             <Icon className="h-4 w-4 text-muted-foreground mt-1" />
             <div className="space-y-1 min-w-0">
@@ -251,7 +291,7 @@ export default function CustomerProfilePage() {
 
                             <div className="space-y-2">
                                 <Label>{t('labels.phone')}</Label>
-                                <Input value={formData.phoneNumber} onChange={e => handleChange('phoneNumber', e.target.value)} />
+                                <Input value={formData.phoneNumber ?? ''} onChange={e => handleChange('phoneNumber', e.target.value)} />
                             </div>
 
                             <div className="space-y-2 pt-4">

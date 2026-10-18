@@ -42,14 +42,14 @@ export function SystemRequirementsForm() {
     const loadData = async () => {
         try {
             setLoading(true);
-            const res = await api.settings.get('SYSTEM_REQUIREMENTS');
-            if (res && res.value) {
-                const parsed = JSON.parse(res.value);
-                // Ensure structure exists
-                if (!parsed.en) parsed.en = [];
-                if (!parsed.tr) parsed.tr = [];
-                if (!parsed.de) parsed.de = [];
-                setData(parsed);
+            const res = await api.settings.get('SYSTEM_REQUIREMENTS') as { value?: string } | null;
+            if (res?.value) {
+                const parsed = JSON.parse(res.value) as Partial<LocalizedRequirements>;
+                setData({
+                    en: Array.isArray(parsed.en) ? parsed.en : [],
+                    tr: Array.isArray(parsed.tr) ? parsed.tr : [],
+                    de: Array.isArray(parsed.de) ? parsed.de : [],
+                });
             }
         } catch (error) {
             console.error('Failed to load system requirements', error);
@@ -67,8 +67,9 @@ export function SystemRequirementsForm() {
                 isSecret: false
             });
             toast({ title: tc('success_title'), description: t('toasts.save_success') });
-        } catch (error: any) {
-            toast({ title: tc('error_title'), description: t('toasts.save_error', { message: error.message }), variant: 'destructive' });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : tc('error_title');
+            toast({ title: tc('error_title'), description: t('toasts.save_error', { message }), variant: 'destructive' });
         } finally {
             setSaving(false);
         }

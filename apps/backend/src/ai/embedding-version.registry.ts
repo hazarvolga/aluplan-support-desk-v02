@@ -47,6 +47,9 @@ export class EmbeddingVersionRegistry {
     if (!provider) {
       provider = 'gemini';
     }
+    if (provider === 'ollama') {
+      throw new Error('UNSUPPORTED_EMBEDDING_PROVIDER: ollama');
+    }
 
     let model = this.normalizeModel(await this.settingsService.getValue(`ai.${provider}.embed_model`));
     if (!model) {
@@ -54,7 +57,6 @@ export class EmbeddingVersionRegistry {
       if (provider === 'gemini') model = 'gemini-embedding-2';
       else if (provider === 'llmapi') model = 'gemini-embedding-2';
       else if (provider === 'openai') model = 'text-embedding-3-small';
-      else if (provider === 'ollama') model = 'nomic-embed-text';
     }
 
     const key = `${provider}:${model}`;

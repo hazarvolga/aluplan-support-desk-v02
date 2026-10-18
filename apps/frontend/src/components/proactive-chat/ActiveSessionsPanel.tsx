@@ -45,7 +45,7 @@ export function ActiveSessionsPanel({ currentUserId }: ActiveSessionsPanelProps)
     useEffect(() => {
         api.proactiveChat.listSessions()
             .then((data) => setSessions(data))
-            .catch((err: any) => {
+            .catch((err: unknown) => {
                 if (process.env.NODE_ENV === 'development') {
                     console.error('[ActiveSessionsPanel] Failed to load sessions:', err);
                 }

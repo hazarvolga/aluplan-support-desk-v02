@@ -82,7 +82,7 @@ export class KbSummarizerProcessor extends WorkerHost {
         const summary = await this.ai.summarizeTicket(maskedSubject, conversation);
 
         if (!summary) {
-            this.logger.error(`Ollama failed to return a summary for ticket ${ticketId}`);
+            this.logger.error(`AI provider failed to return a summary for ticket ${ticketId}`);
             throw new Error('Model returned empty summary');
         }
 

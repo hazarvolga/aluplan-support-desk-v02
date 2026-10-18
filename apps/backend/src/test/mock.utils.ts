@@ -145,6 +145,8 @@ export const mockConfigService = {
                 return '7d';
             case 'AUTH_ACTION_JWT_SECRET':
                 return 'test-action-secret';
+            case 'SESSION_MARKER_SECRET':
+                return 'test-session-marker-secret';
             default:
                 return 'test-value';
         }

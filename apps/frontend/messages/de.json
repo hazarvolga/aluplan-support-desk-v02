@@ -66,6 +66,7 @@
     "email_placeholder": "operator@aluplan.com",
     "password_label": "VERIFICATION_KEY [PASSWORT]",
     "password_placeholder": "••••••••",
+    "remember_me": "Angemeldet bleiben",
     "recovery_link": "PASSWORT VERGESSEN",
     "submit_button": "SITZUNG STARTEN",
     "submitting": "VERBINDUNG_WIRD_HERGESTELLT...",
@@ -139,6 +140,10 @@
     "reset_password": {
       "new_password_label": "NEUES PASSWORT",
       "confirm_password_label": "PASSWORT BESTÄTIGEN",
+      "show_new_password": "Neues Passwort anzeigen",
+      "hide_new_password": "Neues Passwort ausblenden",
+      "show_confirm_password": "Passwortbestätigung anzeigen",
+      "hide_confirm_password": "Passwortbestätigung ausblenden",
       "submit_btn": "PASSWORT AKTUALISIEREN",
       "title": "NEUES PASSWORT FESTLEGEN",
       "subtitle": "Legen Sie zu Ihrer Sicherheit ein neues Passwort fest",
@@ -173,6 +178,7 @@
     "logout": "Abmelden",
     "loading": "Laden...",
     "error": "Ein Fehler ist aufgetreten",
+    "close_notification": "Benachrichtigung schließen",
     "session_expired": "Sitzung abgelaufen. Bitte melden Sie sich erneut an.",
     "realtime_session_ended": "Live-Aktualisierungen wurden beendet. Lassen Sie diese Seite geöffnet, melden Sie sich in einem neuen Tab erneut an und verbinden Sie sich danach erneut. Ihr ungesendeter Entwurf bleibt auf dieser Seite erhalten.",
     "realtime_sign_in": "In neuem Tab anmelden",
@@ -717,6 +723,9 @@
       "empty": "Warteschlange leer",
       "load_error": "Support-Anfragen konnten nicht geladen werden",
       "retry": "Erneut versuchen",
+      "select_all": "Alle Anfragen auswählen",
+      "select_ticket": "Anfrage {ticket} auswählen",
+      "delete_ticket": "Anfrage {ticket} löschen",
       "header": {
         "system_id": "ID",
         "company": "Unternehmen",
@@ -726,10 +735,11 @@
         "status": "Status",
         "priority": "Priorität",
         "assignee": "Zugewiesen",
-        "timestamp": "Erstellt"
+        "timestamp": "Erstellt",
+        "actions": "Aktionen"
       },
       "category": {
-        "licensing": "Lizenz & Aktivierung"
+        "licensing": "Lizenzsupport"
       },
       "badges": {
         "kb_sync": "KB_SYNC",
@@ -814,6 +824,14 @@
       "summary_success": "KI-Zusammenfassung erstellt",
       "summary_error": "Fehler beim Erstellen der Zusammenfassung",
       "draft_success": "KI-Antwortentwurf erstellt",
+      "draft_manual_review": "Keine verlässliche passende Quelle gefunden; manuelle Prüfung erforderlich",
+      "draft_sources": "Passende Quellen",
+      "draft_no_sources": "Keine",
+      "draft_reason_no_results": "Keine passende Wissensquelle",
+      "draft_reason_below_threshold": "Quellenübereinstimmung unter der Vertrauensschwelle",
+      "draft_reason_era_mismatch": "Quelle passt nicht zur Lizenzierungsära",
+      "draft_reason_missing_intake": "Für dieses Ticket fehlen validierte Lizenzauswahlen",
+      "draft_reason_generation_error": "KI-Entwurf konnte nicht erstellt werden",
       "draft_error": "Entwurf konnte nicht erstellt werden: {error}",
       "review_success": "Anfrage in die Prüfungsphase verschoben",
       "status_update_error": "Status konnte nicht aktualisiert werden",
@@ -873,7 +891,7 @@
       "channel_label": "Anfragekanal",
       "priority_label": "Priorität",
       "category_label": "Kategorie",
-      "category_licensing": "Lizenz & Aktivierung",
+      "category_licensing": "Lizenzsupport",
       "open_date": "Erstellt am",
       "assignee_label": "Zugewiesen an",
       "assign_placeholder": "Support-Experten auswählen",
@@ -956,51 +974,22 @@
         "issue_label": "Gewünschter Vorgang / Problem",
         "issue_placeholder": "Vorgang oder Problemtyp auswählen",
         "ai_gate_notice": "Für eine KI-Anleitung sind Versionsfamilie, Lizenznutzungsmodell und Problemtyp erforderlich. Wenn der 2024-Build unbekannt ist, wählen Sie den Versionsbereich oder senden Sie die Anfrage direkt an den Support.",
-        "allplan_id_label": "Zugriff auf ALLPLAN ID",
         "user_role_label": "Ihre Rolle bei der Lizenzierung",
-        "invite_label": "Organisationseinladung",
-        "group_label": "Lizenzgruppe / Sichtbarkeit der Lizenz",
         "user_role": {
-          "END_USER": "Ich bin Endanwender",
-          "LICENSE_ADMIN": "Ich verwalte Organisation / Lizenzen in Connect",
-          "UNKNOWN": "Ich weiß es nicht"
+          "LICENSE_ADMIN": "Ich bin Lizenzadministrator der Connect-Plattform"
         },
         "topology": {
-          "SINGLE_USER": "Einzelplatz",
-          "LICENSE_SERVER": "Lizenzserver / Netzwerklizenz",
+          "SINGLE_USER": "Node-Locked License / Rechnergebundene Lizenz",
+          "LICENSE_SERVER": "Floating License / Gemeinsame Lizenz",
           "UNKNOWN": "Ich weiß es nicht"
         },
         "issue": {
           "ACTIVATION": "Aktivierung",
-          "TRANSFER": "Neuer Rechner / Übertragung",
-          "LOGIN": "Anmeldung / Sitzung",
-          "INVITATION": "Organisationseinladung",
-          "SEAT": "Lizenz / Arbeitsplatz nicht sichtbar",
-          "OFFLINE": "Offline-Nutzung / Ausleihen",
-          "OTHER": "Andere / unbekannt"
-        },
-        "allplan_id": {
-          "AVAILABLE": "Zugriff möglich",
-          "UNAVAILABLE": "Kein Zugriff / kein Konto",
-          "UNKNOWN": "Ich weiß es nicht",
-          "NOT_APPLICABLE": "Nicht zutreffend"
-        },
-        "invite": {
-          "ACCEPTED": "Angenommen",
-          "MISSING": "Fehlt / nicht angenommen",
-          "UNKNOWN": "Ich weiß es nicht",
-          "NOT_APPLICABLE": "Nicht zutreffend"
-        },
-        "seat": {
-          "ASSIGNED": "Als zugewiesen sichtbar",
-          "MISSING": "Fehlt / nicht sichtbar",
-          "UNKNOWN": "Ich weiß es nicht",
-          "NOT_APPLICABLE": "Nicht zutreffend"
-        },
-        "group": {
-          "ASSIGNED": "Gruppe zugewiesen / Lizenz sichtbar",
-          "MISSING": "Keine Gruppenzuweisung / Lizenz nicht sichtbar",
-          "UNKNOWN": "Ich weiß es nicht"
+          "TRANSFER": "Lizenz auf einen neuen Rechner übertragen",
+          "FORMAT_REINSTALL": "Ich habe den Rechner formatiert",
+          "LOGIN": "Ich kann mich nicht bei meinem Konto anmelden",
+          "SEAT": "Lizenz ist nicht sichtbar",
+          "OFFLINE": "Offline-Nutzung / Ausleihen"
         },
         "official_resources_title": "Offizielle ALLPLAN-Ressourcen für Ihre Version",
         "official_resource": {
@@ -1013,17 +1002,14 @@
           "ALLPLAN-Version; bei unbekanntem Build genügt das Jahr (zum Beispiel 2024)",
           "Einzelplatzlizenz oder Lizenzserver/Netzwerklizenz",
           "Sichtbare Fehlermeldung und gewünschter Vorgang",
-          "Ab 2024-2-0: ALLPLAN ID, Organisationseinladung und Arbeitsplatzstatus"
+          "Ab 2024-2-0: Lizenzadministrator-Ablauf der Connect-Plattform"
         ],
         "validation": {
           "allplanVersion": "Geben Sie vor der KI-Diagnose die bekannte ALLPLAN-Version ein oder bestätigen Sie das aktuelle Hotinfo.",
           "allplan2024ReleaseBand": "Wählen Sie den Versionsbereich, damit die 2024-Lizenzmethode bestimmt werden kann.",
           "licenseTopology": "Wählen Sie vor der KI-Diagnose das Lizenznutzungsmodell aus.",
           "licenseIssueType": "Wählen Sie vor der KI-Diagnose den gewünschten Vorgang oder Problemtyp aus.",
-          "allplanIdStatus": "Wählen Sie den Status Ihres ALLPLAN-ID-Zugriffs.",
-          "organizationInviteStatus": "Wählen Sie den Status der Organisationseinladung.",
-          "licenseGroupStatus": "Wählen Sie den Status der Lizenzgruppe / Sichtbarkeit.",
-          "licenseUserRole": "Wählen Sie Ihre Rolle im Lizenzprozess."
+          "licenseUserRole": "Dieser Ablauf ist nur für den Lizenzadministrator der Connect-Plattform vorgesehen."
         }
       },
       "departments": {
@@ -1031,7 +1017,7 @@
         "billing_payments": "Abrechnung & Zahlungen",
         "sales_pre_sales": "Vertrieb & Pre-Sales",
         "general_support": "Allgemeiner Support",
-        "licensing": "Lizenz & Aktivierung",
+        "licensing": "Lizenzsupport",
         "customer_success": "Kundenerfolg",
         "general_inquiries": "Allgemeine Anfragen",
         "security_compliance": "Sicherheit & Compliance"
@@ -1201,6 +1187,8 @@
       "confidence_score": "KONFIDENZ-WERT: {confidence}",
       "data_gap_title": "DATENLÜCKE",
       "data_gap_desc": "Im aktuellen Wissenspool wurde kein zu dieser Abfrage passender Datensatz gefunden.",
+      "error": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+      "empty": "Es wurde keine Antwort empfangen. Bitte versuchen Sie es erneut.",
       "visuals": {
         "title": "Quellbilder",
         "description": "Freigegebene Quellbilder, die diese Antwort stützen.",
@@ -1222,7 +1210,7 @@
     },
     "system_info": {
       "infrastructure": "INFRASTRUKTUR",
-      "node": "Ollama-VEC Compute-Knoten",
+      "node": "Vektor-Compute-Knoten",
       "latency": "LATENZ",
       "lookup": "{ms}ms Semantische Suche"
     }
@@ -1529,8 +1517,6 @@
       "connection_success": "Verbindung erfolgreich",
       "connection_failed": "Verbindung fehlgeschlagen",
       "connection_error": "Verbindungsfehler",
-      "ollama_ok": "Kommunikation mit Ollama hergestellt.",
-      "ollama_fail": "Ollama-Dienst konnte nicht erreicht werden.",
       "openai_ok": "OpenAI-Schlüssel validiert.",
       "openai_fail": "API-Schlüssel ungültig oder fehlt.",
       "xai_ok": "xAI-Verbindung erfolgreich.",
@@ -1622,7 +1608,7 @@
     },
     "ai": {
       "title": "KI-Integration",
-      "description": "Konfigurieren Sie Grok (xAI), DeepSeek, OpenAI oder Ollama-Dienste.",
+      "description": "Konfigurieren Sie Grok (xAI), DeepSeek, OpenAI oder Gemini-Dienste.",
       "api_key": "[TR] API Anahtarı",
       "base_url": "[TR] Bağlantı URL",
       "base_url_optional": "[TR] Özel URL (Opsiyonel)",
@@ -1652,7 +1638,6 @@
       "rag_desc": "Grundeinstellungen, die Ihren Wissenspool vektorisieren und die Suchqualität bestimmen.",
       "advanced_params": "Erweiterte Parameter",
       "global_default": "Globaler Standard",
-      "ollama_local": "Ollama (Lokal)",
       "status_active": "Aktiv",
       "status_inactive": "Inaktiv",
       "hide_key": "{name} Schlüssel verbergen",
@@ -1664,6 +1649,7 @@
       "total_latency": "Gesamtlatenz",
       "validation": {
         "missing_fields": "Fehlende Felder: {fields}",
+        "embed_provider_required": "Wählen Sie einen Embedding-Anbieter und vervollständigen Sie dessen Konfiguration.",
         "fields": {
           "api_key": "API-Schlüssel",
           "chat_model": "Chat-Modell",
@@ -1679,18 +1665,12 @@
         "save_success": "{provider}-Einstellungen gespeichert.",
         "save_error": "Fehler beim Speichern: {message}"
       },
-      "ollama": {
-        "title": "Ollama (Lokal)",
-        "chat_model": "Chat-Modell",
-        "embed_model": "Vektor-Modell"
-      },
       "openai": {
         "title": "OpenAI (Cloud)",
         "chat_model": "Chat-Modell",
         "embed_model": "Vektor-Modell"
       },
       "providers": {
-        "ollama": "Ollama (Lokal)",
         "openai": "OpenAI (Cloud)",
         "openai_cloud": "OpenAI (Cloud - Empfohlen)",
         "xai": "xAI (Grok)",
@@ -1714,7 +1694,6 @@
       "description": "Anbieterkonfiguration für Systembenachrichtigungen und Kundenkorrespondenz.",
       "active_provider": "Aktiver Anbieter",
       "from_address": "Absender-E-Mail-Adresse",
-      "ollama_title": "Ollama (Lokal) Konfiguration",
       "openai_title": "OpenAI Infrastruktur Konfiguration",
       "azure_title": "Azure OpenAI Konfiguration",
       "status_active": "Aktiv",
@@ -1841,6 +1820,10 @@
         "placeholders": {
           "name": "z.B.: Standard-Support",
           "department": "Abteilung auswählen"
+        },
+        "validation": {
+          "required": "Richtlinienname und Abteilung sind erforderlich.",
+          "positive_integer": "Reaktions- und Lösungszeiten müssen positive ganze Zahlen sein."
         },
         "cancel_btn": "Abbrechen"
       }
@@ -2589,7 +2572,7 @@
           "view_title": "Topologie-Ansicht",
           "view_desc": "Diese Seite zeigt Systemadministratoren den allgemeinen Gesundheitszustand der Infrastruktur an. Folgende Komponenten werden überwacht:",
           "view_ai_name": "KI-Knoten",
-          "view_ai_desc": "Status von Ollama und Vektorberechnungsknoten",
+          "view_ai_desc": "Status von KI- und Vektorberechnungsknoten",
           "view_db_name": "Datenbank",
           "view_db_desc": "Anzahl aktiver DB-Knoten und Verbindungsstatus",
           "view_api_name": "API-Dienste",
@@ -3627,6 +3610,10 @@
       "title": "WISSENSPOOL_KONTROLLE",
       "subtitle": "Verwaltung und Indizierung technischer Ressourcen für KI.",
       "placeholder": "Technische Dokumentation",
+      "upload": {
+        "failure_title": "Fehler",
+        "failure_description": "Die Datei konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut."
+      },
       "tabs": {
         "raw_sources": "ROHQUELLEN",
         "seeded_content": "GESÄTE_INHALTE",
@@ -4360,7 +4347,7 @@
       },
       "ai": {
         "title": "Yapay Zeka Entegrasyonu",
-        "description": "Grok (xAI), DeepSeek, OpenAI veya Ollama servislerini yapılandırın.",
+        "description": "Grok (xAI), DeepSeek, OpenAI veya Gemini servislerini yapılandırın.",
         "chat_provider": "Varsayılan Sohbet Sağlayıcısı",
         "chat_provider_desc": "Talep yanıtları ve asistan işlevleri için kullanılır.",
         "embed_provider": "Varsayılan Vektörleştirme Sağlayıcısı",
@@ -4383,7 +4370,6 @@
         "rag_desc": "Bilgi havuzunuzu vektörleştiren ve arama kalitesini belirleyen temel ayarlar.",
         "advanced_params": "Gelişmiş Parametreler",
         "global_default": "Global Varsayılan",
-        "ollama_local": "Ollama (Lokal)",
         "status_active": "Aktiv",
         "status_inactive": "Passiv",
         "hide_key": "{name} anahtarını gizle",
@@ -4410,11 +4396,6 @@
           "save_success": "{provider} ayarları kaydedildi.",
           "save_error": "Kaydetme hatası: {message}"
         },
-        "ollama": {
-          "title": "Ollama (Yerel)",
-          "chat_model": "Sohbet Modeli",
-          "embed_model": "Vektör Modeli"
-        },
         "openai": {
           "title": "OpenAI (Bulut)",
           "chat_model": "Sohbet Modeli",
@@ -4427,7 +4408,6 @@
           "connection_error": "Der Vertex-Endpunkt ist nicht erreichbar"
         },
         "providers": {
-          "ollama": "Ollama (Yerel)",
           "openai": "OpenAI (Bulut)",
           "openai_cloud": "OpenAI (Bulut - Önerilen)",
           "xai": "xAI (Grok)",
@@ -4445,7 +4425,6 @@
         "description": "Sistem bildirimleri ve müşteri yazışmaları için sağlayıcı yapılandırması.",
         "active_provider": "Aktif Sağlayıcı",
         "from_address": "Gönderen E-posta Adresi",
-        "ollama_title": "Ollama (Yerel) Yapılandırması",
         "openai_title": "OpenAI Altyapı Yapılandırması",
         "azure_title": "Azure OpenAI Yapılandırması",
         "status_active": "Aktiv",
@@ -4650,8 +4629,6 @@
         "connection_success": "Bağlantı başarılı",
         "connection_failed": "Bağlantı başarısız",
         "connection_error": "Bağlantı hatası",
-        "ollama_ok": "Ollama ile iletişim sağlandı.",
-        "ollama_fail": "Ollama servisine ulaşılamadı.",
         "openai_ok": "OpenAI anahtarları doğrulandı.",
         "openai_fail": "API anahtarı geçersiz veya eksik.",
         "xai_ok": "xAI bağlantısı başarılı.",

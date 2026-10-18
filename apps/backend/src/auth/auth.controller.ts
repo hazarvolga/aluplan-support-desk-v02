@@ -11,6 +11,7 @@ import { Public } from './decorators/public.decorator';
 import { RbacGuard } from '../rbac/rbac.guard';
 import { Roles } from '../rbac/decorators/rbac.decorators';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { getLoginThrottleLimit } from './auth-throttle';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -22,7 +23,7 @@ export class AuthController {
 
     @Public()
     @Post('login')
-    @Throttle({ default: { limit: 20, ttl: 60000 } })
+    @Throttle({ default: { limit: getLoginThrottleLimit(process.env.NODE_ENV), ttl: 60000 } })
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Login with email and password' })
     @ApiResponse({ status: 200, description: 'Login successful. Sets HttpOnly cookies and returns non-secret user data.' })
@@ -31,15 +32,18 @@ export class AuthController {
         const tokens = await this.authService.login(dto);
 
         const isProd = this.config.get('NODE_ENV') === 'production';
-        const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
+        const markerCookieDomain = isProd ? '.allplan.net.tr' : undefined;
+        const persistentCookie = this.getPersistentCookieOptions(
+            dto.rememberMe === true,
+            tokens.remember_me_expires_at,
+        );
 
+        this.clearLegacyDomainAuthCookies(res, isProd);
         res.cookie('alu_at', tokens.access_token, {
             httpOnly: true,
             secure: isProd,
             sameSite: 'lax',
             path: '/',
-            domain: cookieDomain,
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
         });
 
         res.cookie('alu_rt', tokens.refresh_token, {
@@ -47,10 +51,16 @@ export class AuthController {
             secure: isProd,
             sameSite: 'lax',
             path: '/api/v1/auth/refresh',
-            domain: cookieDomain,
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            ...persistentCookie,
         });
-
+        res.cookie('alu_session', tokens.session_marker, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: 'lax',
+            path: '/',
+            ...(markerCookieDomain ? { domain: markerCookieDomain } : {}),
+            ...persistentCookie,
+        });
 
         return { user: tokens.user };
     }
@@ -67,18 +77,23 @@ export class AuthController {
             req.user.sub,
             req.user.refreshToken,
             req.user.sessionVersion ?? 0,
+            req.user.rememberMe === true,
+            req.user.rememberMeExpiresAt,
         );
 
         const isProd = this.config.get('NODE_ENV') === 'production';
-        const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
+        const markerCookieDomain = isProd ? '.allplan.net.tr' : undefined;
+        const persistentCookie = this.getPersistentCookieOptions(
+            req.user.rememberMe === true,
+            tokens.remember_me_expires_at,
+        );
 
+        this.clearLegacyDomainAuthCookies(res, isProd);
         res.cookie('alu_at', tokens.access_token, {
             httpOnly: true,
             secure: isProd,
             sameSite: 'lax',
             path: '/',
-            domain: cookieDomain,
-            maxAge: 24 * 60 * 60 * 1000,
         });
 
         res.cookie('alu_rt', tokens.refresh_token, {
@@ -86,10 +101,16 @@ export class AuthController {
             secure: isProd,
             sameSite: 'lax',
             path: '/api/v1/auth/refresh',
-            domain: cookieDomain,
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            ...persistentCookie,
         });
-
+        res.cookie('alu_session', tokens.session_marker, {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: 'lax',
+            path: '/',
+            ...(markerCookieDomain ? { domain: markerCookieDomain } : {}),
+            ...persistentCookie,
+        });
 
         return { success: true };
     }
@@ -101,15 +122,72 @@ export class AuthController {
     @ApiOperation({ summary: 'Logout' })
     @ApiResponse({ status: 204, description: 'Logout successful. Cookies cleared.' })
     async logout(@Request() req: any, @Res({ passthrough: true }) res: Response) {
-        const result = await this.authService.logout(req.user.sub, req.user.jti, req.user.exp);
+        const result = await this.authService.logout(
+            req.user.sub,
+            req.user.jti,
+            req.user.exp,
+            req.user.sessionVersion ?? 0,
+        );
 
-        const isProd = this.config.get('NODE_ENV') === 'production';
-        const cookieDomain = isProd ? '.allplan.net.tr' : undefined;
-        res.clearCookie('alu_at', { path: '/', sameSite: 'lax', secure: isProd, domain: cookieDomain });
-        res.clearCookie('alu_rt', { path: '/api/v1/auth/refresh', sameSite: 'lax', secure: isProd, domain: cookieDomain });
-
+        this.clearAuthCookies(res);
 
         return result;
+    }
+
+    @Public()
+    @UseGuards(RefreshGuard)
+    @Post('refresh/logout')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Logout using a valid refresh session when access has expired' })
+    @ApiResponse({ status: 200, description: 'Refresh session revoked and authentication cookies cleared.' })
+    @ApiResponse({ status: 401, description: 'Invalid or expired refresh token.' })
+    async logoutRefreshSession(
+        @Request() req: any,
+        @Res({ passthrough: true }) res: Response,
+    ) {
+        const result = await this.authService.logoutRefreshSession(
+            req.user.sub,
+            req.user.refreshToken,
+            req.user.sessionVersion ?? 0,
+        );
+
+        this.clearAuthCookies(res);
+
+        return result;
+    }
+
+    private clearAuthCookies(res: Response) {
+        const isProd = this.config.get('NODE_ENV') === 'production';
+        const markerCookieDomain = isProd ? '.allplan.net.tr' : undefined;
+        res.clearCookie('alu_at', { path: '/', sameSite: 'lax', secure: isProd });
+        res.clearCookie('alu_rt', { path: '/api/v1/auth/refresh', sameSite: 'lax', secure: isProd });
+        res.clearCookie('alu_session', { path: '/', sameSite: 'lax', secure: isProd, domain: markerCookieDomain });
+        this.clearLegacyDomainAuthCookies(res, isProd);
+    }
+
+    private clearLegacyDomainAuthCookies(res: Response, isProd: boolean) {
+        if (!isProd) return;
+
+        res.clearCookie('alu_at', {
+            domain: '.allplan.net.tr',
+            path: '/',
+            secure: true,
+            sameSite: 'lax',
+        });
+        res.clearCookie('alu_rt', {
+            domain: '.allplan.net.tr',
+            path: '/api/v1/auth/refresh',
+            secure: true,
+            sameSite: 'lax',
+        });
+    }
+
+    private getPersistentCookieOptions(rememberMe: boolean, absoluteExpiry?: number) {
+        if (!rememberMe) return {};
+        if (typeof absoluteExpiry !== 'number' || !Number.isFinite(absoluteExpiry)) {
+            throw new Error('Remember-me token is missing its absolute expiry.');
+        }
+        return { maxAge: Math.max(1, absoluteExpiry - Date.now()) };
     }
 
     @UseGuards(JwtAuthGuard, RbacGuard)

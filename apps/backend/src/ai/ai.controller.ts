@@ -1,6 +1,6 @@
 import {
     Controller, Post, Get, Body, Param, Request, Query,
-    UseGuards, HttpCode, HttpStatus, Sse, MessageEvent, NotFoundException,
+    UseGuards, HttpCode, HttpStatus, Sse, MessageEvent, NotFoundException, BadRequestException,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -9,7 +9,6 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { AiQueryService } from './ai-query.service';
 import { EmbeddingService } from './embedding.service';
-import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { AiService } from './ai.service';
@@ -29,13 +28,35 @@ import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { assertEmbeddingMigrationApproved } from './embedding-migration.guard';
 import { sanitizeHotinfoContext } from '../common/utils/hotinfo-context';
 import { AllplanLicensingPolicyService, canonicalizeAllplanRelease } from './allplan-licensing-policy.service';
+import type { JwtPayload } from '../auth/strategies/jwt.strategy';
+import { normalizeSessionRole } from '../auth/session-authority';
+import { createSafeAiQueryFailure } from './ai-job-error';
+
+type AiJobStatusRequest = {
+    user?: Pick<JwtPayload, 'sub' | 'role'>;
+};
+
+const AI_JOB_OPERATOR_ROLES = new Set(['ADMIN', 'SUPERUSER', 'SUPER_ADMIN']);
+
+function getJobOwnerId(job: { data?: unknown }): string | null {
+    if (!job.data || typeof job.data !== 'object') return null;
+    const options = (job.data as { options?: unknown }).options;
+    if (!options || typeof options !== 'object') return null;
+    const userId = (options as { userId?: unknown }).userId;
+    return typeof userId === 'string' && userId.trim() ? userId : null;
+}
+
+function isAiJobOperator(role: unknown): boolean {
+    if (typeof role !== 'string') return false;
+    return AI_JOB_OPERATOR_ROLES.has(normalizeSessionRole(role));
+}
 
 export class AllplanLicensingIntakeDto {
     @IsIn(['licensing']) categoryKey: 'licensing';
     @IsString() @MaxLength(32) allplanVersion: string;
     @IsOptional() @IsIn(['UP_TO_2024_1_10', 'FROM_2024_2_0', 'UNKNOWN']) allplan2024ReleaseBand?: 'UP_TO_2024_1_10' | 'FROM_2024_2_0' | 'UNKNOWN';
     @IsOptional() @IsIn(['SINGLE_USER', 'LICENSE_SERVER', 'UNKNOWN']) licenseTopology?: 'SINGLE_USER' | 'LICENSE_SERVER' | 'UNKNOWN';
-    @IsOptional() @IsIn(['ACTIVATION', 'TRANSFER', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER']) licenseIssueType?: 'ACTIVATION' | 'TRANSFER' | 'LOGIN' | 'INVITATION' | 'SEAT' | 'OFFLINE' | 'OTHER';
+    @IsOptional() @IsIn(['ACTIVATION', 'TRANSFER', 'FORMAT_REINSTALL', 'LOGIN', 'INVITATION', 'SEAT', 'OFFLINE', 'OTHER']) licenseIssueType?: 'ACTIVATION' | 'TRANSFER' | 'FORMAT_REINSTALL' | 'LOGIN' | 'INVITATION' | 'SEAT' | 'OFFLINE' | 'OTHER';
     @IsOptional() @IsIn(['END_USER', 'LICENSE_ADMIN', 'UNKNOWN']) licenseUserRole?: 'END_USER' | 'LICENSE_ADMIN' | 'UNKNOWN';
     @IsOptional() @IsIn(['AVAILABLE', 'UNAVAILABLE', 'UNKNOWN']) allplanIdStatus?: 'AVAILABLE' | 'UNAVAILABLE' | 'UNKNOWN';
     @IsOptional() @IsIn(['ACCEPTED', 'MISSING', 'UNKNOWN']) organizationInviteStatus?: 'ACCEPTED' | 'MISSING' | 'UNKNOWN';
@@ -136,7 +157,6 @@ export class AiController {
         private readonly embeddingService: EmbeddingService,
         private readonly aiService: AiService,
         private readonly aiCopilotService: AiCopilotService,
-        private readonly ollamaService: OllamaService,
         private readonly openAiService: OpenAiService,
         private readonly genericOpenAiService: GenericOpenAiService,
         private readonly aiReportingService: AiReportingService,
@@ -157,6 +177,10 @@ export class AiController {
     }
 
     @Post('query')
+    @Roles(
+        'ADMIN', 'SUPER_ADMIN', 'SUPERUSER', 'DEPARTMENT_MANAGER', 'TEAM_LEAD',
+        'SENIOR_AGENT', 'AGENT', 'SUPPORT_AGENT', 'SUPPORT_MANAGER',
+    )
     @Throttle({ default: { limit: 10, ttl: 60000 } }) // Limit complex AI inference
     @ApiOperation({ summary: 'Ask a question — semantic search + AI reformat pipeline' })
     @ApiResponse({ status: 200, description: 'RAG Pipeline execution completed with an AI-generated response.' })
@@ -196,9 +220,19 @@ export class AiController {
     @ApiParam({ name: 'jobId', description: 'The unique ID of the AI query job' })
     @ApiResponse({ status: 200, description: 'Job status retrieved.' })
     @ApiResponse({ status: 404, description: 'Job not found.' })
-    async getJobStatus(@Param('jobId') jobId: string) {
+    async getJobStatus(
+        @Param('jobId') jobId: string,
+        @Request() req: AiJobStatusRequest,
+    ) {
         const job = await this.aiQueue.getJob(jobId);
         if (!job) {
+            throw new NotFoundException({ message: 'Job not found' });
+        }
+
+        const ownerId = getJobOwnerId(job);
+        const requesterId = req.user?.sub;
+        if (!ownerId || !requesterId || (ownerId !== requesterId && !isAiJobOperator(req.user?.role))) {
+            // Preserve resource non-enumerability for malformed, orphaned and foreign jobs.
             throw new NotFoundException({ message: 'Job not found' });
         }
 
@@ -219,7 +253,7 @@ export class AiController {
             jobId: job.id,
             status,
             ...(status === 'COMPLETED' && { result: job.returnvalue }),
-            ...(status === 'FAILED' && { error: job.failedReason }),
+            ...(status === 'FAILED' && { error: createSafeAiQueryFailure() }),
         };
     }
 
@@ -415,8 +449,6 @@ export class AiController {
                 return this.geminiService.listModels(dto.apiKey);
             case 'openai':
                 return this.openAiService.listModels(dto.apiKey);
-            case 'ollama':
-                return this.ollamaService.listModels(undefined, dto.baseUrl);
             case 'groq':
             case 'generic':
             case 'lmstudio':
@@ -425,7 +457,7 @@ export class AiController {
             case 'deepseek':
                 return this.genericOpenAiService.listModels(dto.apiKey, dto.baseUrl);
             default:
-                return { chatModels: [], embedModels: [] };
+                throw new BadRequestException(`Unsupported AI provider: ${dto.provider}`);
         }
     }
 

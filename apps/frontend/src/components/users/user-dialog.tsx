@@ -29,31 +29,42 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { api } from '@/lib/api';
+import { api, type UserDetails } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { UserCheck, Info } from 'lucide-react';
+import { UserCheck } from 'lucide-react';
 
 interface UserDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    user?: any; // If provided, edit mode
+    user?: UserDetails; // If provided, edit mode
     onSuccess: () => void;
 }
+
+const allowedRoles = ['admin', 'support_manager', 'support_agent', 'viewer'] as const;
+type AllowedRole = (typeof allowedRoles)[number];
+
+const toAllowedRole = (role: string | undefined): AllowedRole | undefined => {
+    const normalizedRole = role?.trim().replace(/-/g, '_').toLowerCase();
+    return allowedRoles.includes(normalizedRole as AllowedRole) ? normalizedRole as AllowedRole : undefined;
+};
 
 export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogProps) {
     const t = useTranslations('users');
     const tc = useTranslations('common');
     const { toast } = useToast();
     const isEdit = !!user;
-    const [foundUser, setFoundUser] = useState<any>(null);
+    const [foundUser, setFoundUser] = useState<UserDetails | null>(null);
     const [isLookingUp, setIsLookingUp] = useState(false);
+    const persistedRole = (user?.roles || user?.userRoles)?.[0]?.role?.name;
+    const editablePersistedRole = toAllowedRole(persistedRole);
+    const hasUnsupportedPersistedRole = isEdit && !editablePersistedRole;
 
     const formSchema = z.object({
         fullName: z.string().min(2, t('validation.name_min')),
         email: z.string().email(t('validation.email_invalid')),
         password: z.string().min(6, t('validation.password_min')).optional().or(z.literal('')),
-        role: z.string(),
+        role: z.enum(allowedRoles),
     });
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -62,7 +73,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
             fullName: user?.fullName || '',
             email: user?.email || '',
             password: '',
-            role: (user?.roles || user?.userRoles)?.[0]?.role?.name || 'support_agent',
+            role: isEdit ? editablePersistedRole : 'support_agent',
         },
     });
 
@@ -87,8 +98,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                 } else {
                     setFoundUser(null);
                 }
-            } catch (error) {
-                console.error('Lookup failed', error);
+            } catch {
                 setFoundUser(null);
             } finally {
                 setIsLookingUp(false);
@@ -99,8 +109,12 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
     }, [email, isEdit, form]);
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
+        if (hasUnsupportedPersistedRole) {
+            toast({ title: tc('error_title'), description: tc('error'), variant: 'destructive' });
+            return;
+        }
         try {
-            const payload: any = {
+            const payload: { fullName: string; email: string; roles: string[]; password?: string } = {
                 fullName: values.fullName,
                 email: values.email,
                 roles: [values.role],
@@ -114,7 +128,8 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
             }
 
             if (isEdit || foundUser) {
-                const targetId = isEdit ? user.id : foundUser.id;
+                const targetId = isEdit ? user.id : foundUser?.id;
+                if (!targetId) return;
                 await api.users.update(targetId, payload);
                 toast({ title: foundUser && !isEdit ? 'Kullanıcı yükseltildi/güncellendi' : t('toasts.updated') });
             } else {
@@ -125,10 +140,10 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
             onOpenChange(false);
             form.reset();
             setFoundUser(null);
-        } catch (error) {
+        } catch {
             toast({
                 title: tc('error_title'),
-                description: String(error),
+                description: tc('error'),
                 variant: 'destructive',
             });
         }
@@ -164,6 +179,13 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                         <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
                             <strong>{foundUser.fullName}</strong> şu an <strong>{foundUser.role?.name || 'Müşteri'}</strong> rolünde. Bu işlem kendisini yeni role aktaracaktır.
                         </AlertDescription>
+                    </Alert>
+                )}
+
+                {hasUnsupportedPersistedRole && (
+                    <Alert variant="destructive" className="mb-4">
+                        <AlertTitle>{tc('error_title')}</AlertTitle>
+                        <AlertDescription>{tc('error')}: {persistedRole || '-'}</AlertDescription>
                     </Alert>
                 )}
 
@@ -224,7 +246,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>{t('dialog.role')}</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value} disabled={hasUnsupportedPersistedRole}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder={t('dialog.select_role_placeholder')} />
@@ -242,7 +264,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                             )}
                         />
                         <DialogFooter className="pt-2">
-                            <Button type="submit" disabled={isLookingUp} className={foundUser && !isEdit ? "bg-blue-600 hover:bg-blue-700" : ""}>
+                            <Button type="submit" disabled={isLookingUp || hasUnsupportedPersistedRole} className={foundUser && !isEdit ? "bg-blue-600 hover:bg-blue-700" : ""}>
                                 {submitBtnText}
                             </Button>
                         </DialogFooter>

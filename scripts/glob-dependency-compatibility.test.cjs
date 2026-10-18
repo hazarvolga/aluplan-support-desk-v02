@@ -7,16 +7,12 @@ const { test } = require('node:test');
 // Resolve consumer edges without executing CLIs, watchers or Sentry startup.
 const backend = createRequire(path.resolve(__dirname, '../apps/backend/package.json'));
 const child = (parent, name) => createRequire(parent.resolve(name));
-const mjml = child(backend, 'mjml');
-const core = child(mjml, 'mjml-core');
+const core = child(backend, 'mjml-core');
 const beautify = child(core, 'js-beautify');
 const editorconfig = child(beautify, 'editorconfig');
 const glob = child(beautify, 'glob');
 const editorMinimatch = child(editorconfig, 'minimatch');
 const globMinimatch = child(glob, 'minimatch');
-const cli = child(mjml, 'mjml-cli');
-const chokidar = child(cli, 'chokidar');
-const anymatch = child(chokidar, 'anymatch');
 const sentryNode = child(child(backend, '@sentry/nestjs'), '@sentry/node');
 const otel = child(sentryNode, '@fastify/otel');
 const otelMinimatch = child(otel, 'minimatch');
@@ -37,10 +33,9 @@ function resolvedVersion(consumer, name) {
 for (const [label, consumer, dependency, version] of [
     ['editorconfig', editorconfig, 'minimatch', '9.0.9'],
     ['js-beautify glob', glob, 'minimatch', '9.0.9'],
-    ['editorconfig minimatch', editorMinimatch, 'brace-expansion', '2.1.6'],
-    ['glob minimatch', globMinimatch, 'brace-expansion', '2.1.6'],
-    ['Sentry Fastify minimatch', otelMinimatch, 'brace-expansion', '5.0.11'],
-    ['MJML CLI chokidar anymatch', anymatch, 'picomatch', '2.3.2'],
+    ['editorconfig minimatch', editorMinimatch, 'brace-expansion', '2.1.7'],
+    ['glob minimatch', globMinimatch, 'brace-expansion', '2.1.7'],
+    ['Sentry Fastify minimatch', otelMinimatch, 'brace-expansion', '5.0.12'],
 ]) {
     test(`${label} resolves reviewed ${dependency} ${version}`, (t) => {
         t.diagnostic(consumer.resolve(dependency));
@@ -83,20 +78,13 @@ for (const [label, consumer] of [
     });
 }
 
-test('chokidar anymatch uses picomatch patterns and exclusions without starting a watcher', () => {
-    const match = chokidar('anymatch');
-    const patterns = ['posta/**/*.@(mjml|html)', '!posta/arşiv/**'];
-    assert.equal(match(patterns, 'posta/tr/Çağrı.mjml'), true);
-    assert.equal(match(patterns, 'posta/yanıt.html'), true);
-    assert.equal(match(patterns, 'posta/arşiv/Çağrı.mjml'), false);
-    assert.equal(match(patterns, 'posta/yanıt.js'), false);
-    const isTemplate = anymatch('picomatch')('posta/**/+(yanıt|taslak).mjml');
-    assert.equal(isTemplate('posta/tr/yanıt.mjml'), true);
-    assert.equal(isTemplate('posta/tr/diğer.mjml'), false);
-});
-
 test('MJML renders an inline Turkish template with beautification and minification disabled', () => {
-    const render = backend('mjml');
+    const coreModule = backend('mjml-core');
+    const preset = backend('mjml-preset-core');
+    const validator = backend('mjml-validator');
+    coreModule.assignComponents(coreModule.components, preset.components);
+    validator.assignDependencies(validator.dependencies, preset.dependencies);
+    const render = coreModule.default;
     const result = render('<mjml><mj-body><mj-section><mj-column><mj-text>Çağrı &amp; Ölçü</mj-text></mj-column></mj-section></mj-body></mjml>', {
         beautify: false, minify: false, ignoreIncludes: true, validationLevel: 'strict',
     });

@@ -5,53 +5,51 @@ import { test, expect, Page } from '@playwright/test';
  * Targets ticket detail page interaction: sending a message/reply as an agent.
  */
 
-import { loginAsAdmin } from './helpers/auth';
+import { getAuthToken, TEST_USERS } from './helpers/auth';
+
+async function createTicketForReply(page: Page): Promise<string> {
+    const token = await getAuthToken(
+        page.context(),
+        TEST_USERS.admin.email,
+        TEST_USERS.admin.password,
+    );
+    const csrfToken = (await page.context().cookies('http://localhost:4000'))
+        .find(({ name }) => name === 'XSRF-TOKEN')?.value;
+    if (!csrfToken) {
+        throw new Error('Ticket fixture creation failed: login did not persist the CSRF cookie');
+    }
+    const response = await page.context().request.post('http://localhost:4000/api/v1/tickets', {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'X-XSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        data: {
+            subject: `[E2E] Agent Reply - ${Date.now()}`,
+            description: 'Deterministic ticket for the agent reply browser journey.',
+            priority: 'LOW',
+        },
+    });
+    if (!response.ok()) {
+        throw new Error(`Ticket fixture creation failed: ${response.status()} ${await response.text()}`);
+    }
+    const ticket = await response.json();
+    return ticket.id;
+}
 
 test.describe('Agent Reply Flow', () => {
-
-    test.beforeEach(async ({ page }) => {
-        await loginAsAdmin(page);
-    });
-
     test('should navigate to a ticket detail and see the message interface', async ({ page }) => {
-        // Navigate to tickets listing
-        const ticketNavLink = page.getByTestId('nav-tickets');
-        await ticketNavLink.click();
-        await page.waitForURL(/.*\/tickets/, { timeout: 120000 });
+        const ticketId = await createTicketForReply(page);
+        await page.goto(`/tr/tickets/${ticketId}`);
 
-        // Click on the first available ticket row
-        const firstRow = page.locator('table tbody tr').first();
-        const isTableVisible = await firstRow.isVisible().catch(() => false);
-
-        if (isTableVisible) {
-            await firstRow.click();
-
-            // We should be on a ticket detail page
-            await expect(page).toHaveURL(/.*\/tickets\/.+/, { timeout: 5000 });
-        } else {
-            // No tickets - skip gracefully
-            console.log('No tickets available for agent reply test, skipping.');
-            return;
-        }
+        await expect(page).toHaveURL(new RegExp(`/tickets/${ticketId}$`), { timeout: 30000 });
+        await expect(page.locator('textarea, [contenteditable="true"]').first()).toBeVisible();
     });
 
     test('should send a reply message on ticket detail page', async ({ page }) => {
-        // Navigate to tickets
-        await page.getByTestId('nav-tickets').click();
-        await page.waitForURL(/.*\/tickets/, { timeout: 120000 });
-
-        // Try to access first ticket
-        const firstTicketLink = page.locator('table tbody tr a').first()
-            .or(page.locator('table tbody tr').first());
-
-        const isVisible = await firstTicketLink.isVisible().catch(() => false);
-        if (!isVisible) {
-            console.log('No tickets in table, skipping reply test.');
-            return;
-        }
-
-        await firstTicketLink.click();
-        await page.waitForURL(/\/tickets\/.+/, { timeout: 5000 });
+        const ticketId = await createTicketForReply(page);
+        await page.goto(`/tr/tickets/${ticketId}`);
+        await page.waitForURL(new RegExp(`/tickets/${ticketId}$`), { timeout: 30000 });
 
         // Find a message input - could be textarea or contenteditable (Tiptap)
         const messageInput = page.locator('textarea, [contenteditable="true"]').first();

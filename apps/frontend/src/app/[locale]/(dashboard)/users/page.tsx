@@ -3,10 +3,10 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api, type UserDetails } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { UserDialog } from '@/components/users/user-dialog';
-import { Plus, Pencil, Trash2, Shield } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
     Table,
@@ -23,17 +23,18 @@ import { useTranslations } from 'next-intl';
 export default function UsersPage() {
     const t = useTranslations('users');
     const tc = useTranslations('common');
-    const [users, setUsers] = useState<any[]>([]);
+    type ManagedUser = UserDetails & { avatarUrl?: string; roles?: Array<{ role: { id?: string; name?: string } }>; userRoles?: Array<{ role: { id?: string; name?: string } }> };
+    const [users, setUsers] = useState<ManagedUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [editingUser, setEditingUser] = useState<any>(null);
+    const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
     const { toast } = useToast();
 
     const fetchUsers = async () => {
         setLoading(true);
         try {
             const res = await api.users.list('agent');
-            setUsers(res);
+            setUsers(res as ManagedUser[]);
         } catch (error) {
             toast({ title: t('fetch_error'), description: String(error), variant: 'destructive' });
         } finally {
@@ -56,7 +57,7 @@ export default function UsersPage() {
         }
     };
 
-    const handleEdit = (user: any) => {
+    const handleEdit = (user: ManagedUser) => {
         setEditingUser(user);
         setDialogOpen(true);
     };
@@ -102,9 +103,9 @@ export default function UsersPage() {
                                     <div className="font-medium">{user.fullName}</div>
                                 </TableCell>
                                 <TableCell>
-                                    {(user.roles || user.userRoles || []).map((r: any) => (
-                                        <Badge key={r.role.id} variant="outline" className="mr-1">
-                                            {r.role.name}
+                                    {(user.roles || user.userRoles || []).map((r) => (
+                                        <Badge key={r.role?.name} variant="outline" className="mr-1">
+                                            {r.role?.name}
                                         </Badge>
                                     ))}
                                 </TableCell>
@@ -127,7 +128,7 @@ export default function UsersPage() {
                 <UserDialog
                     open={dialogOpen}
                     onOpenChange={setDialogOpen}
-                    user={editingUser}
+                    user={editingUser ?? undefined}
                     onSuccess={fetchUsers}
                 />
             )}

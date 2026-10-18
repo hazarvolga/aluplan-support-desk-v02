@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useTranslations } from 'next-intl';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, History, FileText } from 'lucide-react';
+import { History, FileText } from 'lucide-react';
 import { EmailTemplates } from '../settings/components/EmailTemplates';
 import { EmailLogs } from '../settings/components/EmailLogs';
 

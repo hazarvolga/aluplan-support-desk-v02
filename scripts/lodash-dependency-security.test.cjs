@@ -7,14 +7,13 @@ const { test } = require('node:test');
 const root = createRequire(path.resolve(__dirname, '../package.json'));
 const backend = createRequire(path.resolve(__dirname, '../apps/backend/package.json'));
 const child = (parent, name) => createRequire(parent.resolve(name));
-const mjml = child(backend, 'mjml');
 const board = child(backend, '@bull-board/api');
 const prismaDev = child(child(root, 'prisma/package.json'), '@prisma/dev');
 const parser = child(prismaDev, '@mrleebo/prisma-ast');
 const consumers = [
     ['Nest config', child(backend, '@nestjs/config')],
     ['Swagger', child(backend, '@nestjs/swagger')],
-    ['MJML core', child(mjml, 'mjml-core')],
+    ['MJML core', child(backend, 'mjml-core')],
     ['Redis INFO parser', child(board, 'redis-info')],
     ['Prisma dev Chevrotain', child(parser, 'chevrotain')],
 ];

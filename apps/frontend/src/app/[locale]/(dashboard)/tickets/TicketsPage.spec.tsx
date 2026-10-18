@@ -5,6 +5,9 @@ import { useAuth } from '@/components/auth/role-guard';
 import { server } from '@/test/setup';
 import { delay, http, HttpResponse } from 'msw';
 import { useSearchParams } from 'next/navigation';
+import trMessages from '../../../../../messages/tr.json';
+import enMessages from '../../../../../messages/en.json';
+import deMessages from '../../../../../messages/de.json';
 
 // Mock the Auth Hook
 vi.mock('@/components/auth/role-guard', () => ({
@@ -13,7 +16,28 @@ vi.mock('@/components/auth/role-guard', () => ({
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
+const mockUseAuth = (user: unknown) => {
+    vi.mocked(useAuth).mockReturnValue({ user } as ReturnType<typeof useAuth>);
+};
+
 describe('TicketsPage', () => {
+    it('has readable category labels at the same translation path in every locale', () => {
+        expect(trMessages.tickets.new.departments.licensing).toBe('Lisans Desteği');
+        expect(trMessages.tickets.new.departments.technical_support).toBe('Teknik Destek');
+        const categoryKeys = [
+            'technical_support', 'billing_payments', 'sales_pre_sales',
+            'general_support', 'licensing', 'customer_success',
+            'general_inquiries', 'security_compliance',
+        ] as const;
+        for (const messages of [trMessages, enMessages, deMessages]) {
+            for (const key of categoryKeys) {
+                const label = messages.tickets.new.departments[key];
+                expect(label.trim()).not.toBe('');
+                expect(label).not.toContain('departments.');
+            }
+        }
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         // Mock confirm
@@ -22,7 +46,7 @@ describe('TicketsPage', () => {
     });
 
     it('renders empty state when no tickets', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
+        mockUseAuth({ role: 'CUSTOMER' } );
 
         // Mock the tickets API to return empty list so loading resolves
         server.use(
@@ -38,7 +62,7 @@ describe('TicketsPage', () => {
     });
 
     it('renders tickets list after loading', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
+        mockUseAuth({ role: 'CUSTOMER' } );
 
         const tickets = [
             { id: 't1', ticketNumber: 'SUP-00001', subject: 'Test ticket', status: 'OPEN', priority: 'MEDIUM', channel: 'WEB', createdAt: new Date().toISOString() }
@@ -51,7 +75,7 @@ describe('TicketsPage', () => {
     });
 
     it('shows the short table headers and ticket category', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        mockUseAuth({ role: 'ADMIN' } );
 
         const tickets = [
             {
@@ -71,13 +95,34 @@ describe('TicketsPage', () => {
 
         // The shared next-intl test mock returns translation keys. The display
         // helper's localized value is covered separately in its focused tests.
-        expect(await screen.findByText('departments.licensing')).toBeDefined();
+        expect(await screen.findByText('new.departments.licensing')).toBeDefined();
         expect(screen.getByText('table.header.category')).toBeDefined();
         expect(screen.getByText('table.header.subject')).toBeDefined();
     });
 
+    it('shows readable support categories for persisted department keys', async () => {
+        mockUseAuth({ role: 'ADMIN' });
+
+        render(<TicketsClient initialTickets={[
+            {
+                id: 'licensing-key', ticketNumber: 'SUP-00210', subject: 'Connect license',
+                status: 'NEW', priority: 'URGENT', channel: 'WEB', createdAt: '2026-10-18T14:37:00.000Z',
+                department: { name: 'TICKETS.DEPARTMENTS.LICENSING' },
+            },
+            {
+                id: 'technical-key', ticketNumber: 'SUP-00205', subject: 'Technical issue',
+                status: 'NEW', priority: 'URGENT', channel: 'WEB', createdAt: '2026-10-12T10:38:00.000Z',
+                department: { name: 'TICKETS.DEPARTMENTS.TECHNICAL_SUPPORT' },
+            },
+        ]} initialTotal={2} />);
+
+        expect(await screen.findByText('new.departments.licensing')).toBeInTheDocument();
+        expect(screen.getByText('new.departments.technical_support')).toBeInTheDocument();
+        expect(screen.queryByText(/TICKETS\.DEPARTMENTS\./)).not.toBeInTheDocument();
+    });
+
     it('sorts the current ticket page by category when the category header is clicked', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        mockUseAuth({ role: 'ADMIN' } );
 
         const tickets = [
             {
@@ -96,18 +141,16 @@ describe('TicketsPage', () => {
         fireEvent.click(sortCategory);
 
         const rows = screen.getAllByRole('row');
-        expect(rows[1]).toHaveTextContent('departments.licensing');
-        expect(rows[2]).toHaveTextContent('departments.technical_support');
+        expect(rows[1]).toHaveTextContent('new.departments.licensing');
+        expect(rows[2]).toHaveTextContent('new.departments.technical_support');
 
         fireEvent.click(sortCategory);
         const reversedRows = screen.getAllByRole('row');
-        expect(reversedRows[1]).toHaveTextContent('departments.technical_support');
+        expect(reversedRows[1]).toHaveTextContent('new.departments.technical_support');
     });
 
     it('shows bulk actions only when tickets are selected (Admin)', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { role: 'ADMIN', fullName: 'Admin' }
-        });
+        mockUseAuth({ role: 'ADMIN', fullName: 'Admin' });
 
         const tickets = [
             { id: 't1', ticketNumber: 'SUP-00001', subject: 'Test ticket', status: 'OPEN', priority: 'MEDIUM', channel: 'WEB', createdAt: new Date().toISOString() }
@@ -141,7 +184,7 @@ describe('TicketsPage', () => {
     });
 
     it('updates list when filter changes', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        mockUseAuth({ role: 'ADMIN' } );
 
         const tickets = [
             { id: 't1', ticketNumber: 'SUP-00001', subject: 'Test ticket', status: 'OPEN', priority: 'MEDIUM', channel: 'WEB', createdAt: new Date().toISOString() }
@@ -175,7 +218,7 @@ describe('TicketsPage', () => {
     });
 
     it('renders draft status as a first-class filter option', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        mockUseAuth({ role: 'ADMIN' } );
 
         server.use(
             http.get(`${API_BASE}/tickets`, () => {
@@ -197,7 +240,7 @@ describe('TicketsPage', () => {
     });
 
     it('does not show misleading zero counts when an older backend omits statusCounts', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        mockUseAuth({ role: 'ADMIN' } );
 
         server.use(
             http.get(`${API_BASE}/tickets`, () => {
@@ -216,9 +259,7 @@ describe('TicketsPage', () => {
     });
 
     it('loads the support agent queue scoped to the signed-in user', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { id: 'agent-1', role: 'ADMIN', isSupportTeamMember: true },
-        });
+        mockUseAuth({ id: 'agent-1', role: 'ADMIN', isSupportTeamMember: true });
 
         let requestedUrl = '';
         server.use(
@@ -241,9 +282,7 @@ describe('TicketsPage', () => {
     });
 
     it('keeps support scope when status chip changes', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { id: 'agent-1', role: 'ADMIN', isSupportTeamMember: true },
-        });
+        mockUseAuth({ id: 'agent-1', role: 'ADMIN', isSupportTeamMember: true });
 
         const requestedUrls: string[] = [];
         server.use(
@@ -269,9 +308,7 @@ describe('TicketsPage', () => {
     });
 
     it('loads the full queue by default for admins outside support teams', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { id: 'admin-1', role: 'ADMIN', isSupportTeamMember: false },
-        });
+        mockUseAuth({ id: 'admin-1', role: 'ADMIN', isSupportTeamMember: false });
 
         let requestedUrl = '';
         server.use(
@@ -293,9 +330,7 @@ describe('TicketsPage', () => {
     });
 
     it('reloads when the review-center query changes on the same route', async () => {
-        (useAuth as any).mockReturnValue({
-            user: { id: 'agent-1', role: 'SUPPORT_AGENT', isSupportTeamMember: true },
-        });
+        mockUseAuth({ id: 'agent-1', role: 'SUPPORT_AGENT', isSupportTeamMember: true });
         vi.mocked(useSearchParams).mockReturnValue(
             new URLSearchParams('chatStatus=REQUESTED&activeOnly=true') as never,
         );
@@ -323,7 +358,7 @@ describe('TicketsPage', () => {
     });
 
     it('handles empty state', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
+        mockUseAuth({ role: 'CUSTOMER' } );
 
         server.use(
             http.get(`${API_BASE}/tickets`, () => {
@@ -339,7 +374,7 @@ describe('TicketsPage', () => {
     });
 
     it('distinguishes a loading failure from an empty queue and retries', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'CUSTOMER' } });
+        mockUseAuth({ role: 'CUSTOMER' } );
         let attempts = 0;
 
         server.use(
@@ -368,7 +403,7 @@ describe('TicketsPage', () => {
     });
 
     it('ignores a stale failed request after a newer filtered request succeeds', async () => {
-        (useAuth as any).mockReturnValue({ user: { role: 'ADMIN' } });
+        mockUseAuth({ role: 'ADMIN' } );
         let staleRequestCompleted = false;
 
         server.use(

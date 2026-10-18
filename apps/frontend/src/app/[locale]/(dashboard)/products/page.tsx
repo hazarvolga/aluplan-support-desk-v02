@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
+import { api, type Product, type ProductCategory } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Plus, Edit, Trash2, Box, Tag } from 'lucide-react';
@@ -16,7 +16,7 @@ import { useTranslations } from 'next-intl';
 export default function ProductsPage() {
     const t = useTranslations('admin.products');
     const tc = useTranslations('common');
-    const [products, setProducts] = useState<any[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [mutationPending, setMutationPending] = useState(false);
 
@@ -25,11 +25,11 @@ export default function ProductsPage() {
     const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
 
     // Form states
-    const [editingProduct, setEditingProduct] = useState<any>(null);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [productName, setProductName] = useState('');
     const [productDescription, setProductDescription] = useState('');
 
-    const [editingCategory, setEditingCategory] = useState<any>(null);
+    const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
     const [activeProductId, setActiveProductId] = useState<string>('');
     const [categoryName, setCategoryName] = useState('');
     const [categoryKeywords, setCategoryKeywords] = useState(''); // Comma separated
@@ -39,8 +39,8 @@ export default function ProductsPage() {
         try {
             const data = await api.products.list();
             setProducts(data);
-        } catch (error: any) {
-            toast.error(error.message || t('toasts.fetch_error'));
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : t('toasts.fetch_error'));
         } finally {
             setLoading(false);
         }
@@ -64,8 +64,8 @@ export default function ProductsPage() {
             }
             setIsProductDialogOpen(false);
             await fetchProducts();
-        } catch (error: any) {
-            toast.error(error.message || t('toasts.save_failed'));
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : t('toasts.save_failed'));
         } finally {
             setMutationPending(false);
         }
@@ -79,8 +79,8 @@ export default function ProductsPage() {
             await api.products.archive(id);
             toast.success(t('toasts.product_deleted'));
             await fetchProducts();
-        } catch (error: any) {
-            toast.error(error.message || t('toasts.delete_failed'));
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : t('toasts.delete_failed'));
         } finally {
             setMutationPending(false);
         }
@@ -101,8 +101,8 @@ export default function ProductsPage() {
             }
             setIsCategoryDialogOpen(false);
             await fetchProducts();
-        } catch (error: any) {
-            toast.error(error.message || t('toasts.save_failed'));
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : t('toasts.save_failed'));
         } finally {
             setMutationPending(false);
         }
@@ -116,8 +116,8 @@ export default function ProductsPage() {
             await api.products.archiveCategory(id);
             toast.success(t('toasts.category_deleted'));
             await fetchProducts();
-        } catch (error: any) {
-            toast.error(error.message || t('toasts.delete_failed'));
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : t('toasts.delete_failed'));
         } finally {
             setMutationPending(false);
         }
@@ -199,7 +199,7 @@ export default function ProductsPage() {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {product.categories.map((cat: any) => (
+                                    {product.categories.map((cat) => (
                                         <div key={cat.id} className="bg-slate-900 p-3 rounded-lg border border-white/5 group">
                                             <div className="flex items-start justify-between">
                                                 <div className="font-medium flex items-center gap-1.5 text-sm">
