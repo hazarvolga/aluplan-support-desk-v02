@@ -4,6 +4,12 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import KnowledgePoolPage from './page';
 
+type ChildrenProps = { children: React.ReactNode };
+type ValueProps = ChildrenProps & { value: string };
+type TabsProps = ValueProps & { onValueChange: (value: string) => void };
+type DialogProps = ChildrenProps & { open?: boolean; onOpenChange?: (open: boolean) => void };
+type DialogTriggerProps = ChildrenProps & { asChild?: boolean };
+
 const mocks = vi.hoisted(() => ({
     pool: {
         list: vi.fn(), sync: vi.fn(), delete: vi.fn(), bulkDelete: vi.fn(), updateCategory: vi.fn(), logs: vi.fn(), syncDataset: vi.fn(), addUrl: vi.fn(),
@@ -15,7 +21,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/api', () => ({ api: { pool: mocks.pool, kb: { list: mocks.kbList, review: mocks.kbReview } } }));
-vi.mock('@/lib/knowledge-source-errors', () => ({ isDuplicateKnowledgeSourceUrlError: (error: any) => error?.code === 'DUPLICATE' }));
+vi.mock('@/lib/knowledge-source-errors', () => ({ isDuplicateKnowledgeSourceUrlError: (error: unknown) =>
+    typeof error === 'object' && error !== null && 'code' in error && error.code === 'DUPLICATE' }));
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: mocks.toast }) }));
 vi.mock('@/components/auth/role-guard', () => ({ useAuth: () => ({ user: { role: 'admin', permissions: [] } }) }));
 vi.mock('next-intl', () => ({
@@ -26,13 +33,13 @@ vi.mock('next/link', () => ({ default: ({ children, href }: { children: React.Re
 vi.mock('@/components/ui/tabs', () => {
     const TabsContext = React.createContext<{ value: string; onValueChange: (value: string) => void } | null>(null);
     return {
-        Tabs: ({ children, value, onValueChange }: any) => (
+        Tabs: ({ children, value, onValueChange }: TabsProps) => (
             <TabsContext.Provider value={{ value, onValueChange }}>
                 <div>{children}</div>
             </TabsContext.Provider>
         ),
-        TabsList: ({ children }: any) => <div role="tablist">{children}</div>,
-        TabsTrigger: ({ children, value }: any) => {
+        TabsList: ({ children }: ChildrenProps) => <div role="tablist">{children}</div>,
+        TabsTrigger: ({ children, value }: ValueProps) => {
             const tabs = React.useContext(TabsContext);
             return (
                 <button
@@ -45,7 +52,7 @@ vi.mock('@/components/ui/tabs', () => {
                 </button>
             );
         },
-        TabsContent: ({ children, value }: any) => {
+        TabsContent: ({ children, value }: ValueProps) => {
             const tabs = React.useContext(TabsContext);
             return tabs?.value === value ? <section role="tabpanel">{children}</section> : null;
         },
@@ -54,12 +61,12 @@ vi.mock('@/components/ui/tabs', () => {
 vi.mock('@/components/ui/dialog', () => {
     const DialogContext = React.createContext<{ open: boolean; onOpenChange: (open: boolean) => void } | null>(null);
     return {
-        Dialog: ({ children, open = false, onOpenChange = () => undefined }: any) => (
+        Dialog: ({ children, open = false, onOpenChange = () => undefined }: DialogProps) => (
             <DialogContext.Provider value={{ open, onOpenChange }}>
                 <div>{children}</div>
             </DialogContext.Provider>
         ),
-        DialogTrigger: ({ children, asChild }: any) => {
+        DialogTrigger: ({ children, asChild }: DialogTriggerProps) => {
             const dialog = React.useContext(DialogContext);
             if (asChild && React.isValidElement(children)) {
                 const child = children as React.ReactElement<{ onClick?: (event: React.MouseEvent) => void }>;
@@ -72,14 +79,14 @@ vi.mock('@/components/ui/dialog', () => {
             }
             return <button type="button" onClick={() => dialog?.onOpenChange(true)}>{children}</button>;
         },
-        DialogContent: ({ children }: any) => {
+        DialogContent: ({ children }: ChildrenProps) => {
             const dialog = React.useContext(DialogContext);
             return dialog?.open ? <div role="dialog">{children}</div> : null;
         },
-        DialogHeader: ({ children }: any) => <div>{children}</div>,
-        DialogTitle: ({ children }: any) => <h2>{children}</h2>,
-        DialogDescription: ({ children }: any) => <p>{children}</p>,
-        DialogFooter: ({ children }: any) => <div>{children}</div>,
+        DialogHeader: ({ children }: ChildrenProps) => <div>{children}</div>,
+        DialogTitle: ({ children }: ChildrenProps) => <h2>{children}</h2>,
+        DialogDescription: ({ children }: ChildrenProps) => <p>{children}</p>,
+        DialogFooter: ({ children }: ChildrenProps) => <div>{children}</div>,
     };
 });
 

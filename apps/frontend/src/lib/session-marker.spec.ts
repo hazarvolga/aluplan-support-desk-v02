@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SignJWT } from 'jose';
 import { verifySessionMarker } from './session-marker';
 
-const secret = '0123456789abcdef0123456789abcdef';
+const secret = 'test-only-marker'.padEnd(32, 'x');
 
 const signMarker = (overrides: { audience?: string; purpose?: string; expiresAt?: number } = {}) =>
     new SignJWT({ purpose: overrides.purpose ?? 'session-marker' })

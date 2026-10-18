@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 import { SignJWT } from 'jose';
 import middleware from './middleware';
 
-const secret = '0123456789abcdef0123456789abcdef';
+const secret = 'test-only-marker'.padEnd(32, 'x');
 const originalSecret = process.env.SESSION_MARKER_SECRET;
 
 const marker = (expiresAt = Math.floor(Date.now() / 1000) + 60) =>
