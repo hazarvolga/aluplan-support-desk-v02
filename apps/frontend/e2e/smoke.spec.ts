@@ -23,8 +23,9 @@ test.describe('Smoke Tests', () => {
         await expect(page.getByTestId('login-submit')).toBeVisible();
     });
 
-    test('API docs protected', async ({ request }) => {
+    test('API docs load in the isolated non-production runtime', async ({ request }) => {
         const response = await request.get(`${API_URL}/api/docs`);
-        expect(response.status()).toBe(401);
+        expect(response.status()).toBe(200);
+        expect(response.headers()['content-type']).toContain('text/html');
     });
 });

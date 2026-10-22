@@ -1,7 +1,6 @@
-import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Logger, InternalServerErrorException, ServiceUnavailableException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SettingsService } from '../settings/settings.service';
-import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
 import { GeminiService } from './gemini.service';
@@ -23,7 +22,6 @@ export class AiService implements AiProvider {
 
     constructor(
         private readonly settings: SettingsService,
-        private readonly ollama: OllamaService,
         private readonly openai: OpenAiService,
         private readonly custom: GenericOpenAiService,
         private readonly llmapi: LlmApiService,
@@ -53,13 +51,14 @@ export class AiService implements AiProvider {
         if (type === 'chat') {
             primaryName = await this.getProviderForTask(task);
         } else {
-            primaryName = await this.settings.getValue('ai.embed_provider')
+            const configured = await this.settings.getValue('ai.embed_provider')
                 || await this.settings.getValue('ai.active_provider')
-                || process.env.EMBEDDING_PROVIDER?.toLowerCase()
-                || 'ollama';
+                || process.env.EMBEDDING_PROVIDER?.toLowerCase();
+            primaryName = configured || (await this.getActiveEmbedProvider()).getName();
         }
 
         const fallbackName = await this.settings.getValue(type === 'chat' ? 'ai.fallback_provider' : 'ai.embed_fallback_provider');
+        await this.assertSupportedChain([primaryName, fallbackName].filter((name): name is string => Boolean(name)));
 
         const providersToTry = [primaryName];
         if (fallbackName && fallbackName !== primaryName) {
@@ -161,7 +160,7 @@ export class AiService implements AiProvider {
         }
 
         this.logger.error(`🚨 SYSTEM ALERT: All AI providers failed for task (${task}).`);
-        if (lastError instanceof InternalServerErrorException) throw lastError;
+        if (lastError instanceof InternalServerErrorException || lastError instanceof ServiceUnavailableException) throw lastError;
         throw new InternalServerErrorException((lastError instanceof Error ? lastError.message : undefined) || 'All AI providers failed');
     }
 
@@ -238,13 +237,15 @@ export class AiService implements AiProvider {
         const chatProvider = await this.settings.getValue('ai.chat_provider');
         const legacyProvider = await this.settings.getValue('ai.active_provider');
 
-        if (chatProvider) return chatProvider;
-        if (legacyProvider) return legacyProvider;
+        const configured = chatProvider || legacyProvider;
+        if (configured) {
+            return await this.providerRouter.getProviderByName(configured) ? configured : 'unavailable';
+        }
 
         if (process.env.OPENAI_API_KEY) return 'openai';
         if (process.env.GEMINI_API_KEY) return 'llmapi';
 
-        return 'ollama';
+        return 'unavailable';
     }
 
     getName(): string {
@@ -285,21 +286,21 @@ export class AiService implements AiProvider {
     }
 
     async *streamGenerate(prompt: string | AiPart[], timeout?: number, attachments?: AiPart[]): AsyncGenerator<string, void, unknown> {
+        const task = 'general';
+        const primaryName = await this.getProviderForTask(task);
+        const fallbackName = await this.settings.getValue('ai.fallback_provider');
+        await this.assertSupportedChain([primaryName, fallbackName].filter((name): name is string => Boolean(name)));
+
         if (await this.isManualOverride()) {
             // override flow is fine but stream doesn't easily compose with opossum's proxy
             // Since Opossum is Promise-based and we are streaming, we'll manually check the breaker state.
         } else {
-            const primaryName = await this.getProviderForTask('chat');
             const breaker = this.getBreaker(primaryName);
             if (breaker.opened) {
                 yield 'AI servisi şu anda aşırı yük altında veya hizmet dışı (Circuit Breaker devrede). Lütfen daha sonra tekrar deneyin.';
                 return;
             }
         }
-
-        const task = 'general';
-        const primaryName = await this.getProviderForTask(task);
-        const fallbackName = await this.settings.getValue('ai.fallback_provider');
 
         const providersToTry = [primaryName];
         if (fallbackName && fallbackName !== primaryName) providersToTry.push(fallbackName);
@@ -345,8 +346,11 @@ export class AiService implements AiProvider {
     }
 
     async getActiveModelName(): Promise<string> {
-        const providerName = await this.settings.getValue('ai.chat_provider');
-        if (providerName === 'ollama') return (await this.settings.getValue('ai.ollama.chat_model')) || 'llama3';
+        const configuredProvider = await this.settings.getValue('ai.chat_provider');
+        if (configuredProvider && !await this.providerRouter.getProviderByName(configuredProvider)) {
+            return 'unavailable';
+        }
+        const providerName = configuredProvider || (await this.providerRouter.getActiveChatProvider()).getName();
         if (providerName === 'openai') return (await this.settings.getValue('ai.openai.chat_model')) || 'gpt-4o-mini';
         if (providerName === 'llmapi') {
             return (await this.settings.getValue(`ai.${providerName}.chat_model`)) || 'gemini-1.5-flash';
@@ -355,7 +359,17 @@ export class AiService implements AiProvider {
     }
 
     private async getProvider(name: string): Promise<AiProvider> {
-        return (await this.providerRouter.getProviderByName(name)) || this.providerRouter.getActiveChatProvider();
+        const provider = await this.providerRouter.getProviderByName(name);
+        if (!provider) throw new ServiceUnavailableException(`AI provider "${name}" is unavailable or unsupported.`);
+        return provider;
+    }
+
+    private async assertSupportedChain(providerNames: string[]): Promise<void> {
+        for (const name of providerNames) {
+            if (!await this.providerRouter.getProviderByName(name)) {
+                throw new ServiceUnavailableException(`AI provider "${name}" is unavailable or unsupported.`);
+            }
+        }
     }
 
     /**
@@ -367,7 +381,8 @@ export class AiService implements AiProvider {
         if (specialized && specialized !== 'global') {
             return specialized;
         }
-        return (await this.settings.getValue('ai.chat_provider')) || 'ollama';
+        const configured = await this.settings.getValue('ai.chat_provider');
+        return configured || (await this.getActiveChatProvider()).getName();
     }
 
     async reformat(systemPrompt: string, userQuery: string, sourceContext: string, attachments?: AiPart[], task: string = 'reformatting'): Promise<{ response: string; model: string } | null> {
@@ -394,13 +409,14 @@ export class AiService implements AiProvider {
     }
 
     async *streamReformat(systemPrompt: string, userQuery: string, sourceContext: string, attachments?: AiPart[], task: string = 'reformatting'): AsyncGenerator<string, void, unknown> {
+        const primaryName = await this.getProviderForTask(task);
+        const fallbackName = await this.settings.getValue('ai.fallback_provider');
+        await this.assertSupportedChain([primaryName, fallbackName].filter((name): name is string => Boolean(name)));
+
         if (!await this.isCircuitClosed()) {
             yield 'AI servisi şu anda devre dışı (Circuit Breaker).';
             return;
         }
-
-        const primaryName = await this.getProviderForTask(task);
-        const fallbackName = await this.settings.getValue('ai.fallback_provider');
 
         const providersToTry = [primaryName];
         if (fallbackName && fallbackName !== primaryName) providersToTry.push(fallbackName);
@@ -523,21 +539,16 @@ ${content}
     async testProvider(providerName: string): Promise<{ success: boolean; message: string }> {
         try {
             switch (providerName) {
-                case 'ollama': return await this.ollama.testConnection();
                 case 'openai': return await this.openai.testConnection();
                 case 'llmapi': return await this.llmapi.testConnection();
                 case 'xai':
-                    this.custom.setProvider('xai');
-                    return await this.custom.testConnection();
+                    return await this.custom.forProvider('xai').testConnection();
                 case 'deepseek':
-                    this.custom.setProvider('deepseek');
-                    return await this.custom.testConnection();
+                    return await this.custom.forProvider('deepseek').testConnection();
                 case 'groq':
-                    this.custom.setProvider('groq');
-                    return await this.custom.testConnection();
+                    return await this.custom.forProvider('groq').testConnection();
                 case 'custom':
-                    this.custom.setProvider('custom');
-                    return await this.custom.testConnection();
+                    return await this.custom.forProvider('custom').testConnection();
                 case 'gemini':
                     return await this.gemini.testConnection();
                 default:
@@ -558,8 +569,6 @@ ${content}
         switch (provider) {
             case 'openai':
                 return ['ai.openai.api_key', 'ai.openai.chat_model', 'ai.openai.embed_model'];
-            case 'ollama':
-                return ['ai.ollama.url', 'ai.ollama.chat_model', 'ai.ollama.embed_model'];
             case 'llmapi':
                 return ['ai.llmapi.api_key', 'ai.llmapi.chat_model', 'ai.llmapi.embed_model'];
             case 'xai':
@@ -593,7 +602,7 @@ ${content}
         const embedProviderName = await this.settings.getValue('ai.embed_provider') || chatProvider;
         const isClosed = await this.isCircuitClosed();
 
-        const providers = ['ollama', 'openai', 'llmapi', 'xai', 'deepseek', 'groq', 'custom', 'gemini', 'vertex'];
+        const providers = ['openai', 'llmapi', 'xai', 'deepseek', 'groq', 'custom', 'gemini', 'vertex'];
         const healthResults: Record<string, { available: boolean; message: string }> = {};
 
         for (const p of providers) {

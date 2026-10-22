@@ -17,15 +17,11 @@ async function run() {
     });
 
     const providerRes = await client.query("SELECT value FROM settings WHERE key = 'ai.active_provider'");
-    const activeProvider = providerRes.rows[0]?.value || 'ollama (default)';
+    const activeProvider = providerRes.rows[0]?.value || 'not configured';
     console.log(`\nActive Provider: ${activeProvider}`);
 
-    // Check if we need to set defaults for a fresh DB
     if (res.rows.length === 0) {
-        console.log('\nAI settings are empty. Initializing defaults...');
-        await client.query("INSERT INTO settings (key, value, \"isSecret\") VALUES ('ai.active_provider', 'ollama', false) ON CONFLICT (key) DO NOTHING");
-        await client.query("INSERT INTO settings (key, value, \"isSecret\") VALUES ('ai.ollama.url', 'http://host.docker.internal:11434', false) ON CONFLICT (key) DO NOTHING");
-        console.log('✅ Default AI settings initialized (Ollama at host.docker.internal).');
+        console.warn('\n⚠️ AI settings are empty. Configure Gemini/LLMAPI through the supported settings or environment flow.');
     }
 
     console.log('\n--- Knowledge Pool Status ---');

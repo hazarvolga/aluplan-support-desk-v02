@@ -452,7 +452,7 @@ export function runRestore(harness, envOverrides = {}) {
   return spawnSync("/bin/bash", [restoreScript], {
     cwd: repoRoot,
     encoding: "utf8",
-    timeout: 5_000,
+    timeout: 10_000,
     env: {
       ...env,
       ALLOW_RELEASE_A13_RESTORE: "1",

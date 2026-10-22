@@ -8,6 +8,7 @@ const VALID_ENV = {
     JWT_SECRET: 'a'.repeat(32),
     JWT_REFRESH_SECRET: 'b'.repeat(32),
     AUTH_ACTION_JWT_SECRET: 'd'.repeat(32),
+    SESSION_MARKER_SECRET: 'e'.repeat(32),
     ENCRYPTION_KEY: 'c'.repeat(32),
     FRONTEND_URL: 'http://localhost:3000',
     ADMIN_BYPASS_EMAILS: 'admin@example.com',
@@ -28,10 +29,12 @@ describe('validateEnv', () => {
     function setEnv(env: Record<string, string | undefined>) {
         for (const k of [
             'NODE_ENV', 'PORT', 'DATABASE_URL', 'REDIS_URL',
-            'JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'ENCRYPTION_KEY',
+            'JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'SESSION_MARKER_SECRET', 'ENCRYPTION_KEY',
             'FRONTEND_URL', 'SWAGGER_PASSWORD', 'ADMIN_BYPASS_EMAILS',
             'ALLOWED_ORIGINS', 'API_URL', 'LLMAPI_BASE_URL', 'LLMAPI_CHAT_MODEL',
             'LLMAPI_EMBED_MODEL', 'GEMINI_CHAT_MODEL', 'GEMINI_EMBED_MODEL',
+            'OLLAMA_BASE_URL', 'OLLAMA_MODEL', 'OLLAMA_CHAT_MODEL',
+            'EMBED_PROVIDER', 'EMBEDDING_PROVIDER',
             'KNOWLEDGE_SYNC_BULK_DELAY_MS', 'SIMILARITY_THRESHOLD',
             'LOW_CONFIDENCE_THRESHOLD',
             'LEARNNOW_CRAWL_ENABLED', 'LEARNNOW_CRAWL_PACING_MS',
@@ -74,7 +77,7 @@ describe('validateEnv', () => {
         expect(validateEnv()).toBeUndefined();
     });
 
-    it.each(['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET'] as const)(
+    it.each(['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'SESSION_MARKER_SECRET'] as const)(
         'rejects known placeholders for %s',
         (key) => {
             setEnv({ ...VALID_ENV, [key]: 'replace-with-a-long-random-secret-value' });
@@ -82,8 +85,8 @@ describe('validateEnv', () => {
         },
     );
 
-    it('requires access, refresh, and action JWT secrets to be pairwise distinct', () => {
-        setEnv({ ...VALID_ENV, AUTH_ACTION_JWT_SECRET: VALID_ENV.JWT_SECRET });
+    it('requires all JWT and session-marker secrets to be pairwise distinct', () => {
+        setEnv({ ...VALID_ENV, SESSION_MARKER_SECRET: VALID_ENV.JWT_SECRET });
         expect(validateEnv()).toBeUndefined();
     });
 
@@ -115,6 +118,19 @@ describe('validateEnv', () => {
             KNOWLEDGE_SYNC_BULK_DELAY_MS: 15000,
             EMBEDDING_DIMENSIONS: 3072,
         });
+    });
+
+    it('rejects removed Ollama provider selection and ignores no Ollama defaults', () => {
+        setEnv({ ...VALID_ENV, EMBEDDING_PROVIDER: 'OLLAMA' });
+        expect(validateEnv()).toBeUndefined();
+
+        setEnv({ ...VALID_ENV, EMBED_PROVIDER: 'OLLAMA' });
+        expect(validateEnv()).toBeUndefined();
+
+        setEnv(VALID_ENV);
+        expect(validateEnv()).not.toHaveProperty('OLLAMA_BASE_URL');
+        expect(validateEnv()).not.toHaveProperty('OLLAMA_MODEL');
+        expect(validateEnv()).not.toHaveProperty('OLLAMA_CHAT_MODEL');
     });
 
     it('keeps Learn Now crawling disabled by default and parses explicit false safely', () => {

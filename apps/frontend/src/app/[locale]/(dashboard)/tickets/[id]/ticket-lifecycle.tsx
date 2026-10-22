@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 
 type Identity = { id?: string; role?: string | { name?: string }; permissions?: string[] };
 type LifecycleTicket = {
-    id: string; status: string; userId?: string; creator?: { id?: string }; closedAt?: string | null;
+    id: string; status: string; userId?: string; creator?: { id: string }; closedAt?: string | null;
     satisfactionScore?: number | null; satisfactionComment?: string | null;
     messages?: Array<{ isInternal?: boolean; createdAt?: string; metadata?: { action?: string; previousClosedAt?: string | null } | null }>;
 };

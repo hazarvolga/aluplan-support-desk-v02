@@ -1,6 +1,7 @@
 import { routing } from './i18n/routing';
 import createMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
+import { verifySessionMarker } from './lib/session-marker';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -65,14 +66,17 @@ export default async function middleware(request: NextRequest) {
     let response: NextResponse;
 
     if (isDashboardRoute) {
-        // Only check cookie existence — the backend API validates JWT
-        // signature on every request. Verifying here caused infinite
-        // redirect loops when JWT_SECRET was missing from the frontend container.
-        const token = request.cookies.get('alu_at')?.value;
+        // The API access cookie is host-only. The cross-host marker carries no API
+        // authority and is verified with a dedicated secret before admitting UI routes.
+        const sessionMarker = request.cookies.get('alu_session')?.value;
+        const hasValidSessionMarker = await verifySessionMarker(
+            sessionMarker,
+            process.env.SESSION_MARKER_SECRET,
+        );
         const locale = routing.locales.find(l => pathname.startsWith(`/${l}/`)) || routing.defaultLocale;
         const loginUrl = new URL(`/${locale}/login`, request.url);
 
-        if (!token) {
+        if (!hasValidSessionMarker) {
             response = applyCsp(NextResponse.redirect(loginUrl));
         } else {
             response = applyCsp(intlMiddleware(request));

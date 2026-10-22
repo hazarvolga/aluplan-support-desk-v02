@@ -2,6 +2,7 @@ const { PrismaClient, TicketPriority } = require('../client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
+const { syncCanonicalProduct } = require('./product-alias-policy.js');
 
 async function main() {
     console.log('🏁 Starting explicitly authorized production synchronization...');
@@ -143,24 +144,14 @@ async function main() {
                 categories: ["Mekanik, Elektrik & Sıhhi Tesisat", "İklimlendirme (HVAC) & TS825"]
             },
             {
-                name: "CDS Add-on",
+                name: "CDS Add-On",
                 description: "Aluplan Geliştirilmiş Eklentileri",
                 categories: ["Arazi, Altyapı & Rampa", "Akıllı Tasarım Araçları"]
             }
         ];
 
         for (const prod of taxonomy) {
-            let product = await tx.product.findFirst({ where: { name: prod.name } });
-            if (product) {
-                product = await tx.product.update({
-                    where: { id: product.id },
-                    data: { description: prod.description, isActive: true }
-                });
-            } else {
-                product = await tx.product.create({
-                    data: { name: prod.name, description: prod.description, isActive: true }
-                });
-            }
+            const product = await syncCanonicalProduct(tx.product, prod);
 
 
             for (const catName of prod.categories) {

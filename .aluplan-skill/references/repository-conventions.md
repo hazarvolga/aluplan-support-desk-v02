@@ -30,7 +30,7 @@ aluplan-support-desk/
 ├── packages/
 │   ├── database/       @aluplan/database     Prisma 7 schema + migrations + seed
 │   └── shared-schemas/ @aluplan/shared-schemas  Zod schemas (FE+BE shared)
-└── docker-compose.yml  Postgres 16 (pgvector) + Redis + Ollama (optional)
+└── docker-compose.yml  Postgres 16 (pgvector) + Redis
 ```
 
 Turborepo + pnpm workspace. **Always `pnpm`, never `npm install`** (`engines.pnpm: ">=9.0.0"` enforced).
@@ -387,7 +387,6 @@ Headline numbers (subject to env override):
 | `EMBEDDING.DEFAULT_VERSION` | `'v1'` (but Settings DB override is `v2_2` active) | ADR-007 isolation |
 | `EMBEDDING.GEMINI_DIM` | `3072` | Active production |
 | `EMBEDDING.OPENAI_DIM` | `1536` | Chat fallback only (ADR-006) |
-| `EMBEDDING.OLLAMA_DIM` | `768` | Local fallback |
 
 ### 9.2 Confidence bands — two-shape reality
 
@@ -409,7 +408,7 @@ Shared prompt builder lives in `apps/backend/src/ai/ai-answer-contract.ts`. The 
 
 ### 9.4 Provider routing and embedding isolation
 
-- Chat fallback chain: OpenAI → Groq → Ollama (with `opossum` circuit breaker in `ai-provider-router.service.ts`).
+- Chat fallback chain: Gemini primary → OpenAI/Groq fallback (with `opossum` circuit breaker in `ai-provider-router.service.ts`).
 - **Embedding fallback is forbidden** (ADR-006). When Gemini embedding quota is exhausted, ingestion pauses/fails clearly — it never silently falls back to OpenAI embeddings within the same `embedding_version`.
 
 ## 10. CRM (Dynamics 365) conventions (canonical)
@@ -526,7 +525,7 @@ pnpm --filter @aluplan/frontend typecheck
 
 ## 14. Infrastructure & CI/CD
 
-- **Docker Compose dev stack:** Postgres 16 (pgvector) + Redis (AOF, LRU 256MB) + Ollama (optional). `pg_stat_statements` enabled, `log_min_duration_statement=500`.
+- **Docker Compose dev stack:** Postgres 16 (pgvector) + Redis (AOF, LRU 256MB). `pg_stat_statements` enabled, `log_min_duration_statement=500`.
 - **Socket.io:** `@socket.io/redis-adapter` for multi-instance room sharing.
 - **Deployment:** Coolify-targeted. Each app has its own Dockerfile. `docker-compose.staging.yml` for staging.
 - **CI workflows:** `backend-test.yml`, `frontend-test.yml`, `ci.yml`, `ai-eval.yml`, `dr-drill.yml`, `semantic-release.yml`.

@@ -40,6 +40,11 @@ describe('AttachmentsController physical upload before metadata', () => {
         expect(result).toEqual({ id: 'attachment-fixture', url: 'tickets/fixture' });
         expect(attachments.create).toHaveBeenCalledWith({ messageId, fileName: 'fixture.txt', fileSize: 7, mimeType: 'text/plain', url: 'tickets/fixture' }, null, user);
     });
+    it('stores and persists the repaired filename for a Turkish multipart upload', async () => {
+        await controller.uploadFile(messageId, { user }, file('GÃ¼RCİSTANBAK.ZİP'));
+        expect(storage.uploadFile).toHaveBeenCalledWith(expect.objectContaining({ originalname: 'GüRCİSTANBAK.ZİP' }), `tickets/msg_${messageId}`);
+        expect(attachments.create).toHaveBeenCalledWith(expect.objectContaining({ fileName: 'GüRCİSTANBAK.ZİP' }), null, user);
+    });
     it('preserves hotinfo parsing after successful storage', async () => {
         await controller.uploadFile(messageId, { user }, file('fixture_hotinf_test.hxl'));
         expect(parser.parseHotinfo).toHaveBeenCalledWith('fixture');

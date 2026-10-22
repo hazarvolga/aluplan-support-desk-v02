@@ -8,7 +8,7 @@ import {
   CUSTOMER_TREE,
   ADMIN_TREE,
 } from './doc-tree';
-import type { DocNode, DocTree } from './types';
+import type { DocTree } from './types';
 
 describe('doc-tree.ts helper functions', () => {
   // ─────────────────────────────────────────────────────────────────────────

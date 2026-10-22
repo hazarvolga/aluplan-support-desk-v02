@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
     S3Client,
@@ -15,6 +15,8 @@ import sanitize from 'sanitize-filename';
 import { SettingsService } from '../../settings/settings.service';
 import { openLocalStorageFile } from '../utils/storage-path.util';
 import { randomUUID } from 'node:crypto';
+import type { Agent } from 'node:https';
+import { OutboundUrlSafetyService } from '../../knowledge-pool/outbound-url-safety.service';
 
 @Injectable()
 export class StorageService implements OnModuleInit {
@@ -25,7 +27,8 @@ export class StorageService implements OnModuleInit {
 
     constructor(
         private readonly configService: ConfigService,
-        private readonly settingsService: SettingsService
+        private readonly settingsService: SettingsService,
+        @Optional() private readonly outboundUrlSafety = new OutboundUrlSafetyService(),
     ) {
         const storageConfig = this.configService.get('storage');
         this.storageType = storageConfig.type || 'LOCAL';
@@ -39,27 +42,41 @@ export class StorageService implements OnModuleInit {
 
 
     private async getS3Config() {
-        const endpoint = (await this.settingsService.getValue('storage.endpoint') || this.configService.get('storage.endpoint') || '').trim().replace(/\/+$/, '');
+        const storedEndpoint = (await this.settingsService.getValue('storage.endpoint') || '').trim();
+        const endpointSource: 'settings' | 'config' = storedEndpoint ? 'settings' : 'config';
+        const endpoint = (storedEndpoint || this.configService.get('storage.endpoint') || '').trim().replace(/\/+$/, '');
         const regionStr = (await this.settingsService.getValue('storage.region') || this.configService.get('storage.region') || '').trim();
         const accessKey = (await this.settingsService.getValue('storage.access_key') || this.configService.get('storage.accessKey') || '').trim();
         const secretKey = (await this.settingsService.getValue('storage.secret_key') || this.configService.get('storage.secretKey') || '').trim();
         const dbBucket = await this.settingsService.getValue('storage.bucket');
         const bucket = (dbBucket || this.configService.get('storage.bucket') || '').trim();
 
-        return { endpoint, regionStr, accessKey, secretKey, bucket };
+        return { endpoint, endpointSource, regionStr, accessKey, secretKey, bucket };
     }
 
     private async getS3Client(): Promise<{ client: S3Client | null, bucket: string, endpoint: string }> {
         if (this.storageType !== 'S3') return { client: null, bucket: '', endpoint: '' };
 
-        const { endpoint, regionStr, accessKey, secretKey, bucket } = await this.getS3Config();
+        const { endpoint: configuredEndpoint, endpointSource, regionStr, accessKey, secretKey, bucket } = await this.getS3Config();
 
-        if (!endpoint || !accessKey || !secretKey || !bucket) {
+        if (!configuredEndpoint || !accessKey || !secretKey || !bucket) {
             this.logger.warn('S3 Storage is enabled but missing required credentials in DB or ENV.');
             return { client: null, bucket: '', endpoint: '' };
         }
 
-        const isR2 = endpoint.includes('cloudflarestorage.com');
+        let endpoint = configuredEndpoint;
+        let httpsAgent: Agent | undefined;
+        if (endpointSource === 'settings') {
+            try {
+                endpoint = this.normalizeStorageEndpoint(configuredEndpoint);
+                ({ httpsAgent } = await this.outboundUrlSafety.validatePublicHttpsUrl(endpoint));
+            } catch {
+                this.logger.warn('Saved S3 endpoint was rejected by the outbound network policy.');
+                return { client: null, bucket: '', endpoint: '' };
+            }
+        }
+
+        const isR2 = this.isCloudflareR2Endpoint(endpoint);
         const region = regionStr || (isR2 ? 'auto' : 'us-east-1');
         const forcePathStyle = isR2 ? true : (this.configService.get('storage.usePathStyle') ?? true);
 
@@ -71,6 +88,16 @@ export class StorageService implements OnModuleInit {
                 secretAccessKey: secretKey,
             },
             forcePathStyle,
+            ...(httpsAgent ? {
+                maxAttempts: 2,
+                followRegionRedirects: false,
+                requestHandler: {
+                    httpsAgent,
+                    connectionTimeout: 5_000,
+                    requestTimeout: 10_000,
+                    throwOnRequestTimeout: true,
+                },
+            } : {}),
         });
 
         return { client, bucket, endpoint };
@@ -97,11 +124,11 @@ export class StorageService implements OnModuleInit {
                 try {
                     await client.send(new CreateBucketCommand({ Bucket: bucket }));
                     this.logger.log(`Bucket "${bucket}" created successfully.`);
-                } catch (createError) {
-                    this.logger.error(`Failed to create bucket: ${createError.message}`);
+                } catch {
+                    this.logger.error('Failed to create the configured storage bucket.');
                 }
             } else {
-                this.logger.error(`Error checking bucket: ${error.message}`);
+                this.logger.error('Failed to verify the configured storage bucket.');
             }
         }
     }
@@ -152,7 +179,10 @@ export class StorageService implements OnModuleInit {
     async getDownloadUrl(key: string): Promise<string> {
         const { client, bucket } = await this.getS3Client();
 
-        if (this.storageType === 'S3' && client) {
+        if (this.storageType === 'S3') {
+            if (!client || !bucket) {
+                throw new ServiceUnavailableException('File storage is temporarily unavailable. Please retry.');
+            }
             const command = new GetObjectCommand({
                 Bucket: bucket,
                 Key: key,
@@ -166,17 +196,18 @@ export class StorageService implements OnModuleInit {
             }
 
             return url;
-        } else {
-            // Serve via relative backend URL
-            return `/api/v1/storage/${key}`;
         }
+
+        // Serve via relative backend URL
+        return `/api/v1/storage/${key}`;
     }
 
 
     async getFile(key: string): Promise<Buffer | null> {
         try {
             const { client, bucket } = await this.getS3Client();
-            if (this.storageType === 'S3' && client) {
+            if (this.storageType === 'S3') {
+                if (!client || !bucket) return null;
                 const command = new GetObjectCommand({
                     Bucket: bucket,
                     Key: key,
@@ -184,34 +215,38 @@ export class StorageService implements OnModuleInit {
                 const response = await client.send(command);
                 const byteArray = await response.Body?.transformToByteArray();
                 return byteArray ? Buffer.from(byteArray) : null;
-            } else {
-                const { file } = await openLocalStorageFile(this.localPath, key);
-                try {
-                    return await file.readFile();
-                } finally {
-                    await file.close();
-                }
             }
-        } catch (e) {
-            this.logger.error(`Failed to get file [${key}]: ${e.message}`);
+
+            const { file } = await openLocalStorageFile(this.localPath, key);
+            try {
+                return await file.readFile();
+            } finally {
+                await file.close();
+            }
+        } catch {
+            this.logger.error(`Failed to read a file from configured ${this.storageType} storage.`);
             return null;
         }
     }
 
     async deleteFile(key: string): Promise<void> {
         const { client, bucket } = await this.getS3Client();
-        if (this.storageType === 'S3' && client) {
+        if (this.storageType === 'S3') {
+            if (!client || !bucket) {
+                throw new ServiceUnavailableException('File storage is temporarily unavailable. Please retry.');
+            }
             await client.send(
                 new DeleteObjectCommand({
                     Bucket: bucket,
                     Key: key,
                 }),
             );
-        } else {
-            const filePath = path.join(this.localPath, key);
-            if (await fs.pathExists(filePath)) {
-                await fs.unlink(filePath);
-            }
+            return;
+        }
+
+        const filePath = path.join(this.localPath, key);
+        if (await fs.pathExists(filePath)) {
+            await fs.unlink(filePath);
         }
     }
 
@@ -220,7 +255,7 @@ export class StorageService implements OnModuleInit {
             return { success: true, message: 'Local storage is active and ready.' };
         }
 
-        const { client, bucket, endpoint } = await this.getS3Client();
+        const { client, bucket } = await this.getS3Client();
 
         if (!client) {
             return { success: false, message: 'S3 Client not initialized. Check your credentials in settings or environment.' };
@@ -233,44 +268,72 @@ export class StorageService implements OnModuleInit {
                 success: true,
                 message: `Successfully connected to Minio/S3/R2. Bucket "${bucket}" is accessible.`,
             };
-        } catch (error: any) {
-            const host = endpoint?.split('//')[1]?.split(':')[0] || 'unknown';
-            let errorMsg = error.message;
-            let advice = 'Check if storage endpoint is running and reachabe.';
-
-            if (error.code === 'ENOTFOUND' || error.name === 'UnknownError' || error.message.includes('getaddrinfo')) {
-                errorMsg = `DNS Resolution Failed: Cannot find host "${host}"`;
-                advice = `Ensure the backend container is in the same Docker network as Minio. Try using "http://172.17.0.1:9000" (Docker Gateway) in .env if the internal name fails, or check if Cloudflare R2 URL is correct.`;
-            } else if (error.$metadata?.httpStatusCode === 403 || error.$metadata?.httpStatusCode === 401) {
-                errorMsg = `Permission Denied (${error.$metadata?.httpStatusCode})`;
-                advice = 'Check your Access Key and Secret Key for validity and correctness.';
-            }
-
+        } catch {
             return {
                 success: false,
-                message: errorMsg,
-                details: {
-                    endpoint: endpoint,
-                    bucket: bucket,
-                    advice: advice,
-                    originalError: error.name || error.code
-                }
+                message: 'Storage connection test failed. Verify the endpoint, bucket, and credentials.',
+                details: { code: 'STORAGE_CONNECTION_FAILED' },
             };
         }
     }
 
     async testCustomConnection(config: { endpoint: string, region: string, accessKey: string, secretKey: string, bucket: string }): Promise<{ success: boolean; message: string; details?: any }> {
-        const endpoint = (config.endpoint || '').trim().replace(/\/+$/, '');
-        const accessKey = (config.accessKey || '').trim();
-        let secretKey = (config.secretKey || '').trim();
-        const bucket = (config.bucket || '').trim();
-
-        if (secretKey === '********') {
-            const dbSecret = await this.settingsService.getValue('storage.secret_key') || this.configService.get('storage.secretKey') || '';
-            secretKey = dbSecret.trim();
+        let endpoint: string;
+        let httpsAgent: Agent;
+        try {
+            endpoint = this.normalizeStorageEndpoint(config.endpoint);
+            ({ httpsAgent } = await this.outboundUrlSafety.validatePublicHttpsUrl(endpoint));
+        } catch {
+            return {
+                success: false,
+                message: 'Storage connection test was rejected by the outbound network policy.',
+            };
         }
 
-        const isR2 = endpoint.includes('cloudflarestorage.com');
+        let accessKey = (config.accessKey || '').trim();
+        let secretKey = (config.secretKey || '').trim();
+        const bucket = (config.bucket || '').trim();
+        const usesMaskedCredential = accessKey === '********' || secretKey === '********';
+
+        if (usesMaskedCredential) {
+            const savedEndpointValue = await this.settingsService.getValue('storage.endpoint')
+                || this.configService.get('storage.endpoint')
+                || '';
+            let savedEndpoint = '';
+            try {
+                savedEndpoint = this.normalizeStorageEndpoint(savedEndpointValue);
+            } catch {
+                // An invalid saved endpoint can never authorize reuse of stored credentials.
+            }
+            if (!savedEndpoint || savedEndpoint !== endpoint) {
+                return {
+                    success: false,
+                    message: 'Masked credentials may only be used with the saved storage endpoint.',
+                };
+            }
+
+            if (accessKey === '********') {
+                const savedAccessKey = await this.settingsService.getValue('storage.access_key')
+                    || this.configService.get('storage.accessKey')
+                    || '';
+                accessKey = savedAccessKey.trim();
+            }
+            if (secretKey === '********') {
+                const savedSecretKey = await this.settingsService.getValue('storage.secret_key')
+                    || this.configService.get('storage.secretKey')
+                    || '';
+                secretKey = savedSecretKey.trim();
+            }
+        }
+
+        if (!accessKey || !secretKey || !bucket) {
+            return {
+                success: false,
+                message: 'Storage endpoint, bucket, and explicit test credentials are required.',
+            };
+        }
+
+        const isR2 = this.isCloudflareR2Endpoint(endpoint);
         const region = (config.region || '').trim() || (isR2 ? 'auto' : 'us-east-1');
         const forcePathStyle = isR2 ? true : (this.configService.get('storage.usePathStyle') ?? true);
 
@@ -283,24 +346,46 @@ export class StorageService implements OnModuleInit {
                     secretAccessKey: secretKey,
                 },
                 forcePathStyle,
-                maxAttempts: 2
+                maxAttempts: 2,
+                followRegionRedirects: false,
+                requestHandler: {
+                    httpsAgent,
+                    connectionTimeout: 5_000,
+                    requestTimeout: 10_000,
+                    throwOnRequestTimeout: true,
+                },
             });
 
-            await client.send(new HeadBucketCommand({ Bucket: config.bucket }));
+            await client.send(new HeadBucketCommand({ Bucket: bucket }));
             return {
                 success: true,
-                message: `Successfully connected to storage. Bucket "${config.bucket}" is accessible.`,
+                message: 'Storage connection test succeeded.',
             };
-        } catch (error: any) {
+        } catch {
             return {
                 success: false,
-                message: `Connection failed: ${error.message}`,
-                details: {
-                    statusCode: error.$metadata?.httpStatusCode,
-                    name: error.name,
-                    advice: error.$metadata?.httpStatusCode === 403 || error.$metadata?.httpStatusCode === 401 ? 'Check your Access Key and Secret Key.' : 'Check endpoint URL and network connectivity.'
-                }
+                message: 'Storage connection test failed. Verify the endpoint, bucket, and credentials.',
+                details: { code: 'STORAGE_CONNECTION_FAILED' },
             };
         }
+    }
+
+    private isCloudflareR2Endpoint(endpoint: string): boolean {
+        try {
+            const hostname = new URL(endpoint).hostname.toLowerCase();
+            return hostname === 'cloudflarestorage.com'
+                || hostname.endsWith('.cloudflarestorage.com');
+        } catch {
+            return false;
+        }
+    }
+
+    private normalizeStorageEndpoint(value: string): string {
+        const url = new URL((value || '').trim());
+        if (url.username || url.password || url.search || url.hash) {
+            throw new Error('Storage endpoint credentials, query strings, and fragments are not allowed');
+        }
+        const pathname = url.pathname.replace(/\/+$/, '');
+        return `${url.origin}${pathname && pathname !== '/' ? pathname : ''}`;
     }
 }

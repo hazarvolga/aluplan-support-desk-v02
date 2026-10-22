@@ -30,7 +30,7 @@ async function switchPlugin(pluginName) {
 }
 
 test('Prisma resolves the reviewed mysql2 version', () => {
-    assert.equal(mysql('./package.json').version, '3.22.0');
+    assert.equal(mysql('./package.json').version, '3.23.1');
 });
 
 test('default auth switch rejects clear-password before writing any packet', async () => {

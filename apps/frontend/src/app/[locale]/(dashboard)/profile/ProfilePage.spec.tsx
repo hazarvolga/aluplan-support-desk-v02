@@ -48,19 +48,24 @@ describe('ProfilePage - SEC-03 Password Change and Profile Behavior', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(useRouter).mockReturnValue(mockRouter as any);
+        vi.mocked(useRouter).mockReturnValue(mockRouter as never);
         vi.mocked(useAuth).mockReturnValue({
-            user: { id: 'u1', fullName: 'Ahmet Yilmaz', email: 'ahmet@example.com', role: 'CUSTOMER' } as any,
+            user: { id: 'u1', fullName: 'Ahmet Yilmaz', email: 'ahmet@example.com', role: 'CUSTOMER' },
+            loading: false,
+            backendUnavailable: false,
+            login: vi.fn(),
             logout: mockLogout,
-        } as any);
+            retryAuth: vi.fn(),
+        });
 
         vi.mocked(api.auth.me).mockResolvedValue({
             id: 'u1',
             fullName: 'Ahmet Yilmaz',
             email: 'ahmet@example.com',
             role: 'CUSTOMER',
+            permissions: [],
             status: 'ACTIVE',
-        } as any);
+        });
 
         vi.mocked(api.users.get).mockResolvedValue({
             id: 'u1',
@@ -74,8 +79,9 @@ describe('ProfilePage - SEC-03 Password Change and Profile Behavior', () => {
                 customerNo: 'CUST-00001',
                 contractStatus: 'ACTIVE',
                 crmVerified: false,
+                isVip: false,
             },
-        } as any);
+        });
 
         vi.mocked(api.preferences.getEmail).mockResolvedValue([]);
     });

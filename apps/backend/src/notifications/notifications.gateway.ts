@@ -198,6 +198,11 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             }
             await client.join(`user:${payload.sub}`);
 
+            // Transport connection alone is not proof of authorization: let the
+            // client resume its normal retry policy only after session checks and
+            // notification room membership have both completed.
+            client.emit('session:ready');
+
             // Proactive chat: cancel pending disconnect-timeout jobs on reconnect
             try {
                 const activeSessions = await this.prisma.proactiveChatSession.findMany({

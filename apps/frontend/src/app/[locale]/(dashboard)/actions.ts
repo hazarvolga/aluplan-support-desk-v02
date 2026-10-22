@@ -43,7 +43,7 @@ export async function createTicket(formData: FormData) {
     const priority = formData.get('priority') as string;
     const productId = formData.get('productId') as string | null;
 
-    const ticket = await apiFetch<any>('/tickets', {
+    const ticket = await apiFetch<{ id: string }>('/tickets', {
         method: 'POST',
         body: JSON.stringify({ subject, description, priority, productId }),
     });

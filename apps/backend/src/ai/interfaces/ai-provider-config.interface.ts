@@ -7,7 +7,7 @@
  */
 
 export interface AiProviderConfig {
-    /** Unique provider identifier (e.g., 'openai', 'anthropic', 'ollama') */
+    /** Unique provider identifier (e.g., 'openai', 'gemini', 'groq') */
     providerId: string;
 
     /** Human-readable name */

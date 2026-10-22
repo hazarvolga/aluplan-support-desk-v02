@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const { existsSync, readFileSync, readdirSync } = require('node:fs');
 const path = require('node:path');
 const { test } = require('node:test');
+const { parse: parseYaml } = require('yaml');
 
 const root = path.resolve(__dirname, '..');
 const read = (file) => readFileSync(path.join(root, file), 'utf8');
@@ -63,7 +64,7 @@ test('CI runs dependency regressions as a blocking step after install and before
     // Exact step permits no conditions, ignored failures, extra shell commands or side effects.
     assert.equal(matching[0].trimEnd(),
         'name: Dependency Regression Contracts (blocking)\n        timeout-minutes: 5\n        run: pnpm test:security:dependencies');
-    const install = steps.findIndex((step) => /^run: pnpm install\s*$/.test(step));
+    const install = steps.findIndex((step) => /^run: pnpm install --frozen-lockfile\s*$/.test(step));
     const regression = steps.indexOf(matching[0]);
     const generate = steps.findIndex((step) => step.startsWith('name: Prisma Generate\n'));
     const migration = steps.findIndex((step) => step.includes('pnpm exec prisma migrate deploy'));
@@ -89,13 +90,14 @@ test('CI E2E uses isolated PostgreSQL and Redis with synthetic-only boot configu
     assert.ok(env, 'e2e job-level environment must exist');
     assert.match(env, /DATABASE_URL: postgresql:\/\/postgres:postgres@127\.0\.0\.1:5432\/aluplan_e2e/);
     assert.match(env, /REDIS_URL: redis:\/\/localhost:6379/);
+    assert.match(env, /NEXT_PUBLIC_API_URL: http:\/\/localhost:4000\/api\/v1/);
     assert.match(env, /NEXT_INTERNAL_API_URL: http:\/\/localhost:4000\/api\/v1/);
     assert.doesNotMatch(job, /\$\{\{\s*secrets\./, 'E2E must not consume real service secrets');
 
     const secretStep = job.match(/- name: Generate disposable E2E secrets\n([\s\S]*?)(?=^      - )/m)?.[1];
     assert.ok(secretStep, 'ephemeral E2E secrets must be generated at runtime');
     assert.match(secretStep, /crypto\.randomBytes\(32\)/);
-    for (const name of ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'ENCRYPTION_KEY',
+    for (const name of ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_ACTION_JWT_SECRET', 'SESSION_MARKER_SECRET', 'ENCRYPTION_KEY',
         'ADMIN_BYPASS_EMAILS', 'E2E_ADMIN_EMAIL', 'E2E_ADMIN_PASSWORD', 'E2E_AGENT_EMAIL', 'E2E_AGENT_PASSWORD',
         'E2E_CUSTOMER_EMAIL', 'E2E_CUSTOMER_PASSWORD', 'E2E_CUSTOMER_PHONE']) {
         assert.match(secretStep, new RegExp(`${name}:`), `${name} must be generated for the isolated E2E job`);
@@ -103,6 +105,16 @@ test('CI E2E uses isolated PostgreSQL and Redis with synthetic-only boot configu
     for (const email of ['e2e-admin@aluplan.test', 'e2e-agent@aluplan.test', 'e2e-customer@aluplan.test']) {
         assert.ok(secretStep.includes(email), `only synthetic test identity ${email} is permitted`);
     }
+});
+
+test('frontend workflow delegates Playwright to the provisioned canonical E2E gate', () => {
+    const frontendWorkflow = read('.github/workflows/frontend-test.yml');
+    const canonicalWorkflow = read('.github/workflows/ci.yml');
+    assert.doesNotMatch(frontendWorkflow, /^  e2e:/m,
+        'the frontend-only workflow must not run Playwright without its backend services');
+    assert.match(frontendWorkflow, /Full Playwright coverage is owned by CI Quality Gate/);
+    assert.match(canonicalWorkflow, /^  e2e:/m);
+    assert.match(canonicalWorkflow, /pnpm --filter @aluplan\/frontend test:e2e/);
 });
 
 test('E2E seed accepts only explicitly enabled loopback PostgreSQL databases named _e2e', () => {
@@ -137,7 +149,7 @@ test('CI E2E generates Prisma, migrates, and seeds synthetic users before Playwr
     assert.ok(job, 'e2e job must exist');
     const steps = job.split(/^      - /m).slice(1);
     const commandIndex = (command) => steps.findIndex((step) => step.includes(command));
-    const install = commandIndex('run: pnpm install');
+    const install = commandIndex('run: pnpm install --frozen-lockfile');
     const generate = commandIndex('run: pnpm --filter @aluplan/database db:generate');
     const migrate = commandIndex('run: pnpm exec prisma migrate deploy --config packages/database/prisma.config.js');
     const seed = commandIndex('run: pnpm --filter @aluplan/backend exec tsx seed-e2e.ts');
@@ -194,17 +206,26 @@ test('E2E specs use the shared synthetic users and seeded roles have explicit RB
 });
 
 test('patched security dependencies are pinned and the SheetJS tarball integrity remains enforced', () => {
-    const rootManifest = JSON.parse(read('package.json'));
+    const workspace = read('pnpm-workspace.yaml');
+    const workspaceConfig = parseYaml(workspace);
     const backendManifest = JSON.parse(read('apps/backend/package.json'));
     const frontendManifest = JSON.parse(read('apps/frontend/package.json'));
     const lock = read('pnpm-lock.yaml');
 
-    assert.equal(rootManifest.pnpm.overrides['picomatch@>=4.0.0 <4.0.4'], '4.0.7');
-    assert.equal(rootManifest.pnpm.overrides['brace-expansion@>=2.0.0 <2.1.6'], '2.1.6');
-    assert.equal(rootManifest.pnpm.overrides['brace-expansion@>=5.0.0 <5.0.11'], '5.0.11');
-    assert.equal(rootManifest.pnpm.overrides['linkify-it@>=5.0.0 <5.0.2'], '5.0.2');
-    assert.equal(rootManifest.pnpm.overrides['@opentelemetry/sdk-node@0.217.0>@opentelemetry/propagator-jaeger'], '2.9.0');
-    assert.equal(rootManifest.pnpm.overrides['protobufjs@>=8.0.0 <8.4.1'], '8.4.1');
+    for (const [selector, version] of Object.entries({
+        'picomatch@>=4.0.0 <4.0.4': '4.0.7',
+        'brace-expansion@>=2.0.0 <2.1.7': '2.1.7',
+        'brace-expansion@>=5.0.0 <5.0.12': '5.0.12',
+        'linkify-it@>=5.0.0 <5.0.2': '5.0.2',
+        '@opentelemetry/sdk-node@0.217.0>@opentelemetry/propagator-jaeger': '2.9.0',
+        'protobufjs@>=8.0.0 <8.6.6': '8.6.6',
+    })) assert.equal(String(workspaceConfig.overrides?.[selector]), version,
+        `${selector} must remain pinned in pnpm-workspace.yaml`);
+
+    assert.equal(workspaceConfig.auditConfig?.ignoreGhsas, undefined,
+        'production dependency advisories must not be hidden by audit ignores');
+    assert.ok(scripts['test:security:dependencies'].includes('scripts/email-minifier-boundary.test.cjs'),
+        'the MJML runtime reachability contract must remain blocking');
     for (const [name, version] of Object.entries({
         '@opentelemetry/auto-instrumentations-node': '^0.75.0',
         '@opentelemetry/sdk-node': '^0.217.0',

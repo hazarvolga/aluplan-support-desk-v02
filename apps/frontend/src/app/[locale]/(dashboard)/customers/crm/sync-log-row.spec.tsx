@@ -1,7 +1,7 @@
 // P4 — Frontend: SyncLogRow component
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // SyncLogRow is defined inside page.tsx — we extract the relevant logic here
 // by re-implementing the minimal interface for testing purposes.

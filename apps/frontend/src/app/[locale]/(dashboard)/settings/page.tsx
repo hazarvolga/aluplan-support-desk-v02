@@ -12,9 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import {
-    Mail, Shield, Settings as SettingsIcon,
-    Zap, Save, Loader2, Key, Server,
-    Globe, Clock, Terminal, Plus, Trash2, Edit, CheckCircle2, Brain
+    Mail, Shield,
+    Zap, Server,
+    Globe, Terminal, Plus, Trash2, CheckCircle2, Brain
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -23,14 +23,15 @@ import { EmailTemplates } from './components/EmailTemplates';
 import { AiSettings } from './components/AiSettings';
 import { StorageSettings } from './components/StorageSettings';
 import { CrmSettings } from './components/CrmSettings';
+import { getErrorMessage, type Macro, type Setting } from './settings-types';
+import { toCredentialOverride } from '@/lib/ai-provider-policy';
 
 export default function SettingsPage() {
     const t = useTranslations('settings');
-    const tc = useTranslations('common');
+    const ticketActionsT = useTranslations('tickets');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [settings, setSettings] = useState<any[]>([]);
-    const [macros, setMacros] = useState<any[]>([]);
+    const [macros, setMacros] = useState<Macro[]>([]);
 
     // SMTP Form State
     const [smtpHost, setSmtpHost] = useState('');
@@ -51,20 +52,20 @@ export default function SettingsPage() {
         const load = async () => {
             try {
                 const [settingsData, macrosData] = await Promise.all([
-                    api.settings.list(true),
+                    api.settings.list(),
                     api.macros.list()
                 ]);
-                setSettings(settingsData);
-                setMacros(macrosData);
+                const typedSettings = settingsData as Setting[];
+                setMacros(macrosData as Macro[]);
 
                 // Populate form states
-                setSmtpHost(settingsData.find(s => s.key === 'email.smtp.host')?.value || '');
-                setSmtpPort(settingsData.find(s => s.key === 'email.smtp.port')?.value || '');
-                setSmtpUser(settingsData.find(s => s.key === 'email.smtp.user')?.value || '');
-                setImapHost(settingsData.find(s => s.key === 'email.imap.host')?.value || '');
-                setImapUser(settingsData.find(s => s.key === 'email.imap.user')?.value || '');
-            } catch (error: any) {
-                toast.error(t('toasts.load_error', { message: error.message }));
+                setSmtpHost(typedSettings.find((setting) => setting.key === 'email.smtp.host')?.value || '');
+                setSmtpPort(typedSettings.find((setting) => setting.key === 'email.smtp.port')?.value || '');
+                setSmtpUser(typedSettings.find((setting) => setting.key === 'email.smtp.user')?.value || '');
+                setImapHost(typedSettings.find((setting) => setting.key === 'email.imap.host')?.value || '');
+                setImapUser(typedSettings.find((setting) => setting.key === 'email.imap.user')?.value || '');
+            } catch (error: unknown) {
+                toast.error(t('toasts.load_error', { message: getErrorMessage(error) }));
             } finally {
                 setLoading(false);
             }
@@ -77,8 +78,10 @@ export default function SettingsPage() {
         try {
             await api.settings.upsert({ key, value, isSecret });
             toast.success(t('toasts.save_success', { key }));
-        } catch (error: any) {
-            toast.error(t('toasts.save_error', { message: error.message }));
+            return true;
+        } catch (error: unknown) {
+            toast.error(t('toasts.save_error', { message: getErrorMessage(error) }));
+            return false;
         } finally {
             setSaving(false);
         }
@@ -88,13 +91,13 @@ export default function SettingsPage() {
         if (!macroName || !macroContent) return;
         setSaving(true);
         try {
-            const newMacro = await api.macros.create({ name: macroName, content: macroContent });
+            const newMacro = await api.macros.create({ name: macroName, content: macroContent }) as Macro;
             setMacros([...macros, newMacro]);
             setMacroName('');
             setMacroContent('');
             toast.success(t('macros.create_success'));
-        } catch (error: any) {
-            toast.error(t('toasts.save_error', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('toasts.save_error', { message: getErrorMessage(error) }));
         } finally {
             setSaving(false);
         }
@@ -105,8 +108,8 @@ export default function SettingsPage() {
             await api.macros.delete(id);
             setMacros(macros.filter(m => m.id !== id));
             toast.success(t('macros.delete_success'));
-        } catch (error: any) {
-            toast.error(t('macros.delete_error', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('macros.delete_error', { message: getErrorMessage(error) }));
         }
     };
 
@@ -188,7 +191,8 @@ export default function SettingsPage() {
                                     saveSetting('email.smtp.host', smtpHost);
                                     saveSetting('email.smtp.port', smtpPort);
                                     saveSetting('email.smtp.user', smtpUser);
-                                    if (smtpPass) saveSetting('email.smtp.pass', smtpPass, true);
+                                    const credential = toCredentialOverride(smtpPass);
+                                    if (credential) void saveSetting('email.smtp.pass', credential, true).then((saved) => saved && setSmtpPass('********'));
                                 }} disabled={saving} className="bg-brand-600 ml-auto">{t('email_forms.save')}</Button>
                             </CardFooter>
                         </Card>
@@ -217,7 +221,8 @@ export default function SettingsPage() {
                                 <Button size="sm" onClick={() => {
                                     saveSetting('email.imap.host', imapHost);
                                     saveSetting('email.imap.user', imapUser);
-                                    if (imapPass) saveSetting('email.imap.pass', imapPass, true);
+                                    const credential = toCredentialOverride(imapPass);
+                                    if (credential) void saveSetting('email.imap.pass', credential, true).then((saved) => saved && setImapPass('********'));
                                 }} disabled={saving} className="bg-brand-600 ml-auto">{t('email_forms.save')}</Button>
                             </CardFooter>
                         </Card>
@@ -263,9 +268,15 @@ export default function SettingsPage() {
                                             <h4 className="font-bold text-sm">{m.name}</h4>
                                             <p className="text-xs text-muted-foreground line-clamp-1">{m.content}</p>
                                         </div>
-                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => handleDeleteMacro(m.id)}>
-                                                <Trash2 className="h-4 w-4" />
+                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
+                                                aria-label={`${ticketActionsT('delete')} ${m.name}`}
+                                                onClick={() => handleDeleteMacro(m.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" aria-hidden="true" />
                                             </Button>
                                         </div>
                                     </div>

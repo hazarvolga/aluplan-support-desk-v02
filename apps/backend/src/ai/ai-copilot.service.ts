@@ -10,6 +10,9 @@ import { MASTER_DIAGNOSIS_PROMPT } from './ai-query.service';
 import { buildSupportAnswerContractPrompt } from './ai-answer-contract';
 import { isNoKnowledgeAnswer } from './ai-answer-quality';
 import { SupportAnswerOrchestrator } from './support-answer-orchestrator.service';
+import { AllplanLicensingIntake, validateAllplanLicensingIntake } from './allplan-licensing-policy.service';
+import { RAG_CONFIG } from '../config/rag.config';
+import { SearchResult } from './embedding.service';
 
 type CopilotVisualEvidence = {
     url: string;
@@ -50,6 +53,8 @@ export class AiCopilotService {
                     }
                 },
                 interaction: true,
+                department: { select: { slug: true } },
+                product: { select: { name: true } },
                 creator: {
                     include: { customerProfile: true }
                 }
@@ -59,7 +64,12 @@ export class AiCopilotService {
         if (!ticket) throw new NotFoundException('Ticket not found');
 
         // Extract Hotinfo
-        const hotinfoSnapshot = (ticket.hotinfoSnapshot || ticket.creator?.customerProfile?.hotinfoData) as Record<string, unknown> | null;
+        // Ticket-scoped consent is authoritative; profile data is not consent for this ticket.
+        const hotinfoSnapshot = ticket.hotinfoSnapshot as Record<string, unknown> | null;
+        const licensingContext = this.resolveLicensingContext(ticket.licensingIntake);
+        const isLicensingTicket = ticket.tags?.includes('licensing')
+            || (ticket.department?.slug === 'billing-payments' && ticket.product?.name?.trim().toUpperCase() === 'ALLPLAN');
+        const missingLicensingIntake = isLicensingTicket && !licensingContext;
         const latestMessage = ticket.messages[0];
         const customerMessages = ticket.messages.filter((message) => !message.isInternal && this.isCustomerMessage(message, ticket.userId));
         const latestCustomerMessage = customerMessages[0] ?? ticket.messages.find((message) => !message.isInternal) ?? latestMessage;
@@ -112,6 +122,7 @@ export class AiCopilotService {
         // 2. Expand Search Query with Parser results
         const searchQuery = ticket.subject + '\n' + (ticket.description || '') + '\n' + activeUserMessage + '\n' + parsedDocumentTexts;
         let expandedSearchQuery = searchQuery;
+        if (licensingContext) expandedSearchQuery += `\n\n${licensingContext.promptContext}`;
         const hotinfoSearchSignals = this.buildSafeHotinfoSearchSignals(hotinfoSnapshot, searchQuery);
         if (hotinfoSearchSignals) {
             expandedSearchQuery += `\n\n[HOTINFO SAFE SEARCH SIGNALS]\n${hotinfoSearchSignals}`;
@@ -127,8 +138,9 @@ export class AiCopilotService {
 
         // 4. RAG Search (using combined query)
         const searchResponse = await this.embeddingService.search(expandedSearchQuery, 5, ticket.productId, true);
-        const kbContent = searchResponse.results.length > 0
-            ? searchResponse.results.map(r => r.content).join('\n\n---\n\n')
+        const results = this.filterLicenseEraSources(searchResponse.results, licensingContext?.promptContext);
+        const kbContent = results.length > 0
+            ? results.map(r => r.content).join('\n\n---\n\n')
             : 'No specific knowledge base context found.';
 
         // 5. Format message history
@@ -155,15 +167,42 @@ export class AiCopilotService {
 
         // 6. Build final context
         const targetLanguage = this.resolveTicketAnswerLanguage(ticket);
-        const linkedCustomerAnswer = this.extractUsableInteractionAnswer(ticket.interaction);
-        const visualEvidence = await this.resolveCopilotVisualEvidence(ticket.interaction);
+        // An earlier customer answer may reflect another license era; never recycle it for structured licensing.
+        const linkedCustomerAnswer = licensingContext ? null : this.extractUsableInteractionAnswer(ticket.interaction);
+        const visualEvidence = licensingContext ? [] : await this.resolveCopilotVisualEvidence(ticket.interaction);
+        const decision = this.supportAnswerOrchestrator.shouldGenerateFromRetrievedContext({
+            topScore: Math.max(0, ...results.map(result => result.similarity)),
+            adaptiveThreshold: licensingContext ? RAG_CONFIG.SIMILARITY.LOW : RAG_CONFIG.SIMILARITY.FLOOR,
+            resultCount: results.length,
+            audience: 'agent',
+        });
+        const sources = results.map(result => ({
+            title: result.title,
+            sourceType: result.sourceType,
+            similarity: result.similarity,
+        }));
+        if (missingLicensingIntake || !decision.shouldGenerate) {
+            return {
+                draft: this.buildInsufficientEvidenceDraft(targetLanguage),
+                model: 'none',
+                visuals: visualEvidence,
+                sources,
+                reviewReason: missingLicensingIntake
+                    ? 'MISSING_LICENSING_INTAKE'
+                    : searchResponse.results.length > 0 && results.length === 0
+                    ? 'LICENSE_ERA_MISMATCH'
+                    : decision.reason,
+            };
+        }
         const requesterName = this.resolveTicketRequesterName(ticket);
         const latestAgentName = this.resolveLatestAgentName(ticket);
         const context = await this.promptContextBuilder.buildContext({
             userId: ticket.creator?.id,
-            userQuery: activeUserMessage,
+            userQuery: licensingContext ? `${activeUserMessage}\n${licensingContext.promptContext}` : activeUserMessage,
             kbContent,
             hotinfoSnapshot,
+            skipHotinfoProfile: !hotinfoSnapshot,
+            allplanVersion: licensingContext?.allplanVersion,
             messages,
             diagnosis
         });
@@ -186,6 +225,7 @@ ${!isShift ? '### KONU DEĞİŞİKLİĞİ YOK\nBu ticket için konu değişikli�
 
 [CONVERSATION_CONTEXT]
 ${context}
+${licensingContext?.promptContext ?? ''}
 ${parsedDocumentTexts}
 ${linkedCustomerAnswer ? this.buildLinkedCustomerAnswerContext(linkedCustomerAnswer) : ''}
 ${this.buildTicketResponseTargetContext(requesterName, latestAgentName)}
@@ -200,15 +240,24 @@ RESPONSE DRAFT:`;
                 attachments: aiParts,
                 timeoutMs: 60_000,
                 audience: 'agent',
-                fallback: () => this.buildCopilotFallbackDraft(
+                fallback: () => licensingContext ? null : this.buildCopilotFallbackDraft(
                     activeUserMessage,
-                    searchResponse.results,
+                    results,
                     targetLanguage,
                     linkedCustomerAnswer,
                 ),
                 fallbackOnNoKnowledge: true,
                 fallbackLabel: 'copilot-grounded-draft',
             });
+            if (licensingContext && (!generated.response || isNoKnowledgeAnswer(generated.response))) {
+                return {
+                    draft: this.buildGenerationErrorDraft(targetLanguage),
+                    model: 'none',
+                    visuals: visualEvidence,
+                    sources,
+                    reviewReason: 'GENERATION_ERROR',
+                };
+            }
             const languageCheckedDraft = await this.supportAnswerOrchestrator.repairLanguage({
                 answer: generated.response,
                 userQuery: activeUserMessage,
@@ -222,15 +271,56 @@ RESPONSE DRAFT:`;
                 draft: cleanedDraft || 'Draft could not be generated.',
                 model: 'dynamic',
                 visuals: visualEvidence,
+                sources,
             };
         } catch (error) {
             this.logger.error(`Failed to generate AI Copilot draft: ${error.message}`);
             return {
-                draft: `AI_ERROR: Taslak oluşturulamadı. (Hata: ${error.message || 'Bilinmeyen Hata'})`,
+                draft: this.buildGenerationErrorDraft(targetLanguage),
                 model: 'dynamic',
                 visuals: visualEvidence,
+                sources,
+                reviewReason: 'GENERATION_ERROR',
             };
         }
+    }
+
+    private resolveLicensingContext(raw: unknown) {
+        const saved = this.asRecord(raw);
+        if (saved.categoryKey !== 'licensing') return null;
+        try {
+            return validateAllplanLicensingIntake(saved as AllplanLicensingIntake);
+        } catch {
+            this.logger.warn('Ticket licensing intake is incomplete; ignoring unverified values.');
+            return null;
+        }
+    }
+
+    private filterLicenseEraSources(results: SearchResult[], promptContext?: string): SearchResult[] {
+        if (!promptContext) return results;
+        const cloud = promptContext.includes('Release family: CLOUD');
+        const legacy = promptContext.includes('Release family: LEGACY');
+        const codemeter = promptContext.includes('Release family: CODEMETER');
+        return results.filter(result => {
+            const era = result.licenseEra?.toLowerCase() ?? '';
+            // Free text (including release numbers) is not proof of applicability.
+            if (cloud) return era === 'cloud_2024_2_plus';
+            if (legacy) return era === 'legacy_pre_2016';
+            if (codemeter) return era === 'codemeter_2016_2024_1_10';
+            return true;
+        });
+    }
+
+    private buildInsufficientEvidenceDraft(language: 'tr' | 'en' | 'de'): string {
+        if (language === 'en') return 'Hello,\n\nNo sufficiently reliable and applicable knowledge source was found for this ticket. Please review it manually before responding to the customer.';
+        if (language === 'de') return 'Hallo,\n\nFür dieses Ticket wurde keine ausreichend verlässliche und passende Wissensquelle gefunden. Bitte prüfen Sie es vor einer Antwort manuell.';
+        return 'Merhaba,\n\nBu bilet için yeterince güvenilir ve uygun bir bilgi kaynağı bulunamadı. Lütfen müşteriye yanıt vermeden önce talebi manuel inceleyin.';
+    }
+
+    private buildGenerationErrorDraft(language: 'tr' | 'en' | 'de'): string {
+        if (language === 'en') return 'Hello,\n\nThe AI draft is temporarily unavailable. Please review this ticket manually.';
+        if (language === 'de') return 'Hallo,\n\nDer KI-Entwurf ist vorübergehend nicht verfügbar. Bitte prüfen Sie dieses Ticket manuell.';
+        return 'Merhaba,\n\nYapay zekâ taslağı şu anda oluşturulamadı. Lütfen bu bileti manuel inceleyin.';
     }
 
     private async resolveCopilotVisualEvidence(interaction?: { userContext?: unknown } | null): Promise<CopilotVisualEvidence[]> {

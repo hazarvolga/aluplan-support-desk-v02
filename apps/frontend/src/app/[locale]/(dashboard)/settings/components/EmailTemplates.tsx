@@ -4,8 +4,9 @@ import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Eye, Send } from 'lucide-react';
+import { Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { getErrorMessage, type EmailPreviewResult } from '../settings-types';
 
 export function EmailTemplates() {
     const t = useTranslations('settings.email.templates');
@@ -38,15 +39,15 @@ export function EmailTemplates() {
         if (!selected) return;
         setRendering(true);
         try {
-            const result = await api.email.previewTemplate(selected, {});
+            const result = await api.email.previewTemplate(selected, {}) as EmailPreviewResult;
             if (result.success) {
-                setPreviewHtml(result.html);
-                setPreviewSubject(result.subject);
+                setPreviewHtml(result.html ?? null);
+                setPreviewSubject(result.subject ?? null);
             } else {
                 toast.error(result.error || t('toasts.compile_error'));
             }
-        } catch (error: any) {
-            toast.error(t('toasts.preview_failed', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('toasts.preview_failed', { message: getErrorMessage(error) }));
             setPreviewHtml(null);
         } finally {
             setRendering(false);
@@ -89,6 +90,7 @@ export function EmailTemplates() {
                         </div>
                         <div className="w-full bg-white h-[600px] overflow-auto">
                             <iframe
+                                sandbox="allow-popups"
                                 srcDoc={previewHtml}
                                 className="w-full h-full border-0"
                                 title="email-preview"

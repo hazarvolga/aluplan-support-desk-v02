@@ -9,7 +9,16 @@ export type OutboundDnsLookup = (hostname: string) => Promise<LookupResult[]>;
 export type ValidatedOutboundUrl = { httpsAgent: Agent };
 
 const SYSTEM_LOOKUP: OutboundDnsLookup = hostname => dnsLookup(hostname, { all: true, verbatim: true });
+const BLOCKED_HOSTNAMES = new Set([
+    'localhost',
+    'metadata',
+    'metadata.google.internal',
+    'instance-data',
+    'instance-data.ec2.internal',
+]);
 const NON_PUBLIC_ADDRESSES = new BlockList();
+const PUBLIC_IPV6_SPACE = new BlockList();
+PUBLIC_IPV6_SPACE.addSubnet('2000::', 3, 'ipv6');
 for (const [network, prefix] of [
     ['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8],
     ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.0.0.0', 24], ['192.0.2.0', 24],
@@ -19,8 +28,9 @@ for (const [network, prefix] of [
     NON_PUBLIC_ADDRESSES.addSubnet(network, prefix, 'ipv4');
 }
 for (const [network, prefix] of [
-    ['::', 128], ['::1', 128], ['100::', 64], ['2001:db8::', 32],
-    ['fc00::', 7], ['fe80::', 10], ['ff00::', 8],
+    ['::', 96], ['::1', 128], ['64:ff9b::', 96], ['64:ff9b:1::', 48],
+    ['100::', 64], ['2001::', 23], ['2001:db8::', 32], ['2002::', 16], ['3fff::', 20], ['fc00::', 7],
+    ['fec0::', 10], ['fe80::', 10], ['ff00::', 8],
 ] as Array<[string, number]>) {
     NON_PUBLIC_ADDRESSES.addSubnet(network, prefix, 'ipv6');
 }
@@ -72,19 +82,36 @@ export class OutboundUrlSafetyService {
     }
 
     private async validateAndPin(hostname: string): Promise<ValidatedOutboundUrl> {
-        const literalFamily = isIP(hostname);
-        const addresses = literalFamily
-            ? [{ address: hostname, family: literalFamily }]
-            : await this.lookup(hostname);
-        if (addresses.length === 0 || addresses.some(({ address }) => this.isNonPublicAddress(address))) {
-            throw new ForbiddenException(`Outbound hostname must resolve only to a public IP: ${hostname}`);
+        const normalizedHostname = hostname.startsWith('[') && hostname.endsWith(']')
+            ? hostname.slice(1, -1)
+            : hostname;
+        const lowerHostname = normalizedHostname.toLowerCase().replace(/\.$/, '');
+        const reservedSuffix = lowerHostname.endsWith('.localhost')
+            || lowerHostname.endsWith('.local')
+            || lowerHostname.endsWith('.internal')
+            || lowerHostname.endsWith('.home.arpa');
+        if (BLOCKED_HOSTNAMES.has(lowerHostname) || reservedSuffix) {
+            throw new ForbiddenException(`Outbound hostname is reserved: ${lowerHostname}`);
         }
-        return { httpsAgent: this.createPinnedAgent(hostname, addresses) };
+
+        const literalFamily = isIP(normalizedHostname);
+        const addresses = literalFamily
+            ? [{ address: normalizedHostname, family: literalFamily }]
+            : await this.lookup(normalizedHostname);
+        if (addresses.length === 0 || addresses.some(({ address }) => this.isNonPublicAddress(address))) {
+            throw new ForbiddenException(`Outbound hostname must resolve only to a public IP: ${normalizedHostname}`);
+        }
+        return { httpsAgent: this.createPinnedAgent(normalizedHostname, addresses) };
     }
 
     private isNonPublicAddress(address: string): boolean {
+        const mappedIpv4 = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(address)?.[1];
+        if (mappedIpv4) {
+            return isIP(mappedIpv4) !== 4 || NON_PUBLIC_ADDRESSES.check(mappedIpv4, 'ipv4');
+        }
         const family = isIP(address);
         if (family === 0) return true;
+        if (family === 6 && !PUBLIC_IPV6_SPACE.check(address, 'ipv6')) return true;
         return NON_PUBLIC_ADDRESSES.check(address, family === 6 ? 'ipv6' : 'ipv4');
     }
 

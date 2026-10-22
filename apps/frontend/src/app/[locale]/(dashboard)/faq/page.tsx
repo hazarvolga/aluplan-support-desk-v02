@@ -7,14 +7,24 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
+import { RefreshCw, Trash2, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/components/auth/role-guard';
 
+type FaqItem = {
+    id: string;
+    status: string;
+    frequency: number;
+    confidenceScore: number;
+    question: string;
+    answer: string;
+    sourceTicketId?: string | null;
+};
+
 export default function FaqPage() {
     const t = useTranslations('admin.faq');
-    const [faqs, setFaqs] = useState<any[]>([]);
+    const [faqs, setFaqs] = useState<FaqItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [pendingActionId, setPendingActionId] = useState<string | null>(null);
     const pendingActionRef = useRef<string | null>(null);
@@ -44,7 +54,8 @@ export default function FaqPage() {
             const res = await api.faq.list(filter === 'ALL' ? undefined : filter);
             // API returns { data: [], total: ... } or just [] depending on implementation
             // Let's handle both based on previous findings about FaqService
-            setFaqs(Array.isArray(res) ? res : res.data || []);
+            const payload = res as FaqItem[] | { data?: FaqItem[] };
+            setFaqs(Array.isArray(payload) ? payload : payload.data || []);
         } catch (error) {
             toast({ title: t('toasts.fetch_error'), description: String(error), variant: 'destructive' });
         } finally {

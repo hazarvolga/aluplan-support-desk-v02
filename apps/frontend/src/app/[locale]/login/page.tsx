@@ -21,6 +21,7 @@ export default function LoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -30,7 +31,7 @@ export default function LoginPage() {
         setError('');
         setLoading(true);
         try {
-            await api.auth.login(email, password);
+            await api.auth.login(email, password, rememberMe);
 
             // After login sets cookies, fetch user profile
             // Small delay to ensure cookies are persisted by browser
@@ -47,15 +48,16 @@ export default function LoginPage() {
                 } else {
                     router.push('/dashboard');
                 }
-            } catch (err) {
+            } catch {
                 // Fallback route - cookies are set, just navigate
                 router.push('/dashboard');
             }
 
-        } catch (err: any) {
-            const errorMsg = err.message === 'common.session_expired'
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : undefined;
+            const errorMsg = message === 'common.session_expired'
                 ? tc('session_expired')
-                : (err.message ?? t('error_default'));
+                : (message ?? t('error_default'));
             setError(errorMsg);
         } finally {
             setLoading(false);
@@ -183,6 +185,17 @@ export default function LoginPage() {
                                 className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 text-white text-[16px] tracking-[0.3em] font-mono placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 focus:bg-primary/5 transition-all"
                             />
                         </div>
+
+                        <label className="flex cursor-pointer items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-slate-200">
+                            <input
+                                type="checkbox"
+                                checked={rememberMe}
+                                onChange={(event) => setRememberMe(event.target.checked)}
+                                data-testid="login-remember-me"
+                                className="h-4 w-4 accent-primary"
+                            />
+                            <span>{t('remember_me')}</span>
+                        </label>
 
                         {error && (
                             <div data-testid="error-message" className="border border-rose-500/30 bg-rose-500/10 px-3 py-2 animate-in fade-in">

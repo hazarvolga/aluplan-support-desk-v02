@@ -5,20 +5,32 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, Bot, FileText, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 
+type DraftSource = {
+    id: string;
+    sourceType: string;
+    ticket?: { id: string; ticketNumber: string } | null;
+    interaction?: { id: string } | null;
+};
+type Draft = {
+    id: string;
+    question: string;
+    answer: string;
+    confidenceScore: number;
+    sources?: DraftSource[];
+};
+
 export default function KbApprovalsPage() {
     const t = useTranslations('admin.kb_approvals');
-    const tc = useTranslations('common');
     const locale = useLocale();
-    const [drafts, setDrafts] = useState<any[]>([]);
+    const [drafts, setDrafts] = useState<Draft[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchDrafts = async () => {
@@ -27,7 +39,7 @@ export default function KbApprovalsPage() {
             // Fetch only PENDING_REVIEW items
             const res = await api.faq.list('PENDING_REVIEW');
             setDrafts(Array.isArray(res) ? res : res.data || []);
-        } catch (error) {
+        } catch {
             toast.error(t('toasts.fetch_error'));
         } finally {
             setLoading(false);
@@ -43,7 +55,7 @@ export default function KbApprovalsPage() {
             await api.faq.approve(id);
             toast.success(t('toasts.approve_success'));
             fetchDrafts();
-        } catch (error) {
+        } catch {
             toast.error(t('toasts.approve_error'));
         }
     };
@@ -53,7 +65,7 @@ export default function KbApprovalsPage() {
             await api.faq.dismiss(id);
             toast.info(t('toasts.dismiss_success'));
             fetchDrafts();
-        } catch (error) {
+        } catch {
             toast.error(t('toasts.dismiss_error'));
         }
     };
@@ -144,7 +156,7 @@ export default function KbApprovalsPage() {
                                         </TableCell>
                                         <TableCell className="align-top text-center py-3">
                                             <div className="flex flex-col items-center gap-1">
-                                                {Array.isArray(draft.sources) && draft.sources.length > 0 ? draft.sources.map((source: any) => (
+                                                {Array.isArray(draft.sources) && draft.sources.length > 0 ? draft.sources.map((source) => (
                                                     source.sourceType === 'TICKET' && source.ticket ? (
                                                         <Link key={source.id} href={`/${locale}/tickets/${source.ticket.id}`} target="_blank" className="font-mono text-[10px] text-primary hover:underline tracking-normal">
                                                             {source.ticket.ticketNumber}

@@ -14,6 +14,24 @@ describe('ticket support category display', () => {
         }, labels)).toEqual(['Lisans ve Aktivasyon']);
     });
 
+    it('localizes persisted department translation keys from the ticket list', () => {
+        expect(getTicketSupportCategoryNames({
+            department: { name: 'TICKETS.DEPARTMENTS.LICENSING' },
+        }, labels)).toEqual(['Lisans ve Aktivasyon']);
+
+        expect(getTicketSupportCategoryNames({
+            department: { name: 'TICKETS.DEPARTMENTS.TECHNICAL_SUPPORT' },
+        }, labels)).toEqual(['Teknik Destek']);
+
+        expect(getTicketSupportCategoryNames({
+            department: { slug: 'TICKETS.DEPARTMENTS.TECHNICAL_SUPPORT', name: 'Eski ad' },
+        }, labels)).toEqual(['Teknik Destek']);
+
+        expect(getTicketSupportCategoryNames({
+            department: { name: 'TICKETS.DEPARTMENTS.LICENSING' },
+        }, { licensing: 'Licensing Support' })).toEqual(['Licensing Support']);
+    });
+
     it('shows only persisted support categories', () => {
         expect(getTicketSupportCategoryNames({
             tags: ['licensing'],

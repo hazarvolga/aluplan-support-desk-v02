@@ -56,14 +56,14 @@ test('frontend removes only explicit global package manager paths from the runne
     assert.deepEqual(removals[0].split(/\s+/), ['RUN', 'rm', '-rf', ...expected]);
     assert.ok(runner.indexOf(removals[0]) < runner.indexOf('USER nextjs'));
     assert.equal(builder.filter(line => line.startsWith('RUN rm ')).length, 0);
-    assert.ok(instructions.includes('RUN npm install -g pnpm@9.15.4'));
+    assert.ok(instructions.includes('RUN npm install -g pnpm@11.17.0'));
     assert.ok(runner.includes('CMD ["node", "apps/frontend/server.js"]'));
 });
 
 test('frontend base and runner use the same immutable Node image', () => {
     const images = instructions.filter(line => /^FROM node:/.test(line));
     assert.equal(images.length, 2);
-    for (const line of images) assert.match(line, /^FROM node:22\.23\.3-alpine3\.23@sha256:[a-f0-9]{64} AS /);
+    for (const line of images) assert.match(line, /^FROM node:22\.23\.4-alpine3\.23@sha256:[a-f0-9]{64} AS /);
     assert.equal(images[0].split(' ')[1], images[1].split(' ')[1]);
 });
 

@@ -13,19 +13,16 @@ test.describe('WhatsApp Configuration UI', () => {
         // Wait for settings page logic to settle
         await page.waitForLoadState('networkidle');
 
-        // 3. Find and click the WhatsApp tab in settings 
-        // We look for text 'WhatsApp' or an element with data-testid 'tab-whatsapp'
-        // If not found gracefully, just ensure the settings page loaded.
-        const whatsappTab = page.locator('text=WhatsApp').first();
-        if (await whatsappTab.isVisible()) {
-            await whatsappTab.click();
+        // 3. Open the current WhatsApp settings tab. Role and exact labels keep
+        // the assertions deterministic when helper text repeats the same words.
+        const whatsappTab = page.getByRole('tab', { name: 'WhatsApp', exact: true });
+        await expect(whatsappTab).toBeVisible();
+        await whatsappTab.click();
 
-            // 4. Verify WhatsApp specific UI
-            await expect(page.locator('text=Webhook')).toBeVisible({ timeout: 10000 });
-            await expect(page.locator('text=Token')).toBeVisible({ timeout: 10000 });
-        } else {
-            console.log('WhatsApp tab not explicitly visible by text, test proceeding based on settings structure.');
-        }
+        // 4. Verify the three security-sensitive integration fields.
+        await expect(page.getByText('Webhook URL', { exact: true })).toBeVisible();
+        await expect(page.getByText('Doğrulama Anahtarı (Verify Token)', { exact: true })).toBeVisible();
+        await expect(page.getByText('Erişim Anahtarı (Access Token)', { exact: true })).toBeVisible();
     });
 
 });

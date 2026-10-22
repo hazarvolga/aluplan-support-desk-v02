@@ -21,6 +21,7 @@ import { XssValidationPipe } from './common/pipes/xss-validation.pipe';
 import { MaintenanceAdmissionMiddleware } from './common/middleware/maintenance-admission.middleware';
 import { MaintenanceWorkService } from './common/services/maintenance-work.service';
 import { signedWebhookJsonParser } from './common/http/signed-webhook-json-parser';
+import { isCookieAuthRequestAllowed } from './auth/cookie-auth-request';
 
 async function checkConnection(host: string, port: number, timeout = 3000): Promise<boolean> {
     return new Promise((resolve) => {
@@ -93,6 +94,14 @@ async function bootstrap() {
     const port = configService.get<number>('PORT', 4000);
     const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
     const nodeEnv = configService.get<string>('NODE_ENV', 'production');
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'https://allplan.net.tr',
+        'https://api.allplan.net.tr',
+        ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []),
+        ...(frontendUrl.includes(',') ? frontendUrl.split(',') : [frontendUrl]),
+    ].map(origin => origin.trim()).filter(Boolean);
 
     // Manual production validation removed in favor of Zod validateEnv()
 
@@ -153,11 +162,20 @@ async function bootstrap() {
             '/api/v1/auth/login',
             '/api/v1/auth/refresh',
             '/api/v1/auth/logout',
+            '/api/v1/auth/refresh/logout',
             '/api/v1/auth/forgot-password',
             '/api/v1/auth/resend-verification',
             '/api/v1/auth/reset-password',
             '/api/v1/auth/verify-email',
             '/api/v1/email/unsubscribe',
+        ];
+        // External providers cannot supply our browser CSRF cookie. These exact
+        // POST endpoints authenticate the raw payload with provider signatures.
+        const signedWebhookCsrfBypassPaths = [
+            '/api/v1/crm/webhooks/dynamics365',
+            '/api/v1/whatsapp/webhook',
+            '/api/v1/omni-channel/webhook/email',
+            '/api/v1/email/webhook/resend',
         ];
 
         let csrfToken = req.cookies['XSRF-TOKEN'];
@@ -175,8 +193,35 @@ async function bootstrap() {
             });
         }
 
+        const cookieAuthPaths = [
+            '/api/v1/auth/refresh',
+            '/api/v1/auth/logout',
+            '/api/v1/auth/refresh/logout',
+        ];
+        const isCookieAuthRequest = req.method === 'POST' && cookieAuthPaths.includes(req.path);
+        const relevantCookieName = req.path === '/api/v1/auth/logout' ? 'alu_at' : 'alu_rt';
+        const hasAuthCookie = typeof req.cookies?.[relevantCookieName] === 'string'
+            && req.cookies[relevantCookieName].length > 0;
+        if (isCookieAuthRequest && !isCookieAuthRequestAllowed(
+            hasAuthCookie,
+            req.get('origin'),
+            req.get('x-requested-with'),
+            allowedOrigins,
+        )) {
+            logger.warn('[CSRF] REJECTED - Untrusted cookie-authenticated request');
+            return res.status(403).json({
+                statusCode: 403,
+                message: 'Untrusted cookie-authenticated request',
+                error: 'Forbidden',
+            });
+        }
+
         const isCsatFeedbackRequest = req.method === 'POST' && /^\/api\/v1\/tickets\/csat\/[^/]+$/.test(req.path);
-        const isBypassed = isCsatFeedbackRequest || csrfBypassPaths.some(path => req.path.startsWith(path));
+        const isSignedWebhookRequest = req.method === 'POST'
+            && signedWebhookCsrfBypassPaths.includes(req.path);
+        const isBypassed = isCsatFeedbackRequest
+            || csrfBypassPaths.includes(req.path)
+            || isSignedWebhookRequest;
 
         if (!isBypassed && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
             const headerToken = req.headers['x-xsrf-token'];
@@ -205,15 +250,6 @@ async function bootstrap() {
 
     // Note: Double-submit CSRF and Custom Header (X-Requested-With) 
     // mechanisms are implemented manually above to replace deprecated csurf.
-
-    const allowedOrigins = [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'https://allplan.net.tr',
-        'https://api.allplan.net.tr',
-        ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []),
-        ...(frontendUrl.includes(',') ? frontendUrl.split(',') : [frontendUrl]),
-    ];
 
     // CORS
     app.enableCors({

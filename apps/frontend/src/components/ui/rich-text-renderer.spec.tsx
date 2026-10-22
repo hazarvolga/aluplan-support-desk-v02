@@ -110,4 +110,19 @@ describe('RichTextRenderer', () => {
         expect(screen.getByText('team').tagName).toBe('STRONG');
         expect(document.querySelector('script')).toBeNull();
     });
+
+    it('keeps long quoted messages readable without forcing italic or muted text', () => {
+        render(<RichTextRenderer content="<blockquote><p>Long support response</p></blockquote>" />);
+
+        const content = screen.getByText('Long support response').closest('.rich-text-content');
+        expect(content).toHaveClass('text-[15px]', 'leading-6', 'tracking-normal');
+        expect(content?.className).toContain('[&_blockquote]:not-italic');
+        expect(content?.className).toContain('[&_blockquote]:text-inherit');
+    });
+    it('does not impose a dark code background over inherited message text colors', () => {
+        render(<RichTextRenderer content="<pre><code>set | findstr</code></pre>" />);
+        const content = screen.getByText('set | findstr').closest('.rich-text-content');
+        expect(content?.className).toContain('[&_code]:bg-transparent');
+        expect(content?.className).toContain('[&_pre]:bg-transparent');
+    });
 });

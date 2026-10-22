@@ -3,13 +3,12 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useRef } from 'react';
-import { api } from '@/lib/api';
+import { api, type KnowledgeArticle } from '@/lib/api';
 import {
     BookOpen,
     Plus,
     CheckCircle2,
     Clock,
-    XCircle,
     Search,
     BarChart3,
     ArrowRight,
@@ -24,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/components/auth/role-guard';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { getKnowledgeBaseDeepLink } from '@/components/review-center/deep-link-filters';
 
@@ -32,11 +31,11 @@ import { getKnowledgeBaseDeepLink } from '@/components/review-center/deep-link-f
 
 export default function KnowledgeBasePage() {
     const t = useTranslations('admin.knowledge_base');
-    const locale = useLocale();
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const deepLinkStatus = getKnowledgeBaseDeepLink(searchParams);
-    const [articles, setArticles] = useState<any[]>([]);
+    type ArticleListItem = KnowledgeArticle & { status: string; tags?: string[]; viewCount?: number; creator?: { fullName?: string }; updatedAt?: string };
+    const [articles, setArticles] = useState<ArticleListItem[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -58,7 +57,7 @@ export default function KnowledgeBasePage() {
             const params: Record<string, string> = { status: statusFilter };
             if (search) params.search = search;
             const res = await api.kb.list(params);
-            setArticles(res.data ?? []);
+            setArticles((res.data ?? []) as ArticleListItem[]);
             setTotal(res.total ?? 0);
         } catch { /* handled */ }
         setLoading(false);
@@ -242,6 +241,7 @@ export default function KnowledgeBasePage() {
                                                     <span>
                                                         {t('meta.update')}: {(() => {
                                                             try {
+                                                                if (!a.updatedAt) return '---';
                                                                 const date = new Date(a.updatedAt);
                                                                 if (isNaN(date.getTime())) return '---';
                                                                 return date.toLocaleDateString(t('meta.locale') || 'tr-TR');

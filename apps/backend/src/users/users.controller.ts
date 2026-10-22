@@ -14,6 +14,11 @@ import { Roles } from '../rbac/decorators/rbac.decorators';
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
 
+    private getManagementActor(req: any) {
+        const role = typeof req.user.role === 'string' ? req.user.role : req.user.role?.name;
+        return { id: req.user.sub ?? req.user.id, role };
+    }
+
     @Roles('admin', 'support_manager')
     @Get()
     @ApiOperation({ summary: 'List all users optionally filtered by type (agent|customer)' })
@@ -42,8 +47,8 @@ export class UsersController {
     @Roles('admin')
     @Post()
     @ApiOperation({ summary: 'Create user (Admin only)' })
-    create(@Body() dto: CreateUserDto) {
-        return this.usersService.create(dto);
+    create(@Body() dto: CreateUserDto, @Req() req: any) {
+        return this.usersService.create(dto, this.getManagementActor(req));
     }
 
     @Patch('profile')
@@ -55,14 +60,14 @@ export class UsersController {
     @Roles('admin')
     @Patch(':id')
     @ApiOperation({ summary: 'Update user (Admin only)' })
-    update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-        return this.usersService.update(id, dto);
+    update(@Param('id') id: string, @Body() dto: UpdateUserDto, @Req() req: any) {
+        return this.usersService.update(id, dto, this.getManagementActor(req));
     }
 
     @Roles('admin')
     @Delete(':id')
     @ApiOperation({ summary: 'Delete user (Admin only)' })
-    remove(@Param('id') id: string) {
-        return this.usersService.remove(id);
+    remove(@Param('id') id: string, @Req() req: any) {
+        return this.usersService.remove(id, this.getManagementActor(req));
     }
 }

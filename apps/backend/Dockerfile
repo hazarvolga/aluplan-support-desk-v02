@@ -1,6 +1,6 @@
-FROM node:22.23.3-alpine3.23@sha256:baf676f7d0e552f3231945c2f979055ca121bce128c152f7a34e6bd1728b1c5a AS base
+FROM node:22.23.4-alpine3.23@sha256:6abbcf5dd6b231da109bcde1181db1d92bf78015ae1a9514d9807c1f857869db AS base
 RUN apk add --no-cache openssl fontconfig
-RUN npm install -g pnpm@9.15.4
+RUN npm install -g pnpm@11.17.0
 
 FROM base AS builder
 WORKDIR /app
@@ -26,7 +26,7 @@ RUN pnpm install --frozen-lockfile && \
     NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/database db:generate && \
     NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter @aluplan/backend build
 
-FROM node:22.23.3-alpine3.23@sha256:baf676f7d0e552f3231945c2f979055ca121bce128c152f7a34e6bd1728b1c5a AS runner
+FROM node:22.23.4-alpine3.23@sha256:6abbcf5dd6b231da109bcde1181db1d92bf78015ae1a9514d9807c1f857869db AS runner
 ARG VCS_REF
 RUN printf '%s' "${VCS_REF}" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision="${VCS_REF}"
@@ -51,7 +51,7 @@ ENV CHROME_BIN=/usr/bin/chromium-browser \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
     PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-RUN npm install -g pnpm@9.15.4
+RUN npm install -g pnpm@11.17.0
 
 # 1. Copy entire workspace (metadata + source needed for pnpm install)
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/.npmrc ./

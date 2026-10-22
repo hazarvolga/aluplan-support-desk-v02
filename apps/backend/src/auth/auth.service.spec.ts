@@ -174,6 +174,35 @@ describe('AuthService', () => {
                 where: { id: 'user-1' },
                 data: { refreshTokenHash: 'v2:newHash' }
             });
+            expect(jwt.signAsync).toHaveBeenNthCalledWith(2, expect.objectContaining({
+                rememberMe: false,
+            }), expect.objectContaining({ expiresIn: expect.anything() }));
+            expect(jwt.signAsync).toHaveBeenNthCalledWith(3, expect.objectContaining({
+                purpose: 'session-marker',
+            }), expect.objectContaining({ secret: 'test-session-marker-secret' }));
+        });
+
+        it('signs a 30-day refresh token only when remember me is selected', async () => {
+            const mockUser = {
+                id: 'user-1',
+                email: 'test@example.com',
+                fullName: 'Test User',
+                status: 'ACTIVE',
+                deletedAt: null,
+                passwordHash: 'hash',
+                roleId: 'role-customer',
+            };
+            prisma.user.findUnique.mockResolvedValue(mockUser);
+            prisma.user.update.mockResolvedValue(mockUser);
+            (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+            (bcrypt.hash as jest.Mock).mockResolvedValue('newHash');
+            jwt.signAsync.mockImplementation(async (payload: any) => `token-${payload.role}`);
+
+            await service.login({ ...loginDto, rememberMe: true });
+
+            expect(jwt.signAsync).toHaveBeenNthCalledWith(2, expect.objectContaining({
+                rememberMe: true,
+            }), expect.objectContaining({ expiresIn: 30 * 24 * 60 * 60 }));
         });
 
         it('resolves login emails case-insensitively when legacy casing exists', async () => {
@@ -232,6 +261,45 @@ describe('AuthService', () => {
             // Assert
             expect(result).toHaveProperty('access_token');
             expect(result).toHaveProperty('refresh_token');
+        });
+
+        it('preserves the absolute remember-me deadline across refresh rotation', async () => {
+            const now = new Date('2026-10-15T12:00:00.000Z');
+            jest.useFakeTimers().setSystemTime(now);
+            const absoluteExpiry = now.getTime() + 30 * 24 * 60 * 60 * 1000;
+            const mockUser = {
+                id: '1', email: 'test@test.com', fullName: 'Test User', status: 'ACTIVE',
+                deletedAt: null, sessionVersion: 0, refreshTokenHash: 'v2:hash', roleId: 'role-customer',
+            };
+            prisma.user.findUnique.mockResolvedValue(mockUser);
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
+            (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+            (bcrypt.hash as jest.Mock).mockResolvedValue('next-hash');
+            jwt.signAsync.mockResolvedValueOnce('access').mockResolvedValueOnce('refresh').mockResolvedValueOnce('marker');
+
+            const result = await service.refreshTokens('1', 'valid-token', 0, true, absoluteExpiry);
+
+            expect(result).toMatchObject({ remember_me_expires_at: absoluteExpiry, session_marker: 'marker' });
+            expect(jwt.signAsync).toHaveBeenNthCalledWith(2, expect.objectContaining({
+                rememberMe: true,
+                rememberMeExpiresAt: absoluteExpiry,
+            }), expect.objectContaining({ expiresIn: 30 * 24 * 60 * 60 }));
+            jest.useRealTimers();
+        });
+
+        it('rejects an expired or missing absolute deadline for remember-me refresh', async () => {
+            const mockUser = {
+                id: '1', email: 'test@test.com', fullName: 'Test User', status: 'ACTIVE',
+                deletedAt: null, sessionVersion: 0, refreshTokenHash: 'v2:hash', roleId: 'role-customer',
+            };
+            prisma.user.findUnique.mockResolvedValue(mockUser);
+            (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+            await expect(service.refreshTokens('1', 'valid-token', 0, true, Date.now() - 1))
+                .rejects.toThrow(ForbiddenException);
+            await expect(service.refreshTokens('1', 'valid-token', 0, true))
+                .rejects.toThrow(ForbiddenException);
+            expect(prisma.user.updateMany).not.toHaveBeenCalled();
         });
 
         it('preserves explicitly empty role permissions without resurrecting defaults', async () => {
@@ -301,10 +369,13 @@ describe('AuthService', () => {
                 await service.refreshTokens(user.id, 'valid-refresh', 4);
             }
 
-            expect(jwt.signAsync).toHaveBeenCalledTimes(2);
-            for (const [payload] of jwt.signAsync.mock.calls) {
+            expect(jwt.signAsync).toHaveBeenCalledTimes(3);
+            for (const [payload] of jwt.signAsync.mock.calls.slice(0, 2)) {
                 expect(payload).toMatchObject({ role: 'ADMIN', permissions: [], sessionVersion: 4 });
             }
+            expect(jwt.signAsync).toHaveBeenNthCalledWith(3, expect.objectContaining({
+                purpose: 'session-marker',
+            }), expect.any(Object));
         });
 
         it.each([null, { name: ' ', permissions: [] }, { name: 'ADMIN', permissions: null }])(
@@ -637,13 +708,13 @@ describe('AuthService', () => {
 
             // Act
             const expiration = Math.floor(Date.now() / 1000) + 3600;
-            const result = await service.logout('user-1', 'jti-123', expiration);
+            const result = await service.logout('user-1', 'jti-123', expiration, 4);
 
             // Assert
             expect(result.success).toBe(true);
             expect(prisma.user.updateMany).toHaveBeenCalledWith({
-                where: { id: 'user-1', refreshTokenHash: { not: null } },
-                data: { refreshTokenHash: null }
+                where: { id: 'user-1', sessionVersion: 4 },
+                data: { refreshTokenHash: null, sessionVersion: { increment: 1 } },
             });
             expect(redis.set).toHaveBeenCalledWith('jwt:blacklist:jti-123', 'revoked', 3600);
         });
@@ -672,25 +743,85 @@ describe('AuthService', () => {
 
         it('rounds up the remaining token lifetime without dropping a fractional second', async () => {
             jest.spyOn(Date, 'now').mockReturnValue(1_800_000_000_250);
-            await service.logout('user-1', 'jti-123', 1_800_000_000.75);
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
+            await service.logout('user-1', 'jti-123', 1_800_000_000.75, 2);
             expect(redis.set).toHaveBeenCalledWith('jwt:blacklist:jti-123', 'revoked', 1);
         });
 
-        it('propagates a blacklist write failure instead of claiming logout succeeded after refresh clearing', async () => {
+        it('keeps logout successful after durable revocation when the Redis optimization fails', async () => {
             prisma.user.updateMany.mockResolvedValue({ count: 1 });
             const redisFailure = new Error('Redis unavailable');
             redis.set.mockRejectedValueOnce(redisFailure);
 
-            await expect(service.logout('user-1', 'jti-123', Math.floor(Date.now() / 1000) + 3600))
-                .rejects.toBe(redisFailure);
+            await expect(service.logout(
+                'user-1',
+                'jti-123',
+                Math.floor(Date.now() / 1000) + 3600,
+                7,
+            )).resolves.toEqual({ success: true });
 
             expect(prisma.user.updateMany).toHaveBeenCalledWith({
-                where: { id: 'user-1', refreshTokenHash: { not: null } },
-                data: { refreshTokenHash: null },
+                where: { id: 'user-1', sessionVersion: 7 },
+                data: { refreshTokenHash: null, sessionVersion: { increment: 1 } },
             });
             expect(prisma.user.updateMany).toHaveBeenCalledTimes(1);
-            // No session-version bump occurs: per-token revocation still requires the Redis write.
             expect(redis.set).toHaveBeenCalledWith('jwt:blacklist:jti-123', 'revoked', 3600);
+        });
+
+        it('rejects a stale logout race instead of revoking a newer session', async () => {
+            prisma.user.updateMany.mockResolvedValue({ count: 0 });
+
+            await expect(service.logout(
+                'user-1',
+                'jti-123',
+                Math.floor(Date.now() / 1000) + 3600,
+                3,
+            )).rejects.toThrow(UnauthorizedException);
+
+            expect(redis.set).not.toHaveBeenCalled();
+        });
+
+        it('revokes a refresh-authenticated session when the access token has expired', async () => {
+            const refreshToken = 'verified-refresh-token';
+            prisma.user.findUnique.mockResolvedValue({
+                id: 'user-1',
+                status: 'ACTIVE',
+                deletedAt: null,
+                sessionVersion: 4,
+                refreshTokenHash: 'stored-refresh-hash',
+            });
+            jest.spyOn(service as any, 'verifyRefreshToken').mockResolvedValue(true);
+            prisma.user.updateMany.mockResolvedValue({ count: 1 });
+
+            await expect(service.logoutRefreshSession('user-1', refreshToken, 4))
+                .resolves.toEqual({ success: true });
+
+            expect(prisma.user.updateMany).toHaveBeenCalledWith({
+                where: {
+                    id: 'user-1',
+                    status: 'ACTIVE',
+                    deletedAt: null,
+                    sessionVersion: 4,
+                    refreshTokenHash: 'stored-refresh-hash',
+                },
+                data: { refreshTokenHash: null, sessionVersion: { increment: 1 } },
+            });
+        });
+
+        it('rejects refresh logout when the presented token does not match stored state', async () => {
+            prisma.user.findUnique.mockResolvedValue({
+                id: 'user-1',
+                status: 'ACTIVE',
+                deletedAt: null,
+                sessionVersion: 4,
+                refreshTokenHash: 'stored-refresh-hash',
+            });
+            jest.spyOn(service as any, 'verifyRefreshToken').mockResolvedValue(false);
+
+            await expect(service.logoutRefreshSession('user-1', 'wrong-refresh-token', 4))
+                .rejects.toThrow('Access denied');
+
+            expect(prisma.user.updateMany).not.toHaveBeenCalled();
         });
     });
 

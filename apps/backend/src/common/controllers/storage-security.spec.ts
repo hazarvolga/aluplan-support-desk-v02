@@ -184,13 +184,14 @@ describe('StorageController private file isolation', () => {
         }
     });
 
-    it.each(['logo.png', 'leak.png'])('keeps S3 missing-credentials local fallback safe for %s', async (filename) => {
+    it.each(['logo.png', 'leak.png'])('does not fall back to local files when S3 credentials are missing for %s', async (filename) => {
         const config = { get: (key: string) => key === 'storage' ? { type: 'S3', localPath: root } : key === 'storage.localPath' ? root : undefined };
         const storage = new StorageService(config as any, { getValue: jest.fn().mockResolvedValue('') } as any);
         const branding = new BrandingController(storage, config as any);
         const res = { setHeader: jest.fn(), status: jest.fn().mockReturnThis(), send: jest.fn() } as any;
         await branding.getAsset(`brand/logos/${filename}`, res);
-        if (filename === 'logo.png') expect(res.send).toHaveBeenCalledWith(Buffer.from('public test logo'));
-        else expect(res.status).toHaveBeenCalledWith(404);
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(res.send).toHaveBeenCalledWith('Asset not found');
+        expect(res.send).not.toHaveBeenCalledWith(Buffer.from('public test logo'));
     });
 });

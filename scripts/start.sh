@@ -5,9 +5,8 @@
 # Bu script projeyi başlatmadan önce tüm bağımlılıkları kontrol eder:
 #   1. Port 3000 & 4000 zombi process temizliği
 #   2. Docker Desktop kontrolü ve başlatma
-#   3. Docker Compose servisleri (Postgres, Redis, Ollama)
-#   4. Ollama modelleri kontrolü
-#   5. Uygulama başlatma (pnpm dev)
+#   3. Docker Compose servisleri (Postgres, Redis)
+#   4. Uygulama başlatma (pnpm dev)
 # ═══════════════════════════════════════════════════════════════════
 
 set -euo pipefail
@@ -27,7 +26,6 @@ FRONTEND_PORT=3000
 BACKEND_PORT=4000
 DOCKER_WAIT_TIMEOUT=30
 POSTGRES_WAIT_TIMEOUT=30
-OLLAMA_MODELS=("nomic-embed-text" "llama3.2:3b")
 
 # ── Helpers ────────────────────────────────────────────────────────
 log_step()    { echo -e "\n${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"; echo -e "${BOLD}${BLUE}⚡ STEP $1:${NC} $2"; echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"; }
@@ -69,7 +67,7 @@ kill_port() {
 }
 
 step_port_cleanup() {
-    log_step "1/5" "Port Temizliği (3000 & 4000)"
+    log_step "1/4" "Port Temizliği (3000 & 4000)"
     kill_port "$FRONTEND_PORT"
     kill_port "$BACKEND_PORT"
 }
@@ -78,7 +76,7 @@ step_port_cleanup() {
 # STEP 2: Docker Desktop Check
 # ═══════════════════════════════════════════════════════════════════
 step_docker_check() {
-    log_step "2/5" "Docker Desktop Kontrolü"
+    log_step "2/4" "Docker Desktop Kontrolü"
 
     if docker info &>/dev/null; then
         log_ok "Docker daemon çalışıyor."
@@ -108,24 +106,18 @@ step_docker_check() {
 }
 
 # ═══════════════════════════════════════════════════════════════════
-# STEP 3: Docker Compose Services (Postgres, Redis, Ollama)
+# STEP 3: Docker Compose Services (Postgres, Redis)
 # ═══════════════════════════════════════════════════════════════════
 step_docker_compose() {
-    log_step "3/5" "Altyapı Servisleri (Postgres, Redis, Ollama)"
+    log_step "3/4" "Altyapı Servisleri (Postgres, Redis)"
 
     cd "$PROJECT_DIR"
 
-    # Check if containers are already running
-    local running_count
-    running_count=$(docker compose ps --status running -q 2>/dev/null | wc -l | tr -d ' ')
-
-    if [[ "$running_count" -ge 3 ]]; then
-        log_ok "Tüm altyapı servisleri zaten çalışıyor ($running_count container)."
-    else
-        log_action "Docker Compose servisleri başlatılıyor..."
-        docker compose up -d postgres redis 2>&1 | sed 's/^/  /'
-        log_ok "Docker Compose servisleri başlatıldı."
-    fi
+    # `docker compose up -d` is idempotent and checks the required services by
+    # name, avoiding false positives from unrelated running profile services.
+    log_action "Docker Compose servisleri doğrulanıyor..."
+    docker compose up -d postgres redis 2>&1 | sed 's/^/  /'
+    log_ok "PostgreSQL ve Redis çalışır durumda."
 
     # Wait for PostgreSQL to be healthy
     log_info "PostgreSQL sağlık kontrolü bekleniyor..."
@@ -154,43 +146,10 @@ step_docker_compose() {
 }
 
 # ═══════════════════════════════════════════════════════════════════
-# STEP 4: Ollama Model Verification
-# ═══════════════════════════════════════════════════════════════════
-step_ollama_models() {
-    log_step "4/5" "Ollama Model Kontrolü"
-
-    # Wait for Ollama API to be ready
-    local ollama_elapsed=0
-    local ollama_timeout=20
-    while true; do
-        if curl -sf http://localhost:11434/api/tags &>/dev/null; then
-            break
-        fi
-        if [[ $ollama_elapsed -ge $ollama_timeout ]]; then
-            log_warn "Ollama API ${ollama_timeout}s içinde yanıt vermedi. Model kontrolü atlanıyor."
-            return 0
-        fi
-        sleep 2
-        ollama_elapsed=$((ollama_elapsed + 2))
-    done
-
-    for model in "${OLLAMA_MODELS[@]}"; do
-        if curl -sf http://localhost:11434/api/tags | grep -q "$model"; then
-            log_ok "Model '$model' mevcut."
-        else
-            log_warn "Model '$model' bulunamadı."
-            log_action "Model indiriliyor: $model (bu birkaç dakika sürebilir)..."
-            docker compose exec -T ollama ollama pull "$model" 2>&1 | tail -3 | sed 's/^/  /'
-            log_ok "Model '$model' indirildi."
-        fi
-    done
-}
-
-# ═══════════════════════════════════════════════════════════════════
-# STEP 5: Launch Application
+# STEP 4: Launch Application
 # ═══════════════════════════════════════════════════════════════════
 step_launch() {
-    log_step "5/5" "Uygulama Başlatılıyor"
+    log_step "4/4" "Uygulama Başlatılıyor"
 
     cd "$PROJECT_DIR"
 
@@ -200,7 +159,6 @@ step_launch() {
     echo ""
     echo -e "  ${BLUE}📦 PostgreSQL${NC}  → localhost:5432"
     echo -e "  ${BLUE}📮 Redis${NC}       → localhost:6379"
-    echo -e "  ${BLUE}🤖 Ollama${NC}      → localhost:11434"
     echo -e "  ${BLUE}🖥️  Frontend${NC}    → http://localhost:${FRONTEND_PORT}"
     echo -e "  ${BLUE}⚙️  Backend${NC}     → http://localhost:${BACKEND_PORT}"
     echo -e "  ${BLUE}📖 Swagger${NC}     → http://localhost:${BACKEND_PORT}/api/docs"
@@ -224,7 +182,6 @@ main() {
     step_port_cleanup
     step_docker_check
     step_docker_compose
-    # step_ollama_models
     step_launch
 }
 

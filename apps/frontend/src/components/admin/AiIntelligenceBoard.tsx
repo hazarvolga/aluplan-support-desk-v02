@@ -2,15 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Brain, Compass, Target, Database, Activity, TrendingUp, AlertCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, Brain, Compass, Target, Database, Activity, TrendingUp, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useTranslations } from 'next-intl';
+
+type IntelligenceMetrics = {
+    summary: {
+        total_interactions: number;
+        problem_shifts: number;
+        avg_diagnosis_score: number;
+        metadata_informed: number;
+    };
+    shiftRate: number;
+    confidenceDistribution: Array<{ label: string; value: number; color: string }>;
+};
+
+type KnowledgeGap = { query: string; frequency: number };
 
 export function AiIntelligenceBoard() {
     const t = useTranslations('admin.ai_intelligence');
     const [loading, setLoading] = useState(true);
-    const [metrics, setMetrics] = useState<any>(null);
-    const [knowledgeGaps, setKnowledgeGaps] = useState<any[]>([]);
+    const [metrics, setMetrics] = useState<IntelligenceMetrics | null>(null);
+    const [knowledgeGaps, setKnowledgeGaps] = useState<KnowledgeGap[]>([]);
 
     useEffect(() => {
         loadMetrics();
@@ -23,7 +36,7 @@ export function AiIntelligenceBoard() {
                 api.ai.getIntelligence(30),
                 api.ai.getKnowledgeGaps(10)
             ]);
-            setMetrics(data);
+            setMetrics(data as IntelligenceMetrics);
             setKnowledgeGaps(gaps);
         } catch (error) {
             console.error('Failed to load AI intelligence metrics', error);
@@ -103,7 +116,7 @@ export function AiIntelligenceBoard() {
                     </CardHeader>
                     <CardContent className="h-64 flex flex-col justify-center">
                         <div className="space-y-4">
-                            {metrics.confidenceDistribution.map((item: any, idx: number) => {
+                            {metrics.confidenceDistribution.map((item, idx) => {
                                 const percentage = summary.total_interactions > 0
                                     ? (item.value / summary.total_interactions) * 100
                                     : 0;

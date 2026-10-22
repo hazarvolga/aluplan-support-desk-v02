@@ -31,10 +31,12 @@ interface TeamCreationPanelProps {
     onSuccess: () => void;
 }
 
+type Department = { id: string; name: string };
+
 export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOpenChange, onSuccess }) => {
     const t = useTranslations('teams.creation');
     const tc = useTranslations('common');
-    const [departments, setDepartments] = useState<any[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -48,7 +50,7 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
     useEffect(() => {
         if (open) {
             api.teams.departments()
-                .then(depts => setDepartments(depts))
+                .then(depts => setDepartments(depts as Department[]))
                 .catch(() => {
                     toast({ title: tc('error_title'), description: t('error_dept'), variant: 'destructive' });
                 });
@@ -80,7 +82,7 @@ export const TeamCreationPanel: React.FC<TeamCreationPanelProps> = ({ open, onOp
                 assignmentStrategy: 'ROUND_ROBIN',
                 autoAssignmentEnabled: true
             });
-        } catch (error) {
+        } catch {
             toast({ title: tc('error_title'), description: t('error_server'), variant: 'destructive' });
         } finally {
             setLoading(false);

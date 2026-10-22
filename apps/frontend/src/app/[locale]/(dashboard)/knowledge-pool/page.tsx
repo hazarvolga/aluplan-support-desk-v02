@@ -37,6 +37,65 @@ import { useAuth } from '@/components/auth/role-guard';
 type SortField = 'name' | 'status' | 'type' | 'lastSyncedAt' | 'embeddings' | 'category';
 type SortDir = 'asc' | 'desc';
 
+interface KnowledgeSource {
+    id: string;
+    name: string;
+    status: string;
+    type: string;
+    fileName?: string | null;
+    url?: string | null;
+    lastSyncedAt?: string | null;
+    metadata?: { category?: string; categorySlug?: string; [key: string]: unknown } | null;
+    _count?: { embeddings?: number };
+}
+
+interface KnowledgeArticle {
+    id: string;
+    title: string;
+    content: string;
+    status?: string;
+    tags?: string[];
+    createdAt: string;
+    creator?: { fullName?: string };
+    [key: string]: unknown;
+}
+
+interface SyncLog {
+    id: string;
+    status: string;
+    syncStartedAt: string;
+    chunksProcessed: number;
+    error?: string;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const isKnowledgeSource = (value: unknown): value is KnowledgeSource =>
+    isRecord(value)
+    && typeof value.id === 'string'
+    && typeof value.name === 'string'
+    && typeof value.status === 'string'
+    && typeof value.type === 'string';
+
+const isKnowledgeArticle = (value: unknown): value is KnowledgeArticle =>
+    isRecord(value)
+    && typeof value.id === 'string'
+    && typeof value.title === 'string'
+    && typeof value.content === 'string'
+    && typeof value.createdAt === 'string';
+
+const isSyncLog = (value: unknown): value is SyncLog =>
+    isRecord(value)
+    && typeof value.id === 'string'
+    && typeof value.status === 'string'
+    && typeof value.syncStartedAt === 'string'
+    && typeof value.chunksProcessed === 'number'
+    && (value.error === undefined || typeof value.error === 'string');
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
+
 const KNOWLEDGE_SOURCE_CATEGORIES = [
     { slug: 'license-activation', label: 'License & Activation' },
     { slug: 'license-server-codemeter', label: 'License Server & CodeMeter' },
@@ -84,16 +143,16 @@ export default function KnowledgePoolPage() {
     const previousDeepLinkKeyRef = useRef(deepLinkKey);
 
     // Sources State
-    const [sources, setSources] = useState<any[]>([]);
+    const [sources, setSources] = useState<KnowledgeSource[]>([]);
     const [loadingSources, setLoadingSources] = useState(true);
-    const [activeSource, setActiveSource] = useState<any>(null);
-    const [logs, setLogs] = useState<any[]>([]);
+    const [activeSource, setActiveSource] = useState<KnowledgeSource | null>(null);
+    const [logs, setLogs] = useState<SyncLog[]>([]);
 
     // Table state
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isSyncing, setIsSyncing] = useState<Set<string>>(new Set());
     const [isBulkSyncing, setIsBulkSyncing] = useState(false);
-    const [categoryEditorSource, setCategoryEditorSource] = useState<any>(null);
+    const [categoryEditorSource, setCategoryEditorSource] = useState<KnowledgeSource | null>(null);
     const [categorySlug, setCategorySlug] = useState('');
     const [isSavingCategory, setIsSavingCategory] = useState(false);
     const [search, setSearch] = useState('');
@@ -103,7 +162,7 @@ export default function KnowledgePoolPage() {
     const [sortDir, setSortDir] = useState<SortDir>('desc');
 
     // Articles State
-    const [articles, setArticles] = useState<any[]>([]);
+    const [articles, setArticles] = useState<KnowledgeArticle[]>([]);
     const [totalArticles, setTotalArticles] = useState(0);
     const [loadingArticles, setLoadingArticles] = useState(false);
     const [articleSearch, setArticleSearch] = useState('');
@@ -150,7 +209,7 @@ export default function KnowledgePoolPage() {
         setLoadingSources(true);
         try {
             const data = await api.pool.list();
-            setSources(data);
+            setSources(data.filter(isKnowledgeSource));
         } catch {
             toast({ title: t('logs.error'), description: t('toasts.fetch_error'), variant: 'destructive' });
         } finally {
@@ -164,15 +223,18 @@ export default function KnowledgePoolPage() {
             const params: Record<string, string> = { limit: '50', page: page.toString() };
             if (articleStatusFilter) params.status = articleStatusFilter;
             if (articleSearch) params.search = articleSearch;
-            const res = await api.kb.list(params);
-            if (res && res.data) {
-                if (page === 1) setArticles(res.data);
-                else setArticles(prev => [...prev, ...res.data]);
-                setTotalArticles(res.total || 0);
-                setHasMoreArticles((page - 1) * 50 + (res.data.length || 0) < (res.total || 0));
+            const response = await api.kb.list(params);
+            if (isRecord(response) && Array.isArray(response.data)) {
+                const nextArticles = response.data.filter(isKnowledgeArticle);
+                const total = typeof response.total === 'number' ? response.total : nextArticles.length;
+                if (page === 1) setArticles(nextArticles);
+                else setArticles(prev => [...prev, ...nextArticles]);
+                setTotalArticles(total);
+                setHasMoreArticles((page - 1) * 50 + nextArticles.length < total);
             } else {
-                setArticles(res as unknown as Array<unknown> || []);
-                setTotalArticles((res as unknown as Array<unknown>)?.length || 0);
+                const nextArticles = Array.isArray(response) ? response.filter(isKnowledgeArticle) : [];
+                setArticles(nextArticles);
+                setTotalArticles(nextArticles.length);
                 setHasMoreArticles(false);
             }
         } catch { /* handled */ }
@@ -246,7 +308,8 @@ export default function KnowledgePoolPage() {
             return matchSearch && matchStatus && matchType;
         })
         .sort((a, b) => {
-            let av: any, bv: any;
+            let av: string | number = '';
+            let bv: string | number = '';
             if (sortField === 'name') { av = a.name; bv = b.name; }
             else if (sortField === 'status') { av = a.status; bv = b.status; }
             else if (sortField === 'type') { av = a.type; bv = b.type; }
@@ -290,7 +353,7 @@ export default function KnowledgePoolPage() {
             await api.pool.sync(id);
             toast({ title: t('sync.started'), description: t('sync.started_desc'), variant: 'default' });
             loadSources(); 
-        } catch (error) {
+        } catch {
             toast({ title: t('sync.failed'), description: t('sync.failed_desc'), variant: 'destructive' });
         } finally {
             setIsSyncing(prev => { const next = new Set(prev); next.delete(id); return next; });
@@ -307,12 +370,12 @@ export default function KnowledgePoolPage() {
             toast({ title: 'Deleted', description: `Successfully deleted "${name}"`, variant: 'default' });
             setSources(prev => prev.filter(s => s.id !== id));
             setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
-        } catch (error: any) {
-            toast({ title: 'Delete Failed', description: error.message || 'Something went wrong', variant: 'destructive' });
+        } catch (error: unknown) {
+            toast({ title: 'Delete Failed', description: getErrorMessage(error, 'Something went wrong'), variant: 'destructive' });
         }
     };
 
-    const openCategoryEditor = (source: any) => {
+    const openCategoryEditor = (source: KnowledgeSource) => {
         const currentCategory = KNOWLEDGE_SOURCE_CATEGORIES.find(category => (
             category.slug === source.metadata?.categorySlug
             || category.label === source.metadata?.category
@@ -325,7 +388,9 @@ export default function KnowledgePoolPage() {
         if (!categoryEditorSource || !categorySlug) return;
         setIsSavingCategory(true);
         try {
-            const updated = await api.pool.updateCategory(categoryEditorSource.id, categorySlug);
+            const response = await api.pool.updateCategory(categoryEditorSource.id, categorySlug);
+            if (!isKnowledgeSource(response)) throw new Error(t('toasts.category_update_failed_desc'));
+            const updated = response;
             setSources(prev => prev.map(source => (
                 source.id === updated.id
                     ? { ...source, ...updated, _count: source._count }
@@ -333,10 +398,10 @@ export default function KnowledgePoolPage() {
             )));
             setCategoryEditorSource(null);
             toast({ title: t('toasts.category_updated'), description: t('toasts.category_updated_desc') });
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast({
                 title: t('toasts.category_update_failed'),
-                description: error?.message || t('toasts.category_update_failed_desc'),
+                description: getErrorMessage(error, t('toasts.category_update_failed_desc')),
                 variant: 'destructive',
             });
         } finally {
@@ -355,8 +420,8 @@ export default function KnowledgePoolPage() {
             toast({ title: 'Deleted', description: `Successfully deleted ${res.count} items`, variant: 'default' });
             setSources(prev => prev.filter(s => !ids.includes(s.id)));
             setSelectedIds(new Set());
-        } catch (error: any) {
-            toast({ title: 'Bulk Delete Failed', description: error.message || 'Something went wrong', variant: 'destructive' });
+        } catch (error: unknown) {
+            toast({ title: 'Bulk Delete Failed', description: getErrorMessage(error, 'Something went wrong'), variant: 'destructive' });
         }
     };
 
@@ -394,15 +459,16 @@ export default function KnowledgePoolPage() {
             toast({ title: t('toasts.dataset_scan_started'), description: t('toasts.dataset_scan_desc') });
             const res = await api.pool.syncDataset();
 
-            if (res && res.success === false) {
-                toast({ title: t('logs.error'), description: res.message || 'Dataset scan failed', variant: 'destructive' });
+            const result: Record<string, unknown> = isRecord(res) ? res : {};
+            if (result.success === false) {
+                toast({ title: t('logs.error'), description: typeof result.message === 'string' ? result.message : 'Dataset scan failed', variant: 'destructive' });
                 return;
             }
 
-            toast({ title: t('toasts.dataset_sync_success'), description: res?.message || t('toasts.dataset_sync_success') });
+            toast({ title: t('toasts.dataset_sync_success'), description: typeof result.message === 'string' ? result.message : t('toasts.dataset_sync_success') });
             loadSources();
-        } catch (err: any) {
-            toast({ title: t('logs.error'), description: err.message, variant: 'destructive' });
+        } catch (err: unknown) {
+            toast({ title: t('logs.error'), description: getErrorMessage(err, t('logs.error')), variant: 'destructive' });
         }
     };
 
@@ -439,9 +505,10 @@ export default function KnowledgePoolPage() {
                         sameDomainOnly: true,
                         dryRun: false,
                     });
+                const inserted = isRecord(result) && typeof result.inserted === 'number' ? result.inserted : 0;
                 toast({
                     title: t('crawler.toasts.discover_done'),
-                    description: t('crawler.toasts.discover_desc', { count: result.inserted ?? 0 }),
+                    description: t('crawler.toasts.discover_desc', { count: inserted }),
                 });
                 setActiveTab('crawler');
                 setCrawlSourceFilter(isHelpSource ? 'allplan_help' : 'generic_web');
@@ -454,25 +521,25 @@ export default function KnowledgePoolPage() {
             setIsUrlModalOpen(false);
             setUrlName(''); setUrlAddress('');
             setUrlIngestionMode('single');
-        } catch (err: any) {
+        } catch (err: unknown) {
             if (isDuplicateKnowledgeSourceUrlError(err)) {
                 toast({
                     title: t('toasts.url_duplicate'),
                     description: t('toasts.url_duplicate_desc'),
                 });
             } else {
-                toast({ title: t('logs.error'), description: err.message, variant: 'destructive' });
+                toast({ title: t('logs.error'), description: getErrorMessage(err, t('logs.error')), variant: 'destructive' });
             }
         } finally {
             setIsUrlSubmitting(false);
         }
     };
 
-    const viewLogs = async (source: any) => {
+    const viewLogs = async (source: KnowledgeSource) => {
         setActiveSource(source);
         try {
             const data = await api.pool.logs(source.id);
-            setLogs(data);
+            setLogs(data.filter(isSyncLog));
         } catch {
             toast({ title: t('logs.error'), description: t('toasts.logs_error'), variant: 'destructive' });
         }
@@ -693,7 +760,8 @@ export default function KnowledgePoolPage() {
 
         const crawler = metadata.crawler;
         if (crawler && typeof crawler === 'object' && 'learnNow' in crawler) {
-            const learnNow = (crawler as Record<string, any>).learnNow ?? {};
+            const crawlerRecord = crawler as Record<string, unknown>;
+            const learnNow = isRecord(crawlerRecord.learnNow) ? crawlerRecord.learnNow : {};
             return {
                 sourceType: learnNow.type ?? candidate.crawlFilter,
                 contentLength: undefined,
@@ -726,16 +794,16 @@ export default function KnowledgePoolPage() {
         const sourceType = typeof quality.sourceType === 'string' ? quality.sourceType : candidate.crawlFilter;
         const readyForImport = quality.readyForImport === true;
         const reasonCode = typeof quality.reasonCode === 'string' ? quality.reasonCode : null;
-        const reasonKeyByCode: Record<string, string> = {
-            ARTICLE_CONTENT_READY: 'article_ready',
-            MEDIA_TRANSCRIPT_READY: 'media_ready',
-            TRANSCRIPT_REQUIRED: 'transcript_required',
-            CONTENT_TOO_SHORT: 'content_too_short',
-            PDF_VALIDATED_ON_IMPORT: 'pdf_validated_on_import',
-            NEEDS_CONTENT_REVIEW: 'needs_content_review',
+        const reasonLabelByCode: Record<string, string> = {
+            ARTICLE_CONTENT_READY: t('crawler.quality_reasons.article_ready'),
+            MEDIA_TRANSCRIPT_READY: t('crawler.quality_reasons.media_ready'),
+            TRANSCRIPT_REQUIRED: t('crawler.quality_reasons.transcript_required'),
+            CONTENT_TOO_SHORT: t('crawler.quality_reasons.content_too_short'),
+            PDF_VALIDATED_ON_IMPORT: t('crawler.quality_reasons.pdf_validated_on_import'),
+            NEEDS_CONTENT_REVIEW: t('crawler.quality_reasons.needs_content_review'),
         };
-        const reasonLabel = reasonCode && reasonKeyByCode[reasonCode]
-            ? t(`crawler.quality_reasons.${reasonKeyByCode[reasonCode]}` as any)
+        const reasonLabel = reasonCode && reasonLabelByCode[reasonCode]
+            ? reasonLabelByCode[reasonCode]
             : null;
 
         return (
@@ -1054,8 +1122,8 @@ export default function KnowledgePoolPage() {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="w-32">
-                                                    <span className="text-[10px] font-mono font-medium truncate block w-28" title={(source.metadata as any)?.category || 'General'}>
-                                                        {(source.metadata as any)?.category || 'General'}
+                                                    <span className="text-[10px] font-mono font-medium truncate block w-28" title={source.metadata?.category || 'General'}>
+                                                        {source.metadata?.category || 'General'}
                                                     </span>
                                                 </TableCell>
                                                 <TableCell className="w-28">{statusBadge(source.status)}</TableCell>
@@ -1189,7 +1257,7 @@ export default function KnowledgePoolPage() {
                                 <div className="flex items-center gap-3">
                                     <input type="checkbox"
                                         checked={selectedArticleIds.size === articles.length && articles.length > 0}
-                                        onChange={() => selectedArticleIds.size === articles.length ? setSelectedArticleIds(new Set()) : setSelectedArticleIds(new Set(articles.map((a: any) => a.id)))}
+                                        onChange={() => selectedArticleIds.size === articles.length ? setSelectedArticleIds(new Set()) : setSelectedArticleIds(new Set(articles.map(article => article.id)))}
                                         className="w-4 h-4 cursor-pointer accent-primary" />
                                     <span className="text-xs text-muted-foreground uppercase font-bold tracking-widest">{t('articles.select_page', { count: selectedArticleIds.size })}</span>
                                 </div>
@@ -1212,7 +1280,7 @@ export default function KnowledgePoolPage() {
                             </div>
                         ) : (
                             <div className="divide-y divide-border/20 border-t border-b border-border/40 bg-card rounded-md">
-                                {articles.map((a: any) => (
+                                {articles.map((a) => (
                                     <div key={a.id} className={`group flex flex-col md:flex-row md:items-center justify-between px-4 py-3 hover:bg-muted/10 gap-4 ${selectedArticleIds.has(a.id) ? 'bg-primary/5' : ''}`}>
                                         <div className="flex items-center gap-4 flex-1 min-w-0">
                                             <input type="checkbox" checked={selectedArticleIds.has(a.id)}

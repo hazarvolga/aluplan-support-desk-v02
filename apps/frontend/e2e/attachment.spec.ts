@@ -19,19 +19,30 @@ async function apiGet(url: string, token: string) {
     return res.json();
 }
 
-async function apiPost(url: string, body: any, token?: string) {
+async function apiPost(url: string, body: any, token?: string, csrfToken?: string) {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (csrfToken) {
+        headers.Cookie = `XSRF-TOKEN=${encodeURIComponent(csrfToken)}`;
+        headers['X-XSRF-TOKEN'] = csrfToken;
+        headers['X-Requested-With'] = 'XMLHttpRequest';
+    }
     const res = await fetch(`${BASE_API}${url}`, {
         method: 'POST',
         headers,
         body: JSON.stringify(body)
     });
-    if (!res.ok) throw new Error(`API POST ${url} failed`);
+    if (!res.ok) throw new Error(`API POST ${url} failed (${res.status}): ${await res.text()}`);
     const payload = await res.json();
-    return url === '/auth/login'
-        ? { ...payload, access_token: extractAccessTokenFromSetCookie(res.headers.get('set-cookie')) }
-        : payload;
+    if (url !== '/auth/login') return payload;
+
+    const setCookie = res.headers.get('set-cookie');
+    const csrfMatch = setCookie?.match(/(?:^|[,;]\s*)XSRF-TOKEN=([^;,]+)/);
+    return {
+        ...payload,
+        access_token: extractAccessTokenFromSetCookie(setCookie),
+        csrf_token: csrfMatch ? decodeURIComponent(csrfMatch[1]) : undefined,
+    };
 }
 
 test.describe('Attachment Upload Flow', () => {
@@ -56,7 +67,7 @@ test.describe('Attachment Upload Flow', () => {
             subject: `[E2E] Attachment Test - ${Date.now()}`,
             description: 'Original description.',
             priority: 'LOW',
-        }, customerToken);
+        }, customerToken, customerAuth.csrf_token);
         const ticketId = ticket.id;
 
         console.log('--- UI: Customer login & navigation ---');
@@ -76,21 +87,22 @@ test.describe('Attachment Upload Flow', () => {
         await expect(page.getByText(testFileName, { exact: false })).toBeVisible({ timeout: 10000 });
 
         console.log('--- UI: Filling message and clicking SEND ---');
-        const textarea = page.locator('textarea[placeholder*="message"]');
+        const messageEditor = page.getByRole('textbox', { name: /Mesajınızı buraya yazın/ });
         const messageToType = `Attachment Test Message ${Date.now()}`;
-        await textarea.fill(messageToType);
+        await messageEditor.fill(messageToType);
         await page.getByRole('button').filter({ has: page.locator('svg.lucide-send') }).click();
 
-        // Wait for textarea to clear
-        await expect(textarea).toHaveValue('', { timeout: 15000 });
-        console.log('✅ Textarea cleared');
+        // Wait for the rich-text editor to clear.
+        await expect(messageEditor).toBeEmpty({ timeout: 15000 });
+        console.log('✅ Message editor cleared');
 
         // ── BACKEND VERIFICATION ──────────────────────────────────────────
         console.log('--- API: Verifying backend state ---');
         let ticketData;
         for (let i = 0; i < 5; i++) {
             ticketData = await apiGet(`/tickets/${ticketId}`, customerToken);
-            const latestMsg = ticketData.messages.find((m: any) => m.message === messageToType);
+            const latestMsg = ticketData.messages.find((m: any) =>
+                typeof m.message === 'string' && m.message.includes(messageToType));
             if (latestMsg && latestMsg.attachments?.length > 0) {
                 console.log(`✅ API confirmed attachment persisted for message: ${latestMsg.id}`);
                 break;
@@ -98,6 +110,11 @@ test.describe('Attachment Upload Flow', () => {
             console.log(`... waiting for backend persistence (attempt ${i + 1})`);
             await page.waitForTimeout(2000);
         }
+        const persistedMessage = ticketData.messages.find((message: any) =>
+            typeof message.message === 'string' && message.message.includes(messageToType));
+        expect(persistedMessage?.attachments).toEqual(expect.arrayContaining([
+            expect.objectContaining({ fileName: testFileName, mimeType: 'text/plain' }),
+        ]));
 
         // ── UI VERIFICATION ──────────────────────────────────────────────
         console.log('--- UI: Verifying rendering ---');

@@ -37,6 +37,7 @@ describe('Synthetic HTTP customer admission and durable reset revocation', () =>
         JWT_SECRET: randomBytes(32).toString('hex'),
         JWT_REFRESH_SECRET: randomBytes(32).toString('hex'),
         AUTH_ACTION_JWT_SECRET: randomBytes(32).toString('hex'),
+        SESSION_MARKER_SECRET: randomBytes(32).toString('hex'),
         NODE_ENV: 'test', FRONTEND_URL: 'http://localhost:3000',
     };
     const jwt = new JwtService();

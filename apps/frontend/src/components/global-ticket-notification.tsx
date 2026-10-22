@@ -7,6 +7,11 @@ import { ToastAction } from '@/components/ui/toast';
 import { useTranslations } from 'next-intl';
 import { RealtimeSessionNotice } from './realtime-session-notice';
 
+type NewTicketEvent = { id: string; subject: string; creatorName?: string };
+type AiFallbackEvent = { primaryProvider: string; fallbackProvider: string };
+type CrmChangesEvent = { changeCount?: number; entityType?: string };
+type CrmSyncErrorEvent = { message?: string };
+
 export function GlobalTicketNotification() {
     const { toast } = useToast();
     const t = useTranslations('notifications');
@@ -16,7 +21,7 @@ export function GlobalTicketNotification() {
     useEffect(() => {
         const socket = getSocket();
 
-        const handleNewTicket = (ticket: any) => {
+        const handleNewTicket = (ticket: NewTicketEvent) => {
             toastRef.current({
                 title: t('new_ticket_title'),
                 description: t('new_ticket_desc', { name: ticket.creatorName || 'Bir müşteri', subject: ticket.subject }),
@@ -33,7 +38,7 @@ export function GlobalTicketNotification() {
             });
         };
 
-        const handleAiFallback = (data: any) => {
+        const handleAiFallback = (data: AiFallbackEvent) => {
             toastRef.current({
                 title: t('system_alert_title'),
                 description: t('system_alert_desc', { primary: data.primaryProvider, fallback: data.fallbackProvider }),
@@ -42,7 +47,7 @@ export function GlobalTicketNotification() {
             });
         };
 
-        const handleCrmChanges = (data: any) => {
+        const handleCrmChanges = (data: CrmChangesEvent) => {
             toastRef.current({
                 title: t('crm_change_title'),
                 description: t('crm_change_desc', {
@@ -62,7 +67,7 @@ export function GlobalTicketNotification() {
             });
         };
 
-        const handleCrmSyncError = (data: any) => {
+        const handleCrmSyncError = (data: CrmSyncErrorEvent) => {
             toastRef.current({
                 title: t('crm_sync_error_title'),
                 description: t('crm_sync_error_desc', { message: data.message || '-' }),

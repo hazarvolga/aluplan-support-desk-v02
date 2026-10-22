@@ -25,7 +25,7 @@ export default function NewKnowledgeBaseArticlePage() {
     const [content, setContent] = useState('');
     const [tags, setTags] = useState('');
     const [categoryId, setCategoryId] = useState<string>('');
-    const [categories, setCategories] = useState<any[]>([]);
+    const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
     const [isInternal, setIsInternal] = useState(false);
     const [loading, setLoading] = useState(false);
 

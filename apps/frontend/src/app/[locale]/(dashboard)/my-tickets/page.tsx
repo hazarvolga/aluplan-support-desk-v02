@@ -12,13 +12,22 @@ import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { useTranslations, useLocale } from 'next-intl';
 import { tr, enUS, de } from 'date-fns/locale';
+import type { ComponentProps } from 'react';
+
+type TicketSummary = {
+    id: string;
+    subject: string;
+    ticketNumber: string;
+    createdAt: string;
+    status: string;
+};
 
 export default function MyTicketsPage() {
     const t = useTranslations('my_tickets');
     const ct = useTranslations('common');
     const tt = useTranslations('tickets');
     const locale = useLocale();
-    const [tickets, setTickets] = useState<any[]>([]);
+    const [tickets, setTickets] = useState<TicketSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<'backend_unavailable' | 'unknown' | null>(null);
 
@@ -33,7 +42,7 @@ export default function MyTicketsPage() {
         setLoadError(null);
         try {
             const response = await api.tickets.list();
-            setTickets(response.data);
+            setTickets(response.data as TicketSummary[]);
         } catch (error) {
             console.error('Failed to fetch tickets:', error);
             setLoadError(isBackendUnavailableError(error) ? 'backend_unavailable' : 'unknown');
@@ -43,13 +52,13 @@ export default function MyTicketsPage() {
     };
 
     const getStatusBadge = (status: string) => {
-        const variants: Record<string, any> = {
+        const variants: Record<string, ComponentProps<typeof Badge>['variant']> = {
             NEW: 'destructive',
             OPEN: 'default',
             IN_PROGRESS: 'secondary',
             PENDING_CUSTOMER: 'outline',
-            RESOLVED: 'success',
-            CLOSED: 'ghost',
+            RESOLVED: 'secondary',
+            CLOSED: 'outline',
         };
 
         return <Badge variant={variants[status] || 'default'}>{tt(`status.${status}`)}</Badge>;

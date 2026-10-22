@@ -73,4 +73,15 @@ describe('Sidebar review center navigation', () => {
 
         expect(await screen.findByTestId('review-center-badge')).toHaveTextContent('99+');
     });
+
+    it('renders section headings without contrast-reducing text opacity', async () => {
+        render(<Sidebar />);
+        await screen.findByTestId('nav-review_center');
+
+        const headings = screen.getAllByRole('heading', { level: 4 });
+        expect(headings.length).toBeGreaterThan(0);
+        headings.forEach((heading) => {
+            expect(heading.className).not.toMatch(/text-(?:muted-foreground|primary)\/(?:50|70)/);
+        });
+    });
 });

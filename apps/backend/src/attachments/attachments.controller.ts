@@ -22,6 +22,7 @@ import { RequirePermissions } from '../rbac/decorators/rbac.decorators';
 import { StorageService } from '../common/services/storage.service';
 import { Response } from 'express';
 import { HotinfoParserService } from '../customers/hotinfo-parser.service';
+import { normalizeUploadFilename } from './attachment-filename';
 
 @Controller('attachments')
 @UseGuards(RbacGuard)
@@ -55,6 +56,9 @@ export class AttachmentsController {
                         // text/* is intentionally NOT used (too broad — allows text/javascript, text/html etc.)
                         // Blocked: exe, dll, bat, sh, js, py, apk, iso, dmg and all other executables
                         fileType: /^(image\/(png|jpeg|jpg|gif|webp|bmp|svg\+xml|tiff)|application\/pdf|text\/(plain|csv|markdown|x-log)|application\/(zip|x-zip-compressed|x-7z-compressed|x-rar-compressed)|application\/vnd\.rar|application\/octet-stream|application\/msword|application\/vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)|application\/vnd\.ms-(excel|powerpoint)|video\/(mp4|quicktime|x-msvideo|webm|x-ms-wmv))/,
+                        // Plain-text formats have no magic bytes. Fall back to the
+                        // multipart MIME type only when binary detection returns no type.
+                        fallbackToMimetype: true,
                     }),
                 ],
             }),
@@ -63,10 +67,11 @@ export class AttachmentsController {
     ) {
         await this.attachmentsService.assertCanCreateForMessage(messageId, req.user);
 
-        const storageKey = await this.storageService.uploadFile(file, `tickets/msg_${messageId}`);
+        const normalizedFile = { ...file, originalname: normalizeUploadFilename(file.originalname) };
+        const storageKey = await this.storageService.uploadFile(normalizedFile, `tickets/msg_${messageId}`);
 
         let parsedHotinfo = null;
-        const lowName = file.originalname.toLowerCase();
+        const lowName = normalizedFile.originalname.toLowerCase();
         // Support both _hotinf_ (standard) and _hotinfo_ (alternative)
         if ((lowName.includes('_hotinf_') || lowName.includes('_hotinfo_')) && lowName.endsWith('.hxl')) {
             try {
@@ -79,7 +84,7 @@ export class AttachmentsController {
         // Publish attachment metadata only after the configured storage accepted the bytes.
         const attachment = await this.attachmentsService.create({
             messageId,
-            fileName: file.originalname,
+            fileName: normalizedFile.originalname,
             fileSize: file.size,
             mimeType: file.mimetype,
             url: storageKey,

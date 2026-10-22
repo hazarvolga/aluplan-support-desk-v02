@@ -155,8 +155,6 @@ export const RAG_CONFIG = {
         GEMINI_DIM: 3072,
         /** OpenAI embedding dimensions */
         OPENAI_DIM: 1536,
-        /** Ollama default dimensions */
-        OLLAMA_DIM: 768,
     },
 } as const;
 

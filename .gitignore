@@ -150,7 +150,6 @@ test_db.ts
 test_email.ts
 test_llm.ts
 repro-preview.ts
-patch_ollama.ts
 patch_builder.py
 patch_providers.py
 parse_sql.js

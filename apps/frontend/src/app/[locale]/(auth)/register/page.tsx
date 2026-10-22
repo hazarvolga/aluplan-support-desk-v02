@@ -3,7 +3,6 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
@@ -12,7 +11,6 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
 export default function RegisterPage() {
-    const router = useRouter();
     const t = useTranslations('auth.register');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -22,7 +20,7 @@ export default function RegisterPage() {
     const [resetSent, setResetSent] = useState(false);
 
     // Products fetched from backend
-    const [products, setProducts] = useState<any[]>([]);
+    const [products, setProducts] = useState<Array<{ id: string; name: string }>>([]);
     const [usedProducts, setUsedProducts] = useState<string[]>([]);
 
     useEffect(() => {
@@ -32,9 +30,9 @@ export default function RegisterPage() {
                 const res = await fetch(`${api.getBaseUrl()}/products`);
                 if (res.ok) {
                     const data = await res.json();
-                    setProducts(data);
+                    setProducts(data as Array<{ id: string; name: string }>);
                 }
-            } catch (err) {
+            } catch {
                 console.error('Failed to load products');
             }
         };
@@ -76,8 +74,8 @@ export default function RegisterPage() {
             // Always advance to step 2 — each action has its own UI block
             setStep(2);
             setResetSent(false);
-        } catch (err: any) {
-            setError(err.message || t('error_email_lookup'));
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : t('error_email_lookup'));
         } finally {
             setLoading(false);
         }
@@ -124,8 +122,8 @@ export default function RegisterPage() {
             }
 
             setSuccess(true);
-        } catch (err: any) {
-            setError(err.message || t('error_default'));
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : t('error_default'));
         } finally {
             setLoading(false);
         }
@@ -137,8 +135,8 @@ export default function RegisterPage() {
         try {
             await api.auth.resendVerification(form.email);
             setResetSent(true);
-        } catch (err: any) {
-            setError(err.message || t('error_reset_failed'));
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : t('error_reset_failed'));
         } finally {
             setLoading(false);
         }
@@ -150,8 +148,8 @@ export default function RegisterPage() {
         try {
             await api.auth.forgotPassword(form.email);
             setResetSent(true);
-        } catch (err: any) {
-            setError(err.message || t('error_reset_failed'));
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : t('error_reset_failed'));
         } finally {
             setLoading(false);
         }

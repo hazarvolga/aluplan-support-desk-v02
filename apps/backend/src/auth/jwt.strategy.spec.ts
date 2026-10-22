@@ -136,6 +136,17 @@ describe('JwtStrategy', () => {
             });
         });
 
+        it('preserves the verified session version for durable logout CAS', async () => {
+            redis.get.mockResolvedValue(null);
+            mockPrismaService.user.findUnique.mockResolvedValue({
+                status: 'ACTIVE', deletedAt: null, sessionVersion: 4,
+                role: { name: 'ADMIN', permissions: [{ permission: { name: '*' } }] },
+            });
+
+            await expect(strategy.validate({ ...basePayload, sessionVersion: 4 }))
+                .resolves.toMatchObject({ sessionVersion: 4 });
+        });
+
         it('should throw UnauthorizedException for blacklisted jti', async () => {
             // Arrange
             redis.get.mockImplementation((key: string) => {

@@ -17,16 +17,27 @@ const BASE_API = 'http://localhost:4000/api/v1';
 
 // ── API helpers ───────────────────────────────────────────────────────────
 
-async function apiPost(url: string, body: any, token?: string) {
+async function apiPost(url: string, body: any, token?: string, csrfToken?: string) {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (csrfToken) {
+        headers['Cookie'] = `XSRF-TOKEN=${encodeURIComponent(csrfToken)}`;
+        headers['X-XSRF-TOKEN'] = csrfToken;
+        headers['X-Requested-With'] = 'XMLHttpRequest';
+    }
     const res = await fetch(`${BASE_API}${url}`, {
         method: 'POST', headers, body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`POST ${url} failed (${res.status}): ${await res.text()}`);
     const payload = await res.json();
+    const setCookie = res.headers.get('set-cookie');
+    const csrfMatch = setCookie?.match(/(?:^|[,;]\s*)XSRF-TOKEN=([^;,]+)/);
     return url === '/auth/login'
-        ? { ...payload, access_token: extractAccessTokenFromSetCookie(res.headers.get('set-cookie')) }
+        ? {
+            ...payload,
+            access_token: extractAccessTokenFromSetCookie(setCookie),
+            csrf_token: csrfMatch ? decodeURIComponent(csrfMatch[1]) : undefined,
+        }
         : payload;
 }
 
@@ -52,10 +63,11 @@ async function apiPatch(url: string, token: string, body: any = {}) {
 
 const ADMIN = TEST_USERS.admin;
 const CUSTOMER = TEST_USERS.customer;
+const loginPayload = ({ email, password }: { email: string; password: string }) => ({ email, password });
 
 // ── Shared setup: broadcast an announcement via API ───────────────────────
 
-async function broadcastAnnouncementViaApi(adminToken: string): Promise<string> {
+async function broadcastAnnouncementViaApi(adminToken: string, csrfToken: string): Promise<string> {
     // Create announcement
     const ann = await apiPost('/announcements', {
         title: `E2E Notification Test ${Date.now()}`,
@@ -63,10 +75,10 @@ async function broadcastAnnouncementViaApi(adminToken: string): Promise<string> 
         contentMjml: '<p>This is an <b>E2E test</b> announcement for notification verification.</p>',
         targetCriteria: { statuses: ['ACTIVE'] },
         type: 'BROADCAST',
-    }, adminToken);
+    }, adminToken, csrfToken);
 
     // Broadcast it
-    await apiPost(`/announcements/${ann.id}/broadcast`, {}, adminToken);
+    await apiPost(`/announcements/${ann.id}/broadcast`, {}, adminToken, csrfToken);
     return ann.id;
 }
 
@@ -117,18 +129,20 @@ test.describe('Announcement Notifications — Unread Badge', () => {
 
     test('customer sees unread badge on sidebar bell after broadcast', async ({ page }) => {
         console.log('--- [API] Setup: Admin login & broadcast ---');
-        const adminAuth = await apiPost('/auth/login', ADMIN);
+        const adminAuth = await apiPost('/auth/login', loginPayload(ADMIN));
         const adminToken = adminAuth.access_token;
+        const adminCsrfToken = adminAuth.csrf_token;
         expect(adminToken).toBeTruthy();
+        expect(adminCsrfToken).toBeTruthy();
 
         // Get initial unread count for customer
-        const customerAuth = await apiPost('/auth/login', CUSTOMER);
+        const customerAuth = await apiPost('/auth/login', loginPayload(CUSTOMER));
         const customerToken = customerAuth.access_token;
         const initialCount = await apiGet('/announcements/my/unread-count', customerToken);
         console.log('Initial unread count:', initialCount.count);
 
         // Broadcast a new announcement
-        await broadcastAnnouncementViaApi(adminToken);
+        await broadcastAnnouncementViaApi(adminToken, adminCsrfToken);
         console.log('✅ Announcement broadcasted via API');
 
         // Give backend a moment to process
@@ -177,9 +191,9 @@ test.describe('Announcement Notifications — Archive Drawer', () => {
 
     test('customer can open archive drawer and see announcement list', async ({ page }) => {
         console.log('--- [API] Setup: Ensure at least one announcement exists ---');
-        const adminAuth = await apiPost('/auth/login', ADMIN);
+        const adminAuth = await apiPost('/auth/login', loginPayload(ADMIN));
         const adminToken = adminAuth.access_token;
-        await broadcastAnnouncementViaApi(adminToken);
+        await broadcastAnnouncementViaApi(adminToken, adminAuth.csrf_token);
 
         // ── UI: Customer login ────────────────────────────────────────────
         await page.goto('/tr/login');
@@ -245,11 +259,11 @@ test.describe('Announcement Notifications — Mark as Read', () => {
 
     test('clicking an unread announcement marks it read and decrements badge', async ({ page }) => {
         console.log('--- [API] Setup: Broadcast announcement & get initial state ---');
-        const adminAuth = await apiPost('/auth/login', ADMIN);
+        const adminAuth = await apiPost('/auth/login', loginPayload(ADMIN));
         const adminToken = adminAuth.access_token;
-        await broadcastAnnouncementViaApi(adminToken);
+        await broadcastAnnouncementViaApi(adminToken, adminAuth.csrf_token);
 
-        const customerAuth = await apiPost('/auth/login', CUSTOMER);
+        const customerAuth = await apiPost('/auth/login', loginPayload(CUSTOMER));
         const customerToken = customerAuth.access_token;
 
         // Verify there's at least one unread log
@@ -312,7 +326,7 @@ test.describe('Announcement Notifications — Mark as Read', () => {
 
         // ── Verify full content view opens ────────────────────────────────
         // After clicking, selectedItem is set — back button appears
-        const backBtn = page.locator('button').filter({ hasText: /Duyurular|Announcements|Ankündigungen/i });
+        const backBtn = page.getByRole('button', { name: 'Duyurular', exact: true });
         await expect(backBtn).toBeVisible({ timeout: 5000 });
         console.log('✅ Full content view opened');
 
@@ -345,6 +359,7 @@ test.describe('Announcement Notifications — Mark as Read', () => {
 // ─────────────────────────────────────────────────────────────────────────
 
 test.describe('Announcement API — Security & Data Isolation', () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
 
     test('GET /announcements/my requires JWT — returns 401 without token', async ({ request }) => {
         const res = await request.get(`${BASE_API}/announcements/my`);
@@ -359,13 +374,20 @@ test.describe('Announcement API — Security & Data Isolation', () => {
     });
 
     test('PATCH /announcements/logs/:logId/read requires JWT — returns 401 without token', async ({ request }) => {
-        const res = await request.patch(`${BASE_API}/announcements/logs/nonexistent-id/read`);
+        const csrfToken = 'e2e-anonymous-csrf-token';
+        const res = await request.patch(`${BASE_API}/announcements/logs/nonexistent-id/read`, {
+            headers: {
+                Cookie: `XSRF-TOKEN=${csrfToken}`,
+                'X-XSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
         expect(res.status()).toBe(401);
         console.log('✅ 401 without JWT confirmed for mark-read');
     });
 
     test('GET /announcements/my returns only caller\'s logs — data isolation', async ({ request }) => {
-        const customerAuth = await apiPost('/auth/login', CUSTOMER);
+        const customerAuth = await apiPost('/auth/login', loginPayload(CUSTOMER));
         const customerToken = customerAuth.access_token;
 
         const res = await request.get(`${BASE_API}/announcements/my`, {
@@ -392,7 +414,7 @@ test.describe('Announcement API — Security & Data Isolation', () => {
 
     test('PATCH /announcements/logs/:logId/read returns 403 for another customer\'s log', async ({ request }) => {
         // Login as admin to get a log that belongs to a different customer
-        const adminAuth = await apiPost('/auth/login', ADMIN);
+        const adminAuth = await apiPost('/auth/login', loginPayload(ADMIN));
         const adminToken = adminAuth.access_token;
 
         // Get admin's own announcements (admin has no customer profile → empty)
@@ -407,7 +429,7 @@ test.describe('Announcement API — Security & Data Isolation', () => {
     });
 
     test('GET /announcements/my/unread-count returns { count: number }', async ({ request }) => {
-        const customerAuth = await apiPost('/auth/login', CUSTOMER);
+        const customerAuth = await apiPost('/auth/login', loginPayload(CUSTOMER));
         const customerToken = customerAuth.access_token;
 
         const res = await request.get(`${BASE_API}/announcements/my/unread-count`, {

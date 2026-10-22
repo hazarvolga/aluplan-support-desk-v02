@@ -25,7 +25,7 @@ function atLeast(actual, minimum) {
 
 test('Next resolves the reviewed sharp release and patched native dependencies', t => {
     t.diagnostic(JSON.stringify({ sharp: sharp.versions.sharp, vips: sharp.versions.vips, heif: sharp.versions.heif }));
-    assert.equal(sharp.versions.sharp, '0.35.4');
+    assert.equal(sharp.versions.sharp, '0.35.5');
     assert.equal(getSharp(1), sharp);
     assert.ok(atLeast(sharp.versions.vips, '8.18.3'));
     assert.ok(atLeast(sharp.versions.heif, '1.23.2'));

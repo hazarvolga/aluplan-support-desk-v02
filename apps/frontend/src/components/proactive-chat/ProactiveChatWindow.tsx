@@ -16,6 +16,10 @@ interface Message {
     createdAt: string;
 }
 
+interface IncomingMessage extends Message { messageId?: string }
+interface TypingEvent { sessionId: string; userId: string; isTyping: boolean }
+interface SessionEvent { sessionId: string }
+
 interface ProactiveChatWindowProps {
     sessionId: string;
     currentUserId: string;
@@ -54,7 +58,7 @@ export function ProactiveChatWindow({
                 setMessages(msgs);
                 setTimeout(scrollToBottom, 100);
             })
-            .catch((err: any) => {
+            .catch((err: unknown) => {
                 if (process.env.NODE_ENV === 'development') {
                     console.error('[ProactiveChatWindow] Failed to load messages:', err);
                 }
@@ -71,10 +75,10 @@ export function ProactiveChatWindow({
             socket.emit('proactive_chat:join', sessionId);
 
             // 11.3 Append new messages to list
-            const handleMessage = (data: any) => {
+            const handleMessage = (data: IncomingMessage) => {
                 if (data.sessionId !== sessionId) return;
                 const newMsg: Message = {
-                    id: data.messageId,
+                    id: data.messageId ?? data.id,
                     sessionId: data.sessionId,
                     senderId: data.senderId,
                     content: data.content,
@@ -85,14 +89,14 @@ export function ProactiveChatWindow({
             };
 
             // 11.5 Typing indicator listener
-            const handleTyping = (data: any) => {
+            const handleTyping = (data: TypingEvent) => {
                 if (data.sessionId !== sessionId) return;
                 if (data.userId === currentUserId) return;
                 setIsTyping(data.isTyping);
             };
 
             // 11.6 Session ended: switch to read-only, show notification
-            const handleEnded = (data: any) => {
+            const handleEnded = (data: SessionEvent) => {
                 if (data.sessionId !== sessionId) return;
                 setIsReadOnly(true);
                 toast.info('Chat oturumu sona erdi');
@@ -126,8 +130,8 @@ export function ProactiveChatWindow({
             const msg = await api.proactiveChat.sendMessage(sessionId, content);
             setMessages((prev) => [...prev, msg]);
             setTimeout(scrollToBottom, 50);
-        } catch (err: any) {
-            toast.error(err.message || 'Mesaj gönderilemedi');
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : 'Mesaj gönderilemedi');
             setInput(content); // restore on error
         } finally {
             setLoading(false);
@@ -164,8 +168,8 @@ export function ProactiveChatWindow({
         try {
             const ticket = await api.proactiveChat.convertToTicket(sessionId);
             toast.success(`Ticket oluşturuldu: ${ticket.ticketNumber}`);
-        } catch (err: any) {
-            toast.error(err.message || 'Ticket oluşturulamadı');
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : 'Ticket oluşturulamadı');
         } finally {
             setConverting(false);
         }
@@ -178,8 +182,8 @@ export function ProactiveChatWindow({
             await api.proactiveChat.endSession(sessionId);
             setIsReadOnly(true);
             onClose?.();
-        } catch (err: any) {
-            toast.error(err.message || 'Oturum sonlandırılamadı');
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : 'Oturum sonlandırılamadı');
         } finally {
             setEnding(false);
         }

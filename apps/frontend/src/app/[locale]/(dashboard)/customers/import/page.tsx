@@ -6,7 +6,7 @@ import { useState, useRef } from 'react';
 import { api } from '@/lib/api';
 import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
-import { Upload, ArrowLeft, FileText, CheckCircle2, AlertCircle, AlertTriangle, Info } from 'lucide-react';
+import { Upload, ArrowLeft, FileText, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslations } from 'next-intl';
@@ -16,12 +16,29 @@ interface ValidationResult {
     valid: number;
     missingClientNo: number;
     missingCompany: number;
-    rows: any[];
+    rows: ImportRow[];
+}
+
+type RawCsvRow = Record<string, string | undefined>;
+
+interface ImportRow {
+    externalContactId?: string;
+    companyName?: string;
+    customerNo?: string;
+    contractStatus?: string;
+    subscriptionModel?: string;
+    fullName: string;
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    jobTitle?: string;
+    email: string;
+    phone?: string;
+    status: string;
 }
 
 export default function ImportCustomersPage() {
     const t = useTranslations('customers');
-    const tc = useTranslations('common');
     const { toast } = useToast();
     const [importing, setImporting] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -40,13 +57,13 @@ export default function ImportCustomersPage() {
         const reader = new FileReader();
         reader.onload = (e) => {
             const csvText = e.target?.result as string;
-            Papa.parse(csvText, {
+            Papa.parse<RawCsvRow>(csvText, {
                 header: true,
                 skipEmptyLines: true,
                 delimiter: ';',
                 complete: (results) => {
                     const mappedData = results.data
-                        .map((row: any) => ({
+                        .map((row): ImportRow => ({
                             externalContactId: row['(Do Not Modify) Contact']?.trim() || undefined,
                             companyName: row['Company Name']?.trim(),
                             customerNo: row['Client ID: ALLPLAN (Company Name) (Account)']?.trim(),
@@ -61,7 +78,7 @@ export default function ImportCustomersPage() {
                             phone: row['Mobile Phone']?.trim() || undefined,
                             status: row['Status']?.trim() || 'Active',
                         }))
-                        .filter((r: any) => r.email && r.firstName && r.lastName);
+                        .filter((row) => Boolean(row.email && row.firstName && row.lastName));
 
                     if (mappedData.length === 0) {
                         toast({ variant: 'destructive', title: '⚠️ ' + t('crm.log_empty'), description: t('import.analysis_complete') });
@@ -79,7 +96,7 @@ export default function ImportCustomersPage() {
                         rows: mappedData
                     });
                 },
-                error: (err: any) => {
+                error: (err: Error) => {
                     console.error(err);
                     toast({ variant: 'destructive', title: '❌ ' + t('crm.error'), description: t('labels.unknown') });
                 },
@@ -119,9 +136,13 @@ export default function ImportCustomersPage() {
             });
             setValidation(null);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Import error:', error);
-            toast({ variant: 'destructive', title: '❌ ' + t('import.title'), description: error.message });
+            toast({
+                variant: 'destructive',
+                title: '❌ ' + t('import.title'),
+                description: error instanceof Error ? error.message : t('labels.unknown'),
+            });
         } finally {
             setImporting(false);
             if (fileInputRef.current) fileInputRef.current.value = '';

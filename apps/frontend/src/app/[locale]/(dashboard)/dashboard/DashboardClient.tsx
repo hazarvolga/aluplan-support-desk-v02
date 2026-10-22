@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ElementType, ReactNode } from 'react';
-import { Activity, AlertCircle, ArrowRight, BarChart3, BookOpen, Bot, CheckCircle2, Clock, Database, DollarSign, Info, PlusCircle, RefreshCw, Search, Server, ShieldCheck, Ticket, TrendingUp, Users, X } from 'lucide-react';
+import { Activity, AlertCircle, ArrowRight, BarChart3, BookOpen, Bot, CheckCircle2, Clock, Database, DollarSign, Info, PlusCircle, RefreshCw, Search, Server, ShieldCheck, Ticket, TrendingUp, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
@@ -52,6 +52,30 @@ type PulseDetail = {
     activeToolLabel: string;
     tags: string[];
     summary: { title: string; description: string };
+};
+
+type DashboardRow = Record<string, unknown> & {
+    id?: string;
+    count?: number | string;
+    displayName?: string;
+    companyName?: string;
+    entityId?: string;
+    entityType?: string;
+    email?: string;
+    changeSummary?: string;
+    fieldLabel?: string;
+    status?: string;
+    href?: string;
+    title?: string;
+    sourceUrl?: string;
+    format?: string;
+    source?: string;
+    language?: string;
+};
+
+type CustomerStats = {
+    total?: number;
+    resolvedTotal?: number;
 };
 
 const segmentToolLabelKeys: Record<string, string> = {
@@ -192,8 +216,14 @@ function formatRefreshTime(value: Date | null) {
     }).format(value);
 }
 
-function roleList(user: any) {
-    return (user?.roles || [user?.role?.name, user?.role]).filter(Boolean).map((role: string) => role.toLowerCase());
+function roleList(user: unknown) {
+    if (!user || typeof user !== 'object') return [];
+    const candidate = user as { roles?: unknown; role?: unknown };
+    const nestedRole = candidate.role && typeof candidate.role === 'object'
+        ? (candidate.role as { name?: unknown }).name
+        : undefined;
+    const roles = Array.isArray(candidate.roles) ? candidate.roles : [nestedRole, candidate.role];
+    return roles.filter((role): role is string => typeof role === 'string').map((role) => role.toLowerCase());
 }
 
 function StatCard({ icon: Icon, label, value, indicatorColor }: { icon: ElementType; label: string; value: string | number; indicatorColor: string }) {
@@ -216,7 +246,7 @@ function StatCard({ icon: Icon, label, value, indicatorColor }: { icon: ElementT
     );
 }
 
-function CustomerDashboard({ stats }: { stats: any }) {
+function CustomerDashboard({ stats }: { stats: CustomerStats | null }) {
     const t = useTranslations('dashboard');
     const tc = useTranslations('common');
     const { user } = useAuth();
@@ -428,13 +458,13 @@ function PulseBand({ data, onSelect }: { data: OpsDashboardData; onSelect: (id: 
         {
             id: 'crm' as const,
             source: 'crm_sync_logs.updated',
-            series: (data.pulse.crm.trend ?? []).map((point: any) => Number(point.count ?? 0)),
+            series: (data.pulse.crm.trend ?? []).map((point: DashboardRow) => Number(point.count ?? 0)),
             tone: 'text-emerald-300',
         },
         {
             id: 'knowledge' as const,
             source: 'crawl_candidates / chunks',
-            series: (data.pulse.knowledge.trend ?? []).map((point: any) => Number(point.count ?? 0)),
+            series: (data.pulse.knowledge.trend ?? []).map((point: DashboardRow) => Number(point.count ?? 0)),
             tone: 'text-violet-300',
         },
     ];
@@ -607,13 +637,13 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
                 description: item.description || item.status || '',
                 href: item.href,
             })),
-        crm: (data.pulse.crm.recentChanges ?? []).slice(0, 8).map((item: any, index: number) => ({
+        crm: (data.pulse.crm.recentChanges ?? []).slice(0, 8).map((item: DashboardRow, index: number) => ({
             id: item.id || `crm-${index}`,
             title: item.displayName || item.companyName || item.entityId || item.entityType || t('modal.unknown_record'),
             description: [item.companyName, item.email, item.changeSummary || item.fieldLabel, item.status].filter(Boolean).join(' / ') || t('modal.no_description'),
             href: item.href || '/customers/crm',
         })),
-        knowledge: (data.learnNow.recent ?? []).slice(0, 8).map((item: any, index: number) => ({
+        knowledge: (data.learnNow.recent ?? []).slice(0, 8).map((item: DashboardRow, index: number) => ({
             id: item.id || `learnnow-${index}`,
             title: item.title || item.sourceUrl || t('modal.unknown_record'),
             description: item.status || item.format || item.source || t('modal.no_description'),
@@ -871,8 +901,8 @@ function buildPulseDetail(data: OpsDashboardData, selected: PulseId, t: (key: st
     const seriesMap: Record<PulseId, number[]> = {
         tickets: data.activeDesk.trend.map((point) => Number(point.created ?? 0)),
         ai: data.pulse.aiQuality.trend.map((point) => Number(point.confidence ?? 0)),
-        crm: (data.pulse.crm.trend ?? []).map((point: any) => Number(point.count ?? 0)),
-        knowledge: (data.pulse.knowledge.trend ?? []).map((point: any) => Number(point.count ?? 0)),
+        crm: (data.pulse.crm.trend ?? []).map((point: DashboardRow) => Number(point.count ?? 0)),
+        knowledge: (data.pulse.knowledge.trend ?? []).map((point: DashboardRow) => Number(point.count ?? 0)),
     };
     const series = activeSegment ? seriesValuesFromPoints(activeSegment.series) : seriesMap[selected];
     const summaryMap: Record<PulseId, { title: string; description: string }> = {
@@ -1131,7 +1161,7 @@ function LiveFeed({ data }: { data: OpsDashboardData }) {
 function WorkspaceTabs({ data }: { data: OpsDashboardData }) {
     const t = useTranslations('dashboard.ops.workspace');
     const tSystem = useTranslations('dashboard.ops.system');
-    const crmRecords = (data.pulse.crm.recentChanges ?? []).slice(0, 4).map((item: any, index: number) => ({
+    const crmRecords = (data.pulse.crm.recentChanges ?? []).slice(0, 4).map((item: DashboardRow, index: number) => ({
         id: item.id || `workspace-crm-${index}`,
         title: item.displayName || item.companyName || item.entityId || t('unknown_record'),
         description: [item.companyName, item.email, item.changeSummary || item.fieldLabel, item.status].filter(Boolean).join(' / '),
@@ -1144,7 +1174,7 @@ function WorkspaceTabs({ data }: { data: OpsDashboardData }) {
     const crmTotal = Number(data.pulse.crm.updatedToday ?? 0) + Number(data.pulse.crm.failuresToday ?? 0);
     const crmHealth = crmTotal > 0 ? Math.max(0, Math.round(((crmTotal - Number(data.pulse.crm.failuresToday ?? 0)) / crmTotal) * 100)) : 100;
     const knowledgeRecords = (data.pulse.details?.knowledge?.segments ?? []).flatMap((segment: PulseSegment) => segment.records ?? []).slice(0, 5) as PulseRecord[];
-    const learnNowRecords = (data.learnNow.recent ?? []).slice(0, 5).map((item: any, index: number) => ({
+    const learnNowRecords = (data.learnNow.recent ?? []).slice(0, 5).map((item: DashboardRow, index: number) => ({
         id: item.id || `workspace-learnnow-${index}`,
         title: item.title || item.sourceUrl || t('unknown_record'),
         description: [item.status, item.format, item.language].filter(Boolean).join(' / '),
@@ -1398,7 +1428,7 @@ export default function DashboardClient() {
         available: boolean;
         model?: string;
     } | null>(null);
-    const [customerStats, setCustomerStats] = useState<any>(null);
+    const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
     const [opsData, setOpsData] = useState<OpsDashboardData | null>(null);
     const [drawer, setDrawer] = useState<DrawerMode>(null);
     const [selectedPulse, setSelectedPulse] = useState<PulseId | null>(null);
@@ -1427,13 +1457,13 @@ export default function DashboardClient() {
                     )
                         .getSlaStats()
                         .catch(() => null);
-                    if (mountedRef.current) setCustomerStats(statsRes);
+                    if (mountedRef.current) setCustomerStats(statsRes as CustomerStats | null);
                     return;
                 }
 
                 const [statusRes, opsRes] = await Promise.all([api.ai.status().catch(() => null), api.dashboard.ops(7).catch(() => emptyOpsData())]);
                 if (mountedRef.current) {
-                    setAiStatus(statusRes);
+                    setAiStatus(statusRes as { available: boolean; model?: string } | null);
                     setOpsData(opsRes);
                     setLastUpdated(new Date());
                 }
@@ -1504,7 +1534,7 @@ export default function DashboardClient() {
                     </h1>
                     <p className="ml-11 mt-1 text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground">{t('telemetry_version')}</p>
                     {lastUpdated ? (
-                        <p className="ml-11 mt-1 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
+                        <p className="ml-11 mt-1 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                             {tOps('last_updated', {
                                 time: formatRefreshTime(lastUpdated),
                             })}

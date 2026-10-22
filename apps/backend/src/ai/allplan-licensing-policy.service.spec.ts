@@ -1,11 +1,103 @@
 import { BadRequestException } from '@nestjs/common';
-import { AllplanLicensingPolicyService } from './allplan-licensing-policy.service';
+import { AllplanLicensingPolicyService, canonicalizeAllplanRelease } from './allplan-licensing-policy.service';
 
 describe('AllplanLicensingPolicyService', () => {
-    const prisma = { product: { findFirst: jest.fn() } } as any;
-    const service = new AllplanLicensingPolicyService(prisma);
+    const prisma = {
+        product: {
+            findFirst: jest.fn().mockResolvedValue({ name: 'ALLPLAN' }),
+        },
+    };
+    const service = new AllplanLicensingPolicyService(prisma as never);
 
     beforeEach(() => jest.clearAllMocks());
+
+    it.each(['2024-2', '2024-2-0', '2025', '2026', '2027'])(
+        'accepts the same cloud intake for %s',
+        async (allplanVersion) => {
+            const result = await service.validate('ALLPLAN_LICENSING', 'product-1', {
+                categoryKey: 'licensing',
+                allplanVersion,
+                licenseIssueType: 'LOGIN',
+                licenseUserRole: 'LICENSE_ADMIN',
+            });
+
+            expect(result?.promptContext).toContain('Release family: CLOUD');
+            expect(result?.promptContext).toContain('User role: LICENSE_ADMIN');
+            expect(result?.promptContext).not.toMatch(/invitation|group visibility|ALLPLAN ID access/i);
+        },
+    );
+
+    it('accepts only the agreed cloud issues', async () => {
+        for (const licenseIssueType of ['LOGIN', 'SEAT', 'OFFLINE'] as const) {
+            await expect(service.validate('ALLPLAN_LICENSING', 'product-1', {
+                categoryKey: 'licensing',
+                allplanVersion: '2026',
+                licenseIssueType,
+                licenseUserRole: 'LICENSE_ADMIN',
+            })).resolves.toBeDefined();
+        }
+    });
+
+    it.each(['ACTIVATION', 'INVITATION', 'OTHER'] as const)(
+        'rejects deprecated cloud issue %s',
+        async (licenseIssueType) => {
+            await expect(service.validate('ALLPLAN_LICENSING', 'product-1', {
+                categoryKey: 'licensing',
+                allplanVersion: '2026',
+                licenseIssueType,
+                licenseUserRole: 'LICENSE_ADMIN',
+            })).rejects.toMatchObject({
+                response: expect.objectContaining({ missingFields: expect.arrayContaining(['licenseIssueType']) }),
+            });
+        },
+    );
+
+    it('requires the fixed Connect license-admin role', async () => {
+        await expect(service.validate('ALLPLAN_LICENSING', 'product-1', {
+            categoryKey: 'licensing',
+            allplanVersion: '2026',
+            licenseIssueType: 'LOGIN',
+            licenseUserRole: 'END_USER',
+        })).rejects.toMatchObject({
+            response: expect.objectContaining({ missingFields: expect.arrayContaining(['licenseUserRole']) }),
+        });
+    });
+
+    it('ignores deprecated cloud discriminator fields from old clients', async () => {
+        await expect(service.validate('ALLPLAN_LICENSING', 'product-1', {
+            categoryKey: 'licensing',
+            allplanVersion: '2025',
+            licenseIssueType: 'SEAT',
+            licenseUserRole: 'LICENSE_ADMIN',
+            allplanIdStatus: 'UNKNOWN',
+            organizationInviteStatus: 'UNKNOWN',
+            licenseGroupStatus: 'UNKNOWN',
+        })).resolves.toBeDefined();
+    });
+
+    it('keeps 2024 unresolved until the release band is supplied', async () => {
+        await expect(service.validate('ALLPLAN_LICENSING', 'product-1', {
+            categoryKey: 'licensing',
+            allplanVersion: '2024',
+            licenseIssueType: 'LOGIN',
+            licenseUserRole: 'LICENSE_ADMIN',
+        })).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('keeps the pre-cloud topology contract and new format/reinstall issue', async () => {
+        const result = await service.validate('ALLPLAN_LICENSING', 'product-1', {
+            categoryKey: 'licensing',
+            allplanVersion: '2023',
+            licenseTopology: 'SINGLE_USER',
+            licenseIssueType: 'FORMAT_REINSTALL',
+        });
+        expect(result?.promptContext).toContain('License topology: SINGLE_USER');
+    });
+
+    it('canonicalizes safe ALLPLAN release strings', () => {
+        expect(canonicalizeAllplanRelease('ALLPLAN 2024-2')).toBe('2024-2');
+        expect(canonicalizeAllplanRelease('something 2026')).toBeUndefined();
+    });
 
     it('does not apply ALLPLAN rules without a licensing intake', async () => {
         await expect(service.validate(undefined, undefined, undefined)).resolves.toBeUndefined();
@@ -24,113 +116,50 @@ describe('AllplanLicensingPolicyService', () => {
     });
 
     it('rejects licensing intake for a non-ALLPLAN product', async () => {
-        prisma.product.findFirst.mockResolvedValue({ name: 'SCIA' });
-        await expect(service.validate('ALLPLAN_LICENSING', '00000000-0000-4000-8000-000000000001', {
+        prisma.product.findFirst.mockResolvedValueOnce({ name: 'SCIA' });
+        await expect(service.validate('ALLPLAN_LICENSING', 'product-1', {
             categoryKey: 'licensing', allplanVersion: '2026', licenseIssueType: 'LOGIN',
-            licenseUserRole: 'END_USER', allplanIdStatus: 'AVAILABLE',
-            organizationInviteStatus: 'ACCEPTED', licenseGroupStatus: 'ASSIGNED',
+            licenseUserRole: 'LICENSE_ADMIN',
         })).rejects.toBeInstanceOf(BadRequestException);
-    });
-
-    it('accepts the CodeMeter boundary with topology and issue', async () => {
-        prisma.product.findFirst.mockResolvedValue({ name: 'ALLPLAN' });
-        await expect(service.validate('ALLPLAN_LICENSING', '00000000-0000-4000-8000-000000000001', {
-            categoryKey: 'licensing', allplanVersion: '2024-1-10',
-            licenseTopology: 'SINGLE_USER', licenseIssueType: 'ACTIVATION',
-        })).resolves.toMatchObject({ allplanVersion: '2024-1-10', promptContext: expect.stringContaining('Release family: CODEMETER') });
     });
 
     it.each([
-        ['UP_TO_2024_1_10', 'CODEMETER'],
-        ['FROM_2024_2_0', 'CLOUD'],
-    ] as const)('routes a bare 2024 release with the selected %s transition band', async (allplan2024ReleaseBand, expectedFamily) => {
-        prisma.product.findFirst.mockResolvedValue({ name: 'ALLPLAN' });
-        const common = {
-            categoryKey: 'licensing' as const,
-            allplanVersion: '2024',
-            allplan2024ReleaseBand,
-            licenseIssueType: 'ACTIVATION' as const,
-        };
-        const releaseSpecific = expectedFamily === 'CODEMETER'
-            ? { licenseTopology: 'SINGLE_USER' as const }
-            : {
-                licenseUserRole: 'END_USER' as const,
-                allplanIdStatus: 'AVAILABLE' as const,
-                organizationInviteStatus: 'ACCEPTED' as const,
-                licenseGroupStatus: 'ASSIGNED' as const,
-            };
-
-        await expect(service.validate(
-            'ALLPLAN_LICENSING',
-            '00000000-0000-4000-8000-000000000001',
-            { ...common, ...releaseSpecific },
-        )).resolves.toMatchObject({
-            allplanVersion: '2024',
-            promptContext: expect.stringContaining(`Release family: ${expectedFamily}`),
-        });
-    });
-
-    it('requires the transition band instead of an exact build for a bare 2024 release', async () => {
-        prisma.product.findFirst.mockResolvedValue({ name: 'ALLPLAN' });
-
-        await expect(service.validate('ALLPLAN_LICENSING', '00000000-0000-4000-8000-000000000001', {
-            categoryKey: 'licensing', allplanVersion: '2024', licenseIssueType: 'ACTIVATION',
-        })).rejects.toMatchObject({
-            response: expect.objectContaining({ missingFields: ['allplan2024ReleaseBand'] }),
-        });
-    });
-
-    it('keeps an unknown 2024 transition band fail-closed for AI diagnosis', async () => {
-        prisma.product.findFirst.mockResolvedValue({ name: 'ALLPLAN' });
-
-        await expect(service.validate('ALLPLAN_LICENSING', '00000000-0000-4000-8000-000000000001', {
+        ['UP_TO_2024_1_10', 'CODEMETER', 'ACTIVATION', 'SINGLE_USER'],
+        ['FROM_2024_2_0', 'CLOUD', 'LOGIN', undefined],
+    ] as const)('routes bare 2024 band %s to %s', async (band, family, issue, topology) => {
+        await expect(service.validate('ALLPLAN_LICENSING', 'product-1', {
             categoryKey: 'licensing',
             allplanVersion: '2024',
-            allplan2024ReleaseBand: 'UNKNOWN',
-            licenseIssueType: 'ACTIVATION',
+            allplan2024ReleaseBand: band,
+            licenseIssueType: issue,
+            ...(topology ? { licenseTopology: topology } : { licenseUserRole: 'LICENSE_ADMIN' as const }),
+        })).resolves.toMatchObject({ promptContext: expect.stringContaining(`Release family: ${family}`) });
+    });
+
+    it('keeps an unknown 2024 transition band fail-closed', async () => {
+        await expect(service.validate('ALLPLAN_LICENSING', 'product-1', {
+            categoryKey: 'licensing', allplanVersion: '2024',
+            allplan2024ReleaseBand: 'UNKNOWN', licenseIssueType: 'ACTIVATION',
         })).rejects.toMatchObject({
             response: expect.objectContaining({ missingFields: ['allplan2024ReleaseBand'] }),
         });
     });
 
-    it.each(['2024-0-0', '2024-0-5'])('keeps pre-2024-1 release %s in CodeMeter', async (version) => {
-        prisma.product.findFirst.mockResolvedValue({ name: 'ALLPLAN' });
-        await expect(service.validate('ALLPLAN_LICENSING', '00000000-0000-4000-8000-000000000001', {
-            categoryKey: 'licensing', allplanVersion: version,
-            licenseTopology: 'LICENSE_SERVER', licenseIssueType: 'ACTIVATION',
-        })).resolves.toMatchObject({ allplanVersion: version });
-    });
+    it.each(['2024-1', '2024-1-11', 'vNext', 'v2026', 'foo2026bar'])(
+        'fails closed for ambiguous version %s',
+        async version => {
+            await expect(service.validate('ALLPLAN_LICENSING', 'product-1', {
+                categoryKey: 'licensing', allplanVersion: version, licenseIssueType: 'ACTIVATION',
+            })).rejects.toBeInstanceOf(BadRequestException);
+        },
+    );
 
     it('rejects cloud-only issue types for CodeMeter releases', async () => {
-        prisma.product.findFirst.mockResolvedValue({ name: 'ALLPLAN' });
-        await expect(service.validate('ALLPLAN_LICENSING', '00000000-0000-4000-8000-000000000001', {
+        await expect(service.validate('ALLPLAN_LICENSING', 'product-1', {
             categoryKey: 'licensing', allplanVersion: '2023',
-            licenseTopology: 'SINGLE_USER', licenseIssueType: 'INVITATION',
+            licenseTopology: 'SINGLE_USER', licenseIssueType: 'LOGIN',
         })).rejects.toMatchObject({
             response: expect.objectContaining({ missingFields: expect.arrayContaining(['licenseIssueType']) }),
         });
-    });
-
-    it('accepts and canonicalizes a real Hotinfo release line', async () => {
-        prisma.product.findFirst.mockResolvedValue({ name: 'ALLPLAN' });
-        await expect(service.validate('ALLPLAN_LICENSING', '00000000-0000-4000-8000-000000000001', {
-            categoryKey: 'licensing', allplanVersion: 'Allplan 2026-1-3 Unicode 64-bit',
-            licenseIssueType: 'LOGIN', licenseUserRole: 'END_USER',
-            allplanIdStatus: 'AVAILABLE', organizationInviteStatus: 'ACCEPTED', licenseGroupStatus: 'ASSIGNED',
-        })).resolves.toMatchObject({ allplanVersion: '2026-1-3' });
-    });
-
-    it('requires cloud identity and organization answers at 2024-2-0', async () => {
-        prisma.product.findFirst.mockResolvedValue({ name: 'ALLPLAN' });
-        await expect(service.validate('ALLPLAN_LICENSING', '00000000-0000-4000-8000-000000000001', {
-            categoryKey: 'licensing', allplanVersion: '2024-2-0', licenseIssueType: 'LOGIN',
-        })).rejects.toMatchObject({ response: expect.objectContaining({ missingFields: expect.arrayContaining(['allplanIdStatus', 'licenseGroupStatus']) }) });
-    });
-
-    it.each(['2024-1', '2024-1-11', 'vNext', 'v2026', 'foo2026bar'])('fails closed for ambiguous version %s', async (version) => {
-        prisma.product.findFirst.mockResolvedValue({ name: 'ALLPLAN' });
-        await expect(service.validate('ALLPLAN_LICENSING', '00000000-0000-4000-8000-000000000001', {
-            categoryKey: 'licensing', allplanVersion: version, licenseIssueType: 'ACTIVATION',
-        })).rejects.toBeInstanceOf(BadRequestException);
     });
 });

@@ -7,8 +7,7 @@ const vm = require('node:vm');
 
 // Resolve the actual MJML chain without executing its renderer or any CLI.
 const backend = createRequire(path.resolve(__dirname, '../apps/backend/package.json'));
-const mjml = createRequire(backend.resolve('mjml'));
-const core = createRequire(mjml.resolve('mjml-core'));
+const core = createRequire(backend.resolve('mjml-core'));
 const beautify = createRequire(core.resolve('js-beautify'));
 const entry = beautify.resolve('js-cookie');
 const source = readFileSync(entry, 'utf8');

@@ -77,14 +77,8 @@ export class LlmApiService implements AiProvider {
                 return { embedding: data.data[0].embedding, model };
             }
 
-            // If LLMAPI returns 404 or other error, log clearly and fallback to internal Ollama if available
             const errorText = await response.text();
-            this.logger.warn(`⚠️ LLMAPI Embed failed [${response.status}]: ${errorText}. Attempting internal Ollama fallback...`);
-
-            // Check if Ollama is available using its known internal service pattern
-            // (Note: LlmApiService doesn't inject OllamaService to avoid circularity, but we can hit the API directly if health-checked)
-            // For now, we return null to let the Dispatcher (AiService) handle the fallback if we want to be clean.
-            // However, to satisfy the user's "Semantic Search Unavailable" fix, we must ensure SOMEONE returns an embedding.
+            this.logger.warn(`⚠️ LLMAPI Embed failed [${response.status}]: ${errorText}`);
             return null;
         } catch (err: any) {
             this.logger.warn(`⚠️ LLMAPI embed unexpected error: ${err.message}`);

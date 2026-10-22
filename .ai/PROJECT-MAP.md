@@ -203,7 +203,7 @@ Ayrıca `queue-dashboard` modülü (`ai-query-processing`, `document-parsing`, `
 
 **Kritik servisler:** `AiQueryService` (RAG giriş) · `SupportAnswerOrchestrator` (müşteri/admin parity, ADR-009) · `EmbeddingService` · `PromptContextBuilderService` · `AiSemanticCache` · `AiProviderRouter` (circuit breaker) · `RagMaintenanceService` · `TicketClusteringService` · `AiCopilotService` · `LangfuseService`
 
-**Provider:** Gemini birincil (chat + embedding `v2_2/3072`) · OpenAI/Groq **yalnız chat fallback** (ADR-006: embedding fallback yasak) · Ollama local
+**Provider:** Gemini birincil (chat + embedding `v2_2/3072`) · OpenAI/Groq **yalnız chat fallback** (ADR-006: embedding fallback yasak)
 
 ---
 

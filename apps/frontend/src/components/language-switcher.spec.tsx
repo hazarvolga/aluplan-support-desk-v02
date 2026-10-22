@@ -31,7 +31,7 @@ describe('LanguageSwitcher', () => {
         const user = userEvent.setup();
         render(<LanguageSwitcher />);
 
-        await user.click(screen.getByRole('button', { name: 'EN' }));
+        await user.click(screen.getByRole('button', { name: 'en' }));
 
         expect(mocks.replace).toHaveBeenCalledWith('/', { locale: 'en' });
         expect(mocks.updateProfile).not.toHaveBeenCalled();
@@ -42,11 +42,27 @@ describe('LanguageSwitcher', () => {
         const user = userEvent.setup();
         render(<LanguageSwitcher persistToProfile />);
 
-        await user.click(screen.getByRole('button', { name: 'EN' }));
+        await user.click(screen.getByRole('button', { name: 'en' }));
 
         expect(mocks.replace).toHaveBeenCalledWith('/', { locale: 'en' });
         await waitFor(() => {
             expect(mocks.updateProfile).toHaveBeenCalledWith({ language: 'en' });
         });
+    });
+
+    it('keeps inactive language controls at full muted-foreground contrast', () => {
+        render(<LanguageSwitcher />);
+
+        const inactiveButton = screen.getByRole('button', { name: 'en' });
+        expect(inactiveButton).toHaveClass('text-muted-foreground');
+        expect(inactiveButton).not.toHaveClass('text-muted-foreground/60');
+    });
+
+    it('exposes the active language programmatically', () => {
+        render(<LanguageSwitcher />);
+
+        expect(screen.getByRole('button', { name: 'tr' })).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', { name: 'en' })).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.getByRole('button', { name: 'de' })).toHaveAttribute('aria-pressed', 'false');
     });
 });

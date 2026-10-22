@@ -80,7 +80,7 @@ The training queue (`TrainingQueue` model) is the gate for R-T1, R-T3, R-T5. Low
 
 | Layer | Path |
 |---|---|
-| **Chat fallback chain** | OpenAI → Groq → Ollama, with `opossum` circuit breaker in `ai-provider-router.service.ts` |
+| **Chat fallback chain** | Gemini primary → OpenAI/Groq fallback, with `opossum` circuit breaker in `ai-provider-router.service.ts` |
 | **Embedding** | **No fallback within an active embedding version** (ADR-006). Gemini quota exhaustion **pauses ingestion** — never silently falls back to OpenAI embeddings inside `v2_2 / 3072`. |
 | **Provider quota cooldown** | `AI_PROVIDER_QUOTA_COOLDOWN_MS` env, opossum circuit-breaker timeout |
 
@@ -97,7 +97,7 @@ Persistent fallbacks (e.g., OpenAI down for an hour) should generate operator al
 Every AI call writes one row to `AiInteraction`. Telemetry is **inline columns** on this model, not a separate `ai_telemetry` table:
 
 ```prisma
-provider          String?  @db.VarChar(50)       // 'openai' | 'groq' | 'gemini' | 'ollama'
+provider          String?  @db.VarChar(50)       // e.g. 'openai' | 'groq' | 'gemini'
 model             String?  @db.VarChar(100)      // e.g. 'gpt-4o-mini', 'gemini-2.5-flash'
 inputTokens       Int?
 outputTokens      Int?

@@ -8,6 +8,7 @@ import { PrismaClient, TicketPriority } from '../client';
 import * as bcrypt from 'bcryptjs';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { syncCanonicalProduct } from '../scripts/product-alias-policy';
 
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({
@@ -570,7 +571,7 @@ async function main() {
             ]
         },
         {
-            name: "CDS Add-on",
+            name: "CDS Add-On",
             description: "Aluplan Geliştirilmiş Eklentileri",
             categories: [
                 { name: "Arazi, Altyapı & Rampa", keywords: ["arazi", "kazı", "dolgu", "yol", "sürüş eğrisi", "rampa", "otopark", "drive curve", "hafriyat", "eğim hatası", "terrain", "road", "bridge", "tunnel"] },
@@ -580,18 +581,7 @@ async function main() {
     ];
 
     for (const prodDef of PRODUCTS_TAXONOMY) {
-        let product = await prisma.product.findFirst({ where: { name: prodDef.name } });
-
-        if (product) {
-            product = await prisma.product.update({
-                where: { id: product.id },
-                data: { description: prodDef.description, isActive: true }
-            });
-        } else {
-            product = await prisma.product.create({
-                data: { name: prodDef.name, description: prodDef.description, isActive: true }
-            });
-        }
+        const product = await syncCanonicalProduct(prisma.product, prodDef);
 
         for (const catDef of prodDef.categories) {
             const category = await prisma.productCategory.findFirst({

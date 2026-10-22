@@ -2,47 +2,47 @@ name: CI Quality Gate
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
-  NODE_VERSION: '22.23.3'
-  PNPM_VERSION: 9
+  NODE_VERSION: "22.23.4"
+  PNPM_VERSION: 11.17.0
 
 jobs:
   spec-verify:
     name: Spec ↔ Code Consistency
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Verify spec ↔ code consistency
         run: node scripts/verify-specs.mjs
         env:
-          SPEC_VERIFY_STRICT: '0'
+          SPEC_VERIFY_STRICT: "0"
 
   security:
     name: Security & Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
           version: ${{ env.PNPM_VERSION }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "pnpm"
       - name: Secret Scanning (Gitleaks)
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - name: Pnpm Audit
         run: pnpm audit --prod --audit-level high
 
@@ -66,15 +66,15 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aluplan_ci
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
           version: ${{ env.PNPM_VERSION }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-      - run: pnpm install
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
       - name: Dependency Regression Contracts (blocking)
         timeout-minutes: 5
         run: pnpm test:security:dependencies
@@ -107,35 +107,104 @@ jobs:
       - name: Analyze Frontend Bundle
         run: cd apps/frontend && pnpm run analyze
       - name: Upload Bundle Analysis
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: bundle-analysis
           path: apps/frontend/.next/analyze/
 
   testing:
-    name: Tests & Coverage
+    name: Tests, Coverage & Lint
     runs-on: ubuntu-latest
     needs: typecheck-and-build
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
           version: ${{ env.PNPM_VERSION }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-      - run: pnpm install
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
       - name: Prisma Generate
         run: pnpm --filter @aluplan/database db:generate
       - name: Run Backend Tests
         env:
-          NODE_OPTIONS: '--experimental-vm-modules --no-warnings'
-        run: cd apps/backend && pnpm test -- --coverage
+          NODE_OPTIONS: "--experimental-vm-modules --no-warnings"
+        run: cd apps/backend && pnpm test --coverage
+      - name: Lint Backend
+        run: pnpm --filter @aluplan/backend lint
+      - name: Run Frontend Unit Tests with Coverage
+        run: pnpm --filter @aluplan/frontend test:unit:cov
+      - name: Lint Frontend
+        run: pnpm --filter @aluplan/frontend lint
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
         with:
-           token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  customer-security-rehearsal:
+    name: Customer Security Rehearsal
+    runs-on: ubuntu-latest
+    needs: typecheck-and-build
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: aluplan_rehearsal_20260908
+          POSTGRES_PASSWORD: ci-only-rehearsal-password
+          POSTGRES_DB: aluplan_security_rehearsal_20260908
+        ports:
+          - 55434:5432
+        options: >-
+          --health-cmd "pg_isready -U aluplan_rehearsal_20260908 -d aluplan_security_rehearsal_20260908"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      NODE_OPTIONS: "--experimental-vm-modules --no-warnings"
+      DATABASE_URL: "postgresql://aluplan_rehearsal_20260908:ci-only-rehearsal-password@127.0.0.1:55434/aluplan_security_rehearsal_20260908?options=-c%20statement_timeout%3D15000%20-c%20lock_timeout%3D3000"
+      SECURITY_REHEARSAL_DATABASE_URL: "postgresql://aluplan_rehearsal_20260908:ci-only-rehearsal-password@127.0.0.1:55434/aluplan_security_rehearsal_20260908?options=-c%20statement_timeout%3D15000%20-c%20lock_timeout%3D3000"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma Client
+        run: pnpm --filter @aluplan/database db:generate
+      - name: Migrate Disposable Rehearsal Database
+        run: pnpm exec prisma migrate deploy --config packages/database/prisma.config.js
+      - name: Install Rehearsal Target Marker
+        run: |
+          node <<'NODE'
+          const { Client } = require('pg');
+          const run = async () => {
+            const client = new Client({ connectionString: process.env.DATABASE_URL });
+            await client.connect();
+            try {
+              await client.query('CREATE SCHEMA IF NOT EXISTS rehearsal_control');
+              await client.query('CREATE TABLE IF NOT EXISTS rehearsal_control.marker (label text PRIMARY KEY)');
+              await client.query(
+                'INSERT INTO rehearsal_control.marker (label) VALUES ($1) ON CONFLICT (label) DO NOTHING',
+                ['aluplan-security-rehearsal-20260908'],
+              );
+            } finally {
+              await client.end();
+            }
+          };
+          run().catch((error) => {
+            console.error(error instanceof Error ? error.message : 'Rehearsal marker bootstrap failed');
+            process.exit(1);
+          });
+          NODE
+      - name: Run Customer Security Rehearsal
+        run: pnpm --filter @aluplan/backend exec jest --config ./test/jest-security-rehearsal.json --runInBand
 
   e2e:
     name: End-to-End Tests
@@ -170,18 +239,18 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/aluplan_e2e
       REDIS_URL: redis://localhost:6379
       FRONTEND_URL: http://localhost:3000
-      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
       NEXT_INTERNAL_API_URL: http://localhost:4000/api/v1
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
           version: ${{ env.PNPM_VERSION }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-      - run: pnpm install
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
       - name: Generate disposable E2E secrets
         run: |
           node <<'NODE'
@@ -192,7 +261,9 @@ jobs:
             JWT_SECRET: randomSecret(),
             JWT_REFRESH_SECRET: randomSecret(),
             AUTH_ACTION_JWT_SECRET: randomSecret(),
+            SESSION_MARKER_SECRET: randomSecret(),
             ENCRYPTION_KEY: crypto.randomBytes(32).toString('hex'),
+            WHATSAPP_APP_SECRET: randomSecret(),
             ADMIN_BYPASS_EMAILS: 'e2e-admin@aluplan.test',
             E2E_ADMIN_EMAIL: 'e2e-admin@aluplan.test',
             E2E_ADMIN_PASSWORD: randomSecret(),
@@ -201,6 +272,8 @@ jobs:
             E2E_CUSTOMER_EMAIL: 'e2e-customer@aluplan.test',
             E2E_CUSTOMER_PASSWORD: randomSecret(),
             E2E_CUSTOMER_PHONE: '905550009988',
+            E2E_REMEMBER_ME_EMAIL: 'e2e-remember-me@aluplan.test',
+            E2E_REMEMBER_ME_PASSWORD: randomSecret(),
           };
           const env = Object.entries(values).map(([name, value]) => `${name}=${value}`).join('\n');
           fs.appendFileSync(process.env.GITHUB_ENV, `${env}\n`, { mode: 0o600 });
@@ -219,7 +292,7 @@ jobs:
         run: pnpm --filter @aluplan/frontend test:e2e
       - name: Upload E2E Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: playwright-report
           path: apps/frontend/playwright-report/
@@ -229,35 +302,36 @@ jobs:
     runs-on: ubuntu-latest
     needs: typecheck-and-build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Build Backend Container
         run: docker build --build-arg VCS_REF="${GITHUB_SHA}" -t aluplan-backend -f apps/backend/Dockerfile .
       - name: Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@master
+        # v0.36.0, pinned to the immutable peeled commit.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
-          image-ref: 'aluplan-backend:latest'
-          format: 'table'
+          image-ref: "aluplan-backend:latest"
+          format: "table"
+          exit-code: "1"
           ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
 
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: [spec-verify, testing, e2e, docker-build]
+    needs: [spec-verify, security, testing, customer-security-rehearsal, e2e, docker-build]
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Trigger Coolify Staging Webhook
         env:
           COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_STAGING_WEBHOOK }}
         run: |
-          if [ -z "$COOLIFY_WEBHOOK" ]; then
-            echo "⚠️ COOLIFY_STAGING_WEBHOOK not set. Skipping staging deploy."
-            echo "To enable: Coolify → Project → Webhook → Add to GitHub Secrets"
-            exit 0
-          fi
-          curl -X POST "$COOLIFY_WEBHOOK" \
+          set -euo pipefail
+          : "${COOLIFY_WEBHOOK:?COOLIFY_STAGING_WEBHOOK is required}"
+          curl --request POST "$COOLIFY_WEBHOOK" \
             -H "Content-Type: application/json" \
             -d '{"branch":"main","commit":"'"${{ github.sha }}"'"}' \
-            --fail-with-body || echo "Webhook failed — check Coolify staging stack"
+            --fail-with-body \
+            --retry 3 \
+            --retry-all-errors
           echo "✅ Staging deployment triggered for commit ${{ github.sha }}"

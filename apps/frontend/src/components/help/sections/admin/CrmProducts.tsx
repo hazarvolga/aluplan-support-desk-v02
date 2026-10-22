@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Package, ArrowRight } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { TipBox } from '@/components/help/TipBox';
 
 /**

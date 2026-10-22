@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Monitor, Cpu, HardDrive, Smartphone, Globe, ShieldCheck } from 'lucide-react';
+import { ChevronDown, Monitor, Cpu, Smartphone, Globe, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { env } from '@/lib/env';
 

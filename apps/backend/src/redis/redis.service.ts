@@ -85,6 +85,11 @@ export class RedisService implements OnModuleInit, OnApplicationShutdown {
         }
     }
 
+    async setIfAbsent(key: string, value: string, ttlSeconds: number): Promise<boolean> {
+        const result = await this.client.set(key, value, 'EX', ttlSeconds, 'NX');
+        return result === 'OK';
+    }
+
     /** Set with centralized TTL from redis.config.ts */
     async setWithTTL(key: string, value: string, ttlKey: RedisTTLKey): Promise<void> {
         await this.client.set(key, value, 'EX', REDIS_TTL[ttlKey]);

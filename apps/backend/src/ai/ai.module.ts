@@ -1,7 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { OllamaService } from './ollama.service';
 import { OpenAiService } from './openai.service';
 import { GenericOpenAiService } from './generic-openai.service';
+import { OutboundHttpModule } from '../common/http/outbound-http.module';
 import { LlmApiService } from './llm-api.service';
 import { GeminiService } from './gemini.service';
 import { AiService } from './ai.service';
@@ -49,6 +49,7 @@ import { AllplanLicensingPolicyService } from './allplan-licensing-policy.servic
 @Module({
     imports: [
         SettingsModule,
+        OutboundHttpModule,
         RedisModule,
         PrismaModule,
         forwardRef(() => EmailModule),
@@ -81,7 +82,6 @@ import { AllplanLicensingPolicyService } from './allplan-licensing-policy.servic
         AiBudgetMonitor,
         OpenAiService,
         GenericOpenAiService,
-        OllamaService,
         EmbeddingService,
         AiQueryService,
         SupportAnswerOrchestrator,

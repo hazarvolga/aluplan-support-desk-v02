@@ -141,7 +141,7 @@ function SidebarCategory({
   };
 
   return (
-    <div role="treeitem" aria-expanded={expanded}>
+    <div role="treeitem" aria-expanded={expanded} aria-selected={false}>
       {/* Category header button */}
       <button
         type="button"

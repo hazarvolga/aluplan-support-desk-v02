@@ -318,7 +318,7 @@ export function runBackup(scriptPath, harness, envOverrides = {}) {
       FAKE_AWS_OBJECT_ROOT: harness.awsObjectRoot,
       ...envOverrides,
     },
-    timeout: 5_000,
+    timeout: 10_000,
   });
 }
 

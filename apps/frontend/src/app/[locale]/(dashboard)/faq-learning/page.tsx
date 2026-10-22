@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
     Brain,
@@ -50,27 +50,15 @@ type FaqLearningCandidate = {
     sources?: FaqCandidateSource[];
 };
 
+type HealthMetrics = Awaited<ReturnType<typeof api.ai.getHealthMetrics>>;
+
 export default function FaqLearningPage() {
     const t = useTranslations('admin.faq_learning');
-    const [stats, setStats] = useState<{
-        totalInteractions: number;
-        deflectionRate: number;
-        aiAccuracy: number;
-        confidenceDistribution: Array<{ confidence: string; count: number }>;
-    }>({
+    const [stats, setStats] = useState<HealthMetrics>({
         totalInteractions: 0,
         deflectionRate: 0,
         aiAccuracy: 0,
         confidenceDistribution: []
-    });
-    const [sourceStats, setSourceStats] = useState({
-        pillars: {
-            DOCUMENTS: 0,
-            ARTICLES: 0,
-            URLS: 0,
-            TICKETS: 0
-        },
-        totalSources: 0
     });
     const [candidates, setCandidates] = useState<FaqLearningCandidate[]>([]);
     const [loading, setLoading] = useState(true);
@@ -82,16 +70,14 @@ export default function FaqLearningPage() {
     const load = async () => {
         setLoading(true);
         try {
-            const [faqRes, healthRes, sourceRes] = await Promise.all([
+            const [faqRes, healthRes] = await Promise.all([
                 api.faq.list('PENDING_REVIEW'),
                 api.ai.getHealthMetrics(),
                 api.ai.getSourcesStats()
             ]);
 
             setCandidates(Array.isArray(faqRes) ? faqRes : faqRes.data || []);
-            setStats(healthRes as any);
-            setSourceStats(sourceRes);
-
+            setStats(healthRes);
         } catch (error) {
             toast({ title: t('toasts.sync_error'), description: String(error), variant: 'destructive' });
         } finally {
@@ -223,7 +209,7 @@ export default function FaqLearningPage() {
                             <h4 className="mb-4 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{t('confidence_distribution')}</h4>
                             <div className="space-y-3">
                                 {['HIGH', 'MEDIUM', 'LOW', 'NO_MATCH'].map(band => {
-                                    const bandData = (stats as any).confidenceDistribution?.find((d: any) => d.band === band) || { count: 0 };
+                                    const bandData = stats.confidenceDistribution.find((distribution) => distribution.band === band) || { count: 0 };
                                     const percentage = stats.totalInteractions > 0 ? (bandData.count / stats.totalInteractions) * 100 : 0;
                                     const label = t(`bands.${band.toLowerCase()}`);
                                     return (

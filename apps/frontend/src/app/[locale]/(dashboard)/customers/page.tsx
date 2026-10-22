@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { api } from '@/lib/api';
+import { api, type CrmConnection, type Customer, type CustomerAccount, type CrmSyncLog as ApiCrmSyncLog } from '@/lib/api';
 import {
     Table,
     TableBody,
@@ -18,7 +18,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Upload,
     Search,
-    ArrowUpDown,
     Trash2,
     Link2,
     RefreshCw,
@@ -27,16 +26,12 @@ import {
     Globe,
     Users,
     ExternalLink,
-    Save,
-    Plus,
-    Filter,
     ChevronRight,
     Loader2,
     ShieldCheck,
     AlertCircle,
     CheckCircle2,
     XCircle,
-    Calendar,
     Check,
     ArrowRight,
     Layers
@@ -96,6 +91,50 @@ interface AccountItem {
     };
 }
 
+interface CrmSyncLog {
+    id: string;
+    startedAt: string;
+    status: string;
+    totalRecords: number;
+    successCount: number;
+    errorCount: number;
+    errorMessage?: string;
+}
+
+interface EmailValidationResult {
+    email: string;
+    status: string;
+    score?: number;
+    [key: string]: unknown;
+}
+
+interface GroupHeader {
+    isGroupHeader: true;
+    value: string;
+    count: number;
+}
+
+type CustomerTableRow = CustomerItem | GroupHeader;
+type AccountTableRow = AccountItem | GroupHeader;
+
+const isGroupHeader = (row: CustomerTableRow | AccountTableRow): row is GroupHeader =>
+    'isGroupHeader' in row && row.isGroupHeader === true;
+
+const errorMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
+
+const getDisplaySettingList = (value: unknown, key: 'account' | 'contact') => {
+    if (typeof value !== 'object' || value === null) return [];
+    const list = (value as Record<string, unknown>)[key];
+    if (!Array.isArray(list)) return [];
+    return list.flatMap(item => {
+        if (typeof item !== 'object' || item === null) return [];
+        const setting = item as Record<string, unknown>;
+        return typeof setting.key === 'string'
+            ? [{ key: setting.key, label: typeof setting.label === 'string' ? setting.label : undefined, visible: setting.visible !== false }]
+            : [];
+    });
+};
+
 type SortField = 'companyName' | 'fullName' | 'jobTitle' | 'email' | 'status' | 'createdAt' | 'contractStatus' | 'subscriptionModel' | 'industry' | 'customerNo' | 'phoneNumber' | 'crmVerified' | 'name' | 'website' | 'address' | 'accountNumber';
 type SortOrder = 'asc' | 'desc';
 
@@ -106,6 +145,49 @@ const getDisplayCustomerNo = (customer: CustomerItem) =>
 
 const toSearchText = (value: unknown) => String(value ?? '').toLowerCase();
 const includesSearch = (value: unknown, term: string) => toSearchText(value).includes(term);
+
+const normalizeCustomer = (customer: Customer): CustomerItem => ({
+    ...customer,
+    customerProfile: customer.customerProfile ? {
+        ...customer.customerProfile,
+        isVip: customer.customerProfile.isVip ?? false,
+        crmVerified: customer.customerProfile.crmVerified ?? false,
+        firstName: customer.customerProfile.firstName ?? '',
+        lastName: customer.customerProfile.lastName ?? '',
+        phoneNumber: customer.customerProfile.phoneNumber ?? null,
+        account: customer.customerProfile.account?.id && customer.customerProfile.account.name
+            ? {
+                id: customer.customerProfile.account.id,
+                name: customer.customerProfile.account.name,
+                account_number: customer.customerProfile.account.account_number,
+            }
+            : undefined,
+    } : undefined,
+});
+
+const normalizeAccount = (account: CustomerAccount): AccountItem | null => {
+    if (!account.id || !account.name) return null;
+    return {
+        id: account.id,
+        name: account.name,
+        industry: account.industry,
+        website: account.website,
+        address: account.address,
+        accountNumber: account.accountNumber ?? account.account_number,
+        crmVerified: account.crmVerified ?? false,
+        _count: account._count ?? { customers: account.customers?.length ?? 0 },
+    };
+};
+
+const normalizeSyncLog = (log: ApiCrmSyncLog): CrmSyncLog => ({
+    id: log.id,
+    startedAt: log.startedAt,
+    status: log.status,
+    totalRecords: log.totalRecords,
+    successCount: log.successCount,
+    errorCount: log.errorCount,
+    errorMessage: log.errorMessage ?? undefined,
+});
 
 import { use } from 'react';
 
@@ -123,9 +205,9 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
     const [accounts, setAccounts] = useState<AccountItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [accountsLoading, setAccountsLoading] = useState(false);
-    const [connections, setConnections] = useState<any[]>([]);
+    const [connections, setConnections] = useState<CrmConnection[]>([]);
     const [connectionsLoading, setConnectionsLoading] = useState(false);
-    const [logs, setLogs] = useState<any[]>([]);
+    const [logs, setLogs] = useState<CrmSyncLog[]>([]);
     const [logsLoading, setLogsLoading] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -143,7 +225,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
 
     const [validating, setValidating] = useState(false);
     const [syncing, setSyncing] = useState(false);
-    const [validationResults, setValidationResults] = useState<Record<string, any>>({});
+    const [validationResults, setValidationResults] = useState<Record<string, EmailValidationResult>>({});
 
     const [pendingChatSession, setPendingChatSession] = useState<{ sessionId: string; customerName: string } | null>(null);
     const [activeChatSession, setActiveChatSession] = useState<{ sessionId: string; customerName: string } | null>(null);
@@ -171,11 +253,10 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
             { key: 'status', label: 'table.headers.status', visible: true },
         ];
 
-        const ds = displaySettings as any;
-        if (!ds?.contact || ds.contact.length === 0) return defaultCols;
+        const settings = getDisplaySettingList(displaySettings, 'contact');
+        if (settings.length === 0) return defaultCols;
 
         // Merge with current definitions to ensure labels are present
-        const settings = ds.contact as unknown as Array<{ key: string; label?: string; visible?: boolean }>;
         return settings
             .filter(s => s.visible !== false)
             .map(s => ({
@@ -194,10 +275,9 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
             { key: 'crmVerified', label: 'accounts.crm_verification', visible: true },
         ];
 
-        const ds = displaySettings as any;
-        if (!ds?.account || ds.account.length === 0) return defaultCols;
+        const settings = getDisplaySettingList(displaySettings, 'account');
+        if (settings.length === 0) return defaultCols;
 
-        const settings = ds.account as unknown as Array<{ key: string; label?: string; visible?: boolean }>;
         return settings
             .filter(s => s.visible !== false)
             .map(s => ({
@@ -211,13 +291,13 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         api.customers
             .list({ page, limit: CUSTOMER_PAGE_SIZE, search: searchTerm || undefined })
             .then((res) => {
-                setCustomers(res.data);
+                setCustomers(res.data.map(normalizeCustomer));
                 setCustomerTotal(res.total);
                 setCustomerPage(res.page);
                 setCustomerTotalPages(res.totalPages);
                 setSelectedIds([]);
             })
-            .catch((err: any) => { if (process.env.NODE_ENV === 'development') console.error(err); })
+            .catch((err: unknown) => { if (process.env.NODE_ENV === 'development') console.error(err); })
             .finally(() => setLoading(false));
     };
 
@@ -225,8 +305,11 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         setAccountsLoading(true);
         api.crm
             .getAccounts()
-            .then(setAccounts)
-            .catch((err: any) => { if (process.env.NODE_ENV === 'development') console.error(err); })
+            .then((items) => setAccounts(items.flatMap(item => {
+                const normalized = normalizeAccount(item);
+                return normalized ? [normalized] : [];
+            })))
+            .catch((err: unknown) => { if (process.env.NODE_ENV === 'development') console.error(err); })
             .finally(() => setAccountsLoading(false));
     };
 
@@ -236,12 +319,11 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
             .getConnections()
             .then((conns) => {
                 setConnections(conns);
-                const isAnySyncing = conns.some((c: any) => c.syncStatus === 'SYNCING');
                 if (conns.length > 0) {
                     loadLogs(conns[0].id);
                 }
             })
-            .catch((err: any) => { if (process.env.NODE_ENV === 'development') console.error(err); })
+            .catch((err: unknown) => { if (process.env.NODE_ENV === 'development') console.error(err); })
             .finally(() => setConnectionsLoading(false));
     };
 
@@ -257,7 +339,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                     if (conns.length > 0) {
                         loadLogs(conns[0].id);
                     }
-                    const stillSyncing = conns.some((c: any) => c.syncStatus === 'SYNCING');
+                    const stillSyncing = conns.some((c) => c.syncStatus === 'SYNCING');
                     if (!stillSyncing) {
                         clearInterval(interval);
                         loadCustomers();
@@ -276,8 +358,8 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         setLogsLoading(true);
         api.crm
             .getLogs(connectionId)
-            .then(setLogs)
-            .catch((err: any) => { if (process.env.NODE_ENV === 'development') console.error(err); })
+            .then((items) => setLogs(items.map(normalizeSyncLog)))
+            .catch((err: unknown) => { if (process.env.NODE_ENV === 'development') console.error(err); })
             .finally(() => setLogsLoading(false));
     };
 
@@ -334,7 +416,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            setSelectedIds(filteredAndSortedCustomers.map(c => c.id));
+            setSelectedIds(filteredAndSortedCustomers.filter((row): row is CustomerItem => !isGroupHeader(row)).map(c => c.id));
         } else {
             setSelectedIds([]);
         }
@@ -373,9 +455,9 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                 loadCustomers();
                 setSelectedIds([]);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             if (process.env.NODE_ENV === 'development') console.error(error);
-            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('toasts.bulk_update_error', { message: error.message || tc('unknown') }) });
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: t('toasts.bulk_update_error', { message: errorMessage(error, tc('unknown')) }) });
         } finally {
             setDeleting(false);
         }
@@ -383,7 +465,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
 
     const handleSelectAllAccounts = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            setSelectedAccountIds(filteredAccounts.map(a => a.id));
+            setSelectedAccountIds(filteredAccounts.filter((row): row is AccountItem => !isGroupHeader(row)).map(a => a.id));
         } else {
             setSelectedAccountIds([]);
         }
@@ -403,8 +485,8 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
             await api.crm.triggerSync(connectionId);
             toast({ title: '🔄 ' + t('crm.sync_btn'), description: t('toasts.sync_started') });
             loadConnections();
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message });
+        } catch (error: unknown) {
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: errorMessage(error, tc('unknown')) });
         } finally {
             setSyncing(false);
         }
@@ -415,8 +497,8 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
         try {
             const session = await api.proactiveChat.createSession(customerId);
             setPendingChatSession({ sessionId: session.id, customerName });
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message || tc('unknown') });
+        } catch (error: unknown) {
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: errorMessage(error, tc('unknown')) });
         } finally {
             setStartingChat(null);
         }
@@ -425,21 +507,21 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
     const handleBulkVerify = async () => {
         const emailsToVerify = selectedIds.length > 0
             ? customers.filter(c => selectedIds.includes(c.id)).map(c => c.email)
-            : filteredAndSortedCustomers.map(c => c.email);
+            : filteredAndSortedCustomers.filter((row): row is CustomerItem => !isGroupHeader(row)).map(c => c.email);
 
         if (emailsToVerify.length === 0) return;
 
         setValidating(true);
         try {
             const results = await api.emailValidator.verifyBulk(emailsToVerify);
-            const resultMap: Record<string, any> = { ...validationResults };
+            const resultMap: Record<string, EmailValidationResult> = { ...validationResults };
             results.forEach(r => {
-                resultMap[r.email] = r;
+                if (r.email) resultMap[r.email] = { ...r, email: r.email, status: r.status ?? 'UNKNOWN' };
             });
             setValidationResults(resultMap);
             toast({ title: '✅ ' + tc('success_title'), description: t('toasts.verify_success', { count: emailsToVerify.length }) });
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: error.message });
+        } catch (error: unknown) {
+            toast({ variant: 'destructive', title: '❌ ' + tc('error_title'), description: errorMessage(error, tc('unknown')) });
         } finally {
             setValidating(false);
         }
@@ -476,8 +558,8 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
 
         // Sort
         result.sort((a, b) => {
-            let aValue: any = '';
-            let bValue: any = '';
+            let aValue: string | number = '';
+            let bValue: string | number = '';
 
             switch (sortField) {
                 case 'companyName': aValue = a.customerProfile?.companyName || ''; bValue = b.customerProfile?.companyName || ''; break;
@@ -515,7 +597,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                 groups[groupValue].push(item);
             });
 
-            const groupedResult: any[] = [];
+            const groupedResult: CustomerTableRow[] = [];
             Object.entries(groups).forEach(([value, items]) => {
                 groupedResult.push({ isGroupHeader: true, value, count: items.length });
                 groupedResult.push(...items);
@@ -560,8 +642,8 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
 
         // Sort
         result.sort((a, b) => {
-            let aValue: any = '';
-            let bValue: any = '';
+            let aValue: string | number = '';
+            let bValue: string | number = '';
 
             switch (sortField) {
                 case 'accountNumber': aValue = a.accountNumber || ''; bValue = b.accountNumber || ''; break;
@@ -590,7 +672,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                 groups[groupValue].push(item);
             });
 
-            const groupedResult: any[] = [];
+            const groupedResult: AccountTableRow[] = [];
             Object.entries(groups).forEach(([value, items]) => {
                 groupedResult.push({ isGroupHeader: true, value, count: items.length });
                 groupedResult.push(...items);
@@ -604,17 +686,11 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
     const isAllSelected = filteredAndSortedCustomers.length > 0 && selectedIds.length === filteredAndSortedCustomers.length;
     const isAllAccountsSelected = filteredAccounts.length > 0 && selectedAccountIds.length === filteredAccounts.length;
 
-    const SortableHeader = ({ field, children }: { field: SortField, children: React.ReactNode }) => (
-        <TableHead
-            className="cursor-pointer hover:bg-white/[0.03] select-none transition-colors border-none py-4 px-4"
-            onClick={() => handleSort(field)}
-        >
-            <div className="flex items-center space-x-1 font-bold text-[10px] text-muted-foreground uppercase tracking-widest">
-                <span>{children}</span>
-                <ArrowUpDown className="h-3 w-3 opacity-30" />
-            </div>
-        </TableHead>
-    );
+    const handleColumnSort = (field: string, order: SortOrder) => {
+        if (contactColumns.some(column => column.key === field) || accountColumns.some(column => column.key === field)) {
+            handleSort(field as SortField, order);
+        }
+    };
 
     return (
         <motion.div
@@ -720,7 +796,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                             label={t(col.label)}
                                             currentSortField={sortField}
                                             currentSortOrder={sortOrder}
-                                            onSort={handleSort as any}
+                                            onSort={handleColumnSort}
                                             onGroupBy={handleGroupByChange}
                                             isGrouped={groupBy === col.key}
                                             onFilterChange={handleFilterChange}
@@ -746,8 +822,8 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    filteredAndSortedCustomers.map((c: any, idx: number) => {
-                                        if (c.isGroupHeader) {
+                                    filteredAndSortedCustomers.map((c, idx) => {
+                                        if (isGroupHeader(c)) {
                                             return (
                                                 <TableRow key={`group-${c.value}-${idx}`} className="bg-blue-500/[0.03] border-white/5 hover:bg-blue-500/[0.05] transition-colors h-12">
                                                     <TableCell colSpan={contactColumns.length + 2} className="px-6">
@@ -952,7 +1028,7 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                             label={t(col.label)}
                                             currentSortField={sortField}
                                             currentSortOrder={sortOrder}
-                                            onSort={handleSort as any}
+                                            onSort={handleColumnSort}
                                             onGroupBy={handleGroupByChange}
                                             isGrouped={groupBy === col.key}
                                             onFilterChange={handleFilterChange}
@@ -977,8 +1053,8 @@ export default function CustomersPage({ params }: { params: Promise<{ locale: st
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    filteredAccounts.map((a: any, idx: number) => {
-                                        if (a.isGroupHeader) {
+                                    filteredAccounts.map((a, idx) => {
+                                        if (isGroupHeader(a)) {
                                             return (
                                                 <TableRow key={`group-acc-${a.value}-${idx}`} className="bg-amber-500/[0.03] border-white/5 hover:bg-amber-500/[0.05] transition-colors h-12">
                                                     <TableCell colSpan={accountColumns.length + 2} className="px-6">

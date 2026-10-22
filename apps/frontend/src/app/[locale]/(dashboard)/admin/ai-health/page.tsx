@@ -4,7 +4,6 @@ export const dynamic = "force-dynamic";
 
 import { AiTelemetryDashboard } from '@/components/admin/AiTelemetryDashboard';
 import { useTranslations } from 'next-intl';
-import { Bot, Activity } from 'lucide-react';
 
 export default function AiHealthPage() {
     const t = useTranslations('admin.ai_health');

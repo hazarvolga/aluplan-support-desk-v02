@@ -7,8 +7,9 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Link2, Lock, Eye, EyeOff, Save, Loader2, Globe } from 'lucide-react';
+import { Lock, Eye, EyeOff, Save, Loader2, Globe } from 'lucide-react';
 import { toast } from 'sonner';
+import { getErrorMessage } from '../settings-types';
 
 export function CrmSettings() {
     const t = useTranslations('settings.crm');
@@ -32,7 +33,7 @@ export function CrmSettings() {
                     api.settings.get('dynamics_api_key')
                 ]);
 
-                const dynamics = connections.find((c: any) => c.provider === 'DYNAMICS_365');
+                const dynamics = connections.find((connection) => connection.provider === 'DYNAMICS_365');
                 if (dynamics) {
                     setInstanceUrl(dynamics.instanceUrl || '');
                     setTenantId(dynamics.tenantId || '');
@@ -41,7 +42,7 @@ export function CrmSettings() {
                 }
 
                 setCrmApiKey(apiKeySetting?.value || '');
-            } catch (error: any) {
+            } catch (error: unknown) {
                 console.error('Failed to load CRM settings:', error);
             } finally {
                 setLoading(false);
@@ -61,8 +62,8 @@ export function CrmSettings() {
                 clientSecret,
             });
             toast.success(t('save_success'));
-        } catch (error: any) {
-            toast.error(t('save_error', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('save_error', { message: getErrorMessage(error) }));
         } finally {
             setSavingConnection(false);
         }
@@ -73,8 +74,8 @@ export function CrmSettings() {
         try {
             await api.settings.upsert({ key: 'dynamics_api_key', value: crmApiKey, isSecret: true });
             toast.success(t('save_success'));
-        } catch (error: any) {
-            toast.error(t('save_error', { message: error.message }));
+        } catch (error: unknown) {
+            toast.error(t('save_error', { message: getErrorMessage(error) }));
         } finally {
             setSavingApiKey(false);
         }

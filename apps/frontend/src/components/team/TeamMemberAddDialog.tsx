@@ -41,9 +41,22 @@ interface TeamMemberAddDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     teamId: string;
-    existingMembers: any[];
+    existingMembers: ExistingMember[];
     onSuccess: () => void;
 }
+
+type ExistingMember = { userId?: string; user?: { id?: string } | null };
+type UserCandidate = {
+    id: string;
+    fullName?: string | null;
+    email?: string | null;
+    role?: string | { name?: string } | null;
+    roles?: string[];
+    userRoles?: Array<{ role?: { name?: string } }>;
+};
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error && error.message ? error.message : fallback;
 
 export function TeamMemberAddDialog({
     open,
@@ -53,7 +66,7 @@ export function TeamMemberAddDialog({
     onSuccess
 }: TeamMemberAddDialogProps) {
     const t = useTranslations('teams');
-    const [users, setUsers] = useState<any[]>([]);
+    const [users, setUsers] = useState<UserCandidate[]>([]);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [userPickerOpen, setUserPickerOpen] = useState(false);
@@ -73,7 +86,7 @@ export function TeamMemberAddDialog({
         }
     }, [open]);
 
-    const getRoleName = (user: any) => {
+    const getRoleName = (user: UserCandidate) => {
         if (typeof user?.role === 'string') return user.role;
         if (user?.role?.name) return user.role.name;
         if (Array.isArray(user?.roles) && user.roles.length > 0) return user.roles[0];
@@ -81,26 +94,26 @@ export function TeamMemberAddDialog({
         return '';
     };
 
-    const isStaffCandidate = (user: any) => {
+    const isStaffCandidate = (user: UserCandidate) => {
         const roleName = String(getRoleName(user)).toUpperCase();
         return roleName !== 'CUSTOMER' && roleName !== 'VIEWER';
     };
 
-    const formatUserLabel = (user: any) => user?.fullName || user?.email || 'Unknown user';
+    const formatUserLabel = (user: UserCandidate) => user.fullName || user.email || 'Unknown user';
 
     const fetchUsers = async () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await api.users.list('agent').catch(() => []);
+            const response = await api.users.list('agent').catch(() => []) as UserCandidate[];
             const existingIds = existingMembers.map(m => m.user?.id || m.userId);
             const available = response
-                .filter((u: any) => !existingIds.includes(u.id))
+                .filter((user) => !existingIds.includes(user.id))
                 .filter(isStaffCandidate)
-                .sort((a: any, b: any) => formatUserLabel(a).localeCompare(formatUserLabel(b)));
+                .sort((left, right) => formatUserLabel(left).localeCompare(formatUserLabel(right)));
             setUsers(available);
-        } catch (err: any) {
-            setError(err.message || 'Users could not be loaded.');
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, 'Users could not be loaded.'));
         } finally {
             setLoading(false);
         }
@@ -123,8 +136,8 @@ export function TeamMemberAddDialog({
             toast({ title: 'Başarılı', description: t('member_add.success') });
             onSuccess();
             onOpenChange(false);
-        } catch (err: any) {
-            setError(err.message || t('member_add.error_server'));
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, t('member_add.error_server')));
         } finally {
             setSubmitting(false);
         }

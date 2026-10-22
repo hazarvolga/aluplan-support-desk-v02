@@ -60,6 +60,16 @@ describe('RedisService', () => {
             expect(mockRedisClient.set).toHaveBeenCalledWith('key1', 'value1', 'EX', 300);
         });
 
+        it('should atomically set a value only when the key is absent', async () => {
+            mockRedisClient.set.mockResolvedValue('OK');
+
+            await expect(service.setIfAbsent('key1', 'value1', 300)).resolves.toBe(true);
+            expect(mockRedisClient.set).toHaveBeenCalledWith('key1', 'value1', 'EX', 300, 'NX');
+
+            mockRedisClient.set.mockResolvedValue(null);
+            await expect(service.setIfAbsent('key1', 'value1', 300)).resolves.toBe(false);
+        });
+
         it('should delete a key', async () => {
             await service.del('key1');
             expect(mockRedisClient.del).toHaveBeenCalledWith('key1');
