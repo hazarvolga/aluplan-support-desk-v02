@@ -7,6 +7,7 @@ const test = require('node:test');
 // Resolve the consumer's actual package, never a root hoist or Axios mock.
 const backend = createRequire(path.resolve(__dirname, '../apps/backend/package.json'));
 const axios = backend('axios');
+const axiosDependencies = createRequire(backend.resolve('axios/package.json'));
 const TEST_TIMEOUT = 4000;
 const RESPONSE_LIMIT = 1024;
 
@@ -58,6 +59,10 @@ test('backend resolves the reviewed Axios 1.20.0 release', t => {
     t.diagnostic(`backend Axios entry: ${backend.resolve('axios')}`);
     assert.equal(backend('axios/package.json').version, '1.20.0');
     assert.equal(axios.VERSION, '1.20.0');
+});
+
+test('Axios resolves patched follow-redirects 1.16.1', () => {
+    assert.equal(axiosDependencies('follow-redirects/package.json').version, '1.16.1');
 });
 
 test('OAuth URLSearchParams preserves Turkish, punctuation and empty fields', { timeout: TEST_TIMEOUT }, async () => {

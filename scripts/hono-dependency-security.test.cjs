@@ -27,7 +27,7 @@ function version(name) {
 }
 
 test('Prisma dev resolves patched same-major Hono and Node adapter', () => {
-    assert.equal(version('hono'), '4.13.9');
+    assert.equal(version('hono'), '4.13.11');
     assert.equal(version('@hono/node-server'), '1.19.17');
 });
 
