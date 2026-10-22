@@ -94,7 +94,7 @@ describe('NotificationsGateway', () => {
             let release!: (user: unknown) => void;
             mockPrisma.user.findUnique.mockReturnValueOnce(new Promise(resolve => { release = resolve; }));
             mockJwtService.verify.mockReturnValue(socketData('user-1', 'admin').session);
-            const socket: any = { handshake: { auth: { token: 'signed-token' } }, data: {}, join: jest.fn(), disconnect: jest.fn() };
+            const socket: any = { handshake: { auth: { token: 'signed-token' } }, data: {}, join: jest.fn(), emit: jest.fn(), disconnect: jest.fn() };
             const connected = gateway.handleConnection(socket);
             const joined = gateway.joinTicket(socket, 'ticket-1');
             await Promise.resolve();
@@ -103,8 +103,13 @@ describe('NotificationsGateway', () => {
             release(valid ? activeUser('admin') : null);
             await connected;
             await expect(joined).resolves.toEqual(valid ? { joined: 'ticket-1' } : { error: 'Unauthorized' });
-            if (valid) expect(socket.disconnect).not.toHaveBeenCalled();
-            else expect(socket.join).not.toHaveBeenCalled();
+            if (valid) {
+                expect(socket.disconnect).not.toHaveBeenCalled();
+                expect(socket.emit).toHaveBeenCalledWith('session:ready');
+            } else {
+                expect(socket.join).not.toHaveBeenCalled();
+                expect(socket.emit).not.toHaveBeenCalled();
+            }
         });
         it.each([
             { label: 'expired', payload: { exp: 1 }, user: activeUser('admin'), revoked: null },
@@ -129,6 +134,7 @@ describe('NotificationsGateway', () => {
                 data: {},
                 join: jest.fn(),
                 disconnect: jest.fn(),
+                emit: jest.fn(),
             };
             mockJwtService.verify.mockReturnValue(socketData('user-1', 'admin').session);
 
@@ -137,6 +143,7 @@ describe('NotificationsGateway', () => {
             expect(mockSocket.data.userId).toBe('user-1');
             expect(mockSocket.join).toHaveBeenCalledWith('role:admin');
             expect(mockSocket.join).toHaveBeenCalledWith('user:user-1');
+            expect(mockSocket.emit).toHaveBeenCalledWith('session:ready');
             expect(mockRedis.getClient().sadd).toHaveBeenCalledWith('ws:active:role:admin', 'user-1');
         });
 
