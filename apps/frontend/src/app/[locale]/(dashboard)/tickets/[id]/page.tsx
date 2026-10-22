@@ -43,6 +43,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { ContentSanitizer } from '@/lib/content-sanitizer';
 import { markdownToHtml } from '@/lib/markdown-to-html';
 import { getTicketSupportCategoryNames, type TicketSupportCategoryLabels } from '@/lib/ticket-category-display';
+import { displayAttachmentFilename } from '@/lib/attachment-filename';
 import { TicketLifecycle } from './ticket-lifecycle';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -752,14 +753,14 @@ function TicketDetail({ id }: { id: string }) {
     );
 
     const supportCategoryLabels: TicketSupportCategoryLabels = {
-        technical_support: tickets('departments.technical_support'),
-        billing_payments: tickets('departments.billing_payments'),
-        sales_pre_sales: tickets('departments.sales_pre_sales'),
-        general_support: tickets('departments.general_support'),
+        technical_support: tickets('new.departments.technical_support'),
+        billing_payments: tickets('new.departments.billing_payments'),
+        sales_pre_sales: tickets('new.departments.sales_pre_sales'),
+        general_support: tickets('new.departments.general_support'),
         licensing: t('category_licensing'),
-        customer_success: tickets('departments.customer_success'),
-        general_inquiries: tickets('departments.general_inquiries'),
-        security_compliance: tickets('departments.security_compliance'),
+        customer_success: tickets('new.departments.customer_success'),
+        general_inquiries: tickets('new.departments.general_inquiries'),
+        security_compliance: tickets('new.departments.security_compliance'),
     };
     const ticketCategories = getTicketSupportCategoryNames(ticket, supportCategoryLabels);
 
@@ -791,9 +792,9 @@ function TicketDetail({ id }: { id: string }) {
                                     <span className="flex items-center gap-1">{t('timestamp', { date: `${new Date(ticket.createdAt).toLocaleDateString(locale)} ${new Date(ticket.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}` })}</span>
                                 </div>
                                 <div className="flex items-center gap-2 pt-2" data-testid="ticket-category">
-                                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/70">{t('category_label')}</span>
+                                    <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{t('category_label')}</span>
                                     {ticketCategories.length > 0 ? ticketCategories.map((category) => (
-                                        <Badge key={category} variant="outline" className="px-1.5 py-0 text-[9px] font-bold tracking-wide bg-primary/5 text-primary border-primary/20">
+                                        <Badge key={category} variant="outline" className="px-1.5 py-0 text-[11px] font-bold tracking-wide bg-primary/5 text-primary border-primary/20">
                                             {category}
                                         </Badge>
                                     )) : <span className="text-[10px] text-muted-foreground">—</span>}
@@ -948,7 +949,7 @@ function TicketDetail({ id }: { id: string }) {
                                                             className="flex items-center gap-2 bg-black/20 p-1.5 hover:bg-black/40 transition-none text-[10px] font-mono border border-border/20"
                                                         >
                                                             <Paperclip className="h-3 w-3 opacity-60" />
-                                                            <span className="flex-1 truncate uppercase">{file.fileName}</span>
+                                                            <span className="flex-1 truncate uppercase">{displayAttachmentFilename(file.fileName)}</span>
                                                             <Download className="h-3 w-3 opacity-60" />
                                                         </a>
                                                     ))}
@@ -1003,7 +1004,7 @@ function TicketDetail({ id }: { id: string }) {
                                                                     className="flex items-center gap-2 bg-black/20 p-1.5 hover:bg-black/40 transition-none text-[10px] font-mono border border-border/20"
                                                                 >
                                                                     <Paperclip className="h-3 w-3 opacity-60" />
-                                                                    <span className="flex-1 truncate uppercase">{file.fileName}</span>
+                                                                    <span className="flex-1 truncate uppercase">{displayAttachmentFilename(file.fileName)}</span>
                                                                     <Download className="h-3 w-3 opacity-60" />
                                                                 </a>
                                                             ))}
@@ -1127,14 +1128,14 @@ function TicketDetail({ id }: { id: string }) {
                     </CardHeader>
                     <CardContent className="px-3 py-3 grid grid-cols-2 gap-3">
                         <div className="space-y-0.5">
-                            <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('status_label')}</label>
+                            <label className="text-[11px] uppercase font-bold text-muted-foreground tracking-[0.1em]">{t('status_label')}</label>
                             <div className="flex items-center gap-1.5">
                                 <div className="h-1.5 w-1.5 bg-primary animate-pulse" />
                                 <span className="text-[10px] font-bold uppercase tracking-tight text-foreground truncate">{ts(ticket.status)}</span>
                             </div>
                         </div>
                         <div className="space-y-0.5">
-                            <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('channel_label')}</label>
+                            <label className="text-[11px] uppercase font-bold text-muted-foreground tracking-[0.1em]">{t('channel_label')}</label>
                             <div className="flex items-center gap-1.5">
                                 {(() => {
                                     const Icon = CHANNEL_ICONS[ticket.channel] || Globe;
@@ -1144,27 +1145,27 @@ function TicketDetail({ id }: { id: string }) {
                             </div>
                         </div>
                         <div className="space-y-0.5">
-                            <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('priority_label')}</label>
+                            <label className="text-[11px] uppercase font-bold text-muted-foreground tracking-[0.1em]">{t('priority_label')}</label>
                             <div className="flex items-center gap-1.5">
                                 <Badge variant="outline" className={`text-[9px] h-4 px-1 py-0 rounded-none ${PRIORITY_COLORS[ticket.priority]}`}>{tp(ticket.priority)}</Badge>
                             </div>
                         </div>
                         <div className="space-y-0.5">
-                            <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('open_date')}</label>
+                            <label className="text-[11px] uppercase font-bold text-muted-foreground tracking-[0.1em]">{t('open_date')}</label>
                             <p className="text-[9px] font-mono font-medium text-foreground truncate">{new Date(ticket.createdAt).toLocaleDateString(locale)} {new Date(ticket.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
                         <div className="space-y-0.5 col-span-2">
-                            <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('category_label')}</label>
+                            <label className="text-[11px] uppercase font-bold text-muted-foreground tracking-[0.1em]">{t('category_label')}</label>
                             <div className="flex flex-wrap gap-1">
                                 {ticketCategories.length > 0 ? ticketCategories.map((category) => (
-                                    <Badge key={category} variant="outline" className="px-1.5 py-0 text-[9px] font-bold tracking-wide bg-primary/5 text-primary border-primary/20">
+                                    <Badge key={category} variant="outline" className="px-1.5 py-0 text-[11px] font-bold tracking-wide bg-primary/5 text-primary border-primary/20">
                                         {category}
                                     </Badge>
                                 )) : <span className="text-[10px] text-muted-foreground">—</span>}
                             </div>
                         </div>
                         <div className="space-y-1 col-span-2 pt-2 border-t border-border/20">
-                            <label className="text-[8px] uppercase font-bold text-muted-foreground/60 tracking-[0.1em]">{t('assignee_label')}</label>
+                            <label className="text-[11px] uppercase font-bold text-muted-foreground tracking-[0.1em]">{t('assignee_label')}</label>
                             {!isCustomer ? (
                                 <Select
                                     value={ticket.assignedTo || ''}
@@ -1287,7 +1288,7 @@ function TicketDetail({ id }: { id: string }) {
                                 <label className="text-[8px] uppercase font-bold text-muted-foreground/70 tracking-[0.1em]">{t('ai_trace_response')}</label>
                                 {aiTrace.interaction?.responseGenerated?.trim() ? (
                                     <div className="mt-2 max-h-80 overflow-y-auto rounded-md border border-purple-500/15 bg-black/10 p-3">
-                                        <AiAnswerContent content={aiTrace.interaction.responseGenerated} className="text-[11px] text-foreground/85" />
+                                        <AiAnswerContent content={aiTrace.interaction.responseGenerated} className="text-[15px] leading-6 text-foreground" />
                                     </div>
                                 ) : (
                                     <p className="mt-1 text-[11px] text-muted-foreground">{t('ai_trace_no_response')}</p>

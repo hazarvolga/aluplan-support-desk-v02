@@ -44,6 +44,23 @@ describe('closed ticket reopening', () => {
         expect(screen.queryByRole('button', { name: 'reopen_ticket' })).not.toBeInTheDocument();
         expect(screen.getByText('Preserved description')).toBeInTheDocument();
     });
+    it('shows translated categories in both detail locations for persisted department keys', async () => {
+        mocks.get.mockResolvedValue({ ...ticket, department: { name: 'TICKETS.DEPARTMENTS.TECHNICAL_SUPPORT' } });
+        await mount();
+
+        expect(screen.getAllByText('new.departments.technical_support')).toHaveLength(2);
+        expect(screen.queryByText('TICKETS.DEPARTMENTS.TECHNICAL_SUPPORT')).not.toBeInTheDocument();
+        for (const label of screen.getAllByText('category_label')) {
+            expect(label).toHaveClass('text-[11px]', 'text-muted-foreground');
+            expect(label.className).not.toMatch(/text-muted-foreground\//);
+        }
+    });
+    it('shows repaired Turkish names for previously uploaded ticket attachments', async () => {
+        mocks.get.mockResolvedValue({ ...ticket, messages: [{ id: 'message-1', senderId: 'customer', createdAt: ticket.createdAt, message: 'Fixture', attachments: [{ id: 'file-1', fileName: 'GÃ¼RCİSTANBAK.ZİP' }] }] });
+        await mount();
+        expect(screen.getAllByText('GüRCİSTANBAK.ZİP').length).toBeGreaterThan(0);
+        expect(screen.queryByText(/GÃ¼RC/)).not.toBeInTheDocument();
+    });
     it.each([
         { role: 'CUSTOMER', permissions: ['ticket:update'] },
         { role: 'VIEWER', permissions: ['*'] },

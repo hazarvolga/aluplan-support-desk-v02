@@ -22,6 +22,7 @@ import { RequirePermissions } from '../rbac/decorators/rbac.decorators';
 import { StorageService } from '../common/services/storage.service';
 import { Response } from 'express';
 import { HotinfoParserService } from '../customers/hotinfo-parser.service';
+import { normalizeUploadFilename } from './attachment-filename';
 
 @Controller('attachments')
 @UseGuards(RbacGuard)
@@ -66,10 +67,11 @@ export class AttachmentsController {
     ) {
         await this.attachmentsService.assertCanCreateForMessage(messageId, req.user);
 
-        const storageKey = await this.storageService.uploadFile(file, `tickets/msg_${messageId}`);
+        const normalizedFile = { ...file, originalname: normalizeUploadFilename(file.originalname) };
+        const storageKey = await this.storageService.uploadFile(normalizedFile, `tickets/msg_${messageId}`);
 
         let parsedHotinfo = null;
-        const lowName = file.originalname.toLowerCase();
+        const lowName = normalizedFile.originalname.toLowerCase();
         // Support both _hotinf_ (standard) and _hotinfo_ (alternative)
         if ((lowName.includes('_hotinf_') || lowName.includes('_hotinfo_')) && lowName.endsWith('.hxl')) {
             try {
@@ -82,7 +84,7 @@ export class AttachmentsController {
         // Publish attachment metadata only after the configured storage accepted the bytes.
         const attachment = await this.attachmentsService.create({
             messageId,
-            fileName: file.originalname,
+            fileName: normalizedFile.originalname,
             fileSize: file.size,
             mimeType: file.mimetype,
             url: storageKey,
