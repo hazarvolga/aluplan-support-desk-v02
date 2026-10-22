@@ -4,7 +4,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 // Source contract only: actual image/runtime compatibility is verified separately.
-const image = 'node:22.23.3-alpine3.23@sha256:baf676f7d0e552f3231945c2f979055ca121bce128c152f7a34e6bd1728b1c5a';
+const image = 'node:22.23.4-alpine3.23@sha256:6abbcf5dd6b231da109bcde1181db1d92bf78015ae1a9514d9807c1f857869db';
 
 for (const app of ['backend', 'frontend']) {
     test(`${app} base and runner use the exact reviewed Node 22 image`, () => {
@@ -20,7 +20,7 @@ for (const app of ['backend', 'frontend']) {
 }
 
 for (const workflow of ['ci', 'backend-test', 'frontend-test', 'ai-eval', 'dr-drill']) {
-    test(`${workflow} CI jobs select Node 22.23.3`, () => {
+    test(`${workflow} CI jobs select Node 22.23.4`, () => {
         const source = readFileSync(path.resolve(__dirname, `../.github/workflows/${workflow}.yml`), 'utf8');
         const versions = [...source.matchAll(/^\s*node-version:\s*(.*?)\s*$/gm)].map(match => match[1]);
         const setups = [...source.matchAll(/\buses:\s*actions\/setup-node@/g)];
@@ -29,10 +29,10 @@ for (const workflow of ['ci', 'backend-test', 'frontend-test', 'ai-eval', 'dr-dr
         if (workflow === 'ci') {
             const env = [...source.matchAll(/^\s*NODE_VERSION:\s*(.*?)\s*$/gm)].map(match => match[1]);
             assert.equal(env.length, 1);
-            assert.match(env[0], /^(?:22\.23\.3|'22\.23\.3'|"22\.23\.3")$/);
+            assert.match(env[0], /^(?:22\.23\.4|'22\.23\.4'|"22\.23\.4")$/);
             for (const version of versions) assert.equal(version, '${{ env.NODE_VERSION }}');
         } else {
-            for (const version of versions) assert.match(version, /^(?:22\.23\.3|'22\.23\.3'|"22\.23\.3")$/);
+            for (const version of versions) assert.match(version, /^(?:22\.23\.4|'22\.23\.4'|"22\.23\.4")$/);
         }
     });
 }
